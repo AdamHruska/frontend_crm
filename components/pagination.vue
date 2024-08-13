@@ -13,7 +13,7 @@ const items = ref(Array(55));
 			rounded: 'first-of-type:rounded-s-md last-of-type:rounded-e-md',
 		}"
 		:activeButton="{ color: 'blue' }"
-		class="flex justify-center mt-6 ml-[-64px]"
+		class="flex justify-center mt-6 ml-[-64px] z-0"
 	>
 		<template #prev="{ onClick }">
 			<UTooltip text="Previous page">

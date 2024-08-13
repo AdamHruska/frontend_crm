@@ -17,9 +17,34 @@ const poznamka = ref("");
 const Investicny_dotaznik = ref("");
 
 // Define emits and props
-const emit = defineEmits(["cancelAdd", "addPerson"]);
+const emit = defineEmits(["cancelAlter", "alterPeson"]);
+const props = defineProps({
+	single_contact: Object,
+});
 
 // Watch for changes in props.single_contact
+watch(
+	() => props.single_contact,
+	(newVal) => {
+		if (newVal) {
+			meno.value = newVal.meno || "";
+			priezvisko.value = newVal.priezvisko || "";
+			poradca.value = newVal.poradca || "";
+			cislo.value = newVal.cislo || "";
+			email.value = newVal.email || "";
+			odporucitel.value = newVal.odporucitel || "";
+			adresa.value = newVal.adresa || "";
+			vek.value = newVal.vek || "";
+			zamestanie.value = newVal.zamestanie || "";
+			poznamka.value = newVal.poznamka || "";
+			Investicny_dotaznik.value = newVal.Investicny_dotaznik || "";
+		} else {
+			// Clear the form if no contact is provided
+			resetForm();
+		}
+	},
+	{ immediate: true }
+);
 
 // Function to clear form fields
 function resetForm() {
@@ -37,12 +62,13 @@ function resetForm() {
 	console.log(meno.value);
 }
 
-function cancelAdd() {
+function cancelAlter() {
 	resetForm();
-	emit("cancelAdd");
+	emit("cancelAlter");
+	console.log("cancelAlter");
 }
 
-function addPerson() {
+function alterPerson() {
 	const person = {
 		meno: meno.value,
 		priezvisko: priezvisko.value,
@@ -56,21 +82,6 @@ function addPerson() {
 		poznamka: poznamka.value,
 		Investicny_dotaznik: Investicny_dotaznik.value,
 	};
-
-	axios
-		.post("http://127.0.0.1:8000/new_contact", person)
-		.then((response) => {
-			console.log("Contact added successfully:", response.data);
-			// Clear the form fields
-			resetForm();
-		})
-		.catch((error) => {
-			console.error(
-				"Error adding contact:",
-				error.response ? error.response.data : error.message
-			);
-		});
-	emit("addPerson");
 }
 </script>
 
@@ -84,11 +95,11 @@ function addPerson() {
 			<div class="">
 				<div class="flex items-center justify-between mb-8">
 					<h2 class="text-2xl font-semibold text-center flex-1">
-						Pridať kontakt
+						Upraviť kontakt
 					</h2>
 					<Icon
 						icon="fa6-solid:xmark"
-						@click="cancelAdd()"
+						@click="cancelAlter()"
 						class="cursor-pointer text-2xl"
 					/>
 				</div>
@@ -273,7 +284,7 @@ function addPerson() {
 			</button>-->
 			<div class="flex justify-center">
 				<button
-					@click="addPerson()"
+					@click="alterPerson()"
 					class="bg-blue-500 text-white w-[75px] py-2 rounded mr-2 hover:bg-blue-400 font-semibold"
 				>
 					Pridať

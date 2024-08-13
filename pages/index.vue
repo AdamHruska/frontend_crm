@@ -1,11 +1,33 @@
 <script setup>
 import { Icon } from "@iconify/vue";
+import axios from "axios";
+
+const single_contact = ref({});
 
 const showAddPersonForm = ref(false);
+const showAlterPesonForm = ref(false);
+const people = ref([]);
 
 function addPerson() {
 	showAddPersonForm.value = !showAddPersonForm.value;
+	console.log("addPerson");
 }
+
+function alterPerson() {
+	showAlterPesonForm.value = !showAlterPesonForm.value;
+	console.log(showAlterPesonForm.value);
+}
+
+const findPerson = async (id) => {
+	const response = await axios.get(`http://127.0.0.1:8000/contact/${id}`);
+	single_contact.value = response.data.contact;
+	alterPerson();
+};
+
+onMounted(async () => {
+	const response = await axios.get("http://127.0.0.1:8000/contacts");
+	people.value = response.data.contacts;
+});
 
 const columns = [
 	{
@@ -62,162 +84,23 @@ const columns = [
 	},
 ];
 
-const people = [
-	{
-		id: 69,
-		meno: "Lindsay WaltonLindsay ",
-		priezvisko: "Front-end Developer",
-		poradca: "lindsay.walton@example.com",
-		cislo: "Member",
-		email: "ahruska4517646@gmail.com",
-		odporucitel: "adam",
-		datum_pridania: "2021-10-10",
-		adresa: "Bratislava",
-		vek: "1999",
-		zamestanie: "student",
-		poznamka: "poznamka",
-		Investicny_dotaznik: "08.10.2021",
-	},
-	{
-		id: 1,
-		meno: "Lindsay WaltonLindsay ",
-		priezvisko: "Front-end Developer",
-		poradca: "lindsay.walton@example.com",
-		cislo: "Member",
-		email: "ahruska4517646@gmail.com",
-		odporucitel: "adam",
-		datum_pridania: "2021-10-10",
-		adresa: "Bratislava",
-		vek: "1999",
-		zamestanie: "student",
-		poznamka: "poznamka",
-		Investicny_dotaznik: "08.10.2021",
-	},
-	{
-		id: 1,
-		meno: "Lindsay WaltonLindsay ",
-		priezvisko: "Front-end Developer",
-		poradca: "lindsay.walton@example.com",
-		cislo: "Member",
-		email: "ahruska4517646@gmail.com",
-		odporucitel: "adam",
-		datum_pridania: "2021-10-10",
-		adresa: "Bratislava",
-		vek: "1999",
-		zamestanie: "student",
-		poznamka: "poznamka",
-		Investicny_dotaznik: "08.10.2021",
-	},
-	{
-		id: 1,
-		meno: "Lindsay WaltonLindsay ",
-		priezvisko: "Front-end Developer",
-		poradca: "lindsay.walton@example.com",
-		cislo: "Member",
-		email: "ahruska4517646@gmail.com",
-		odporucitel: "adam",
-		datum_pridania: "2021-10-10",
-		adresa: "Bratislava",
-		vek: "1999",
-		zamestanie: "student",
-		poznamka: "poznamka",
-		Investicny_dotaznik: "08.10.2021",
-	},
-	{
-		id: 1,
-		meno: "Lindsay WaltonLindsay ",
-		priezvisko: "Front-end Developer",
-		poradca: "lindsay.walton@example.com",
-		cislo: "Member",
-		email: "ahruska4517646@gmail.com",
-		odporucitel: "adam",
-		datum_pridania: "2021-10-10",
-		adresa: "Bratislava",
-		vek: "1999",
-		zamestanie: "student",
-		poznamka: "poznamka",
-		Investicny_dotaznik: "08.10.2021",
-	},
-	{
-		id: 1,
-		meno: "Lindsay WaltonLindsay ",
-		priezvisko: "Front-end Developer",
-		poradca: "lindsay.walton@example.com",
-		cislo: "Member",
-		email: "ahruska4517646@gmail.com",
-		odporucitel: "adam",
-		datum_pridania: "2021-10-10",
-		adresa: "Bratislava",
-		vek: "1999",
-		zamestanie: "student",
-		poznamka: "poznamka",
-		Investicny_dotaznik: "08.10.2021",
-	},
-	{
-		id: 1,
-		meno: "Lindsay WaltonLindsay ",
-		priezvisko: "Front-end Developer",
-		poradca: "lindsay.walton@example.com",
-		cislo: "Member",
-		email: "ahruska4517646@gmail.com",
-		odporucitel: "adam",
-		datum_pridania: "2021-10-10",
-		adresa: "Bratislava",
-		vek: "1999",
-		zamestanie: "student",
-		poznamka: "poznamka",
-		Investicny_dotaznik: "08.10.2021",
-	},
-	{
-		id: 1,
-		meno: "Lindsay WaltonLindsay ",
-		priezvisko: "Front-end Developer",
-		poradca: "lindsay.walton@example.com",
-		cislo: "Member",
-		email: "ahruska4517646@gmail.com",
-		odporucitel: "adam",
-		datum_pridania: "2021-10-10",
-		adresa: "Bratislava",
-		vek: "1999",
-		zamestanie: "student",
-		poznamka: "poznamka",
-		Investicny_dotaznik: "08.10.2021",
-	},
-	{
-		id: 1,
-		meno: "Lindsay WaltonLindsay ",
-		priezvisko: "Front-end Developer",
-		poradca: "lindsay.walton@example.com",
-		cislo: "Member",
-		email: "ahruska4517646@gmail.com",
-		odporucitel: "adam",
-		datum_pridania: "2021-10-10",
-		adresa: "Bratislava",
-		vek: "1999",
-		zamestanie: "student",
-		poznamka: "poznamka",
-		Investicny_dotaznik: "08.10.2021",
-	},
-];
-
 const items = (row) => [
 	[
 		{
 			label: "Edit",
 			icon: "i-heroicons-pencil-square-20-solid",
-			click: () => console.log("Edit", row.id),
+			click: () => findPerson(row.id),
 		},
 	],
 	[
 		{
 			label: "Delete",
 			icon: "i-heroicons-trash-20-solid",
-			click: () => console.log("Delete", row.id),
+			click: () =>
+				axios.delete(`http://127.0.0.1:8000/delete_contacts/${row.id}`),
 		},
 	],
 ];
-
-const selected = ref([people[0]]);
 </script>
 
 <template>
@@ -260,6 +143,12 @@ const selected = ref([people[0]]);
 		v-if="showAddPersonForm"
 		@cancelAdd="addPerson()"
 		@addPerson="addPerson()"
+	/>
+	<AlterPersonForm
+		v-if="showAlterPesonForm"
+		@cancelAlter="alterPerson()"
+		@alterPeson="alterPerson()"
+		:single_contact="single_contact"
 	/>
 </template>
 
