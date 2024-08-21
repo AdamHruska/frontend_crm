@@ -1,6 +1,7 @@
 <script setup>
 import { Icon } from "@iconify/vue";
 import axios from "axios";
+const router = useRouter();
 
 const single_contact = ref({});
 
@@ -28,6 +29,14 @@ onMounted(async () => {
 	const response = await axios.get("http://127.0.0.1:8000/contacts");
 	people.value = response.data.contacts;
 });
+
+const handleSearchResults = (results) => {
+	people.value = results; // Update `people` with search results
+};
+
+const detailView = (id) => {
+	router.push(`/contact/${id}`);
+};
 
 const columns = [
 	{
@@ -87,9 +96,16 @@ const columns = [
 const items = (row) => [
 	[
 		{
+			label: "Detail",
+			icon: "i-heroicons-eye-20-solid",
+			click: () => detailView(row.id),
+		},
+	],
+	[
+		{
 			label: "Edit",
 			icon: "i-heroicons-pencil-square-20-solid",
-			click: () => findPerson(row.id),
+			click: () => findPerson(console.log("edit", row.id)),
 		},
 	],
 	[
@@ -105,14 +121,14 @@ const items = (row) => [
 
 <template>
 	<div class="max-w-sm ml-8 mt-8 mb-2">
-		<searchBar />
+		<searchBar @updateResults="handleSearchResults" />
 	</div>
 
 	<!-- <div class="max-w-lg ml-8 mt-8">
 		<search2 />
 	</div> -->
 	<UTable :rows="people" :columns="columns" class="mx-6 table-container">
-		<template #name-data="{ row }">
+		<template #name-data="{ row }" @click="test">
 			<span
 				:class="[
 					selected.find((person) => person.id === row.id) &&
@@ -132,6 +148,7 @@ const items = (row) => [
 			</UDropdown>
 		</template>
 	</UTable>
+
 	<pagination />
 	<button
 		@click="addPerson()"
@@ -147,12 +164,12 @@ const items = (row) => [
 	<AlterPersonForm
 		v-if="showAlterPesonForm"
 		@cancelAlter="alterPerson()"
-		@alterPeson="alterPerson()"
+		@alterPerson="alterPerson()"
 		:single_contact="single_contact"
 	/>
 </template>
 
-<style>
+<style scoped>
 .table-container {
 	overflow-x: auto;
 }

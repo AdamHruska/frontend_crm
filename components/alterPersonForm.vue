@@ -22,6 +22,8 @@ const props = defineProps({
 	single_contact: Object,
 });
 
+console.log(props.single_contact.id);
+
 // Watch for changes in props.single_contact
 watch(
 	() => props.single_contact,
@@ -68,7 +70,7 @@ function cancelAlter() {
 	console.log("cancelAlter");
 }
 
-function alterPerson() {
+const alterPerson = async (id) => {
 	const person = {
 		meno: meno.value,
 		priezvisko: priezvisko.value,
@@ -82,7 +84,13 @@ function alterPerson() {
 		poznamka: poznamka.value,
 		Investicny_dotaznik: Investicny_dotaznik.value,
 	};
-}
+	const { response } = await axios.put(
+		`http://127.0.0.1:8000/update_contact/${id}`,
+		person
+	);
+	console.log("emit");
+	emit("alterPerson");
+};
 </script>
 
 <template>
@@ -284,10 +292,10 @@ function alterPerson() {
 			</button>-->
 			<div class="flex justify-center">
 				<button
-					@click="alterPerson()"
+					@click="alterPerson(props.single_contact.id)"
 					class="bg-blue-500 text-white w-[75px] py-2 rounded mr-2 hover:bg-blue-400 font-semibold"
 				>
-					Pridať
+					Upraviť
 				</button>
 			</div>
 		</div>

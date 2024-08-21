@@ -1,8 +1,31 @@
 <script setup>
 const searchInput = ref("");
+const searchResults = ref([]);
+import axios from "axios";
+const error = ref("");
 
-const handleSearch = () => {
-	console.log(searchInput.value);
+const emit = defineEmits(["updateResults"]);
+
+const handleSearch = async () => {
+	error.value = ""; // Reset error before making the request
+	try {
+		const response = await axios.get("http://127.0.0.1:8000/search/contact", {
+			params: { query: searchInput.value },
+		});
+
+		// Check if response.data contains contacts
+		if (response.data && response.data.contacts) {
+			searchResults.value = response.data.contacts;
+			emit("updateResults", searchResults.value);
+		} else {
+			console.error("Unexpected response structure:", response.data);
+			error.value = "Unexpected response structure";
+		}
+	} catch (err) {
+		console.error("Error fetching search results:", err);
+		error.value = "Error fetching search results";
+	}
+	console.log(searchResults.value);
 };
 </script>
 
