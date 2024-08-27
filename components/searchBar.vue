@@ -1,4 +1,7 @@
 <script setup>
+import { useAuthStore } from "@/stores/authStore";
+const authStore = useAuthStore();
+authStore.loadToken();
 const searchInput = ref("");
 const searchResults = ref([]);
 import axios from "axios";
@@ -9,9 +12,17 @@ const emit = defineEmits(["updateResults"]);
 const handleSearch = async () => {
 	error.value = ""; // Reset error before making the request
 	try {
-		const response = await axios.get("http://127.0.0.1:8000/search/contact", {
-			params: { query: searchInput.value },
-		});
+		const response = await axios.get(
+			"http://localhost:8000/api/search-contacts",
+			{
+				params: {
+					query: searchInput.value,
+				},
+				headers: {
+					Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+				},
+			}
+		);
 
 		// Check if response.data contains contacts
 		if (response.data && response.data.contacts) {

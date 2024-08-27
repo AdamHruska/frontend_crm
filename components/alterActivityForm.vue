@@ -8,6 +8,8 @@ const props = defineProps({
 	},
 });
 
+console.log("row", props.contact_id);
+
 import { useAuthStore } from "@/stores/authStore";
 const authStore = useAuthStore();
 authStore.loadToken();
@@ -19,48 +21,16 @@ const volane = ref("");
 const dovolane = ref("");
 const dohodnute = ref("");
 
-const emit = defineEmits(["cancelAddActivity", "activityAdded"]);
+const emit = defineEmits(["cancelAlterActivity"]);
 
 const cancelActivity = () => {
-	emit("cancelAddActivity");
+	emit("cancelAlterActivity");
 };
 
 const submitActivity = () => {
 	// api call to submit activity
 	addActivity();
-	emit("cancelAddActivity");
-};
-
-const addActivity = async () => {
-	event.preventDefault();
-	try {
-		const response = await axios.post(
-			`http://localhost:8000/api/add-activity`,
-			{
-				contact_id: props.contact_id,
-				aktivita: aktivita.value,
-				datumCas: datum_cas.value,
-				poznamka: poznamka.value,
-				volane: volane.value,
-				dovolane: dovolane.value,
-				dohodnute: dohodnute.value,
-			},
-			{
-				headers: {
-					Authorization: `Bearer ${authStore.token}`,
-				},
-			}
-		);
-		console.log(response.data.activity);
-
-		// Emit the newly added activity to the parent
-		emit("activityAdded", response.data.activity);
-
-		// Close the form
-		emit("cancelAddActivity");
-	} catch (error) {
-		console.error("Error adding activity:", error);
-	}
+	emit("cancelAlterActivity");
 };
 </script>
 
@@ -199,7 +169,7 @@ const addActivity = async () => {
 			</div>
 
 			<button
-				@click="addActivity()"
+				@click="submitActivity()"
 				class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
 			>
 				Pridať

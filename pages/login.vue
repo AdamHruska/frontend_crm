@@ -1,22 +1,77 @@
 <script setup>
-import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+// import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import axios from "axios";
 const router = useRouter();
 
-const auth = useFirebaseAuth();
+import { useAuthStore } from "@/stores/authStore";
+const authStore = useAuthStore();
 
-definePageMeta({
-	layout: "empty",
-});
+// const auth = useFirebaseAuth();
+const email = ref("");
+const password = ref("");
 
-const login = () => {
+const login = async (email, password) => {
+	event.preventDefault();
+	const response = await axios.post("http://localhost:8000/api/login", {
+		email: email,
+		password: password,
+	});
+	sessionStorage.setItem("token", response.data.authorization.token);
+	authStore.setToken(response.data.authorization.token);
 	router.push("/");
 };
 
-const signInWithGoogle = () => {
-	signInWithPopup(auth, new GoogleAuthProvider()).then(() =>
-		router.replace("/")
-	);
-};
+// const getUser = async () => {
+// 	await initializeCsrf(); // Initialize the CSRF token first
+// 	const token = localStorage.getItem("token");
+
+// 	try {
+// 		const response = await axios.get("http://localhost:8000/api/user", {
+// 			headers: {
+// 				Authorization: `Bearer ${token}`,
+// 				"Content-Type": "application/json",
+// 			},
+// 		});
+// 		console.log(response.data);
+// 	} catch (error) {
+// 		console.error(
+// 			"Error fetching user:",
+// 			error.response ? error.response.data : error.message
+// 		);
+// 	}
+// };
+
+// const signInWithGoogle = () => {
+// 	signInWithPopup(auth, new GoogleAuthProvider()).then(() =>
+// 		router.replace("/")
+// 	);
+// };
+
+// const register = async (name, email, password, password_confirmation) => {
+// 	try {
+// 		const response = await axios.post("http://localhost:8000/register", {
+// 			name: name,
+// 			email: email,
+// 			password: password,
+// 			password_confirmation: password_confirmation,
+// 		});
+
+// 		// Registration successful, handle response
+// 		console.log("User registered successfully:", response.data);
+
+// 		// If using tokens for authentication, store the token in localStorage or sessionStorage
+// 		localStorage.setItem("token", response.data.token);
+
+// 		// You can also redirect the user after successful registration
+// 		router.push("/");
+// 	} catch (error) {
+// 		// Handle registration error
+// 		console.error(
+// 			"Error during registration:",
+// 			error.response ? error.response.data : error.message
+// 		);
+// 	}
+// };
 </script>
 
 <template>
@@ -42,6 +97,7 @@ const signInWithGoogle = () => {
 						>
 						<input
 							id="email"
+							v-model="email"
 							name="email"
 							type="email"
 							autocomplete="email"
@@ -57,6 +113,7 @@ const signInWithGoogle = () => {
 						>
 						<input
 							id="password"
+							v-model="password"
 							name="password"
 							type="password"
 							autocomplete="current-password"
@@ -87,8 +144,7 @@ const signInWithGoogle = () => {
 				</div>
 				<div>
 					<button
-						@click="login"
-						type="submit"
+						@click="login(email, password)"
 						class="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
 					>
 						Prihlásiť

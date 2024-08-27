@@ -1,17 +1,38 @@
 <script setup>
 const emit = defineEmits(["cancelSignOut"], ["confirmSignOut"]);
-const auth = useFirebaseAuth();
-const user = useCurrentUser();
-import { signOut } from "firebase/auth";
+import axios from "axios";
+const router = useRouter();
+
+import { useAuthStore } from "@/stores/authStore";
+
+const authStore = useAuthStore();
 
 function cancelSignOut() {
 	emit("cancelSignOut");
 }
 
 function confirmSignOut() {
-	signOut(auth);
+	logout();
 	emit("cancelSignOut");
 }
+
+//sessionStorage.getItem("token")
+
+const logout = async () => {
+	await axios.post(
+		"http://localhost:8000/api/logout",
+		{},
+		{
+			headers: {
+				Authorization: `Bearer ${authStore.token}`,
+			},
+		}
+	);
+	authStore.clearToken();
+	sessionStorage.removeItem("token");
+	console.log("Logged out");
+	router.push("/login");
+};
 </script>
 
 <template>
@@ -19,9 +40,6 @@ function confirmSignOut() {
 		class="fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center"
 	>
 		<div class="bg-white p-4 w-[300px] h-[150px] rounded-lg shadow-lg">
-			<h3 class="text-black text-lg font-semibold text-center">
-				{{ user.displayName.split(" ")[0] }}
-			</h3>
 			<p class="text-lg font-semibold mb-4 text-black text-center mt-1">
 				Do you want to sign out?
 			</p>

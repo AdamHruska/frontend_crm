@@ -1,8 +1,9 @@
 <template>
-	<div class="flex">
+	<div :class="['flex', !isAuthenticated ? 'bg-slate-900' : '']">
 		<!-- Sidebar -->
 		<div
 			class="flex flex-col h-screen w-16 overflow-hidden text-gray-400 bg-gray-900 fixed top-0 left-0"
+			v-if="isAuthenticated"
 		>
 			<!-- Logo or Top Icon -->
 			<a class="flex items-center justify-center mt-3" href="#">
@@ -85,11 +86,7 @@
 						d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
 					/>
 				</svg>-->
-				<img
-					:src="user?.photoURL"
-					alt="Photo of user"
-					class="w-12 h-12 rounded-full"
-				/>
+				<Icon icon="fa6-solid:circle-arrow-right" style="font-size: 22px" />
 			</div>
 		</div>
 
@@ -106,8 +103,15 @@
 </template>
 
 <script setup>
+import { useAuthStore } from "@/stores/authStore";
 import { Icon } from "@iconify/vue";
-// Script setup (if needed)
+
+const authStore = useAuthStore();
+authStore.loadLoginState();
+
+// Make isAuthenticated reactive using computed
+const isAuthenticated = computed(() => authStore.isAuthenticated);
+
 defineProps(["user"]);
 
 var showSignOutFormBool = ref(false);

@@ -3,6 +3,12 @@ import { ref, watch } from "vue";
 import axios from "axios";
 import { Icon } from "@iconify/vue";
 
+import { useAuthStore } from "@/stores/authStore";
+const authStore = useAuthStore();
+
+authStore.loadToken();
+
+// const users = ref([]);
 // Define refs for form fields
 const meno = ref("");
 const priezvisko = ref("");
@@ -15,6 +21,8 @@ const vek = ref("");
 const zamestanie = ref("");
 const poznamka = ref("");
 const Investicny_dotaznik = ref("");
+const author_id = ref("");
+// const selectedAuthorId = ref("");
 
 // Define emits and props
 const emit = defineEmits(["cancelAdd", "addPerson"]);
@@ -42,11 +50,10 @@ function cancelAdd() {
 	emit("cancelAdd");
 }
 
-function addPerson() {
+const addPerson = async () => {
 	const person = {
 		meno: meno.value,
 		priezvisko: priezvisko.value,
-		poradca: poradca.value,
 		cislo: cislo.value,
 		email: email.value,
 		odporucitel: odporucitel.value,
@@ -55,23 +62,70 @@ function addPerson() {
 		zamestanie: zamestanie.value,
 		poznamka: poznamka.value,
 		Investicny_dotaznik: Investicny_dotaznik.value,
+		author_id: author_id.value,
 	};
 
-	axios
-		.post("http://127.0.0.1:8000/new_contact", person)
-		.then((response) => {
-			console.log("Contact added successfully:", response.data);
-			// Clear the form fields
-			resetForm();
-		})
-		.catch((error) => {
-			console.error(
-				"Error adding contact:",
-				error.response ? error.response.data : error.message
-			);
-		});
-	emit("addPerson");
-}
+	const response = await axios.post(
+		"http://localhost:8000/api/post-create-contact",
+		person,
+		{
+			headers: {
+				Authorization: `Bearer ${authStore.token}`,
+			},
+		}
+	);
+	if (response.data.status == "201") {
+		console.log("Contact added successfully:", response.data.contact);
+		emit("addPerson", response.data.contact);
+	}
+	//console.log("Contact added successfully:", response.data.contact);
+	// emit("addPerson");
+};
+
+// function addPerson() {
+// 	const person = {
+// 		meno: meno.value,
+// 		priezvisko: priezvisko.value,
+// 		cislo: cislo.value,
+// 		email: email.value,
+// 		odporucitel: odporucitel.value,
+// 		adresa: adresa.value,
+// 		vek: vek.value,
+// 		zamestanie: zamestanie.value,
+// 		poznamka: poznamka.value,
+// 		Investicny_dotaznik: Investicny_dotaznik.value,
+// 		author_id: author_id.value,
+// 	};
+
+// 	axios
+// 		.post("http://localhost:8000/api/post-create-contact", person, {
+// 			headers: {
+// 				Authorization: `Bearer ${authStore.token}`,
+// 			},
+// 		})
+// 		.then((response) => {
+// 			console.log("Contact added successfully:", response.data);
+// 			// Clear the form fields
+// 			resetForm();
+// 		})
+// 		.catch((error) => {
+// 			console.error(
+// 				"Error adding contact:",
+// 				error.response ? error.response.data : error.message
+// 			);
+// 		});
+// 	emit("addPerson");
+// }
+
+// onMounted(async () => {
+// 	const response = await axios.get("http://localhost:8000/api/get-users", {
+// 		headers: {
+// 			Authorization: `Bearer ${authStore.token}`,
+// 		},
+// 	});
+// 	users.value = response.data.users;
+// 	console.log(users.value);
+// });
 </script>
 
 <template>
@@ -96,7 +150,10 @@ function addPerson() {
 				<form @submit.prevent="handleSubmit">
 					<div class="w-full px-10">
 						<!-- Flex container for each row of inputs -->
-						<div class="flex gap-16 mb-9">
+						<div class="flex gap-16 mb-9 relative">
+							<label v-if="meno" class="text-gray-400 absolute top-[-22px]"
+								>Meno</label
+							>
 							<div class="flex-1">
 								<input
 									v-model="meno"
@@ -107,6 +164,11 @@ function addPerson() {
 								/>
 							</div>
 							<div class="flex-1">
+								<label
+									v-if="priezvisko"
+									class="text-gray-400 absolute top-[-22px]"
+									>Priezvisko</label
+								>
 								<input
 									v-model="priezvisko"
 									id="priezvisko"
@@ -117,17 +179,24 @@ function addPerson() {
 							</div>
 						</div>
 
-						<div class="flex gap-16 mb-9">
-							<div class="flex-1">
-								<input
-									v-model="poradca"
-									id="poradca"
-									type="text"
-									class="w-full"
-									placeholder="Poradca"
-								/>
-							</div>
-							<div class="flex-1">
+						<div class="mb-9 w-[46%] ml-0 relative">
+							<!-- PORADCA na vyber -->
+							<!-- <div class="flex-1">
+								<label for="poradca" class="text-gray-400">Poradca</label>
+								<select
+									v-model="selectedAuthorId"
+									id="author_id"
+									class="w-full bg-gray-700 text-white rounded-lg"
+								>
+									<option v-for="user in users" :key="user.id" :value="user.id">
+										{{ user.first_name }} {{ user.last_name }}
+									</option>
+								</select>
+							</div> -->
+							<div class="flex-1 w-full">
+								<label v-if="cislo" class="text-gray-400 absolute top-[-22px]"
+									>Telefónne číslo</label
+								>
 								<input
 									v-model="cislo"
 									id="cislo"
@@ -138,8 +207,11 @@ function addPerson() {
 							</div>
 						</div>
 
-						<div class="flex gap-16 mb-9">
+						<div class="flex gap-16 mb-9 relative">
 							<div class="flex-1">
+								<label v-if="email" class="text-gray-400 absolute top-[-22px]"
+									>Email</label
+								>
 								<input
 									v-model="email"
 									id="emial"
@@ -149,6 +221,11 @@ function addPerson() {
 								/>
 							</div>
 							<div class="flex-1">
+								<label
+									v-if="odporucitel"
+									class="text-gray-400 absolute top-[-22px]"
+									>Odporučiteľ</label
+								>
 								<input
 									v-model="odporucitel"
 									id="odporucitel"
@@ -159,7 +236,7 @@ function addPerson() {
 							</div>
 						</div>
 
-						<div class="flex gap-16 mb-9">
+						<div class="flex gap-16 mb-9 relative">
 							<div class="flex-1">
 								<label for="Investicny_dotaznik" class="absolute text-gray-400"
 									>Investicný dotazník vyplnený</label
@@ -173,6 +250,9 @@ function addPerson() {
 								/>
 							</div>
 							<div class="flex-1">
+								<label v-if="adresa" class="text-gray-400 absolute top-[-22px]"
+									>Adresa</label
+								>
 								<input
 									v-model="adresa"
 									id="adresa"
@@ -183,17 +263,25 @@ function addPerson() {
 							</div>
 						</div>
 
-						<div class="flex gap-16 mb-4">
+						<div class="flex gap-16 mb-4 relative">
 							<div class="flex-1">
+								<label v-if="vek" class="text-gray-400 absolute top-[-22px]"
+									>Vek</label
+								>
 								<input
 									v-model="vek"
 									id="rok_narodenia"
 									type="text"
 									class="w-full"
-									placeholder="Vek (rok narodenia)"
+									placeholder="Vek"
 								/>
 							</div>
 							<div class="flex-1">
+								<label
+									v-if="zamestanie"
+									class="text-gray-400 absolute top-[-22px]"
+									>Zamestnanie</label
+								>
 								<input
 									v-model="zamestanie"
 									id="zamestanie"
@@ -204,7 +292,10 @@ function addPerson() {
 							</div>
 						</div>
 
-						<div class="mb-6">
+						<div class="mb-6 mt-6 relative">
+							<label v-if="poznamka" class="text-gray-400 absolute top-[-22px]"
+								>poznámka</label
+							>
 							<textarea
 								v-model="poznamka"
 								id="poznamka"

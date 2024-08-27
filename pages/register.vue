@@ -1,12 +1,46 @@
 <script setup>
+import axios from "axios";
+import { useAuthStore } from "@/stores/authStore";
+
+const authStore = useAuthStore();
+
 const router = useRouter();
+
+const first_name = ref("");
+const last_name = ref("");
+const email = ref("");
+const password = ref("");
+
+const token = ref("");
 
 definePageMeta({
 	layout: "empty",
 });
+// (first_name, last_name, email, password)
+const register = async () => {
+	event.preventDefault();
+	try {
+		const response = await axios.post("http://localhost:8000/api/register", {
+			username: first_name.value + " " + last_name.value,
+			first_name: first_name.value,
+			last_name: last_name.value,
+			email: email.value,
+			password: password.value,
+		});
+		token.value = response.data.authorization.token;
 
-const register = () => {
-	router.push("/");
+		sessionStorage.setItem("token", response.data.token);
+		authStore.setToken(token.value);
+
+		console.log("User registered successfully:", authStore.token);
+
+		router.push("/");
+	} catch (error) {
+		console.error(
+			"Error during registration:",
+			error.response ? error.response.data : error.message
+		);
+	}
 };
 </script>
 
@@ -32,6 +66,8 @@ const register = () => {
 							>Meno</label
 						>
 						<input
+							type="text"
+							v-model="first_name"
 							id="meno"
 							name="meno"
 							required
@@ -45,21 +81,9 @@ const register = () => {
 							>Priezvisko</label
 						>
 						<input
+							v-model="last_name"
 							id="priezvisko"
 							name="priezvisko"
-							required
-							class="appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 text-gray-300 bg-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-						/>
-					</div>
-					<div class="mb-4">
-						<label for="telc" class="block text-sm font-medium text-gray-400"
-							>Telefónne číslo</label
-						>
-						<input
-							id="telc"
-							name="telc"
-							type="tel"
-							autocomplete="tel"
 							required
 							class="appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 text-gray-300 bg-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
 						/>
@@ -69,6 +93,7 @@ const register = () => {
 							>Emailová adresa</label
 						>
 						<input
+							v-model="email"
 							id="email"
 							name="email"
 							type="email"
@@ -84,6 +109,7 @@ const register = () => {
 							>Heslo</label
 						>
 						<input
+							v-model="password"
 							id="password"
 							name="password"
 							type="password"
@@ -110,12 +136,6 @@ const register = () => {
 					<button
 						@click="register"
 						type="submit"
-						class="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-					>
-						Registrovať
-					</button>
-					<button
-						@click="signInWithGoogle"
 						class="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
 					>
 						Registrovať

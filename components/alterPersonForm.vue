@@ -3,6 +3,14 @@ import { ref, watch } from "vue";
 import axios from "axios";
 import { Icon } from "@iconify/vue";
 
+const users = ref([]);
+
+function calculateAge(yearOfBirth) {
+	const currentYear = new Date().getFullYear();
+	const age = currentYear - yearOfBirth;
+	return age;
+}
+
 // Define refs for form fields
 const meno = ref("");
 const priezvisko = ref("");
@@ -11,10 +19,11 @@ const cislo = ref("");
 const email = ref("");
 const odporucitel = ref("");
 const adresa = ref("");
-const vek = ref("");
+const rok_narodenia = ref("");
 const zamestanie = ref("");
 const poznamka = ref("");
 const Investicny_dotaznik = ref("");
+const selectedAuthorId = ref("");
 
 // Define emits and props
 const emit = defineEmits(["cancelAlter", "alterPeson"]);
@@ -22,7 +31,20 @@ const props = defineProps({
 	single_contact: Object,
 });
 
-console.log(props.single_contact.id);
+console.log(props.single_contact);
+
+onMounted(async () => {
+	const response = await axios
+		.get("http://localhost:8000/api/get-users", {
+			headers: {
+				Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+			},
+		})
+		.then((response) => {
+			users.value = response.data.users;
+		});
+	console.log(users.value);
+});
 
 // Watch for changes in props.single_contact
 watch(
@@ -36,10 +58,13 @@ watch(
 			email.value = newVal.email || "";
 			odporucitel.value = newVal.odporucitel || "";
 			adresa.value = newVal.adresa || "";
-			vek.value = newVal.vek || "";
+			rok_narodenia.value = calculateAge(
+				newVal.rok_narodenia || new Date().getFullYear()
+			); // Calculate age
 			zamestanie.value = newVal.zamestanie || "";
 			poznamka.value = newVal.poznamka || "";
 			Investicny_dotaznik.value = newVal.Investicny_dotaznik || "";
+			selectedAuthorId.value = newVal.author_id || "";
 		} else {
 			// Clear the form if no contact is provided
 			resetForm();
@@ -57,10 +82,11 @@ function resetForm() {
 	email.value = "";
 	odporucitel.value = "";
 	adresa.value = "";
-	vek.value = "";
+	rok_narodenia.value = "";
 	zamestanie.value = "";
 	poznamka.value = "";
 	Investicny_dotaznik.value = null;
+	selectedAuthorId.value = null;
 	console.log(meno.value);
 }
 
@@ -79,16 +105,22 @@ const alterPerson = async (id) => {
 		email: email.value,
 		odporucitel: odporucitel.value,
 		adresa: adresa.value,
-		vek: vek.value,
+		vek: rok_narodenia.value,
 		zamestanie: zamestanie.value,
 		poznamka: poznamka.value,
 		Investicny_dotaznik: Investicny_dotaznik.value,
+		author_id: selectedAuthorId.value,
 	};
 	const { response } = await axios.put(
-		`http://127.0.0.1:8000/update_contact/${id}`,
-		person
+		`http://localhost:8000/api/post-update-contact/${id}`,
+		person,
+		{
+			headers: {
+				Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+			},
+		}
 	);
-	console.log("emit");
+
 	emit("alterPerson");
 };
 </script>
@@ -115,8 +147,14 @@ const alterPerson = async (id) => {
 				<form @submit.prevent="handleSubmit">
 					<div class="w-full px-10">
 						<!-- Flex container for each row of inputs -->
-						<div class="flex gap-16 mb-9">
+						<div class="flex gap-16 mb-9 relative">
 							<div class="flex-1">
+								<label
+									v-if="meno"
+									for="meno"
+									class="text-gray-400 absolute top-[-22px]"
+									>Meno</label
+								>
 								<input
 									v-model="meno"
 									id="meno"
@@ -126,6 +164,11 @@ const alterPerson = async (id) => {
 								/>
 							</div>
 							<div class="flex-1">
+								<label
+									v-if="priezvisko"
+									class="text-gray-400 absolute top-[-22px]"
+									>Priezvisko</label
+								>
 								<input
 									v-model="priezvisko"
 									id="priezvisko"
@@ -136,8 +179,11 @@ const alterPerson = async (id) => {
 							</div>
 						</div>
 
-						<div class="flex gap-16 mb-9">
+						<div class="flex gap-16 mb-9 relative">
 							<div class="flex-1">
+								<label v-if="poradca" class="text-gray-400 absolute top-[-22px]"
+									>Poradca</label
+								>
 								<input
 									v-model="poradca"
 									id="poradca"
@@ -147,6 +193,9 @@ const alterPerson = async (id) => {
 								/>
 							</div>
 							<div class="flex-1">
+								<label v-if="cislo" class="text-gray-400 absolute top-[-22px]"
+									>Telefónne číslo</label
+								>
 								<input
 									v-model="cislo"
 									id="cislo"
@@ -157,8 +206,11 @@ const alterPerson = async (id) => {
 							</div>
 						</div>
 
-						<div class="flex gap-16 mb-9">
+						<div class="flex gap-16 mb-9 relative">
 							<div class="flex-1">
+								<label v-if="email" class="text-gray-400 absolute top-[-22px]"
+									>email</label
+								>
 								<input
 									v-model="email"
 									id="emial"
@@ -168,6 +220,11 @@ const alterPerson = async (id) => {
 								/>
 							</div>
 							<div class="flex-1">
+								<label
+									v-if="odporucitel"
+									class="text-gray-400 absolute top-[-22px]"
+									>Odporučiteľ</label
+								>
 								<input
 									v-model="odporucitel"
 									id="odporucitel"
@@ -178,7 +235,7 @@ const alterPerson = async (id) => {
 							</div>
 						</div>
 
-						<div class="flex gap-16 mb-9">
+						<div class="flex gap-16 mb-9 relative">
 							<div class="flex-1">
 								<label for="Investicny_dotaznik" class="absolute text-gray-400"
 									>Investicný dotazník vyplnený</label
@@ -192,6 +249,9 @@ const alterPerson = async (id) => {
 								/>
 							</div>
 							<div class="flex-1">
+								<label v-if="adresa" class="text-gray-400 absolute top-[-22px]"
+									>Adresa</label
+								>
 								<input
 									v-model="adresa"
 									id="adresa"
@@ -202,17 +262,27 @@ const alterPerson = async (id) => {
 							</div>
 						</div>
 
-						<div class="flex gap-16 mb-4">
+						<div class="flex gap-16 mb-4 relative">
 							<div class="flex-1">
+								<label
+									v-if="rok_narodenia"
+									class="text-gray-400 absolute top-[-22px]"
+									>Vek</label
+								>
 								<input
-									v-model="vek"
+									v-model="rok_narodenia"
 									id="rok_narodenia"
 									type="text"
 									class="w-full"
-									placeholder="Vek (rok narodenia)"
+									placeholder="Vek"
 								/>
 							</div>
 							<div class="flex-1">
+								<label
+									v-if="zamestanie"
+									class="text-gray-400 absolute top-[-22px]"
+									>Zamestnanie</label
+								>
 								<input
 									v-model="zamestanie"
 									id="zamestanie"
@@ -223,7 +293,10 @@ const alterPerson = async (id) => {
 							</div>
 						</div>
 
-						<div class="mb-6">
+						<div class="mb-6 mt-8 relative">
+							<label v-if="poznamka" class="text-gray-400 absolute top-[-22px]"
+								>Poznamka</label
+							>
 							<textarea
 								v-model="poznamka"
 								id="poznamka"
@@ -231,6 +304,22 @@ const alterPerson = async (id) => {
 								class="w-full"
 								placeholder="Poznámka"
 							/>
+						</div>
+						<div class="flex gap-16 mb-9">
+							<div class="flex-1">
+								<label for="author_id" class="block text-white mb-2"
+									>Zmeniť poradcu</label
+								>
+								<select
+									v-model="selectedAuthorId"
+									id="author_id"
+									class="w-1/3 bg-gray-700 text-white rounded-lg"
+								>
+									<option v-for="user in users" :key="user.id" :value="user.id">
+										{{ user.first_name }} {{ user.last_name }}
+									</option>
+								</select>
+							</div>
 						</div>
 
 						<div class="text-center mb-8"></div>

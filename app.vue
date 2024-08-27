@@ -1,15 +1,15 @@
 <script setup>
-const user = useCurrentUser();
+// const user = useCurrentUser();
 const router = useRouter();
-const auth = useFirebaseAuth();
+// const auth = useFirebaseAuth();
 
-onMounted(() => {
-	watch(user, (currentUser, prevUser) => {
-		if (prevUser && !currentUser) {
-			return router.replace("/login");
-		}
-	});
-});
+// onMounted(() => {
+// 	watch(user, (currentUser, prevUser) => {
+// 		if (prevUser && !currentUser) {
+// 			return router.replace("/login");
+// 		}
+// 	});
+// });
 </script>
 
 <template>
@@ -17,5 +17,8 @@ onMounted(() => {
 		<NuxtLayout :user="user" :auth="auth">
 			<NuxtPage />
 		</NuxtLayout>
+		<!-- <NuxtLayout>
+			<NuxtPage />
+		</NuxtLayout> -->
 	</div>
 </template>

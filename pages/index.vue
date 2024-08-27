@@ -1,6 +1,17 @@
 <script setup>
 import { Icon } from "@iconify/vue";
 import axios from "axios";
+import { format } from "date-fns";
+
+import { useAuthStore } from "@/stores/authStore";
+const authStore = useAuthStore();
+authStore.loadToken();
+const token = ref("");
+
+const next_page_url = ref("");
+const prev_page_url = ref("");
+const page = ref(1);
+
 const router = useRouter();
 
 const single_contact = ref({});
@@ -9,9 +20,16 @@ const showAddPersonForm = ref(false);
 const showAlterPesonForm = ref(false);
 const people = ref([]);
 
-function addPerson() {
+function addPerson(newContact) {
 	showAddPersonForm.value = !showAddPersonForm.value;
-	console.log("addPerson");
+
+	// If newContact is provided, add it to the people array or handle it as needed
+	if (newContact) {
+		people.value.push(newContact);
+		console.log("New contact added:", newContact);
+	}
+
+	console.log("addPerson method triggered in parent");
 }
 
 function alterPerson() {
@@ -20,14 +38,42 @@ function alterPerson() {
 }
 
 const findPerson = async (id) => {
-	const response = await axios.get(`http://127.0.0.1:8000/contact/${id}`);
+	const response = await axios.get(`http://localhost:8000/api/contact/${id}`, {
+		headers: {
+			Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+		},
+	});
 	single_contact.value = response.data.contact;
 	alterPerson();
 };
 
+const deletePerson = async (id) => {
+	const response = await axios.delete(
+		`http://localhost:8000/api/delete-delete-contact/${id}`,
+		{
+			headers: {
+				Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+			},
+		}
+	);
+	console.log(response);
+};
+
+token.value = sessionStorage.getItem("token");
+
 onMounted(async () => {
-	const response = await axios.get("http://127.0.0.1:8000/contacts");
-	people.value = response.data.contacts;
+	console.log("token", token);
+	const response = await axios.get("http://localhost:8000/api/contacts", {
+		headers: {
+			Authorization: `Bearer ${authStore.token}`,
+		},
+	});
+	page.value = response.data.contacts.current_page;
+
+	people.value = response.data.contacts.data;
+	next_page_url.value = response.data.contacts.next_page_url;
+	//console.log(people.value);
+	//console.log(people.value[0].id);
 });
 
 const handleSearchResults = (results) => {
@@ -47,10 +93,10 @@ const columns = [
 		key: "priezvisko",
 		label: "Priezvisko",
 	},
-	{
-		key: "poradca",
-		label: "Poradca",
-	},
+	// {
+	// 	key: "poradca",
+	// 	label: "Poradca",
+	// },
 
 	{
 		key: "cislo",
@@ -64,30 +110,30 @@ const columns = [
 		key: "odporucitel",
 		label: "Odporucitel",
 	},
-	{
-		key: "datum_pridania",
-		label: "Dátum pridania",
-	},
-	{
-		key: "adresa",
-		label: "Adresa",
-	},
-	{
-		key: "vek",
-		label: "Vek(rok narodenia)",
-	},
-	{
-		key: "zamestanie",
-		label: "Zamestnanie",
-	},
-	{
-		key: "poznamka",
-		label: "Poznámka",
-	},
-	{
-		key: "Investicny_dotaznik",
-		label: "Investicny dotazník vyplenený",
-	},
+	// {
+	// 	key: "created_at",
+	// 	label: "Dátum pridania",
+	// },
+	// {
+	// 	key: "adresa",
+	// 	label: "Adresa",
+	// },
+	// {
+	// 	key: "rok_narodenia",
+	// 	label: "Vek",
+	// },
+	// {
+	// 	key: "zamestanie",
+	// 	label: "Zamestnanie",
+	// },
+	// {
+	// 	key: "poznamka",
+	// 	label: "Poznámka",
+	// },
+	// {
+	// 	key: "Investicny_dotaznik",
+	// 	label: "Investicny dotazník vyplenený",
+	// },
 	{
 		key: "actions",
 	},
@@ -105,18 +151,53 @@ const items = (row) => [
 		{
 			label: "Edit",
 			icon: "i-heroicons-pencil-square-20-solid",
-			click: () => findPerson(console.log("edit", row.id)),
+			// click: () => findPerson(console.log(row.id, row.id)),
+			click: () => findPerson(row.id),
 		},
 	],
 	[
 		{
 			label: "Delete",
 			icon: "i-heroicons-trash-20-solid",
-			click: () =>
-				axios.delete(`http://127.0.0.1:8000/delete_contacts/${row.id}`),
+			click: () => deletePerson(row.id),
 		},
 	],
 ];
+
+const formatDate = (dateToFormat) => {
+	const date = new Date(dateToFormat);
+	return format(date, "dd-MM-yyyy");
+};
+
+function calculateAge(yearOfBirth) {
+	const currentYear = new Date().getFullYear();
+	const age = currentYear - yearOfBirth;
+	return age;
+}
+
+const nextPage = async () => {
+	const response = await axios.get(next_page_url.value, {
+		headers: {
+			Authorization: `Bearer ${authStore.token}`,
+		},
+	});
+	page.value = response.data.contacts.current_page;
+	prev_page_url.value = response.data.contacts.prev_page_url;
+	people.value = response.data.contacts.data;
+	next_page_url.value = response.data.contacts.next_page_url;
+};
+
+const prevPage = async () => {
+	const response = await axios.get(prev_page_url.value, {
+		headers: {
+			Authorization: `Bearer ${authStore.token}`,
+		},
+	});
+	page.value = response.data.contacts.current_page;
+	prev_page_url.value = response.data.contacts.prev_page_url;
+	people.value = response.data.contacts.data;
+	next_page_url.value = response.data.contacts.next_page_url;
+};
 </script>
 
 <template>
@@ -138,6 +219,14 @@ const items = (row) => [
 			>
 		</template>
 
+		<template #created_at-data="{ row }">
+			<span>{{ formatDate(row.created_at) }}</span>
+		</template>
+
+		<template #rok_narodenia-data="{ row }">
+			<span>{{ calculateAge(row.rok_narodenia) }}</span>
+		</template>
+
 		<template #actions-data="{ row }">
 			<UDropdown :items="items(row)">
 				<UButton
@@ -149,7 +238,25 @@ const items = (row) => [
 		</template>
 	</UTable>
 
-	<pagination />
+	<!-- <pagination /> -->
+	<div class="flex gap-[45px] justify-center mt-[30px]">
+		<div class="cursor-pointer" @click="prevPage()">
+			<Icon
+				class="hover:size-[38px]"
+				icon="fa6-solid:circle-arrow-left"
+				style="font-size: 35px; color: #0074b7"
+			/>
+		</div>
+		<div class="font-semibold text-xl">{{ page }}</div>
+		<div class="cursor-pointer" @click="nextPage()">
+			<Icon
+				class="hover:size-[38px]"
+				icon="fa6-solid:circle-arrow-right"
+				style="font-size: 35px; color: #0074b7"
+			/>
+		</div>
+	</div>
+
 	<button
 		@click="addPerson()"
 		class="float-right mr-12 mt-3 align-center py-3 px-6 bg-blue-600 rounded-lg hover:bg-blue-300 hover:text-black"
@@ -159,7 +266,7 @@ const items = (row) => [
 	<AddPersonForm
 		v-if="showAddPersonForm"
 		@cancelAdd="addPerson()"
-		@addPerson="addPerson()"
+		@addPerson="addPerson"
 	/>
 	<AlterPersonForm
 		v-if="showAlterPesonForm"
