@@ -1,14 +1,27 @@
 <script setup>
+import { ref, watch } from "vue";
 import { useAuthStore } from "@/stores/authStore";
+import axios from "axios";
+
 const authStore = useAuthStore();
 authStore.loadToken();
+
 const searchInput = ref("");
 const searchResults = ref([]);
-import axios from "axios";
 const error = ref("");
 
 const emit = defineEmits(["updateResults"]);
 
+// Debounce logic: Creates a delay before calling handleSearch to avoid too many API calls
+let timeout;
+const debounceSearch = (func, delay) => {
+	return (...args) => {
+		clearTimeout(timeout);
+		timeout = setTimeout(() => func.apply(this, args), delay);
+	};
+};
+
+// Handle search function
 const handleSearch = async () => {
 	error.value = ""; // Reset error before making the request
 	try {
@@ -38,10 +51,13 @@ const handleSearch = async () => {
 	}
 	console.log(searchResults.value);
 };
+
+// Watch for changes in the searchInput and trigger a debounced search
+watch(searchInput, debounceSearch(handleSearch, 200));
 </script>
 
 <template>
-	<div class="relative" @keydown.enter="handleSearch">
+	<div class="relative">
 		<div
 			class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none"
 		>

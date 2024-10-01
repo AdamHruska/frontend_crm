@@ -26,7 +26,7 @@ const Investicny_dotaznik = ref("");
 const selectedAuthorId = ref("");
 
 // Define emits and props
-const emit = defineEmits(["cancelAlter", "alterPeson"]);
+const emit = defineEmits(["cancelAlter", "alterPerson"]);
 const props = defineProps({
 	single_contact: Object,
 });
@@ -111,7 +111,7 @@ const alterPerson = async (id) => {
 		Investicny_dotaznik: Investicny_dotaznik.value,
 		author_id: selectedAuthorId.value,
 	};
-	const { response } = await axios.put(
+	const response = await axios.put(
 		`http://localhost:8000/api/post-update-contact/${id}`,
 		person,
 		{
@@ -120,8 +120,8 @@ const alterPerson = async (id) => {
 			},
 		}
 	);
-
-	emit("alterPerson");
+	//console.log(response.data.contact);
+	emit("alterPerson", response.data.contact);
 };
 </script>
 

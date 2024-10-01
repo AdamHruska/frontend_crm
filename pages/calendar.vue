@@ -1,3 +1,13 @@
+<script setup></script>
+
 <template>
-	<div class="m-12">calendar comming soon</div>
+	<FullCalendar />
 </template>
+
+<style scoped>
+.background {
+	height: 100vh;
+	width: 100vw;
+	background-color: white;
+}
+</style>

@@ -1,373 +1,208 @@
 <script setup>
 import { ref, watch } from "vue";
 import axios from "axios";
+import Cookies from "js-cookie";
 import { Icon } from "@iconify/vue";
-
 import { useAuthStore } from "@/stores/authStore";
-const authStore = useAuthStore();
 
+const authStore = useAuthStore();
 authStore.loadToken();
 
-// const users = ref([]);
-// Define refs for form fields
-const meno = ref("");
-const priezvisko = ref("");
-const poradca = ref("");
-const cislo = ref("");
-const email = ref("");
-const odporucitel = ref("");
-const adresa = ref("");
-const vek = ref("");
-const zamestanie = ref("");
-const poznamka = ref("");
-const Investicny_dotaznik = ref("");
-const author_id = ref("");
-// const selectedAuthorId = ref("");
+const users = ref([
+	{
+		meno: "",
+		priezvisko: "",
+		cislo: "",
+		email: "",
+		odporucitel: "",
+		adresa: "",
+		vek: "",
+		zamestanie: "",
+		poznamka: "",
+	},
+]);
 
-// Define emits and props
-const emit = defineEmits(["cancelAdd", "addPerson"]);
+const odporucitelInput = ref(""); // New variable for top input
 
-// Watch for changes in props.single_contact
+// Emit events to parent component
+const emit = defineEmits(["cancelAdd", "addPeople"]);
 
-// Function to clear form fields
-function resetForm() {
-	meno.value = "";
-	priezvisko.value = "";
-	poradca.value = "";
-	cislo.value = "";
-	email.value = "";
-	odporucitel.value = "";
-	adresa.value = "";
-	vek.value = "";
-	zamestanie.value = "";
-	poznamka.value = "";
-	Investicny_dotaznik.value = null;
-	console.log(meno.value);
+// Function to add a new person (max 10 people)
+function addRow() {
+	if (users.value.length < 10) {
+		users.value.push({
+			meno: "",
+			priezvisko: "",
+			cislo: "",
+			email: "",
+			odporucitel: "",
+			adresa: "",
+			vek: "",
+			zamestanie: "",
+			poznamka: "",
+		});
+	}
 }
 
+// Function to reset the form
+function resetForm() {
+	users.value = [
+		{
+			meno: "",
+			priezvisko: "",
+			cislo: "",
+			email: "",
+			odporucitel: "",
+			adresa: "",
+			vek: "",
+			zamestanie: "",
+			poznamka: "",
+		},
+	];
+}
+
+// Function to handle cancel
 function cancelAdd() {
 	resetForm();
 	emit("cancelAdd");
 }
 
-const addPerson = async () => {
-	const person = {
-		meno: meno.value,
-		priezvisko: priezvisko.value,
-		cislo: cislo.value,
-		email: email.value,
-		odporucitel: odporucitel.value,
-		adresa: adresa.value,
-		vek: vek.value,
-		zamestanie: zamestanie.value,
-		poznamka: poznamka.value,
-		Investicny_dotaznik: Investicny_dotaznik.value,
-		author_id: author_id.value,
-	};
+// Save all users data to cookies as they type
+function saveToCookies() {
+	Cookies.set("users", JSON.stringify(users.value));
+}
 
-	const response = await axios.post(
-		"http://localhost:8000/api/post-create-contact",
-		person,
-		{
-			headers: {
-				Authorization: `Bearer ${authStore.token}`,
-			},
+// Watch users array and save changes to cookies
+watch(users, saveToCookies, { deep: true });
+
+// Watch for changes in the odporucitelInput and update users
+watch(odporucitelInput, (newVal) => {
+	users.value.forEach((user) => {
+		user.odporucitel = newVal;
+	});
+});
+
+// Function to submit all users
+const addPeople = async () => {
+	const people = users.value;
+	try {
+		for (let person of people) {
+			await axios.post(
+				"http://localhost:8000/api/post-create-contact",
+				person,
+				{
+					headers: {
+						Authorization: `Bearer ${authStore.token}`,
+					},
+				}
+			);
 		}
-	);
-	if (response.data.status == "201") {
-		console.log("Contact added successfully:", response.data.contact);
-		emit("addPerson", response.data.contact);
+		Cookies.remove("users");
+		emit("addPeople", people);
+		resetForm();
+	} catch (error) {
+		console.error("Error adding people:", error);
 	}
-	//console.log("Contact added successfully:", response.data.contact);
-	// emit("addPerson");
 };
-
-// function addPerson() {
-// 	const person = {
-// 		meno: meno.value,
-// 		priezvisko: priezvisko.value,
-// 		cislo: cislo.value,
-// 		email: email.value,
-// 		odporucitel: odporucitel.value,
-// 		adresa: adresa.value,
-// 		vek: vek.value,
-// 		zamestanie: zamestanie.value,
-// 		poznamka: poznamka.value,
-// 		Investicny_dotaznik: Investicny_dotaznik.value,
-// 		author_id: author_id.value,
-// 	};
-
-// 	axios
-// 		.post("http://localhost:8000/api/post-create-contact", person, {
-// 			headers: {
-// 				Authorization: `Bearer ${authStore.token}`,
-// 			},
-// 		})
-// 		.then((response) => {
-// 			console.log("Contact added successfully:", response.data);
-// 			// Clear the form fields
-// 			resetForm();
-// 		})
-// 		.catch((error) => {
-// 			console.error(
-// 				"Error adding contact:",
-// 				error.response ? error.response.data : error.message
-// 			);
-// 		});
-// 	emit("addPerson");
-// }
-
-// onMounted(async () => {
-// 	const response = await axios.get("http://localhost:8000/api/get-users", {
-// 		headers: {
-// 			Authorization: `Bearer ${authStore.token}`,
-// 		},
-// 	});
-// 	users.value = response.data.users;
-// 	console.log(users.value);
-// });
 </script>
 
 <template>
 	<div
 		class="fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center z-50"
 	>
-		<div
-			class="bg-slate-800 p-4 min-w-[1024px] min-h-[70vh] rounded-lg shadow-lg"
-		>
-			<div class="">
-				<div class="flex items-center justify-between mb-8">
-					<h2 class="text-2xl font-semibold text-center flex-1">
-						Pridať kontakt
-					</h2>
-					<Icon
-						icon="fa6-solid:xmark"
-						@click="cancelAdd()"
-						class="cursor-pointer text-2xl"
-					/>
+		<div class="bg-slate-800 p-4 min-w-[1024px] rounded-lg shadow-lg h-[650px]">
+			<div class="flex items-center justify-between mb-4">
+				<div class="flex justify-center items-center gap-4">
+					<h3>Odporučiteľ:</h3>
+					<input class="border bg-gray-700" v-model="odporucitelInput" />
+					<!-- Bind to the new variable -->
 				</div>
 
-				<form @submit.prevent="handleSubmit">
-					<div class="w-full px-10">
-						<!-- Flex container for each row of inputs -->
-						<div class="flex gap-16 mb-9 relative">
-							<label v-if="meno" class="text-gray-400 absolute top-[-22px]"
-								>Meno</label
-							>
-							<div class="flex-1">
-								<input
-									v-model="meno"
-									id="meno"
-									type="text"
-									class="w-full"
-									placeholder="Meno"
-								/>
-							</div>
-							<div class="flex-1">
-								<label
-									v-if="priezvisko"
-									class="text-gray-400 absolute top-[-22px]"
-									>Priezvisko</label
-								>
-								<input
-									v-model="priezvisko"
-									id="priezvisko"
-									type="text"
-									class="w-full"
-									placeholder="Priezvisko"
-								/>
-							</div>
-						</div>
-
-						<div class="mb-9 w-[46%] ml-0 relative">
-							<!-- PORADCA na vyber -->
-							<!-- <div class="flex-1">
-								<label for="poradca" class="text-gray-400">Poradca</label>
-								<select
-									v-model="selectedAuthorId"
-									id="author_id"
-									class="w-full bg-gray-700 text-white rounded-lg"
-								>
-									<option v-for="user in users" :key="user.id" :value="user.id">
-										{{ user.first_name }} {{ user.last_name }}
-									</option>
-								</select>
-							</div> -->
-							<div class="flex-1 w-full">
-								<label v-if="cislo" class="text-gray-400 absolute top-[-22px]"
-									>Telefónne číslo</label
-								>
-								<input
-									v-model="cislo"
-									id="cislo"
-									type="text"
-									class="w-full"
-									placeholder="Telefónne číslo"
-								/>
-							</div>
-						</div>
-
-						<div class="flex gap-16 mb-9 relative">
-							<div class="flex-1">
-								<label v-if="email" class="text-gray-400 absolute top-[-22px]"
-									>Email</label
-								>
-								<input
-									v-model="email"
-									id="emial"
-									type="email"
-									class="w-full"
-									placeholder="email"
-								/>
-							</div>
-							<div class="flex-1">
-								<label
-									v-if="odporucitel"
-									class="text-gray-400 absolute top-[-22px]"
-									>Odporučiteľ</label
-								>
-								<input
-									v-model="odporucitel"
-									id="odporucitel"
-									type="text"
-									class="w-full"
-									placeholder="Odporučiteľ"
-								/>
-							</div>
-						</div>
-
-						<div class="flex gap-16 mb-9 relative">
-							<div class="flex-1">
-								<label for="Investicny_dotaznik" class="absolute text-gray-400"
-									>Investicný dotazník vyplnený</label
-								>
-								<input
-									id="Investicny_dotaznik"
-									type="date"
-									class="w-full pl-[280px] text-gray-400"
-									v-model="Investicny_dotaznik"
-									:class="{ 'text-white': Investicny_dotaznik }"
-								/>
-							</div>
-							<div class="flex-1">
-								<label v-if="adresa" class="text-gray-400 absolute top-[-22px]"
-									>Adresa</label
-								>
-								<input
-									v-model="adresa"
-									id="adresa"
-									type="text"
-									class="w-full"
-									placeholder="Adresa"
-								/>
-							</div>
-						</div>
-
-						<div class="flex gap-16 mb-4 relative">
-							<div class="flex-1">
-								<label v-if="vek" class="text-gray-400 absolute top-[-22px]"
-									>Vek</label
-								>
-								<input
-									v-model="vek"
-									id="rok_narodenia"
-									type="text"
-									class="w-full"
-									placeholder="Vek"
-								/>
-							</div>
-							<div class="flex-1">
-								<label
-									v-if="zamestanie"
-									class="text-gray-400 absolute top-[-22px]"
-									>Zamestnanie</label
-								>
-								<input
-									v-model="zamestanie"
-									id="zamestanie"
-									type="text"
-									class="w-full"
-									placeholder="Zamestanie"
-								/>
-							</div>
-						</div>
-
-						<div class="mb-6 mt-6 relative">
-							<label v-if="poznamka" class="text-gray-400 absolute top-[-22px]"
-								>poznámka</label
-							>
-							<textarea
-								v-model="poznamka"
-								id="poznamka"
-								type="text"
-								class="w-full"
-								placeholder="Poznámka"
-							/>
-						</div>
-
-						<div class="text-center mb-8"></div>
-					</div>
-				</form>
+				<h2
+					class="text-2xl font-semibold absolute left-1/2 transform -translate-x-1/2"
+				>
+					Pridať kontakty
+				</h2>
+				<Icon
+					icon="fa6-solid:xmark"
+					@click="cancelAdd()"
+					class="cursor-pointer text-2xl"
+				/>
 			</div>
-			<!--<UTable :columns="columns" :rows="people" class="mx-2 mb-6">
-			
-				<template #id-data="{ row }">
-					<input
-						v-model="row.id"
-						type="text"
-						class="border border-gray-300 rounded-md p-2 w-full"
-						placeholder="ID"
-					/>
-				</template>
-
-				<template #name-data="{ row }">
-					<input
-						v-model="row.name"
-						type="text"
-						class="border border-gray-300 rounded-md p-2 w-full"
-						placeholder="Name"
-					/>
-				</template>
-
-				<template #title-data="{ row }">
-					<input
-						v-model="row.title"
-						type="text"
-						class="border border-gray-300 rounded-md p-2 w-full"
-						placeholder="Title"
-					/>
-				</template>
-
-				<template #email-data="{ row }">
-					<input
-						v-model="row.email"
-						type="text"
-						class="border border-gray-300 rounded-md p-2 w-full"
-						placeholder="Email"
-					/>
-				</template>
-
-				<template #role-data="{ row }">
-					<input
-						v-model="row.role"
-						type="text"
-						class="border border-gray-300 rounded-md p-2 w-full"
-						placeholder="Role"
-					/>
-				</template>
-			</UTable>
 			<button
 				@click="addRow"
-				class="float-right mr-7 absolute right-[170px] bg-green-500 px-3 py-1 rounded-md"
+				:disabled="users.length >= 10"
+				class="bg-green-500 text-white px-4 py-2 mb-6 mt-4 rounded hover:bg-green-400"
 			>
-				Add row
-			</button>-->
-			<div class="flex justify-center">
+				Pridať riadok
+			</button>
+			<!-- Table for entering user data -->
+			<table class="min-w-full table-auto text-sm mb-4">
+				<thead>
+					<tr class="text-gray-400">
+						<th>Meno</th>
+						<th>Priezvisko</th>
+						<th>Číslo</th>
+						<th>Email</th>
+						<th>Odporúčiteľ</th>
+						<th>Adresa</th>
+						<th>Vek</th>
+						<th>Zamestnanie</th>
+						<th>Poznámka</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr v-for="(user, index) in users" :key="index" class="text-white">
+						<td>
+							<input v-model="user.meno" class="border bg-gray-700 w-full" />
+						</td>
+						<td>
+							<input
+								v-model="user.priezvisko"
+								class="border bg-gray-700 w-full"
+							/>
+						</td>
+						<td>
+							<input v-model="user.cislo" class="border bg-gray-700 w-full" />
+						</td>
+						<td>
+							<input v-model="user.email" class="border bg-gray-700 w-full" />
+						</td>
+						<td>
+							<input
+								v-model="user.odporucitel"
+								class="border bg-gray-700 w-full"
+							/>
+						</td>
+						<td>
+							<input v-model="user.adresa" class="border bg-gray-700 w-full" />
+						</td>
+						<td>
+							<input v-model="user.vek" class="border bg-gray-700 w-full" />
+						</td>
+						<td>
+							<input
+								v-model="user.zamestanie"
+								class="border bg-gray-700 w-full"
+							/>
+						</td>
+						<td>
+							<input
+								v-model="user.poznamka"
+								class="border bg-gray-700 min-w-[350px]"
+							/>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+
+			<!-- Fixed Container for Buttons -->
+			<div class="flex justify-between mt-4">
 				<button
-					@click="addPerson()"
-					class="bg-blue-500 text-white w-[75px] py-2 rounded mr-2 hover:bg-blue-400 font-semibold"
+					@click="addPeople"
+					class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-400"
 				>
-					Pridať
+					Pridať používateľov
 				</button>
 			</div>
 		</div>
@@ -375,25 +210,9 @@ const addPerson = async () => {
 </template>
 
 <style scoped>
-/*input {
-	background-color: #1e293b;
-	border: none;
-	border-radius: 0;
-	box-shadow: 0 0 0 0.1px rgb(229, 231, 235);
-}*/
-
 input {
-	border-bottom: 1px solid #979797;
-	background-color: #1e293b;
-	height: 30px;
-	/*padding-left: 5px;*/
-}
-
-textarea {
-	border-bottom: 1px solid #979797;
-	background-color: #1e293b;
-	height: 50px;
-	padding-left: 5px;
-	padding-top: 5px;
+	padding: 0.5rem;
+	border-radius: 4px;
+	border: 1px solid #4b5563;
 }
 </style>

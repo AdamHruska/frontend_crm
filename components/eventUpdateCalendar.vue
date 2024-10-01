@@ -2,10 +2,7 @@
 import { Icon } from "@iconify/vue";
 import axios from "axios";
 const props = defineProps({
-	contact_id: {
-		type: String,
-		required: true,
-	},
+	activityID: String,
 });
 
 import { useAuthStore } from "@/stores/authStore";
@@ -14,6 +11,7 @@ authStore.loadToken();
 
 const contact = ref([]);
 
+const kontakt = ref("");
 const aktivita = ref("");
 const ina_aktivita = ref("");
 const datum_cas = ref("");
@@ -37,31 +35,48 @@ watch(aktivita, (newValue) => {
 	}
 });
 
-onBeforeMount(async () => {
-	const response = await findPerson(props.contact_id);
-	console.log("test", contact.value);
-	if (contact.value[0].email) {
-		emailBool.value = true;
-	}
-});
-
-const findPerson = async (id) => {
-	try {
-		const response = await axios.get(
-			`http://localhost:8000/api/contact/${id}`,
-			{
-				headers: {
-					Authorization: `Bearer ${authStore.token}`,
-				},
-			}
-		);
-		if (response.data && response.data.contact) {
-			contact.value = [response.data.contact]; // Wrap the contact in an array
+onMounted(async () => {
+	console.log("ID:", props.activityID);
+	const response = await axios.get(
+		`http://localhost:8000/api/activities/${props.activityID}`,
+		{
+			headers: {
+				Authorization: `Bearer ${authStore.token}`,
+			},
 		}
-	} catch (error) {
-		console.error("Error fetching contact:", error);
+	);
+	//console.log("Response:", response.data.activity);
+
+	aktivita.value = response.data.activity.aktivita;
+	ina_aktivita.value = response.data.activity.aktivita;
+	datum_cas.value = response.data.activity.datumCas;
+	koniec.value = response.data.activity.koniec;
+	poznamka.value = response.data.activity.poznamka;
+	volane.value = response.data.activity.volane;
+	dovolane.value = response.data.activity.dovolane;
+	dohodnute.value = response.data.activity.dohodnute;
+	ineBool.value = response.data.activity.ineBool;
+	miesto_stretnutia.value = response.data.activity.miesto_stretnutia;
+	onlineMeeting.value = response.data.activity.onlineMeeting;
+
+	const responseContact = await axios.get(
+		`http://localhost:8000/api/contact/${response.data.activity.contact_id}`,
+		{
+			headers: {
+				Authorization: `Bearer ${authStore.token}`,
+			},
+		}
+	);
+	contact.value = responseContact.data.contact;
+
+	if (contact.value.email === null) {
+		emailBool.value = false;
+	} else {
+		email.value = contact.value.email;
 	}
-};
+
+	console.log("email:", contact.value.email);
+});
 
 const emit = defineEmits(["cancelAddActivity", "activityAdded"]);
 
@@ -69,22 +84,22 @@ const cancelActivity = () => {
 	emit("cancelAddActivity");
 };
 
-// const submitActivity = () => {
-// 	// api call to submit activity
-// 	addActivity();
-// 	emit("cancelAddActivity");
-// };
+function getIdFromString(str) {
+	const words = str.split(" ");
+	return words[words.length - 1];
+}
 
 const addActivity = async () => {
-	event.preventDefault();
-	if (aktivita.value === "ine") {
-		aktivita.value = ina_aktivita.value;
-	}
+	//event.preventDefault();
+	// if (aktivita.value === "ine") {
+	// 	aktivita.value = ina_aktivita.value;
+	// }
 	try {
-		const response = await axios.post(
-			`http://localhost:8000/api/add-activity`,
+		const response = await axios.put(
+			`http://localhost:8000/api/update-activities/${props.activityID}`,
 			{
-				contact_id: props.contact_id,
+				contact_id: getIdFromString(kontakt.value),
+				//email: email.value,
 				aktivita: aktivita.value,
 				datumCas: datum_cas.value,
 				koniec: koniec.value,
@@ -101,23 +116,19 @@ const addActivity = async () => {
 				},
 			}
 		);
-		if (!emailBool.value) {
-			const emailResponse = await axios.patch(
-				`http://localhost:8000/api/contact/${props.contact_id}/email`,
-				{
-					email: email.value,
-				},
-				{
-					headers: {
-						Authorization: `Bearer ${authStore.token}`,
-					},
-				}
-			);
-		}
 
-		// if (emailResponse) {
-		// 	console.log(emailResponse.data.contact, "email Add");
-		// }
+		const responseMail = await axios.patch(
+			`http://localhost:8000/api/contact/${contact.value.id}/email`,
+			{
+				email: email.value,
+			},
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+				},
+			}
+		);
+
 		console.log(response.data.activity);
 
 		// Emit the newly added activity to the parent
@@ -128,6 +139,19 @@ const addActivity = async () => {
 	} catch (error) {
 		console.error("Error adding activity:", error);
 	}
+};
+
+const deleteActivity = async () => {
+	event.preventDefault();
+	const response = await axios.delete(
+		`http://localhost:8000/api/delete-activities/${props.activityID}`,
+		{
+			headers: {
+				Authorization: `Bearer ${authStore.token}`,
+			},
+		}
+	);
+	emit("cancelAddActivity");
 };
 </script>
 
@@ -142,11 +166,17 @@ const addActivity = async () => {
 			<div class="cursor-pointer" @click="cancelActivity()">
 				<Icon icon="fa6-solid:xmark" class="absolute top-4 right-6" />
 			</div>
-			<div v-if="!emailBool">
+
+			<div>
+				<div class="flex gap-3 my-4" v-if="contact.meno || contact.priezvisko">
+					<div>Kontakt:</div>
+					<div>{{ contact.meno }}</div>
+					<div>{{ contact.priezvisko }}</div>
+				</div>
 				<label
 					class="text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
 				>
-					Pridať email ku kontaktu:
+					Upraviť email ku kontaktu:
 				</label>
 				<input
 					v-model="email"
@@ -156,15 +186,6 @@ const addActivity = async () => {
 				/>
 			</div>
 			<div class="relative z-0 w-full mb-5 mt-2 group">
-				<!-- <input
-					v-model="aktivita"
-					type="text"
-					name="aktivita"
-					id="floating_aktivita"
-					class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-					placeholder=" "
-					required
-				/> -->
 				<label
 					class="text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
 					>Aktivita</label
@@ -266,22 +287,6 @@ const addActivity = async () => {
 				>
 			</div>
 
-			<!-- <div class="relative z-0 w-full mb-5 group">
-				<input
-					type="text"
-					name="aktivita_zadana"
-					id="floating_aktivita_zadana"
-					class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-					placeholder=" "
-					required
-				/>
-				<label
-					for="floating_aktivita_zadana"
-					class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
-					>Aktivita zadaná</label
-				>
-			</div> -->
-
 			<div class="relative z-0 w-full mb-5 group">
 				<label
 					class="text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
@@ -350,114 +355,19 @@ const addActivity = async () => {
 						></div>
 					</label>
 				</div>
-
-				<!-- Volane
-				<div class="flex flex-col items-center">
-					<label class="text-gray-500 dark:text-gray-400">Volané</label>
-					<div class="flex gap-5 mt-1">
-						<label
-							:class="{
-								'w-[30px] h-[35px] flex justify-center items-center cursor-pointer rounded-md': true,
-								'bg-blue-500 border-2 border-blue-700': volane === 0,
-								'bg-slate-700 hover:bg-slate-500': volane !== 0,
-							}"
-						>
-							<input type="radio" v-model="volane" :value="0" class="sr-only" />
-							0
-						</label>
-						<label
-							:class="{
-								'w-[30px] h-[35px] flex justify-center items-center cursor-pointer rounded-md': true,
-								'bg-blue-500 border-2 border-blue-700': volane === 1,
-								'bg-slate-700 hover:bg-slate-500': volane !== 1,
-							}"
-						>
-							<input type="radio" v-model="volane" :value="1" class="sr-only" />
-							1
-						</label>
-					</div>
-				</div>
-				
-			
-				<div class="flex flex-col items-center">
-					<label class="text-gray-500 dark:text-gray-400">Dovolané</label>
-					<div class="flex gap-5 mt-1">
-						<label
-							:class="{
-								'w-[30px] h-[35px] flex justify-center items-center cursor-pointer rounded-md': true,
-								'bg-blue-500 border-2 border-blue-700': dovolane === 0,
-								'bg-slate-700 hover:bg-slate-500': dovolane !== 0,
-							}"
-						>
-							<input
-								type="radio"
-								v-model="dovolane"
-								:value="0"
-								class="sr-only"
-							/>
-							0
-						</label>
-						<label
-							:class="{
-								'w-[30px] h-[35px] flex justify-center items-center cursor-pointer rounded-md': true,
-								'bg-blue-500 border-2 border-blue-700': dovolane === 1,
-								'bg-slate-700 hover:bg-slate-500': dovolane !== 1,
-							}"
-						>
-							<input
-								type="radio"
-								v-model="dovolane"
-								:value="1"
-								class="sr-only"
-							/>
-							1
-						</label>
-					</div>
-				</div>
-
-				
-				<div class="flex flex-col items-center">
-					<label class="text-gray-500 dark:text-gray-400">Dohodnuté</label>
-					<div class="flex gap-5 mt-1">
-						<label
-							:class="{
-								'w-[30px] h-[35px] flex justify-center items-center cursor-pointer rounded-md': true,
-								'bg-blue-500 border-2 border-blue-700': dohodnute === 0,
-								'bg-slate-700 hover:bg-slate-500': dohodnute !== 0,
-							}"
-						>
-							<input
-								type="radio"
-								v-model="dohodnute"
-								:value="0"
-								class="sr-only"
-							/>
-							0
-						</label>
-						<label
-							:class="{
-								'w-[30px] h-[35px] flex justify-center items-center cursor-pointer rounded-md': true,
-								'bg-blue-500 border-2 border-blue-700': dohodnute === 1,
-								'bg-slate-700 hover:bg-slate-500': dohodnute !== 1,
-							}"
-						>
-							<input
-								type="radio"
-								v-model="dohodnute"
-								:value="1"
-								class="sr-only"
-							/>
-							1
-						</label>
-					</div>
-				</div> -->
 			</div>
-			<div class="flex justify-center items-center mt-3">
+			<div class="flex justify-center items-center mt-3 gap-6">
 				<button
 					@click="addActivity()"
 					class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
 				>
-					Pridať
+					Update
+				</button>
+				<button
+					@click="deleteActivity()"
+					class="text-white bg-red-500 hover:bg-red-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center dark:bg-red-500 dark:hover:bg-red-60"
+				>
+					Delete
 				</button>
 			</div>
 		</form>

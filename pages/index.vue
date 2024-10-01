@@ -27,6 +27,7 @@ function addPerson(newContact) {
 	if (newContact) {
 		people.value.push(newContact);
 		console.log("New contact added:", newContact);
+		location.reload();
 	}
 
 	console.log("addPerson method triggered in parent");
@@ -159,7 +160,10 @@ const items = (row) => [
 		{
 			label: "Delete",
 			icon: "i-heroicons-trash-20-solid",
-			click: () => deletePerson(row.id),
+			click: () =>
+				deletePerson(row.id).then(() => {
+					people.value = people.value.filter((person) => person.id !== row.id);
+				}),
 		},
 	],
 ];
@@ -198,11 +202,32 @@ const prevPage = async () => {
 	people.value = response.data.contacts.data;
 	next_page_url.value = response.data.contacts.next_page_url;
 };
+
+function updatePerson(updatedContact) {
+	// Find the index of the person in the people array
+	const index = people.value.findIndex(
+		(person) => person.id === updatedContact.id
+	);
+	if (index !== -1) {
+		// Update the contact information in the array
+		people.value[index] = updatedContact;
+	}
+	showAlterPesonForm.value = false; // Close the form
+}
 </script>
 
 <template>
-	<div class="max-w-sm ml-8 mt-8 mb-2">
-		<searchBar @updateResults="handleSearchResults" />
+	<div class="flex justify-between">
+		<div class="max-w-sm ml-8 mt-8 mb-2 w-[400px]">
+			<searchBar @updateResults="handleSearchResults" />
+		</div>
+
+		<button
+			@click="addPerson()"
+			class="bg-blue-600 rounded-lg hover:bg-blue-300 hover:text-black h-14 w-14 flex justify-center pt-3 mr-8 mt-8"
+		>
+			<Icon icon="fa6-solid:plus" style="font-size: 30px" class="" />
+		</button>
 	</div>
 
 	<!-- <div class="max-w-lg ml-8 mt-8">
@@ -239,7 +264,10 @@ const prevPage = async () => {
 	</UTable>
 
 	<!-- <pagination /> -->
-	<div class="flex gap-[45px] justify-center mt-[30px]">
+	<div
+		class="flex gap-[40px] justify-center mt-[30px] mb-[50px]"
+		v-if="people.length > 9 || page > 1"
+	>
 		<div class="cursor-pointer" @click="prevPage()">
 			<Icon
 				class="hover:size-[38px]"
@@ -256,22 +284,15 @@ const prevPage = async () => {
 			/>
 		</div>
 	</div>
-
-	<button
-		@click="addPerson()"
-		class="float-right mr-12 mt-3 align-center py-3 px-6 bg-blue-600 rounded-lg hover:bg-blue-300 hover:text-black"
-	>
-		<Icon icon="fa6-solid:plus" style="font-size: 30px" />
-	</button>
 	<AddPersonForm
 		v-if="showAddPersonForm"
 		@cancelAdd="addPerson()"
-		@addPerson="addPerson"
+		@addPeople="addPerson"
 	/>
 	<AlterPersonForm
 		v-if="showAlterPesonForm"
 		@cancelAlter="alterPerson()"
-		@alterPerson="alterPerson()"
+		@alterPerson="updatePerson"
 		:single_contact="single_contact"
 	/>
 </template>

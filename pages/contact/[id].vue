@@ -1,5 +1,6 @@
 <script setup>
 import axios from "axios";
+import { format } from "date-fns";
 
 import { useRoute } from "vue-router";
 
@@ -52,7 +53,7 @@ const findActivities = async (id) => {
 		}
 	);
 	activities.value = response.data.activities;
-	console.log("Activities:", activities.value);
+	console.log("Activities test:", activities.value);
 };
 const actityFormBool = ref(false);
 const alterActivity = (id) => {
@@ -73,12 +74,12 @@ const columns = [
 	{ key: "email", label: "Email", class: "dark:bg-slate-900" },
 	{ key: "odporucitel", label: "Odporucitel", class: "dark:bg-slate-900" },
 	{
-		key: "datum_pridania",
+		key: "created_at",
 		label: "Dátum pridania",
 		class: "dark:bg-slate-900",
 	},
 	{ key: "adresa", label: "Adresa", class: "dark:bg-slate-900" },
-	{ key: "vek", label: "Vek(rok narodenia)", class: "dark:bg-slate-900" },
+	{ key: "rok_narodenia", label: "Vek", class: "dark:bg-slate-900" },
 	{ key: "zamestanie", label: "Zamestnanie", class: "dark:bg-slate-900" },
 	// { key: "poznamka", label: "Poznámka" },
 	{
@@ -115,12 +116,27 @@ const columns_activity = ref([
 		label: "Aktivita",
 		class: "dark:bg-slate-900",
 	},
-	{ key: "datumCas", label: "Dátum a čas", class: "dark:bg-slate-900" },
+	{ key: "datumCas", label: "Začiatok", class: "dark:bg-slate-900" },
+	{ key: "koniec", label: "Koniec", class: "dark:bg-slate-900" },
 	{ key: "poznamka", label: "Poznámka k aktivite", class: "dark:bg-slate-900" },
 
-	{ key: "volane", label: "Volané", class: "dark:bg-slate-900" },
-	{ key: "dovolane", label: "Dovolané", class: "dark:bg-slate-900" },
-	{ key: "dohodnute", label: "Dohodnuté", class: "dark:bg-slate-900" },
+	{ key: "volane", label: "Volané", class: "dark:bg-slate-900 w-[50px]" },
+	{
+		key: "dovolane",
+		label: "Dovolané",
+		class: "dark:bg-slate-900 w-[50px]",
+	},
+	{
+		key: "dohodnute",
+		label: "Dohodnuté",
+		class: "dark:bg-slate-900 w-[50px]",
+	},
+	{ key: "created_at", label: "Vytvorené", class: "dark:bg-slate-900" },
+	{
+		key: "miesto_stretnutia",
+		label: "Miesto stretnutia",
+		class: "dark:bg-slate-900",
+	},
 	{ key: "actions", class: "dark:bg-slate-900" },
 ]);
 
@@ -137,11 +153,17 @@ const activity_items = (row) => [
 			label: "Delete",
 			icon: "i-heroicons-trash-20-solid",
 			click: () =>
-				axios.delete(`http://127.0.0.1:8000/api/delete-activities/${row.id}`, {
-					headers: {
-						Authorization: `Bearer ${authStore.token}`,
-					},
-				}),
+				axios
+					.delete(`http://127.0.0.1:8000/api/delete-activities/${row.id}`, {
+						headers: {
+							Authorization: `Bearer ${authStore.token}`,
+						},
+					})
+					.then(() => {
+						activities.value = activities.value.filter(
+							(activity) => activity.id !== row.id
+						);
+					}),
 		},
 	],
 ];
@@ -171,6 +193,22 @@ const activity_items = (row) => [
 const handleActivityRowClick = (row) => {
 	console.log("Activity row clicked:", row);
 };
+
+const formatDate = (dateToFormat) => {
+	const date = new Date(dateToFormat);
+	return format(date, "dd-MM-yyyy");
+};
+
+const formatDateTime = (dateToFormat) => {
+	const date = new Date(dateToFormat);
+	return format(date, "dd-MM-yyyy HH:mm");
+};
+
+function calculateAge(yearOfBirth) {
+	const currentYear = new Date().getFullYear();
+	const age = currentYear - yearOfBirth;
+	return age;
+}
 </script>
 
 <template>
@@ -184,6 +222,14 @@ const handleActivityRowClick = (row) => {
 				]"
 				>{{ row.name }}</span
 			>
+		</template>
+
+		<template #created_at-data="{ row }">
+			<span>{{ formatDate(row.created_at) }}</span>
+		</template>
+
+		<template #rok_narodenia-data="{ row }">
+			<span>{{ calculateAge(row.rok_narodenia) }}</span>
 		</template>
 
 		<template #actions-data="{ row }">
@@ -213,8 +259,10 @@ const handleActivityRowClick = (row) => {
 	</div>
 	<hr class="border-color mx-10" />
 	<!-- Activity Section -->
+
 	<div class="relative">
-		<div class="mt-[60px] mx-8 max-w-[1450px]">
+		<div class="mt-[60px] mx-8 w-[1800px]">
+			<h1 class="text-white text-2xl text-center mb-6">Aktivity</h1>
 			<UTable :rows="activities" :columns="columns_activity">
 				<template #default="{ row }">
 					<tr
@@ -225,6 +273,10 @@ const handleActivityRowClick = (row) => {
 							{{ row[col.key] }}
 						</td>
 					</tr>
+				</template>
+
+				<template #created_at-data="{ row }">
+					<span>{{ formatDateTime(row.created_at) }}</span>
 				</template>
 
 				<template #actions-data="{ row }">
@@ -240,7 +292,7 @@ const handleActivityRowClick = (row) => {
 		</div>
 		<button
 			@click="changeAddActivityBool"
-			class="bg-blue-700 hover:bg-blue-800 p-2 rounded-lg absolute right-20 top-0"
+			class="bg-blue-700 hover:bg-blue-800 p-2 rounded-lg absolute right-10 top-14 font-semibold"
 		>
 			Pridať udalosť
 		</button>
