@@ -115,36 +115,6 @@ const todayStr = () => {
 
 const currentEvents = ref([]);
 
-// const events2 = [
-// 	{ id: 2, title: "Telefonát nábor", start: "2024-09-08T14:22:00" },
-// 	{ id: 3, title: "Telefonát nábor", start: "2024-09-08T14:22:00" },
-// 	{ id: 4, title: "Telefonát nábor", start: "2024-09-06T14:23:00" },
-// 	{ id: 5, title: "Pohovor", start: "2024-09-14T16:50:00" },
-// 	{ id: 6, title: "Telefonát nábor", start: "2024-09-26T19:17:00" },
-// 	{ id: 7, title: "Telefonát nábor", start: "2024-09-26T19:17:00" },
-// 	{ id: 8, title: "Telefonát nábor", start: "2024-09-26T19:17:00" },
-// 	{ id: 9, title: "Telefonát nábor", start: "2024-09-11T19:19:00" },
-// 	{ id: 10, title: "Analýza osobných financí", start: "2024-09-07T19:20:00" },
-// 	{ id: 11, title: "Pohovor", start: "2024-09-06T19:20:00" },
-// ];
-
-// const events = ref([
-// 	{
-// 		id: createEventId(),
-// 		title: "Test",
-// 		start: todayStr(),
-// 	},
-// 	{
-// 		id: createEventId(),
-// 		title: "Timed Test 2",
-// 		start: todayStr() + "T12:00:00",
-// 	},
-// ]);
-
-// const events = ref([transformData(rawData)]);
-
-// console.log("Events:", events.value);
-
 const handleWeekendsToggle = () => {
 	calendarOptions.value.weekends = !calendarOptions.value.weekends;
 };
@@ -166,6 +136,13 @@ function handleDateSelect(selectInfo) {
 		});
 	}
 }
+
+// zlucit shared events with user events
+
+// const handleSharedCalendars = (sharedEvents) => {
+//   // Combine the user's events with shared events
+//   const allEvents = [...events.value, ...sharedEvents]
+//   calendarOptions.value.events = allEvents
 
 function handleEventClick(clickInfo) {
 	toggleUpdateActivity();
@@ -213,13 +190,14 @@ function handleEvents(events) {
 				</ul>
 			</div>
 		</div>
-		<div class="demo-app-main bg-white text-black">
+		<div class="demo-app-main bg-white text-black relative">
 			<FullCalendar class="demo-app-calendar" :options="calendarOptions">
 				<template v-slot:eventContent="arg">
 					<b>{{ arg.timeText }}</b>
 					<i>{{ arg.event.title }}</i>
 				</template>
 			</FullCalendar>
+			<CalendarSharing class="absolute top-[98px] right-[85px]" />
 		</div>
 	</div>
 </template>

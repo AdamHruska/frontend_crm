@@ -18,7 +18,7 @@ export default defineNuxtConfig({
 	modules: ["@nuxt/ui", "@pinia/nuxt"],
 	runtimeConfig: {
 		public: {
-			apiUrl: process.env.API_URL || "http://localhost:8000/api/", // Fallback to localhost
+			apiUrl: process.env.API_URL || "backend.partners-crm.sk/",
 		},
 	},
 });
