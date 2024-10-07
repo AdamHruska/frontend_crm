@@ -1,4 +1,6 @@
 <script setup>
+const config = useRuntimeConfig();
+
 import { ref, watch } from "vue";
 import { useAuthStore } from "@/stores/authStore";
 import axios from "axios";
@@ -25,17 +27,14 @@ const debounceSearch = (func, delay) => {
 const handleSearch = async () => {
 	error.value = ""; // Reset error before making the request
 	try {
-		const response = await axios.get(
-			"http://localhost:8000/api/search-contacts",
-			{
-				params: {
-					query: searchInput.value,
-				},
-				headers: {
-					Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-				},
-			}
-		);
+		const response = await axios.get(`${config.public.apiUrl}search-contacts`, {
+			params: {
+				query: searchInput.value,
+			},
+			headers: {
+				Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+			},
+		});
 
 		// Check if response.data contains contacts
 		if (response.data && response.data.contacts) {

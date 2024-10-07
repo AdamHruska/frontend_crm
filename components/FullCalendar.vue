@@ -1,4 +1,5 @@
 <script setup>
+const config = useRuntimeConfig();
 import { Icon } from "@iconify/vue";
 import axios from "axios";
 import { format } from "date-fns";
@@ -62,7 +63,7 @@ const calendarOptions = ref({
 });
 onMounted(async () => {
 	const response = await axios.get(
-		"http://localhost:8000/api/get-activities-diary",
+		`${config.public.apiUrl}get-activities-diary`,
 		{
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,
@@ -170,26 +171,6 @@ function handleEventClick(clickInfo) {
 	toggleUpdateActivity();
 	console.log(clickInfo.event._def.publicId);
 	activityID.value = clickInfo.event._def.publicId;
-
-	// router.push(`/calendar/${clickInfo.event._def.publicId}`);
-
-	// if (
-	// 	confirm(
-	// 		`Are you sure you want to delete the event '${clickInfo.event.title}'`,
-	// 		console.log(clickInfo.event._def.publicId)
-	// 	)
-	// ) {
-	// 	clickInfo.event.remove();
-
-	// 	axios.delete(
-	// 		`http://localhost:8000/api/delete-activities/${clickInfo.event._def.publicId}`,
-	// 		{
-	// 			headers: {
-	// 				Authorization: `Bearer ${authStore.token}`,
-	// 			},
-	// 		}
-	// 	);
-	// }
 }
 
 function handleEvents(events) {

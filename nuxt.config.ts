@@ -3,7 +3,10 @@ export default defineNuxtConfig({
 	compatibilityDate: "2024-04-03",
 	devtools: { enabled: true },
 	ssr: false,
-	css: ["~/assets/css/main.css",  '@toast-ui/calendar/dist/toastui-calendar.min.css'],
+	css: [
+		"~/assets/css/main.css",
+		"@toast-ui/calendar/dist/toastui-calendar.min.css",
+	],
 
 	postcss: {
 		plugins: {
@@ -13,19 +16,9 @@ export default defineNuxtConfig({
 	},
 
 	modules: ["@nuxt/ui", "@pinia/nuxt"],
-	// vuefire: {
-	// 	auth: {
-	// 		enabled: true,
-	// 		sessionCookie: true,
-	// 	},
-	// 	config: {
-	// 		apiKey: "AIzaSyCzguAi0Gyu62H-7izesVze-E_4KtQynws",
-	// 		authDomain: "crm-system-b70d1.firebaseapp.com",
-	// 		projectId: "crm-system-b70d1",
-	// 		storageBucket: "crm-system-b70d1.appspot.com",
-	// 		messagingSenderId: "91100149882",
-	// 		appId: "1:91100149882:web:ad1ed41503a08d54dc23c3",
-	// 		measurementId: "G-0V47WPLVRR",
-	// 	},
-	// },
+	runtimeConfig: {
+		public: {
+			apiUrl: process.env.API_URL || "http://localhost:8000/api/", // Fallback to localhost
+		},
+	},
 });

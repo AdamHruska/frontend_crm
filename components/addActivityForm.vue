@@ -1,4 +1,5 @@
 <script setup>
+const config = useRuntimeConfig();
 import { Icon } from "@iconify/vue";
 import axios from "axios";
 const props = defineProps({
@@ -47,14 +48,11 @@ onBeforeMount(async () => {
 
 const findPerson = async (id) => {
 	try {
-		const response = await axios.get(
-			`http://localhost:8000/api/contact/${id}`,
-			{
-				headers: {
-					Authorization: `Bearer ${authStore.token}`,
-				},
-			}
-		);
+		const response = await axios.get(`${config.public.apiUrl}contact/${id}`, {
+			headers: {
+				Authorization: `Bearer ${authStore.token}`,
+			},
+		});
 		if (response.data && response.data.contact) {
 			contact.value = [response.data.contact]; // Wrap the contact in an array
 		}
@@ -82,7 +80,7 @@ const addActivity = async () => {
 	}
 	try {
 		const response = await axios.post(
-			`http://localhost:8000/api/add-activity`,
+			`${config.public.apiUrl}add-activity`,
 			{
 				contact_id: props.contact_id,
 				aktivita: aktivita.value,
@@ -103,7 +101,7 @@ const addActivity = async () => {
 		);
 		if (!emailBool.value) {
 			const emailResponse = await axios.patch(
-				`http://localhost:8000/api/contact/${props.contact_id}/email`,
+				`${config.public.apiUrl}contact/${props.contact_id}/email`,
 				{
 					email: email.value,
 				},

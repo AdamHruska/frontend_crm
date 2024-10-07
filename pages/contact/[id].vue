@@ -1,4 +1,6 @@
 <script setup>
+const config = useRuntimeConfig();
+
 import axios from "axios";
 import { format } from "date-fns";
 
@@ -26,14 +28,11 @@ onBeforeMount(async () => {
 
 const findPerson = async (id) => {
 	try {
-		const response = await axios.get(
-			`http://localhost:8000/api/contact/${id}`,
-			{
-				headers: {
-					Authorization: `Bearer ${authStore.token}`,
-				},
-			}
-		);
+		const response = await axios.get(`${config.public.apiUrl}contact/${id}`, {
+			headers: {
+				Authorization: `Bearer ${authStore.token}`,
+			},
+		});
 		if (response.data && response.data.contact) {
 			people.value = [response.data.contact]; // Wrap the contact in an array
 			console.log(people.value);
@@ -45,7 +44,7 @@ const findPerson = async (id) => {
 
 const findActivities = async (id) => {
 	const response = await axios.get(
-		`http://localhost:8000/api/contacts/${id}/activities`,
+		`${config.public.apiUrl}contacts/${id}/activities`,
 		{
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,
@@ -104,7 +103,7 @@ const items = (row) => [
 			icon: "i-heroicons-trash-20-solid",
 			click: () =>
 				axios
-					.delete(`http://127.0.0.1:8000/delete_contacts/${row.id}`)
+					.delete(`${config.public.apiUrl}delete_contacts/${row.id}`)
 					.then(navigateTo("/")),
 		},
 	],
@@ -154,7 +153,7 @@ const activity_items = (row) => [
 			icon: "i-heroicons-trash-20-solid",
 			click: () =>
 				axios
-					.delete(`http://127.0.0.1:8000/api/delete-activities/${row.id}`, {
+					.delete(`${config.public.apiUrl}delete-activities/${row.id}`, {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},

@@ -1,4 +1,6 @@
 <script setup>
+const config = useRuntimeConfig();
+
 import { Icon } from "@iconify/vue";
 import axios from "axios";
 const props = defineProps({

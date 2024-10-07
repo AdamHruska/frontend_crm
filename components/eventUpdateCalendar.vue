@@ -1,4 +1,6 @@
 <script setup>
+const config = useRuntimeConfig();
+
 import { Icon } from "@iconify/vue";
 import axios from "axios";
 const props = defineProps({
@@ -38,7 +40,7 @@ watch(aktivita, (newValue) => {
 onMounted(async () => {
 	console.log("ID:", props.activityID);
 	const response = await axios.get(
-		`http://localhost:8000/api/activities/${props.activityID}`,
+		`${config.public.apiUrl}activities/${props.activityID}`,
 		{
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,
@@ -60,7 +62,7 @@ onMounted(async () => {
 	onlineMeeting.value = response.data.activity.onlineMeeting;
 
 	const responseContact = await axios.get(
-		`http://localhost:8000/api/contact/${response.data.activity.contact_id}`,
+		`${config.public.apiUrl}contact/${response.data.activity.contact_id}`,
 		{
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,
@@ -96,7 +98,7 @@ const addActivity = async () => {
 	// }
 	try {
 		const response = await axios.put(
-			`http://localhost:8000/api/update-activities/${props.activityID}`,
+			`${config.public.apiUrl}update-activities/${props.activityID}`,
 			{
 				contact_id: getIdFromString(kontakt.value),
 				//email: email.value,
@@ -118,7 +120,7 @@ const addActivity = async () => {
 		);
 
 		const responseMail = await axios.patch(
-			`http://localhost:8000/api/contact/${contact.value.id}/email`,
+			`${config.public.apiUrl}contact/${contact.value.id}/email`,
 			{
 				email: email.value,
 			},
@@ -144,7 +146,7 @@ const addActivity = async () => {
 const deleteActivity = async () => {
 	event.preventDefault();
 	const response = await axios.delete(
-		`http://localhost:8000/api/delete-activities/${props.activityID}`,
+		`${config.public.apiUrl}delete-activities/${props.activityID}`,
 		{
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,

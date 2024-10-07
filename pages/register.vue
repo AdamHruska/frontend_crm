@@ -1,4 +1,6 @@
 <script setup>
+const config = useRuntimeConfig();
+
 import axios from "axios";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -20,7 +22,7 @@ definePageMeta({
 const register = async () => {
 	event.preventDefault();
 	try {
-		const response = await axios.post("http://localhost:8000/api/register", {
+		const response = await axios.post(`${config.public.apiUrl}register`, {
 			username: first_name.value + " " + last_name.value,
 			first_name: first_name.value,
 			last_name: last_name.value,

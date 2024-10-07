@@ -1,4 +1,6 @@
 <script setup>
+const config = useRuntimeConfig();
+
 import { ref, watch } from "vue";
 import axios from "axios";
 import { Icon } from "@iconify/vue";
@@ -35,7 +37,7 @@ console.log(props.single_contact);
 
 onMounted(async () => {
 	const response = await axios
-		.get("http://localhost:8000/api/get-users", {
+		.get(`${config.public.apiUrl}get-users`, {
 			headers: {
 				Authorization: `Bearer ${sessionStorage.getItem("token")}`,
 			},
@@ -112,7 +114,7 @@ const alterPerson = async (id) => {
 		author_id: selectedAuthorId.value,
 	};
 	const response = await axios.put(
-		`http://localhost:8000/api/post-update-contact/${id}`,
+		`${config.public.apiUrl}post-update-contact/${id}`,
 		person,
 		{
 			headers: {

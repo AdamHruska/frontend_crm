@@ -1,18 +1,18 @@
 <script setup>
-// import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import axios from "axios";
 const router = useRouter();
+
+const config = useRuntimeConfig();
 
 import { useAuthStore } from "@/stores/authStore";
 const authStore = useAuthStore();
 
-// const auth = useFirebaseAuth();
 const email = ref("");
 const password = ref("");
 
 const login = async (email, password) => {
 	event.preventDefault();
-	const response = await axios.post("http://localhost:8000/api/login", {
+	const response = await axios.post(`${config.public.apiUrl}login`, {
 		email: email,
 		password: password,
 	});
@@ -20,58 +20,6 @@ const login = async (email, password) => {
 	authStore.setToken(response.data.authorization.token);
 	router.push("/");
 };
-
-// const getUser = async () => {
-// 	await initializeCsrf(); // Initialize the CSRF token first
-// 	const token = localStorage.getItem("token");
-
-// 	try {
-// 		const response = await axios.get("http://localhost:8000/api/user", {
-// 			headers: {
-// 				Authorization: `Bearer ${token}`,
-// 				"Content-Type": "application/json",
-// 			},
-// 		});
-// 		console.log(response.data);
-// 	} catch (error) {
-// 		console.error(
-// 			"Error fetching user:",
-// 			error.response ? error.response.data : error.message
-// 		);
-// 	}
-// };
-
-// const signInWithGoogle = () => {
-// 	signInWithPopup(auth, new GoogleAuthProvider()).then(() =>
-// 		router.replace("/")
-// 	);
-// };
-
-// const register = async (name, email, password, password_confirmation) => {
-// 	try {
-// 		const response = await axios.post("http://localhost:8000/register", {
-// 			name: name,
-// 			email: email,
-// 			password: password,
-// 			password_confirmation: password_confirmation,
-// 		});
-
-// 		// Registration successful, handle response
-// 		console.log("User registered successfully:", response.data);
-
-// 		// If using tokens for authentication, store the token in localStorage or sessionStorage
-// 		localStorage.setItem("token", response.data.token);
-
-// 		// You can also redirect the user after successful registration
-// 		router.push("/");
-// 	} catch (error) {
-// 		// Handle registration error
-// 		console.error(
-// 			"Error during registration:",
-// 			error.response ? error.response.data : error.message
-// 		);
-// 	}
-// };
 </script>
 
 <template>

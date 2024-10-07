@@ -2,6 +2,8 @@
 import { Icon } from "@iconify/vue";
 import axios from "axios";
 
+const config = useRuntimeConfig();
+
 import { useAuthStore } from "@/stores/authStore";
 const authStore = useAuthStore();
 authStore.loadToken();
@@ -33,7 +35,7 @@ watch(aktivita, (newValue) => {
 });
 
 onMounted(async () => {
-	const response2 = await axios.get("http://localhost:8000/api/all-contacts", {
+	const response2 = await axios.get(`${config.public.apiUrl}all-contacts`, {
 		headers: {
 			Authorization: `Bearer ${authStore.token}`,
 		},
@@ -46,7 +48,7 @@ watch(kontakt, async (newValue) => {
 	console.log("teraz");
 	id.value = getIdFromString(newValue);
 	const responseContact = await axios.get(
-		`http://localhost:8000/api/contact/${id.value}`,
+		`${config.public.apiUrl}contact/${id.value}`,
 		{
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,
@@ -77,7 +79,7 @@ const addActivity = async () => {
 	// }
 	try {
 		const response = await axios.post(
-			`http://localhost:8000/api/add-activity`,
+			`${config.public.apiUrl}add-activity`,
 			{
 				contact_id: getIdFromString(kontakt.value),
 				aktivita: aktivita.value,
@@ -97,7 +99,7 @@ const addActivity = async () => {
 			}
 		);
 		const responseMail = await axios.patch(
-			`http://localhost:8000/api/contact/${id.value}/email`,
+			`${config.public.apiUrl}contact/${id.value}/email`,
 			{
 				email: email.value,
 			},

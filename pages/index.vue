@@ -1,4 +1,6 @@
 <script setup>
+const config = useRuntimeConfig();
+
 import { Icon } from "@iconify/vue";
 import axios from "axios";
 import { format } from "date-fns";
@@ -39,7 +41,7 @@ function alterPerson() {
 }
 
 const findPerson = async (id) => {
-	const response = await axios.get(`http://localhost:8000/api/contact/${id}`, {
+	const response = await axios.get(`${config.public.apiUrl}contact/${id}`, {
 		headers: {
 			Authorization: `Bearer ${sessionStorage.getItem("token")}`,
 		},
@@ -50,7 +52,7 @@ const findPerson = async (id) => {
 
 const deletePerson = async (id) => {
 	const response = await axios.delete(
-		`http://localhost:8000/api/delete-delete-contact/${id}`,
+		`${config.public.apiUrl}delete-delete-contact/${id}`,
 		{
 			headers: {
 				Authorization: `Bearer ${sessionStorage.getItem("token")}`,
@@ -64,7 +66,7 @@ token.value = sessionStorage.getItem("token");
 
 onMounted(async () => {
 	console.log("token", token);
-	const response = await axios.get("http://localhost:8000/api/contacts", {
+	const response = await axios.get(`${config.public.apiUrl}contacts`, {
 		headers: {
 			Authorization: `Bearer ${authStore.token}`,
 		},

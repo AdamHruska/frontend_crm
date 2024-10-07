@@ -1,4 +1,5 @@
 <script setup>
+const config = useRuntimeConfig();
 import { ref, watch } from "vue";
 import axios from "axios";
 import Cookies from "js-cookie";
@@ -87,15 +88,11 @@ const addPeople = async () => {
 	const people = users.value;
 	try {
 		for (let person of people) {
-			await axios.post(
-				"http://localhost:8000/api/post-create-contact",
-				person,
-				{
-					headers: {
-						Authorization: `Bearer ${authStore.token}`,
-					},
-				}
-			);
+			await axios.post(`${config.public.apiUrl}post-create-contact`, person, {
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+				},
+			});
 		}
 		Cookies.remove("users");
 		emit("addPeople", people);

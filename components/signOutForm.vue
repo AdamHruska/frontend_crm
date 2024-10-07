@@ -1,4 +1,6 @@
 <script setup>
+const config = useRuntimeConfig();
+
 const emit = defineEmits(["cancelSignOut"], ["confirmSignOut"]);
 import axios from "axios";
 const router = useRouter();
@@ -20,7 +22,7 @@ function confirmSignOut() {
 
 const logout = async () => {
 	await axios.post(
-		"http://localhost:8000/api/logout",
+		`${config.public.apiUrl}logout`,
 		{},
 		{
 			headers: {
