@@ -22,13 +22,23 @@ definePageMeta({
 const register = async () => {
 	event.preventDefault();
 	try {
-		const response = await axios.post(`${config.public.apiUrl}register`, {
-			username: first_name.value + " " + last_name.value,
-			first_name: first_name.value,
-			last_name: last_name.value,
-			email: email.value,
-			password: password.value,
-		});
+		const response = await axios.post(
+			`${config.public.apiUrl}register`,
+			{
+				username: first_name.value + " " + last_name.value,
+				first_name: first_name.value,
+				last_name: last_name.value,
+				email: email.value,
+				password: password.value,
+			},
+			{
+				headers: {
+					"Content-Type": "application/json",
+					Accept: "application/json",
+					"Access-Control-Allow-Origin": "*",
+				},
+			}
+		);
 		token.value = response.data.authorization.token;
 
 		sessionStorage.setItem("token", response.data.token);
