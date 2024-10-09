@@ -1,8 +1,7 @@
 <script setup>
 import axios from "axios";
 const router = useRouter();
-axios.defaults.withCredentials = true;
-s;
+
 const config = useRuntimeConfig();
 
 import { useAuthStore } from "@/stores/authStore";
