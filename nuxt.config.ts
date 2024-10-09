@@ -19,7 +19,7 @@ export default defineNuxtConfig({
 	modules: ["@nuxt/ui", "@pinia/nuxt"],
 	runtimeConfig: {
 		public: {
-			apiUrl: process.env.API_URL || "https://crm-be-main.vercel.app/",
+			apiUrl: "https://crm-be-main.vercel.app/",
 		},
 	},
 });

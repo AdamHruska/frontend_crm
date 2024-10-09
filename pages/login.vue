@@ -31,11 +31,17 @@ const login = async (email, password) => {
 	authStore.setToken(response.data.authorization.token);
 	router.push("/");
 };
+
+const sendRequest = async () => {
+	const response = await axios.get(`${config.public.apiUrl}test`);
+	console.log(response.data);
+};
 </script>
 
 <template>
 	<div class="flex items-center justify-center min-h-screen bg-gray-900">
 		<div class="w-full max-w-md p-8 space-y-8 bg-gray-800 rounded-lg shadow-md">
+			<button @click="sendRequest">Click</button>
 			<div class="flex justify-center">
 				<svg
 					class="w-16 h-16 fill-current text-gray-400"
