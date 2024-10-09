@@ -1,5 +1,6 @@
 <script setup>
 import axios from "axios";
+
 const router = useRouter();
 
 const config = useRuntimeConfig();
