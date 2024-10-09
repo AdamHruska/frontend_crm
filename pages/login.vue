@@ -109,13 +109,6 @@ const login = async (email, password) => {
 						Prihlásiť
 					</button>
 
-					<button
-						@click="signInWithGoogle"
-						class="mt-2 w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-indigo-600 bg-white hover:bg-slate-300 hover:outline-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-					>
-						Prihlásiť pomocou Google
-					</button>
-
 					<nuxt-link
 						class="font-small text-indigo-600 hover:text-indigo-500 float-right mt-1"
 						to="/register"
