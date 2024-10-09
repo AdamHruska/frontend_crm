@@ -191,13 +191,14 @@ function handleEvents(events) {
 			</div>
 		</div>
 		<div class="demo-app-main bg-white text-black relative">
+			<CalendarSharing class="absolute left-5" />
+
 			<FullCalendar class="demo-app-calendar" :options="calendarOptions">
 				<template v-slot:eventContent="arg">
 					<b>{{ arg.timeText }}</b>
 					<i>{{ arg.event.title }}</i>
 				</template>
 			</FullCalendar>
-			<CalendarSharing class="absolute top-[98px] right-[85px]" />
 		</div>
 	</div>
 </template>

@@ -1,10 +1,10 @@
 <template>
-	<div class="font-[sans-serif] w-max mx-auto">
+	<div class="font-[sans-serif] w-[180px] mx-auto">
 		<!-- Button to toggle dropdown -->
 		<button
 			type="button"
 			@click="toggleDropdown"
-			class="px-10 py-2.5 rounded text-white text-sm font-semibold border-none outline-none bg-blue-600 hover:bg-blue-700 active:bg-blue-600"
+			class="px-4 py-2.5 rounded text-white text-sm font-semibold border-none outline-none bg-blue-600 hover:bg-blue-700 active:bg-blue-600"
 		>
 			Zobraziť kalendár
 			<svg
