@@ -14,6 +14,7 @@ export default defineNuxtConfig({
 			autoprefixer: {},
 		},
 	},
+	plugins: ["~/plugins/axios.js"],
 
 	modules: ["@nuxt/ui", "@pinia/nuxt"],
 	runtimeConfig: {
