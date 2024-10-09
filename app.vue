@@ -1,6 +1,6 @@
 <script setup>
 import axios from "axios";
-axios.defaults.withCredentials = false;
+axios.defaults.withCredentials = true;
 const router = useRouter();
 </script>
 

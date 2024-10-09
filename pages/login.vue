@@ -1,7 +1,7 @@
 <script setup>
 import axios from "axios";
 const router = useRouter();
-axios.defaults.withCredentials = false;
+axios.defaults.withCredentials = true;
 s;
 const config = useRuntimeConfig();
 
