@@ -13,23 +13,27 @@ const password = ref("");
 
 const login = async (email, password) => {
 	event.preventDefault();
-	const response = await axios.post(
-		`${config.public.apiUrl}login`,
-		{
-			email: email,
-			password: password,
-		},
-		{
-			headers: {
-				"Content-Type": "application/json",
-				Accept: "application/json",
-				"Access-Control-Allow-Origin": "*",
+	if (email || password) {
+		const response = await axios.post(
+			`${config.public.apiUrl}login`,
+			{
+				email: email,
+				password: password,
 			},
-		}
-	);
-	sessionStorage.setItem("token", response.data.authorization.token);
-	authStore.setToken(response.data.authorization.token);
-	router.push("/");
+			{
+				headers: {
+					"Content-Type": "application/json",
+					Accept: "application/json",
+					"Access-Control-Allow-Origin": "*",
+				},
+			}
+		);
+		sessionStorage.setItem("token", response.data.authorization.token);
+		authStore.setToken(response.data.authorization.token);
+		router.push("/");
+	} else {
+		alert("Please fill in all fields");
+	}
 };
 </script>
 

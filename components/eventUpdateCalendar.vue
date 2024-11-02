@@ -1,6 +1,6 @@
 <script setup>
 const config = useRuntimeConfig();
-
+const router = useRouter();
 import { Icon } from "@iconify/vue";
 import axios from "axios";
 const props = defineProps({
@@ -155,6 +155,10 @@ const deleteActivity = async () => {
 	);
 	emit("cancelAddActivity");
 };
+
+const redirectToContact = () => {
+	router.push(`/contact/${contact.value.id}`);
+};
 </script>
 
 <template>
@@ -170,7 +174,11 @@ const deleteActivity = async () => {
 			</div>
 
 			<div>
-				<div class="flex gap-3 my-4" v-if="contact.meno || contact.priezvisko">
+				<div
+					class="flex gap-3 my-4 cursor-pointer"
+					v-if="contact.meno || contact.priezvisko"
+					@click="redirectToContact"
+				>
 					<div>Kontakt:</div>
 					<div>{{ contact.meno }}</div>
 					<div>{{ contact.priezvisko }}</div>

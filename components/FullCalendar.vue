@@ -1,4 +1,6 @@
 <script setup>
+const emit = defineEmits(["deleteSharedEventsId"]);
+
 const config = useRuntimeConfig();
 import { Icon } from "@iconify/vue";
 import axios from "axios";
@@ -11,6 +13,9 @@ const token = ref("");
 token.value = sessionStorage.getItem("token");
 
 const router = useRouter();
+
+const user = ref({});
+const sharedIDs = ref([]);
 
 import { ref } from "vue";
 import FullCalendar from "@fullcalendar/vue3";
@@ -50,8 +55,10 @@ const calendarOptions = ref({
 		right: "dayGridMonth,timeGridWeek,timeGridDay",
 	},
 	initialView: "dayGridMonth",
-	initialEvents: events.value,
-	events: [],
+	// initialEvents: events.value,
+	initialEvents: [],
+	events: events.value,
+	// events: [],
 	editable: true,
 	selectable: true,
 	selectMirror: true,
@@ -70,11 +77,44 @@ onMounted(async () => {
 			},
 		}
 	);
+
+	user.value = await axios.get(`${config.public.apiUrl}get-user`, {
+		headers: {
+			Authorization: `Bearer ${authStore.token}`,
+		},
+	});
+
+	user.value = user.value.data.user;
+	user.value.id;
+
+	const shareIDs = user.value.share_user_id;
+	const array = JSON.parse(shareIDs); // ['2']
+	sharedIDs.value = array.map(Number); // [2]
+
+	// getting shared users activities
+	const shared_activities = await axios.post(
+		`${config.public.apiUrl}get-activities`,
+		{
+			user_ids: sharedIDs.value,
+		},
+		{
+			headers: {
+				Authorization: `Bearer ${authStore.token}`,
+				"Content-Type": "application/json",
+			},
+		}
+	);
+
+	console.log("Shared activities:", shared_activities.data.activities);
+
 	rawData.value = response.data.activities;
 	events.value = transformData(rawData.value);
-	// events.value.map((event) => {
-	// 	event.end = "2024-09-06T14:24:00";
-	// });
+	const sharedACT = transformData(
+		flattenActivities(shared_activities.data.activities)
+	);
+	console.log("Shared activities test:", sharedACT);
+
+	events.value = [...events.value, ...sharedACT];
 	console.log("Events:", events.value);
 	calendarOptions.value.events = events.value;
 });
@@ -83,15 +123,14 @@ const transformData = (data) => {
 	return data.map((item) => {
 		var farba = "";
 		const formattedStart = item.datumCas.replace(" ", "T");
-		if (
-			item.aktivita === "Telefonát nábor" ||
-			item.aktivita === "Telefonát klient" ||
-			item.aktivita === "Pohovor"
-		) {
-			farba = "#4169e1";
+		if (item.created_id == user.value.id) {
+			farba = "blue";
 		} else {
 			farba = "red";
 		}
+
+		console.log("item:", item);
+
 		return {
 			id: item.id,
 			title: item.aktivita,
@@ -99,6 +138,7 @@ const transformData = (data) => {
 			end: item.koniec,
 			backgroundColor: farba,
 			borderColor: farba,
+			user_id: item.created_id,
 		};
 	});
 };
@@ -153,6 +193,79 @@ function handleEventClick(clickInfo) {
 function handleEvents(events) {
 	currentEvents.value = events;
 }
+
+const flattenActivities = (activitiesObject) => {
+	// Use `Object.values` to get arrays of activities and `flat()` to merge them
+	return Object.values(activitiesObject).flat();
+};
+
+const deleteSharedEventsId = (userId) => {
+	console.log("test emit", userId);
+
+	events.value = events.value.filter((event) => event.user_id !== userId);
+
+	// Update the calendar options to reflect the changes
+	calendarOptions.value = { ...calendarOptions.value, events: events.value };
+};
+
+const addSharedEventsId = async (userId) => {
+	console.log("test emit add", userId);
+
+	try {
+		// Fetch activities created by the specified userId
+		const response = await axios.get(
+			`${config.public.apiUrl}get-activities-by-creator/${userId}`,
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+					"Content-Type": "application/json",
+				},
+			}
+		);
+
+		// Check if the response contains the expected data
+		if (response && response.data && response.data.activities) {
+			// Transform the fetched activities into the calendar event format
+			const sharedEvents = transformData(response.data.activities);
+
+			// Update the events in the calendar
+			events.value = [...events.value, ...sharedEvents]; // Merge new events
+			calendarOptions.value.events = events.value; // Update calendar options
+
+			console.log("Updated events:", events.value); // Log the updated events for debugging
+		} else {
+			console.error("No activities found in response.");
+		}
+	} catch (error) {
+		console.error("Error adding share ID:", error);
+		error.value = "Error adding share ID"; // Set error message for user feedback
+	}
+};
+
+const recentEvents = computed(() => {
+	const now = new Date();
+	const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+	const endOfDay = new Date(now);
+	endOfDay.setHours(23, 59, 59, 999); // Set to the end of the current day
+
+	return currentEvents.value.filter((event) => {
+		const eventStart = new Date(event.start);
+		return eventStart >= twoHoursAgo && eventStart <= endOfDay;
+	});
+});
+
+const formatDate = (dateString) => {
+	// Parse the date string to a Date object
+	const date = new Date(dateString);
+
+	// Format the date to DD.MM-HH:MM
+	return format(date, "dd.MM.yyyy HH:mm");
+};
+
+const displayUpdateEvent = (event) => {
+	toggleUpdateActivity();
+	activityID.value = event.id;
+};
 </script>
 
 <template>
@@ -165,12 +278,18 @@ function handleEvents(events) {
 		v-if="updateActivity"
 		@cancelAddActivity="toggleUpdateActivity"
 	/>
-	<div class="demo-app">
-		<div class="demo-app-sidebar bg-blue-200">
-			<div class="demo-app-sidebar-section bg-blue-200 text-black">
+	<div class="demo-app bg-white">
+		<div class="demo-app-sidebar bg-white-force">
+			<div
+				class="demo-app-sidebar-section text-black"
+				style="background-color: #c0c2ce"
+			>
 				<h2 class="font-semibold text-2xl text-center">Diár</h2>
 			</div>
-			<div class="demo-app-sidebar-section bg-blue-200 text-black">
+			<div
+				class="demo-app-sidebar-section text-black"
+				style="background-color: #c0c2ce"
+			>
 				<label class="text-lg">
 					<input
 						type="checkbox"
@@ -180,18 +299,33 @@ function handleEvents(events) {
 					toggle weekends
 				</label>
 			</div>
-			<div class="demo-app-sidebar-section bg-blue-200 text-black">
-				<h2>All Events ({{ currentEvents.length }})</h2>
-				<ul>
-					<li v-for="event in currentEvents" :key="event.id">
-						<b>{{ event.startStr }}</b>
+			<div
+				class="demo-app-sidebar-section text-black rounded-b-[30px]"
+				style="background-color: #c0c2ce"
+			>
+				<h2 class="underline">Recent Events:</h2>
+				<ul class="">
+					<li
+						v-for="event in recentEvents"
+						:key="event.id"
+						@click="displayUpdateEvent(event)"
+						class="cursor-pointer hover:bg-blue-50 rounded text-black text-sm flex items-center justify-center"
+					>
+						<b>{{ formatDate(event.startStr) }}</b>
 						<i>{{ event.title }}</i>
 					</li>
 				</ul>
 			</div>
+			<div>
+				<CalendarSharing
+					class="mt-4"
+					@deleteSharedEventsId="deleteSharedEventsId"
+					@addSharedEventsId="addSharedEventsId"
+				/>
+			</div>
 		</div>
-		<div class="demo-app-main bg-white text-black relative">
-			<CalendarSharing class="absolute left-5" />
+		<div class="demo-app-main bg-white text-black">
+			<!-- <CalendarSharing class="absolute left-5" /> -->
 
 			<FullCalendar class="demo-app-calendar" :options="calendarOptions">
 				<template v-slot:eventContent="arg">
@@ -204,6 +338,10 @@ function handleEvents(events) {
 </template>
 
 <style lang="css">
+.bg-white-force {
+	background-color: #fff !important;
+}
+
 h2 {
 	margin: 0;
 	font-size: 16px;
@@ -238,7 +376,7 @@ b {
 }
 
 .demo-app-sidebar-section {
-	padding: 2em;
+	padding: 1em;
 }
 
 .demo-app-main {

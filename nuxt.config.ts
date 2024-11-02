@@ -17,9 +17,11 @@ export default defineNuxtConfig({
 	plugins: ["~/plugins/axios.js"],
 
 	modules: ["@nuxt/ui", "@pinia/nuxt"],
+
 	runtimeConfig: {
 		public: {
-			apiUrl: "https://crm-be-main.vercel.app/",
+			// apiUrl: "https://crm-be-main.vercel.app/",
+			apiUrl: "http://localhost:8000/",
 		},
 	},
 });

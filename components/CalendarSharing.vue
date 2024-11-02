@@ -1,10 +1,10 @@
 <template>
-	<div class="font-[sans-serif] w-[180px] mx-auto">
+	<div class="font-[sans-serif] w-[180px] mx-auto" ref="dropdownContainer">
 		<!-- Button to toggle dropdown -->
 		<button
 			type="button"
 			@click="toggleDropdown"
-			class="px-4 py-2.5 rounded text-white text-sm font-semibold border-none outline-none bg-blue-600 hover:bg-blue-700 active:bg-blue-600"
+			class="px-4 py-2.5 rounded-[50px] text-white text-sm font-semibold border-none outline-none bg-blue-600 hover:bg-blue-700 active:bg-blue-600"
 		>
 			Zobraziť kalendár
 			<svg
@@ -24,7 +24,7 @@
 		<!-- Dropdown list of users -->
 		<ul
 			v-show="isDropdownOpen"
-			class="absolute shadow-2xl shadow-gray-400 bg-white py-2 px-2 z-[1000] min-w-full w-max rounded max-h-96 overflow-auto"
+			class="shadow-2xl shadow-gray-400 bg-white py-2 px-2 z-[1000] min-w-full w-max rounded max-h-[500px] overflow-auto"
 		>
 			<!-- Search input -->
 			<li class="mb-2">
@@ -55,23 +55,47 @@
 				</div>
 			</li>
 		</ul>
+		<div
+			v-if="!isDropdownOpen"
+			class="text-black mt-3 flex flex-col justify-center items-center gap-2 text-base font-medium"
+		>
+			<div
+				v-for="(user, index) in checkedUsers"
+				:key="user.id"
+				class="flex gap-3"
+			>
+				<div>{{ user.first_name }} {{ user.last_name }}</div>
+				<input
+					v-model="user.checked"
+					:id="'checkbox' + user.id"
+					type="checkbox"
+					class="peer mr-3 w-5 h-5 cursor-pointer checkbox-custom"
+					@change="handleCheckboxChange(user.id, user.checked)"
+				/>
+			</div>
+		</div>
 	</div>
 </template>
 
 <script setup>
-const config = useRuntimeConfig();
+import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 import axios from "axios";
-import { ref, onMounted, computed } from "vue";
 import { useAuthStore } from "@/stores/authStore";
 
+const emit = defineEmits(["deleteSharedEventsId", "addSharedEventsId"]);
+
+const config = useRuntimeConfig();
 const authStore = useAuthStore();
 authStore.loadToken();
 
 const users = ref([]);
 const searchInput = ref("");
 const error = ref("");
+const isDropdownOpen = ref(false);
+const dropdownContainer = ref(null);
 
 let timeout;
+
 const debounce = (func, delay) => {
 	return (...args) => {
 		clearTimeout(timeout);
@@ -82,25 +106,35 @@ const debounce = (func, delay) => {
 // Fetch users on component mount
 const handleSearch = async () => {
 	error.value = ""; // Reset error before making the request
+
 	try {
+		const current_user = await axios.get(`${config.public.apiUrl}get-user`, {
+			headers: {
+				Authorization: `Bearer ${authStore.token}`,
+			},
+		});
+
+		const shareIDs = current_user.data.user.share_user_id;
+		const array = JSON.parse(shareIDs); // ['2']
+		const numbers = array.map(Number); // [2]
+
 		const response = await axios.get(`${config.public.apiUrl}get-users`, {
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,
 			},
 		});
+
 		// Map users and set the `checked` property based on whether share_user_id is not null
 		users.value = (response.data.users || []).map((user) => ({
 			...user,
-			checked: user.share_user_id !== null, // Set checked to true if share_user_id is not null
+			checked: numbers.includes(user.id),
 		}));
 	} catch (err) {
 		console.error("Error fetching users:", err);
 		error.value = "Error fetching users";
 	}
-	console.log(users.value);
 };
 
-// Normalize string to ignore diacritics
 const normalizeString = (str) => {
 	return str
 		.normalize("NFD")
@@ -108,10 +142,9 @@ const normalizeString = (str) => {
 		.toLowerCase();
 };
 
-// Computed property to filter users
 const filteredUsers = computed(() => {
 	if (!searchInput.value) {
-		return users.value; // Return all users if search input is empty
+		return users.value;
 	}
 	const normalizedSearchInput = normalizeString(searchInput.value);
 	return users.value.filter((user) => {
@@ -120,45 +153,40 @@ const filteredUsers = computed(() => {
 	});
 });
 
-// Watch for input changes and debounce the search
 const debounceSearch = debounce(handleSearch, 200);
 
-// Handle checkbox change
 const handleCheckboxChange = async (userId, isChecked) => {
-	console.log(`User ID: ${userId}, Checked: ${isChecked}`);
 	if (isChecked) {
+		emit("addSharedEventsId", userId);
 		try {
-			const response = await axios.post(
+			await axios.post(
 				`${config.public.apiUrl}add-share-id/${userId}`,
-				{}, // Sending an empty body (if your API does not require one)
+				{},
 				{
 					headers: {
 						Authorization: `Bearer ${authStore.token}`,
 					},
 				}
 			);
-			// Handle response if necessary
-			console.log(response.data);
 		} catch (error) {
 			console.error("Error adding share ID:", error);
-			error.value = "Error adding share ID"; // Set error message for user feedback
+			error.value = "Error adding share ID";
 		}
 	} else {
+		emit("deleteSharedEventsId", userId);
 		try {
-			const response = await axios.post(
-				`${config.public.apiUrl}null-share-id`,
-				{}, // Sending an empty body (if your API does not require one)
+			await axios.post(
+				`${config.public.apiUrl}null-share-id/${userId}`,
+				{},
 				{
 					headers: {
 						Authorization: `Bearer ${authStore.token}`,
 					},
 				}
 			);
-			// Handle response if necessary
-			console.log(response.data);
 		} catch (error) {
 			console.error("Error removing share ID:", error);
-			error.value = "Error removing share ID"; // Set error message for user feedback
+			error.value = "Error removing share ID";
 		}
 	}
 };
@@ -166,10 +194,31 @@ const handleCheckboxChange = async (userId, isChecked) => {
 // Fetch users on component mount
 onMounted(() => {
 	handleSearch();
+
+	// Event listener to close dropdown on click outside
+	const handleClickOutside = (event) => {
+		if (
+			dropdownContainer.value &&
+			!dropdownContainer.value.contains(event.target)
+		) {
+			isDropdownOpen.value = false;
+		}
+	};
+
+	document.addEventListener("click", handleClickOutside);
+
+	// Cleanup listener on component unmount
+	onBeforeUnmount(() => {
+		document.removeEventListener("click", handleClickOutside);
+	});
 });
 
-// Dropdown state management
-const isDropdownOpen = ref(false);
+// Computed property to get checked users
+const checkedUsers = computed(() => {
+	return users.value.filter((user) => user.checked);
+});
+
+// Dropdown toggle function
 const toggleDropdown = () => {
 	isDropdownOpen.value = !isDropdownOpen.value;
 };
@@ -205,9 +254,8 @@ const toggleDropdown = () => {
 	width: 10px;
 	height: 10px;
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M20.292 5.292a1 1 0 011.416 1.416l-12 12a1 1 0 01-1.416 0l-6-6a1 1 0 111.416-1.416L9.999 16.585l10.293-10.293z'/%3E%3C/svg%3E");
-	background-size: 100%;
+	background-size: contain;
 	background-repeat: no-repeat;
-	background-position: center;
 	transform: translate(-50%, -50%);
 }
 </style>

@@ -39,7 +39,7 @@ const logout = async () => {
 
 <template>
 	<div
-		class="fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center"
+		class="fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center z-10"
 	>
 		<div class="bg-white p-4 w-[300px] h-[150px] rounded-lg shadow-lg">
 			<p class="text-lg font-semibold mb-4 text-black text-center mt-1">
