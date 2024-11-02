@@ -133,7 +133,6 @@ const addActivity = async () => {
 
 		console.log(response.data.activity);
 
-		// Emit the newly added activity to the parent
 		emit("activityAdded", response.data.activity);
 
 		// Close the form
