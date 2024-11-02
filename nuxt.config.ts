@@ -20,8 +20,8 @@ export default defineNuxtConfig({
 
 	runtimeConfig: {
 		public: {
-			// apiUrl: "https://crm-be-main.vercel.app/",
-			apiUrl: "http://localhost:8000/",
+			apiUrl: "https://crm-be-main.vercel.app/",
+			// apiUrl: "http://localhost:8000/",
 		},
 	},
 });
