@@ -1,4 +1,5 @@
 <script setup>
+const end_date = ref("");
 const emit = defineEmits(["deleteSharedEventsId"]);
 
 const config = useRuntimeConfig();
@@ -32,15 +33,12 @@ const activityID = ref("");
 
 const toggleUpdateActivity = () => {
 	if (updateActivity.value === true) {
-		location.reload();
+		//location.reload();
 	}
 	updateActivity.value = !updateActivity.value;
 };
 
 const toggleAddActivity = () => {
-	if (addActivity.value === true) {
-		location.reload();
-	}
 	addActivity.value = !addActivity.value;
 };
 
@@ -57,7 +55,7 @@ const calendarOptions = ref({
 	initialView: "dayGridMonth",
 	// initialEvents: events.value,
 	initialEvents: [],
-	events: events.value,
+	events: events,
 	// events: [],
 	editable: true,
 	selectable: true,
@@ -88,8 +86,8 @@ onMounted(async () => {
 	user.value.id;
 
 	const shareIDs = user.value.share_user_id;
-	const array = JSON.parse(shareIDs); // ['2']
-	sharedIDs.value = array.map(Number); // [2]
+	const array = JSON.parse(shareIDs);
+	sharedIDs.value = array.map(Number);
 
 	// getting shared users activities
 	const shared_activities = await axios.post(
@@ -159,23 +157,23 @@ const handleWeekendsToggle = () => {
 	calendarOptions.value.weekends = !calendarOptions.value.weekends;
 };
 
-function handleDateSelect(selectInfo) {
-	toggleAddActivity();
-	// let title = prompt("Please enter a new title for your event");
-	let calendarApi = selectInfo.view.calendar;
+// function handleDateSelect(selectInfo) {
+// 	toggleAddActivity();
+// 	// let title = prompt("Please enter a new title for your event");
+// 	let calendarApi = selectInfo.view.calendar;
 
-	calendarApi.unselect();
+// 	calendarApi.unselect();
 
-	if (title) {
-		calendarApi.addEvent({
-			id: createEventId(),
-			title,
-			start: selectInfo.startStr,
-			end: selectInfo.endStr,
-			allDay: selectInfo.allDay,
-		});
-	}
-}
+// 	if (title) {
+// 		calendarApi.addEvent({
+// 			id: createEventId(),
+// 			title,
+// 			start: selectInfo.startStr,
+// 			end: selectInfo.endStr,
+// 			allDay: selectInfo.allDay,
+// 		});
+// 	}
+// }
 
 // zlucit shared events with user events
 
@@ -186,7 +184,7 @@ function handleDateSelect(selectInfo) {
 
 function handleEventClick(clickInfo) {
 	toggleUpdateActivity();
-	console.log(clickInfo.event._def.publicId);
+	console.log("skuska", clickInfo.event._def.publicId);
 	activityID.value = clickInfo.event._def.publicId;
 }
 
@@ -266,73 +264,170 @@ const displayUpdateEvent = (event) => {
 	toggleUpdateActivity();
 	activityID.value = event.id;
 };
+
+const alterEvents = (updatedEvent) => {
+	// First update the rawData array since it contains the original format
+	rawData.value = rawData.value.map((event) =>
+		event.id === updatedEvent.id ? updatedEvent : event
+	);
+
+	// Then update the events array using your transform function
+	events.value = events.value.map((event) => {
+		if (event.id === updatedEvent.id) {
+			return {
+				id: updatedEvent.id,
+				title: updatedEvent.aktivita,
+				start: updatedEvent.datumCas.replace(" ", "T"),
+				end: updatedEvent.koniec,
+				backgroundColor:
+					updatedEvent.created_id === user.value.id ? "blue" : "red",
+				borderColor: updatedEvent.created_id === user.value.id ? "blue" : "red",
+				user_id: updatedEvent.created_id,
+			};
+		}
+		return event;
+	});
+
+	// Update calendar options to refresh the view
+	calendarOptions.value = {
+		...calendarOptions.value,
+		events: events.value,
+	};
+};
+
+// const addNewEvent = (newEvent) => {
+// 	// First add the event to rawData since it contains the original format
+// 	rawData.value.push(newEvent);
+
+// 	// Create the transformed event object in the calendar format
+// 	const transformedEvent = {
+// 		id: newEvent.id,
+// 		title: newEvent.aktivita,
+// 		start: newEvent.datumCas.replace(" ", "T"),
+// 		end: newEvent.koniec,
+// 		backgroundColor: newEvent.created_id === user.value.id ? "blue" : "red",
+// 		borderColor: newEvent.created_id === user.value.id ? "blue" : "red",
+// 		user_id: newEvent.created_id,
+// 	};
+
+// 	// Add the new event to the events array
+// 	events.value = [...events.value, transformedEvent];
+
+// 	// Update calendar options to refresh the view
+// 	calendarOptions.value = {
+// 		...calendarOptions.value,
+// 		events: events.value,
+// 	};
+// };
+
+const addNewEvent = (newEvent) => {
+	// First add the event to rawData since it contains the original format
+	rawData.value.push(newEvent);
+
+	// Create the transformed event object in the calendar format
+	const transformedEvent = {
+		id: newEvent.id,
+		title: newEvent.aktivita,
+		start: newEvent.datumCas.replace(" ", "T"),
+		end: newEvent.koniec,
+		backgroundColor: newEvent.created_id === user.value.id ? "blue" : "red",
+		borderColor: newEvent.created_id === user.value.id ? "blue" : "red",
+		user_id: newEvent.created_id,
+	};
+
+	// Add the new event to the events array
+	events.value = [...events.value, transformedEvent];
+
+	// Update calendar options to refresh the view
+	calendarOptions.value = {
+		...calendarOptions.value,
+		events: events.value,
+	};
+
+	// Close the add form after successful addition
+	addActivity.value = false;
+	toggleAddActivity();
+};
+
+function handleDateSelect(selectInfo) {
+	toggleAddActivity();
+	let calendarApi = selectInfo.view.calendar;
+	end_date.value = selectInfo.startStr;
+	console.log("Stark", selectInfo.startStr, "end", selectInfo.endStr);
+	calendarApi.unselect();
+}
 </script>
 
 <template>
-	<AddActivityCalendar
-		v-if="addActivity"
-		@cancelAddActivity="toggleAddActivity"
-	/>
-	<EventUpdateCalendar
-		:activityID="activityID"
-		v-if="updateActivity"
-		@cancelAddActivity="toggleUpdateActivity"
-	/>
-	<div class="demo-app bg-white">
-		<div class="demo-app-sidebar bg-white-force">
-			<div
-				class="demo-app-sidebar-section text-black"
-				style="background-color: #c0c2ce"
-			>
-				<h2 class="font-semibold text-2xl text-center">Diár</h2>
-			</div>
-			<div
-				class="demo-app-sidebar-section text-black"
-				style="background-color: #c0c2ce"
-			>
-				<label class="text-lg">
-					<input
-						type="checkbox"
-						:checked="calendarOptions.weekends"
-						@change="handleWeekendsToggle"
+	<div class="h-screen">
+		<AddActivityCalendar
+			v-if="addActivity"
+			@cancelAddActivity="toggleAddActivity"
+			@addNewEvent="addNewEvent"
+			:end_date="end_date"
+		/>
+		<EventUpdateCalendar
+			:activityID="activityID"
+			v-if="updateActivity"
+			@cancelAddActivity="toggleUpdateActivity"
+			@alterEvents="alterEvents"
+		/>
+		<div class="demo-app bg-white">
+			<div class="demo-app-sidebar bg-white-force">
+				<div
+					class="demo-app-sidebar-section text-black"
+					style="background-color: #c0c2ce"
+				>
+					<h2 class="font-semibold text-2xl text-center">Diár</h2>
+				</div>
+				<div
+					class="demo-app-sidebar-section text-black"
+					style="background-color: #c0c2ce"
+				>
+					<label class="text-lg">
+						<input
+							type="checkbox"
+							:checked="calendarOptions.weekends"
+							@change="handleWeekendsToggle"
+						/>
+						toggle weekends
+					</label>
+				</div>
+				<div
+					class="demo-app-sidebar-section text-black rounded-b-[30px]"
+					style="background-color: #c0c2ce"
+				>
+					<h2 class="underline">Recent Events:</h2>
+					<ul class="">
+						<li
+							v-for="event in recentEvents"
+							:key="event.id"
+							@click="displayUpdateEvent(event)"
+							class="cursor-pointer hover:bg-blue-50 rounded text-black text-sm flex items-center justify-center"
+						>
+							<b>{{ formatDate(event.startStr) }}</b>
+							<i>{{ event.title }}</i>
+						</li>
+					</ul>
+				</div>
+				<div>
+					<CalendarSharing
+						class="mt-4"
+						@deleteSharedEventsId="deleteSharedEventsId"
+						@addSharedEventsId="addSharedEventsId"
 					/>
-					toggle weekends
-				</label>
+				</div>
 			</div>
-			<div
-				class="demo-app-sidebar-section text-black rounded-b-[30px]"
-				style="background-color: #c0c2ce"
-			>
-				<h2 class="underline">Recent Events:</h2>
-				<ul class="">
-					<li
-						v-for="event in recentEvents"
-						:key="event.id"
-						@click="displayUpdateEvent(event)"
-						class="cursor-pointer hover:bg-blue-50 rounded text-black text-sm flex items-center justify-center"
-					>
-						<b>{{ formatDate(event.startStr) }}</b>
-						<i>{{ event.title }}</i>
-					</li>
-				</ul>
-			</div>
-			<div>
-				<CalendarSharing
-					class="mt-4"
-					@deleteSharedEventsId="deleteSharedEventsId"
-					@addSharedEventsId="addSharedEventsId"
-				/>
-			</div>
-		</div>
-		<div class="demo-app-main bg-white text-black">
-			<!-- <CalendarSharing class="absolute left-5" /> -->
+			<div class="demo-app-main bg-white text-black">
+				<!-- <CalendarSharing class="absolute left-5" /> -->
 
-			<FullCalendar class="demo-app-calendar" :options="calendarOptions">
-				<template v-slot:eventContent="arg">
-					<b>{{ arg.timeText }}</b>
-					<i>{{ arg.event.title }}</i>
-				</template>
-			</FullCalendar>
+				<FullCalendar class="demo-app-calendar" :options="calendarOptions">
+					<template v-slot:eventContent="arg">
+						<b>{{ arg.timeText }}</b>
+						<i>{{ arg.event.title }}</i>
+					</template>
+				</FullCalendar>
+			</div>
 		</div>
 	</div>
 </template>

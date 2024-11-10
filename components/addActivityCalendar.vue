@@ -1,12 +1,17 @@
 <script setup>
 import { Icon } from "@iconify/vue";
 import axios from "axios";
+import { format, parseISO } from "date-fns";
 
 const config = useRuntimeConfig();
 
 import { useAuthStore } from "@/stores/authStore";
 const authStore = useAuthStore();
 authStore.loadToken();
+
+const props = defineProps({
+	end_date: String,
+});
 
 const contacts = ref([]);
 const contact = ref([]);
@@ -34,7 +39,25 @@ watch(aktivita, (newValue) => {
 	}
 });
 
+const formatDateToISO = (dateString) => {
+	// Parse the date string into a Date object
+	const date = parseISO(dateString); // This will handle 'yyyy-MM-dd' format
+
+	// Format the date to the desired format (YYYY-MM-DDTHH:mm)
+	const formattedDate = format(date, "yyyy-MM-dd'T'HH:mm"); // or "yyyy-MM-dd'T'HH:mm:ss" for seconds
+
+	return formattedDate;
+};
+
 onMounted(async () => {
+	const end = props.end_date;
+	koniec.value = formatDateToISO(end);
+
+	const now = new Date();
+	console.log("now:", now);
+	datum_cas.value = format(now, "yyyy-MM-dd'T'HH:mm");
+
+	console.log("end_date:", props.end_date);
 	const response2 = await axios.get(`${config.public.apiUrl}all-contacts`, {
 		headers: {
 			Authorization: `Bearer ${authStore.token}`,
@@ -60,7 +83,7 @@ watch(kontakt, async (newValue) => {
 	console.log("contact:", contact.value.email);
 });
 
-const emit = defineEmits(["cancelAddActivity", "activityAdded"]);
+const emit = defineEmits(["cancelAddActivity", "activityAdded", "addNewEvent"]);
 
 const cancelActivity = () => {
 	emit("cancelAddActivity");
@@ -113,12 +136,18 @@ const addActivity = async () => {
 
 		// Emit the newly added activity to the parent
 		emit("activityAdded", response.data.activity);
-
+		emit("addNewEvent", response.data.activity);
 		// Close the form
 		emit("cancelAddActivity");
 	} catch (error) {
 		console.error("Error adding activity:", error);
 	}
+};
+
+const handleSelectedContact = (contact) => {
+	kontakt.value = `${contact.meno} ${contact.priezvisko} ${contact.id}`;
+	id.value = contact.id;
+	email.value = contact.email;
 };
 </script>
 
@@ -133,11 +162,12 @@ const addActivity = async () => {
 			<div class="cursor-pointer" @click="cancelActivity()">
 				<Icon icon="fa6-solid:xmark" class="absolute top-4 right-6" />
 			</div>
+
 			<label
 				class="text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
 				>Kontakt</label
 			>
-			<select
+			<!-- <select
 				v-model="kontakt"
 				id="floating_aktivita"
 				class="w-full bg-gray-700 text-white rounded-lg p-1 mt-1 mb-2"
@@ -146,7 +176,12 @@ const addActivity = async () => {
 					{{ contact.meno }} {{ contact.priezvisko }}
 					<span class="invisible">{{ contact.id }}</span>
 				</option>
-			</select>
+			</select> -->
+
+			<EventSearch
+				:contactsProp="contacts"
+				@selectedContact="handleSelectedContact"
+			/>
 
 			<div v-if="!emailBool">
 				<label

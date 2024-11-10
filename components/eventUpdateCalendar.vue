@@ -80,7 +80,7 @@ onMounted(async () => {
 	console.log("email:", contact.value.email);
 });
 
-const emit = defineEmits(["cancelAddActivity", "activityAdded"]);
+const emit = defineEmits(["cancelAddActivity", "activityAdded", "alterEvents"]);
 
 const cancelActivity = () => {
 	emit("cancelAddActivity");
@@ -134,6 +134,7 @@ const addActivity = async () => {
 		console.log(response.data.activity);
 
 		emit("activityAdded", response.data.activity);
+		emit("alterEvents", response.data.activity);
 
 		// Close the form
 		emit("cancelAddActivity");
@@ -174,7 +175,7 @@ const redirectToContact = () => {
 
 			<div>
 				<div
-					class="flex gap-3 my-4 cursor-pointer"
+					class="flex gap-3 my-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2 border-b-2 border-gray-200 dark:border-gray-600"
 					v-if="contact.meno || contact.priezvisko"
 					@click="redirectToContact"
 				>
@@ -182,6 +183,7 @@ const redirectToContact = () => {
 					<div>{{ contact.meno }}</div>
 					<div>{{ contact.priezvisko }}</div>
 				</div>
+
 				<label
 					class="text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
 				>

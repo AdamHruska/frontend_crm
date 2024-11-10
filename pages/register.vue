@@ -5,7 +5,6 @@ import axios from "axios";
 import { useAuthStore } from "@/stores/authStore";
 
 const authStore = useAuthStore();
-
 const router = useRouter();
 
 const first_name = ref("");
@@ -18,40 +17,53 @@ const token = ref("");
 definePageMeta({
 	layout: "empty",
 });
-// (first_name, last_name, email, password)
+
 const register = async () => {
 	event.preventDefault();
-	try {
-		const response = await axios.post(
-			`${config.public.apiUrl}register`,
-			{
-				username: first_name.value + " " + last_name.value,
-				first_name: first_name.value,
-				last_name: last_name.value,
-				email: email.value,
-				password: password.value,
-			},
-			{
-				headers: {
-					"Content-Type": "application/json",
-					Accept: "application/json",
-					"Access-Control-Allow-Origin": "*",
+	if (first_name.value && last_name.value && email.value && password.value) {
+		try {
+			const response = await axios.post(
+				`${config.public.apiUrl}register`,
+				{
+					username: first_name.value + " " + last_name.value,
+					first_name: first_name.value,
+					last_name: last_name.value,
+					email: email.value,
+					password: password.value,
 				},
+				{
+					headers: {
+						"Content-Type": "application/json",
+						Accept: "application/json",
+						"Access-Control-Allow-Origin": "*",
+					},
+				}
+			);
+
+			if (response.status === 200 || response.status === 201) {
+				token.value = response.data.authorization.token;
+				sessionStorage.setItem("token", response.data.authorization.token);
+				authStore.setToken(token.value);
+				console.log("User registered successfully:", authStore.token);
+				router.push("/");
+			} else {
+				alert(
+					response.data.message || "Registration failed. Please try again."
+				);
 			}
-		);
-		token.value = response.data.authorization.token;
-
-		sessionStorage.setItem("token", response.data.token);
-		authStore.setToken(token.value);
-
-		console.log("User registered successfully:", authStore.token);
-
-		router.push("/");
-	} catch (error) {
-		console.error(
-			"Error during registration:",
-			error.response ? error.response.data : error.message
-		);
+		} catch (error) {
+			// Display error message for network or server errors
+			alert(
+				error.response?.data?.message ||
+					"An error occurred during registration."
+			);
+			console.error(
+				"Error during registration:",
+				error.response ? error.response.data : error.message
+			);
+		}
+	} else {
+		alert("Je potrebné vyplniť všetky polia");
 	}
 };
 </script>

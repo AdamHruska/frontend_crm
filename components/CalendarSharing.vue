@@ -62,15 +62,21 @@
 			<div
 				v-for="(user, index) in checkedUsers"
 				:key="user.id"
-				class="flex gap-3"
+				class="flex gap-3 items-center content-center"
 			>
-				<div>{{ user.first_name }} {{ user.last_name }}</div>
 				<input
 					v-model="user.checked"
 					:id="'checkbox' + user.id"
 					type="checkbox"
-					class="peer mr-3 w-5 h-5 cursor-pointer checkbox-custom"
+					class="peer w-5 h-5 cursor-pointer checkbox-custom"
 					@change="handleCheckboxChange(user.id, user.checked)"
+				/>
+				<div>{{ user.first_name }} {{ user.last_name }}</div>
+
+				<input
+					type="color"
+					value="#FF0000"
+					class="appearance-none w-[25px] h-[28px] bg-transparent border-0 cursor-pointer [&::-webkit-color-swatch]:rounded-[5px] [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-[5px] [&::-moz-color-swatch]:border-0"
 				/>
 			</div>
 		</div>

@@ -22,17 +22,34 @@ const showAddPersonForm = ref(false);
 const showAlterPesonForm = ref(false);
 const people = ref([]);
 
-function addPerson(newContact) {
-	showAddPersonForm.value = !showAddPersonForm.value;
+const isChecked = ref(false);
+const selected = ref([]);
 
-	// If newContact is provided, add it to the people array or handle it as needed
-	if (newContact) {
-		people.value.push(newContact);
-		console.log("New contact added:", newContact);
-		location.reload();
+const toggleCheckbox = (id) => {
+	const person = people.value.find((p) => p.id === id);
+	if (person) {
+		const index = selected.value.findIndex((p) => p.id === id);
+		if (index === -1) {
+			selected.value.push(person);
+		} else {
+			selected.value.splice(index, 1);
+		}
+	}
+	console.log(selected.value);
+};
+
+function addPerson(addedPeople) {
+	// If addedPeople is passed, handle the addition
+	if (addedPeople) {
+		if (addedPeople.length > 0) {
+			// Push the added people to the people array
+			people.value.push(...addedPeople);
+			alert("Kontakt bol pridaný");
+		}
 	}
 
-	console.log("addPerson method triggered in parent");
+	// Toggle the form visibility
+	showAddPersonForm.value = !showAddPersonForm.value;
 }
 
 function alterPerson() {
@@ -113,6 +130,10 @@ const columns = [
 		key: "odporucitel",
 		label: "Odporucitel",
 	},
+	{
+		key: "odporucitel",
+		label: "Odporucitel",
+	},
 	// {
 	// 	key: "created_at",
 	// 	label: "Dátum pridania",
@@ -140,6 +161,11 @@ const columns = [
 	{
 		key: "actions",
 	},
+	{
+		key: "checkbox",
+		label: "",
+		type: "checkbox",
+	},
 ];
 
 const items = (row) => [
@@ -152,9 +178,18 @@ const items = (row) => [
 	],
 	[
 		{
+			label: "Show Contact Details",
+			icon: "i-heroicons-information-circle-20-solid",
+			click: () => {
+				// Navigate to the contact details page
+				router.push(`/contact/${row.id}`);
+			},
+		},
+	],
+	[
+		{
 			label: "Edit",
 			icon: "i-heroicons-pencil-square-20-solid",
-			// click: () => findPerson(console.log(row.id, row.id)),
 			click: () => findPerson(row.id),
 		},
 	],
@@ -169,7 +204,6 @@ const items = (row) => [
 		},
 	],
 ];
-
 const formatDate = (dateToFormat) => {
 	const date = new Date(dateToFormat);
 	return format(date, "dd-MM-yyyy");
@@ -236,32 +270,47 @@ function updatePerson(updatedContact) {
 		<search2 />
 	</div> -->
 	<UTable :rows="people" :columns="columns" class="mx-6 table-container">
-		<template #name-data="{ row }" @click="test">
-			<span
-				:class="[
-					selected.find((person) => person.id === row.id) &&
-						'text-primary-500 dark:text-primary-400',
-				]"
-				>{{ row.name }}</span
-			>
-		</template>
-
-		<template #created_at-data="{ row }">
-			<span>{{ formatDate(row.created_at) }}</span>
-		</template>
-
-		<template #rok_narodenia-data="{ row }">
-			<span>{{ calculateAge(row.rok_narodenia) }}</span>
+		<template #name-data="{ row }">
+			<div class="test">
+				<span
+					:class="[
+						selected.find((person) => person.id === row.id) &&
+							'text-primary-500 dark:text-primary-400',
+					]"
+					>{{ row.name }}</span
+				>
+			</div>
 		</template>
 
 		<template #actions-data="{ row }">
-			<UDropdown :items="items(row)">
-				<UButton
-					color="gray"
-					variant="ghost"
-					icon="i-heroicons-ellipsis-horizontal-20-solid"
-				/>
-			</UDropdown>
+			<div class="flex justify-between">
+				<div class="flex space-x-4">
+					<UButton
+						@click="detailView(row.id)"
+						class="bg-blue-500 text-white"
+						label="Show Details"
+					/>
+					<UButton
+						@click="findPerson(row.id)"
+						icon="i-heroicons-pencil-square-20-solid"
+						color="gray"
+						variant="ghost"
+					/>
+					<UButton
+						@click="
+							deletePerson(row.id).then(() => {
+								people.value = people.value.filter(
+									(person) => person.id !== row.id
+								);
+							})
+						"
+						icon="i-heroicons-trash-20-solid"
+						color="red"
+						variant="ghost"
+					/>
+				</div>
+				<input type="checkbox" @change="toggleCheckbox(row.id)" />
+			</div>
 		</template>
 	</UTable>
 

@@ -83,9 +83,30 @@ watch(odporucitelInput, (newVal) => {
 	});
 });
 
-// Function to submit all users
 const addPeople = async () => {
-	const people = users.value;
+	// Filter out users who have all required fields filled
+	const people = users.value.filter(
+		(person) => person.meno && person.priezvisko && person.odporucitel
+	);
+
+	// Check if any user has missing required fields
+	const hasMissingFields = users.value.some(
+		(user) => !user.meno || !user.priezvisko || !user.odporucitel
+	);
+
+	if (hasMissingFields) {
+		alert(
+			"Meno, priezvisko a odporúčiteľ sú povinné pre každý riadok. Prosím, vyplňte ich."
+		);
+		return;
+	}
+
+	// If there are no valid users, alert the user
+	if (people.length === 0) {
+		alert("Vyplňte povinné polia pre aspoň jeden riadok.");
+		return;
+	}
+
 	try {
 		for (let person of people) {
 			await axios.post(`${config.public.apiUrl}post-create-contact`, person, {
@@ -101,6 +122,12 @@ const addPeople = async () => {
 		console.error("Error adding people:", error);
 	}
 };
+
+function removeRow(index) {
+	if (users.value.length > 1) {
+		users.value.splice(index, 1);
+	}
+}
 </script>
 
 <template>
@@ -187,6 +214,13 @@ const addPeople = async () => {
 							<input
 								v-model="user.poznamka"
 								class="border bg-gray-700 min-w-[350px]"
+							/>
+						</td>
+						<td class="text-center">
+							<Icon
+								icon="fa6-solid:xmark"
+								@click="removeRow(index)"
+								class="cursor-pointer text-2xl"
 							/>
 						</td>
 					</tr>
