@@ -63,7 +63,7 @@ onMounted(() => {
 	<div ref="dropdownRef" class="relative">
 		<div
 			@click="toggleDropdown"
-			class="bg-slate-700 w-full h-[30px] rounded cursor-pointer flex items-center px-3"
+			class="bg-gray-200 w-full h-[30px] rounded cursor-pointer flex items-center px-3"
 		>
 			{{
 				selectedContact
@@ -73,12 +73,12 @@ onMounted(() => {
 		</div>
 		<div
 			v-if="showDropdown"
-			class="absolute w-full mt-1 bg-slate-700 rounded shadow-lg z-10 py-2"
+			class="absolute w-full mt-1 bg-gray-200 rounded shadow-lg z-10 py-2"
 		>
 			<input
 				v-model="searchText"
 				type="text"
-				class="w-full mb-2 p-1 pl-0 bg-slate-700 text-white pl-2 border-b-2 border-slate-500 focus:border-blue-500 w-[95%]"
+				class="w-full mb-2 p-1 pl-0 bg-gray-200 text-white pl-2 border-b-2 border-slate-500 focus:border-blue-500 w-[95%]"
 				placeholder="Vyhľadajte kontakt ..."
 			/>
 			<div

@@ -52,11 +52,12 @@ const calendarOptions = ref({
 		center: "title",
 		right: "dayGridMonth,timeGridWeek,timeGridDay",
 	},
-	initialView: "dayGridMonth",
-	// initialEvents: events.value,
+	initialView: "timeGridWeek",
+	slotMinTime: "06:00:00",
+	slotMaxTime: "23:00:00",
+	scrollTime: "08:00:00",
 	initialEvents: [],
 	events: events,
-	// events: [],
 	editable: true,
 	selectable: true,
 	selectMirror: true,
@@ -65,7 +66,32 @@ const calendarOptions = ref({
 	select: handleDateSelect,
 	eventClick: handleEventClick,
 	eventsSet: handleEvents,
+	slotDuration: "00:30:00",
+	allDaySlot: true,
+	nowIndicator: true,
+	// Time format settings
+	eventTimeFormat: {
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: false,
+	},
+	slotLabelFormat: {
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: false,
+	},
+	// Locale settings for European date format
+	locale: "sk", // Slovak locale for European format
+	firstDay: 1, // Monday as first day of week
 });
+
+// zobrazenie roznych hranic casov
+// initialView: "timeGridWeek", // Changed from dayGridWeek to timeGridWeek
+// slotMinTime: "06:00:00", // Optional: Set start time of day
+// slotMaxTime: "22:00:00", // Optional: Set end time of day
+// scrollTime: "08:00:00", // Optional: Set initial scroll time
+// initialEvents: [],
+
 onMounted(async () => {
 	const response = await axios.get(
 		`${config.public.apiUrl}get-activities-diary`,
@@ -371,6 +397,7 @@ function handleDateSelect(selectInfo) {
 			v-if="updateActivity"
 			@cancelAddActivity="toggleUpdateActivity"
 			@alterEvents="alterEvents"
+			:user.value="user"
 		/>
 		<div class="demo-app bg-white">
 			<div class="demo-app-sidebar bg-white-force">

@@ -5,6 +5,7 @@ import { Icon } from "@iconify/vue";
 import axios from "axios";
 const props = defineProps({
 	activityID: String,
+	user: Object,
 });
 
 import { useAuthStore } from "@/stores/authStore";
@@ -25,9 +26,12 @@ const dohodnute = ref("");
 const ineBool = ref(false);
 const miesto_stretnutia = ref("");
 const onlineMeeting = ref(false);
+const activity_creator = ref("");
 
 const emailBool = ref(false);
 const email = ref("");
+
+const showAlterButtons = ref(false);
 
 watch(aktivita, (newValue) => {
 	if (newValue === "ine") {
@@ -38,7 +42,6 @@ watch(aktivita, (newValue) => {
 });
 
 onMounted(async () => {
-	console.log("ID:", props.activityID);
 	const response = await axios.get(
 		`${config.public.apiUrl}activities/${props.activityID}`,
 		{
@@ -48,7 +51,7 @@ onMounted(async () => {
 		}
 	);
 	//console.log("Response:", response.data.activity);
-
+	activity_creator.value = response.data.activity.created_id;
 	aktivita.value = response.data.activity.aktivita;
 	ina_aktivita.value = response.data.activity.aktivita;
 	datum_cas.value = response.data.activity.datumCas;
@@ -76,8 +79,6 @@ onMounted(async () => {
 	} else {
 		email.value = contact.value.email;
 	}
-
-	console.log("email:", contact.value.email);
 });
 
 const emit = defineEmits(["cancelAddActivity", "activityAdded", "alterEvents"]);
@@ -165,9 +166,9 @@ const redirectToContact = () => {
 	<div
 		class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
 	>
-		<div class="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+		<div class="absolute inset-0 bg-gray bg-opacity-50 backdrop-blur-sm"></div>
 		<form
-			class="relative bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full z-10"
+			class="relative bg-white bg-white p-6 rounded-lg shadow-lg max-w-md w-full z-10"
 		>
 			<div class="cursor-pointer" @click="cancelActivity()">
 				<Icon icon="fa6-solid:xmark" class="absolute top-4 right-6" />
@@ -175,7 +176,7 @@ const redirectToContact = () => {
 
 			<div>
 				<div
-					class="flex gap-3 my-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2 border-b-2 border-gray-200 dark:border-gray-600"
+					class="flex gap-3 my-4 cursor-pointer hover:bg-gray-200 p-2 border-b-2 border-black"
 					v-if="contact.meno || contact.priezvisko"
 					@click="redirectToContact"
 				>
@@ -185,14 +186,14 @@ const redirectToContact = () => {
 				</div>
 
 				<label
-					class="text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+					class="text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
 				>
 					Upraviť email ku kontaktu:
 				</label>
 				<input
 					v-model="email"
 					type="email"
-					class="w-full mt-3 p-1 bg-slate-700 rounded-lg text-white pl-2 focus:outline-blue-500"
+					class="w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500"
 					placeholder="Zadajte email ..."
 				/>
 			</div>
@@ -204,7 +205,7 @@ const redirectToContact = () => {
 				<select
 					v-model="aktivita"
 					id="floating_aktivita"
-					class="w-full bg-gray-700 text-white rounded-lg p-1 mt-1"
+					class="w-full bg-gray-200 text-white rounded-lg p-1 mt-1"
 				>
 					<option value="Telefonát klient">Telefonát klient</option>
 					<option value="Telefonát nábor">Telefonát nábor</option>
@@ -230,7 +231,7 @@ const redirectToContact = () => {
 					v-model="ina_aktivita"
 					type="text"
 					v-if="ineBool"
-					class="w-full mt-3 p-1 bg-slate-700 rounded-lg text-white pl-2 focus:outline-blue-500"
+					class="w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500"
 					placeholder="Zadajte aktivitu ..."
 				/>
 			</div>
@@ -306,7 +307,7 @@ const redirectToContact = () => {
 				<input
 					v-model="miesto_stretnutia"
 					type="text"
-					class="w-full mt-3 p-1 bg-slate-700 rounded-lg text-white pl-2 focus:outline-blue-500"
+					class="w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500"
 					placeholder="Zadajte miesto stretnutia ..."
 				/>
 			</div>
@@ -367,7 +368,10 @@ const redirectToContact = () => {
 					</label>
 				</div>
 			</div>
-			<div class="flex justify-center items-center mt-3 gap-6">
+			<div
+				v-if="props.user.id == activity_creator"
+				class="flex justify-center items-center mt-3 gap-6"
+			>
 				<button
 					@click="addActivity()"
 					class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"

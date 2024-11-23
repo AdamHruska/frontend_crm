@@ -1,7 +1,7 @@
 <script setup>
 import { Icon } from "@iconify/vue";
 import axios from "axios";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, add } from "date-fns";
 
 const config = useRuntimeConfig();
 
@@ -50,21 +50,20 @@ const formatDateToISO = (dateString) => {
 };
 
 onMounted(async () => {
-	const end = props.end_date;
-	koniec.value = formatDateToISO(end);
+	// Set initial datum_cas to props.end_date
+	datum_cas.value = formatDateToISO(props.end_date);
 
-	const now = new Date();
-	console.log("now:", now);
-	datum_cas.value = format(now, "yyyy-MM-dd'T'HH:mm");
+	// Set koniec to props.end_date + 1 hour
+	const endDate = parseISO(props.end_date);
+	const endDatePlusHour = add(endDate, { hours: 1 });
+	koniec.value = format(endDatePlusHour, "yyyy-MM-dd'T'HH:mm");
 
-	console.log("end_date:", props.end_date);
 	const response2 = await axios.get(`${config.public.apiUrl}all-contacts`, {
 		headers: {
 			Authorization: `Bearer ${authStore.token}`,
 		},
 	});
 	contacts.value = await response2.data.contacts;
-	console.log("contacts:", contacts.value);
 });
 const id = ref("");
 watch(kontakt, async (newValue) => {
@@ -100,6 +99,10 @@ const addActivity = async () => {
 	// if (aktivita.value === "ine") {
 	// 	aktivita.value = ina_aktivita.value;
 	// }
+
+	if (!email.value) {
+		alert("Kontakt nemá email, pridajte email");
+	}
 	try {
 		const response = await axios.post(
 			`${config.public.apiUrl}add-activity`,
@@ -155,16 +158,16 @@ const handleSelectedContact = (contact) => {
 	<div
 		class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
 	>
-		<div class="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+		<div class="absolute inset-0 bg-gray bg-opacity-50 backdrop-blur-sm"></div>
 		<form
-			class="relative bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full z-10"
+			class="relative bg-white bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full z-10"
 		>
 			<div class="cursor-pointer" @click="cancelActivity()">
 				<Icon icon="fa6-solid:xmark" class="absolute top-4 right-6" />
 			</div>
 
 			<label
-				class="text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+				class="text-sm text-black duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
 				>Kontakt</label
 			>
 			<!-- <select
@@ -185,15 +188,16 @@ const handleSelectedContact = (contact) => {
 
 			<div v-if="!emailBool">
 				<label
-					class="text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+					class="text-sm text-black duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
 				>
 					Pridať email ku kontaktu:
 				</label>
 				<input
 					v-model="email"
 					type="email"
-					class="w-full mt-3 p-1 bg-slate-700 rounded-lg text-white pl-2 focus:outline-blue-500"
+					class="w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500"
 					placeholder="Zadajte email ..."
+					required
 				/>
 			</div>
 			<div class="relative z-0 w-full mb-5 mt-2 group">
@@ -204,7 +208,7 @@ const handleSelectedContact = (contact) => {
 				<select
 					v-model="aktivita"
 					id="floating_aktivita"
-					class="w-full bg-gray-700 text-white rounded-lg p-1 mt-1"
+					class="w-full bg-gray-200 text-white rounded-lg p-1 mt-1"
 				>
 					<option value="Telefonát klient">Telefonát klient</option>
 					<option value="Telefonát nábor">Telefonát nábor</option>
@@ -239,7 +243,7 @@ const handleSelectedContact = (contact) => {
 				<input
 					v-model="onlineMeeting"
 					type="checkbox"
-					class="bg-slate-700 rounded-lg text-white pl-2 focus:outline-blue-500 mr-4"
+					class="bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500 mr-4"
 					value="true"
 				/>
 				<label
@@ -255,7 +259,7 @@ const handleSelectedContact = (contact) => {
 					step="900"
 					name="datum_cas"
 					id="floating_datum_cas"
-					class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+					class="block py-2.5 px-0 w-full text-sm text-gray-200 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text- dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
 					placeholder=" "
 				/>
 				<label
@@ -306,7 +310,7 @@ const handleSelectedContact = (contact) => {
 				<input
 					v-model="miesto_stretnutia"
 					type="text"
-					class="w-full mt-3 p-1 bg-slate-700 rounded-lg text-white pl-2 focus:outline-blue-500"
+					class="w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500"
 					placeholder="Zadajte miesto stretnutia ..."
 				/>
 			</div>
@@ -370,7 +374,7 @@ const handleSelectedContact = (contact) => {
 			<div class="flex justify-center items-center mt-3">
 				<button
 					@click="addActivity()"
-					class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+					class="text-white bg-blue-500 hover:bg-blue-600 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-800"
 				>
 					Pridať
 				</button>

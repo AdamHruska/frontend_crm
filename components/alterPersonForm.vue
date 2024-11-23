@@ -1,6 +1,9 @@
 <script setup>
 const config = useRuntimeConfig();
 
+import { useContactsStore } from "@/stores/contactsStore";
+const contactsStore = useContactsStore();
+
 import { ref, watch } from "vue";
 import axios from "axios";
 import { Icon } from "@iconify/vue";
@@ -26,14 +29,13 @@ const zamestanie = ref("");
 const poznamka = ref("");
 const Investicny_dotaznik = ref("");
 const selectedAuthorId = ref("");
+const author_id = ref("");
 
 // Define emits and props
 const emit = defineEmits(["cancelAlter", "alterPerson"]);
 const props = defineProps({
 	single_contact: Object,
 });
-
-console.log(props.single_contact);
 
 onMounted(async () => {
 	const response = await axios
@@ -45,7 +47,6 @@ onMounted(async () => {
 		.then((response) => {
 			users.value = response.data.users;
 		});
-	console.log(users.value);
 });
 
 // Watch for changes in props.single_contact
@@ -62,20 +63,18 @@ watch(
 			adresa.value = newVal.adresa || "";
 			rok_narodenia.value = calculateAge(
 				newVal.rok_narodenia || new Date().getFullYear()
-			); // Calculate age
+			);
 			zamestanie.value = newVal.zamestanie || "";
 			poznamka.value = newVal.poznamka || "";
 			Investicny_dotaznik.value = newVal.Investicny_dotaznik || "";
 			selectedAuthorId.value = newVal.author_id || "";
 		} else {
-			// Clear the form if no contact is provided
 			resetForm();
 		}
 	},
 	{ immediate: true }
 );
 
-// Function to clear form fields
 function resetForm() {
 	meno.value = "";
 	priezvisko.value = "";
@@ -89,20 +88,20 @@ function resetForm() {
 	poznamka.value = "";
 	Investicny_dotaznik.value = null;
 	selectedAuthorId.value = null;
-	console.log(meno.value);
 }
 
 function cancelAlter() {
 	resetForm();
 	emit("cancelAlter");
-	console.log("cancelAlter");
 }
 
 const alterPerson = async (id) => {
+	console.log(props.single_contact);
 	const person = {
+		id: props.single_contact.id,
 		meno: meno.value,
 		priezvisko: priezvisko.value,
-		poradca: poradca.value,
+		poradca: poradca.value ? String(poradca.value) : "",
 		cislo: cislo.value,
 		email: email.value,
 		odporucitel: odporucitel.value,
@@ -113,6 +112,7 @@ const alterPerson = async (id) => {
 		Investicny_dotaznik: Investicny_dotaznik.value,
 		author_id: selectedAuthorId.value,
 	};
+	// console.log(person);
 	const response = await axios.put(
 		`${config.public.apiUrl}post-update-contact/${id}`,
 		person,
@@ -122,39 +122,35 @@ const alterPerson = async (id) => {
 			},
 		}
 	);
-	//console.log(response.data.contact);
 	emit("alterPerson", response.data.contact);
 };
 </script>
 
 <template>
 	<div
-		class="fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center z-50"
+		class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
 	>
-		<div
-			class="bg-slate-800 p-4 min-w-[1024px] min-h-[70vh] rounded-lg shadow-lg"
-		>
-			<div class="">
+		<div class="bg-white p-6 min-w-[1024px] min-h-[70vh] rounded-lg shadow-xl">
+			<div>
 				<div class="flex items-center justify-between mb-8">
-					<h2 class="text-2xl font-semibold text-center flex-1">
+					<h2 class="text-2xl font-semibold text-gray-800 text-center flex-1">
 						Upraviť kontakt
 					</h2>
 					<Icon
 						icon="fa6-solid:xmark"
 						@click="cancelAlter()"
-						class="cursor-pointer text-2xl"
+						class="cursor-pointer text-2xl text-gray-600 hover:text-gray-800"
 					/>
 				</div>
 
 				<form @submit.prevent="handleSubmit">
 					<div class="w-full px-10">
-						<!-- Flex container for each row of inputs -->
 						<div class="flex gap-16 mb-9 relative">
 							<div class="flex-1">
 								<label
 									v-if="meno"
 									for="meno"
-									class="text-gray-400 absolute top-[-22px]"
+									class="text-gray-600 absolute top-[-22px] font-medium"
 									>Meno</label
 								>
 								<input
@@ -168,7 +164,7 @@ const alterPerson = async (id) => {
 							<div class="flex-1">
 								<label
 									v-if="priezvisko"
-									class="text-gray-400 absolute top-[-22px]"
+									class="text-gray-600 absolute top-[-22px] font-medium"
 									>Priezvisko</label
 								>
 								<input
@@ -183,7 +179,9 @@ const alterPerson = async (id) => {
 
 						<div class="flex gap-16 mb-9 relative">
 							<div class="flex-1">
-								<label v-if="poradca" class="text-gray-400 absolute top-[-22px]"
+								<label
+									v-if="poradca"
+									class="text-gray-600 absolute top-[-22px] font-medium"
 									>Poradca</label
 								>
 								<input
@@ -195,7 +193,9 @@ const alterPerson = async (id) => {
 								/>
 							</div>
 							<div class="flex-1">
-								<label v-if="cislo" class="text-gray-400 absolute top-[-22px]"
+								<label
+									v-if="cislo"
+									class="text-gray-600 absolute top-[-22px] font-medium"
 									>Telefónne číslo</label
 								>
 								<input
@@ -210,7 +210,9 @@ const alterPerson = async (id) => {
 
 						<div class="flex gap-16 mb-9 relative">
 							<div class="flex-1">
-								<label v-if="email" class="text-gray-400 absolute top-[-22px]"
+								<label
+									v-if="email"
+									class="text-gray-600 absolute top-[-22px] font-medium"
 									>email</label
 								>
 								<input
@@ -224,7 +226,7 @@ const alterPerson = async (id) => {
 							<div class="flex-1">
 								<label
 									v-if="odporucitel"
-									class="text-gray-400 absolute top-[-22px]"
+									class="text-gray-600 absolute top-[-22px] font-medium"
 									>Odporučiteľ</label
 								>
 								<input
@@ -239,19 +241,21 @@ const alterPerson = async (id) => {
 
 						<div class="flex gap-16 mb-9 relative">
 							<div class="flex-1">
-								<label for="Investicny_dotaznik" class="absolute text-gray-400"
+								<label for="Investicny_dotaznik" class="absolute text-gray-600"
 									>Investicný dotazník vyplnený</label
 								>
 								<input
 									id="Investicny_dotaznik"
 									type="date"
-									class="w-full pl-[280px] text-gray-400"
+									class="w-full pl-[280px] text-gray-600"
 									v-model="Investicny_dotaznik"
-									:class="{ 'text-white': Investicny_dotaznik }"
+									:class="{ 'text-gray-800': Investicny_dotaznik }"
 								/>
 							</div>
 							<div class="flex-1">
-								<label v-if="adresa" class="text-gray-400 absolute top-[-22px]"
+								<label
+									v-if="adresa"
+									class="text-gray-600 absolute top-[-22px] font-medium"
 									>Adresa</label
 								>
 								<input
@@ -268,7 +272,7 @@ const alterPerson = async (id) => {
 							<div class="flex-1">
 								<label
 									v-if="rok_narodenia"
-									class="text-gray-400 absolute top-[-22px]"
+									class="text-gray-600 absolute top-[-22px] font-medium"
 									>Vek</label
 								>
 								<input
@@ -282,7 +286,7 @@ const alterPerson = async (id) => {
 							<div class="flex-1">
 								<label
 									v-if="zamestanie"
-									class="text-gray-400 absolute top-[-22px]"
+									class="text-gray-600 absolute top-[-22px] font-medium"
 									>Zamestnanie</label
 								>
 								<input
@@ -296,7 +300,9 @@ const alterPerson = async (id) => {
 						</div>
 
 						<div class="mb-6 mt-8 relative">
-							<label v-if="poznamka" class="text-gray-400 absolute top-[-22px]"
+							<label
+								v-if="poznamka"
+								class="text-gray-600 absolute top-[-22px] font-medium"
 								>Poznamka</label
 							>
 							<textarea
@@ -309,13 +315,15 @@ const alterPerson = async (id) => {
 						</div>
 						<div class="flex gap-16 mb-9">
 							<div class="flex-1">
-								<label for="author_id" class="block text-white mb-2"
+								<label
+									for="author_id"
+									class="block text-gray-800 mb-2 font-medium"
 									>Zmeniť poradcu</label
 								>
 								<select
 									v-model="selectedAuthorId"
 									id="author_id"
-									class="w-1/3 bg-gray-700 text-white rounded-lg"
+									class="w-1/3 bg-gray-50 text-gray-800 rounded-lg border border-gray-300"
 								>
 									<option v-for="user in users" :key="user.id" :value="user.id">
 										{{ user.first_name }} {{ user.last_name }}
@@ -323,68 +331,14 @@ const alterPerson = async (id) => {
 								</select>
 							</div>
 						</div>
-
-						<div class="text-center mb-8"></div>
 					</div>
 				</form>
 			</div>
-			<!--<UTable :columns="columns" :rows="people" class="mx-2 mb-6">
-			
-				<template #id-data="{ row }">
-					<input
-						v-model="row.id"
-						type="text"
-						class="border border-gray-300 rounded-md p-2 w-full"
-						placeholder="ID"
-					/>
-				</template>
 
-				<template #name-data="{ row }">
-					<input
-						v-model="row.name"
-						type="text"
-						class="border border-gray-300 rounded-md p-2 w-full"
-						placeholder="Name"
-					/>
-				</template>
-
-				<template #title-data="{ row }">
-					<input
-						v-model="row.title"
-						type="text"
-						class="border border-gray-300 rounded-md p-2 w-full"
-						placeholder="Title"
-					/>
-				</template>
-
-				<template #email-data="{ row }">
-					<input
-						v-model="row.email"
-						type="text"
-						class="border border-gray-300 rounded-md p-2 w-full"
-						placeholder="Email"
-					/>
-				</template>
-
-				<template #role-data="{ row }">
-					<input
-						v-model="row.role"
-						type="text"
-						class="border border-gray-300 rounded-md p-2 w-full"
-						placeholder="Role"
-					/>
-				</template>
-			</UTable>
-			<button
-				@click="addRow"
-				class="float-right mr-7 absolute right-[170px] bg-green-500 px-3 py-1 rounded-md"
-			>
-				Add row
-			</button>-->
 			<div class="flex justify-center">
 				<button
 					@click="alterPerson(props.single_contact.id)"
-					class="bg-blue-500 text-white w-[75px] py-2 rounded mr-2 hover:bg-blue-400 font-semibold"
+					class="bg-blue-500 text-white w-[75px] py-2 rounded mr-2 hover:bg-blue-600 font-semibold transition-colors"
 				>
 					Upraviť
 				</button>
@@ -394,25 +348,45 @@ const alterPerson = async (id) => {
 </template>
 
 <style scoped>
-/*input {
-	background-color: #1e293b;
-	border: none;
-	border-radius: 0;
-	box-shadow: 0 0 0 0.1px rgb(229, 231, 235);
-}*/
-
 input {
-	border-bottom: 1px solid #979797;
-	background-color: #1e293b;
+	border-bottom: 1px solid #d1d5db;
+	background-color: #ffffff;
 	height: 30px;
-	/*padding-left: 5px;*/
+	color: #374151;
+}
+
+input::placeholder {
+	color: #9ca3af;
 }
 
 textarea {
-	border-bottom: 1px solid #979797;
-	background-color: #1e293b;
+	border-bottom: 1px solid #d1d5db;
+	background-color: #ffffff;
 	height: 50px;
 	padding-left: 5px;
 	padding-top: 5px;
+	color: #374151;
+}
+
+textarea::placeholder {
+	color: #9ca3af;
+}
+
+input:focus,
+textarea:focus {
+	outline: none;
+	border-bottom: 2px solid #3b82f6;
+}
+
+select {
+	padding: 0.5rem;
+	border-radius: 0.375rem;
+	border: 1px solid #d1d5db;
+}
+
+select:focus {
+	outline: none;
+	border-color: #3b82f6;
+	ring: 2px solid #3b82f6;
 }
 </style>

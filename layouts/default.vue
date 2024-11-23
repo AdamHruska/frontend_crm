@@ -2,11 +2,11 @@
 	<div :class="['flex', !isAuthenticated ? 'bg-slate-900' : '']">
 		<!-- Sidebar -->
 		<div
-			class="flex flex-col h-screen w-16 overflow-hidden text-gray-400 bg-gray-900 fixed top-0 left-0"
+			class="flex flex-col h-screen w-16 overflow-hidden text-gray-400 bg-blue-800 fixed top-0 left-0 nav-shadow"
 			v-if="isAuthenticated"
 		>
 			<!-- Logo or Top Icon -->
-			<a class="flex items-center justify-center mt-3" href="#">
+			<a class="flex items-center justify-center mt-3" href="/">
 				<svg
 					class="w-10 h-10 fill-current"
 					xmlns="http://www.w3.org/2000/svg"
@@ -19,52 +19,45 @@
 				</svg>
 			</a>
 
-			<!--<a
-				class="flex items-center justify-center w-18 h-16 mt-auto bg-gray-800 hover:bg-gray-700 hover:text-gray-300"
-				href="#"
-			>
-				<svg
-					class="w-6 h-6 stroke-current"
-					xmlns="http://www.w3.org/2000/svg"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-					/>
-				</svg>
-			</a>-->
-
 			<!-- Main Navigation Items -->
 			<div
-				class="flex flex-col items-center mt-3 border-t border-gray-700 flex-grow"
+				class="flex flex-col items-center mt-3 border-t border-black border-t-1 flex-grow"
 			>
 				<NuxtLink
 					to="/"
-					class="flex items-center justify-center w-12 h-12 mt-2 rounded hover:bg-gray-700 hover:text-gray-300"
+					class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded"
 				>
 					<Icon icon="streamline:bullet-list" style="font-size: 22px" />
 				</NuxtLink>
 
 				<NuxtLink
 					to="/calendar"
-					class="flex items-center justify-center w-12 h-12 mt-2 rounded hover:bg-gray-700 hover:text-gray-300 border-t border-gray-700"
+					class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
 				>
 					<Icon icon="streamline:blank-calendar" style="font-size: 22px" />
 				</NuxtLink>
 
 				<NuxtLink
-					class="flex items-center justify-center w-12 h-12 mt-2 rounded hover:bg-gray-700 hover:text-gray-300 border-t border-gray-700"
-					href="#"
+					class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded border-t border-black"
+					to="/calls"
 				>
-					<Icon icon="ep:phone-filled" style="font-size: 22px" />
+					<Icon
+						icon="ep:phone-filled"
+						style="font-size: 22px"
+						class="text-white"
+					/>
 				</NuxtLink>
 
-				<!-- Add other nav items similarly -->
+				<NuxtLink
+					class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
+					to="/test"
+				>
+					<Icon
+						icon="ep:phone-filled"
+						style="font-size: 22px"
+						class="text-white"
+					/>
+				</NuxtLink>
 			</div>
 
 			<!-- Bottom Navigation Item -->
@@ -72,33 +65,23 @@
 				class="flex items-center justify-center w-16 h-16 mt-auto hover:bg-gray-700 hover:text-gray-300 mb-2 cursor-pointer"
 				@click="showSignOutForm()"
 			>
-				<!--<svg
-					class="w-6 h-6 stroke-current"
-					xmlns="http://www.w3.org/2000/svg"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-					/>
-				</svg>-->
 				<Icon icon="fa6-solid:circle-arrow-right" style="font-size: 22px" />
 			</div>
 		</div>
 
 		<!-- Main Content -->
 		<div class="flex-1 ml-16">
-			<slot />
+			<div class="relative z-0">
+				<slot />
+			</div>
 		</div>
 	</div>
+
 	<SignOutForm
 		v-if="showSignOutFormBool"
 		@cancelSignOut="showSignOutForm()"
 		@confirmSignOut="signOut()"
+		class="z-[60]"
 	/>
 </template>
 
@@ -109,12 +92,11 @@ import { Icon } from "@iconify/vue";
 const authStore = useAuthStore();
 authStore.loadLoginState();
 
-// Make isAuthenticated reactive using computed
 const isAuthenticated = computed(() => authStore.isAuthenticated);
 
 defineProps(["user"]);
 
-var showSignOutFormBool = ref(false);
+const showSignOutFormBool = ref(false);
 
 function showSignOutForm() {
 	showSignOutFormBool.value = !showSignOutFormBool.value;
@@ -125,3 +107,29 @@ function signOut() {
 	console.log("signed out");
 }
 </script>
+
+<style scoped>
+* {
+	font-family: "Inter", sans-serif;
+	color: aliceblue !important;
+}
+
+.text-white {
+	color: white !important;
+}
+
+/* Add these new styles */
+:deep(.table-container) {
+	position: relative;
+	z-index: 0;
+	overflow-x: auto;
+}
+
+:deep(.udropdown) {
+	z-index: 40;
+}
+
+.nav-shadow {
+	box-shadow: 4px 0 10px rgba(0, 0, 0, 0.4);
+}
+</style>

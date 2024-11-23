@@ -11,10 +11,13 @@ const authStore = useAuthStore();
 authStore.loadToken();
 
 const { id } = useRoute().params;
-const people = ref([]); // Initialize as an array
+const people = ref([]);
 const AddActivityBool = ref(false);
 
 const activities = ref([]);
+
+const author_id = ref(null);
+const user_id = ref(null);
 
 const changeAddActivityBool = () => {
 	AddActivityBool.value = !AddActivityBool.value;
@@ -23,7 +26,10 @@ const changeAddActivityBool = () => {
 onBeforeMount(async () => {
 	await findPerson(id);
 	await findActivities(id);
-	console.log("Aktiovity:", activities.value);
+	const user = await getUser();
+	user_id.value = user.id;
+	console.log("User ID:", user_id.value);
+	console.log("Contact uthor ID:", author_id.value);
 });
 
 const findPerson = async (id) => {
@@ -34,9 +40,11 @@ const findPerson = async (id) => {
 			},
 		});
 		if (response.data && response.data.contact) {
-			people.value = [response.data.contact]; // Wrap the contact in an array
+			people.value = [response.data.contact];
 			console.log(people.value);
 		}
+		author_id.value = response.data.contact.author_id;
+		console.log("Author ID:", author_id.value);
 	} catch (error) {
 		console.error("Error fetching contact:", error);
 	}
@@ -54,6 +62,16 @@ const findActivities = async (id) => {
 	activities.value = response.data.activities;
 	console.log("Activities test:", activities.value);
 };
+
+const getUser = async (id) => {
+	const response = await axios.get(`${config.public.apiUrl}get-user`, {
+		headers: {
+			Authorization: `Bearer ${authStore.token}`,
+		},
+	});
+	return response.data.user;
+};
+
 const actityFormBool = ref(false);
 const alterActivity = (id) => {
 	actityFormBool.value = !actityFormBool.value;
@@ -65,28 +83,46 @@ const addActivityToList = (activity) => {
 	activities.value.push(activity);
 };
 
-const columns = [
-	{ key: "meno", label: "Meno", class: "dark:bg-slate-900" },
-	{ key: "priezvisko", label: "Priezvisko", class: "dark:bg-slate-900" },
-	{ key: "poradca", label: "Poradca", class: "dark:bg-slate-900" },
-	{ key: "cislo", label: "tel. číslo", class: "dark:bg-slate-900" },
-	{ key: "email", label: "Email", class: "dark:bg-slate-900" },
-	{ key: "odporucitel", label: "Odporucitel", class: "dark:bg-slate-900" },
+// const columns = [
+// 	{ key: "meno", label: "Meno", class: "bg-gray-200" },
+// 	{ key: "priezvisko", label: "Priezvisko", class: "bg-gray-200" },
+// 	{ key: "cislo", label: "tel. číslo", class: "bg-gray-200" },
+// 	{ key: "email", label: "Email", class: "bg-gray-200" },
+// 	{ key: "odporucitel", label: "Odporucitel", class: "bg-gray-200" },
+// 	{
+// 		key: "created_at",
+// 		label: "Dátum pridania",
+// 		class: "bg-gray-200",
+// 	},
+// 	{ key: "adresa", label: "Adresa", class: "bg-gray-200" },
+// 	{ key: "rok_narodenia", label: "Vek", class: "bg-gray-200" },
+// 	{ key: "zamestanie", label: "Zamestnanie", class: "bg-gray-200" },
+// 	// {
+// 	// 	key: "Investicny_dotaznik",
+// 	// 	label: "Investicny dotazník vyplenený",
+// 	// 	class: "bg-gray-200",
+// 	// },
+// 	{ key: "actions", class: "bg-gray-200" },
+// ];
+
+const columns_first_row = [
+	{ key: "meno", label: "Meno", class: "bg-gray-200" },
+	{ key: "priezvisko", label: "Priezvisko", class: "bg-gray-200" },
+	{ key: "cislo", label: "tel. číslo", class: "bg-gray-200" },
+	{ key: "email", label: "Email", class: "bg-gray-200" },
+	{ key: "odporucitel", label: "Odporucitel", class: "bg-gray-200" },
+];
+
+const columns_second_row = [
 	{
 		key: "created_at",
 		label: "Dátum pridania",
-		class: "dark:bg-slate-900",
+		class: "bg-gray-200",
 	},
-	{ key: "adresa", label: "Adresa", class: "dark:bg-slate-900" },
-	{ key: "rok_narodenia", label: "Vek", class: "dark:bg-slate-900" },
-	{ key: "zamestanie", label: "Zamestnanie", class: "dark:bg-slate-900" },
-	// { key: "poznamka", label: "Poznámka" },
-	{
-		key: "Investicny_dotaznik",
-		label: "Investicny dotazník vyplenený",
-		class: "dark:bg-slate-900",
-	},
-	{ key: "actions", class: "dark:bg-slate-900" },
+	{ key: "adresa", label: "Adresa", class: "bg-gray-200" },
+	{ key: "rok_narodenia", label: "Vek", class: "bg-gray-200" },
+	{ key: "zamestanie", label: "Zamestnanie", class: "bg-gray-200" },
+	{ key: "actions", class: "bg-gray-200" },
 ];
 
 const items = (row) => [
@@ -113,30 +149,49 @@ const columns_activity = ref([
 	{
 		key: "aktivita",
 		label: "Aktivita",
-		class: "dark:bg-slate-900",
+		class: "bg-gray-200",
 	},
-	{ key: "datumCas", label: "Začiatok", class: "dark:bg-slate-900" },
-	{ key: "koniec", label: "Koniec", class: "dark:bg-slate-900" },
-	{ key: "poznamka", label: "Poznámka k aktivite", class: "dark:bg-slate-900" },
-
-	{ key: "volane", label: "Volané", class: "dark:bg-slate-900 w-[50px]" },
+	{ key: "datumCas", label: "Začiatok", class: "bg-gray-200 w-28" },
+	{ key: "koniec", label: "Koniec", class: "bg-gray-200 w-28" },
+	{ key: "poznamka", label: "Poznámka k aktivite", class: "bg-gray-200" },
+	{ key: "volane", label: "Volané", class: "bg-gray-200 w-20" },
 	{
 		key: "dovolane",
 		label: "Dovolané",
-		class: "dark:bg-slate-900 w-[50px]",
+		class: "bg-gray-200 w-20",
 	},
 	{
 		key: "dohodnute",
 		label: "Dohodnuté",
-		class: "dark:bg-slate-900 w-[50px]",
+		class: "bg-gray-200 w-20",
 	},
-	{ key: "created_at", label: "Vytvorené", class: "dark:bg-slate-900" },
+	{ key: "created_at", label: "Vytvorené", class: "bg-gray-200 w-28" },
 	{
 		key: "miesto_stretnutia",
 		label: "Miesto stretnutia",
-		class: "dark:bg-slate-900",
+		class: "bg-gray-200",
 	},
-	{ key: "actions", class: "dark:bg-slate-900" },
+	{ key: "actions", class: "bg-gray-200" },
+]);
+
+const columnsActivityFirstRow = ref([
+	{ key: "aktivita", label: "Aktivita", class: "bg-gray-200 w-40" },
+	{ key: "datumCas", label: "Začiatok", class: "bg-gray-200 w-32" },
+	{ key: "koniec", label: "Koniec", class: "bg-gray-200 w-32" },
+	{ key: "poznamka", label: "Poznámka", class: "bg-gray-200 w-40" },
+	{ key: "volane", label: "Volané", class: "bg-gray-200 w-32" },
+]);
+
+const columnsActivitySecondRow = ref([
+	{ key: "dovolane", label: "Dovolané", class: "bg-gray-200 w-32" },
+	{ key: "dohodnute", label: "Dohodnuté", class: "bg-gray-200 w-32" },
+	{ key: "created_at", label: "Vytvorené", class: "bg-gray-200 w-40" },
+	{
+		key: "miesto_stretnutia",
+		label: "Miesto stretnutia",
+		class: "bg-gray-200 w-40",
+	},
+	{ key: "actions", class: "bg-gray-200 w-20" },
 ]);
 
 const activity_items = (row) => [
@@ -167,28 +222,6 @@ const activity_items = (row) => [
 	],
 ];
 
-// Example data for the table
-// const items_activity = ref([
-// 	{
-// 		aktivita: "Telefonát",
-// 		datumCas: "2024-08-19 10:30",
-// 		poznamka: "Volal klientovi",
-// 		aktivitaZadana: "Manager",
-// 		volane: 3,
-// 		dovolane: 2,
-// 		dohodnute: 1,
-// 	},
-// 	{
-// 		aktivita: "Email",
-// 		datumCas: "2024-08-19 11:00",
-// 		poznamka: "Poslal ponuku",
-// 		aktivitaZadana: "Asistent",
-// 		volane: 0,
-// 		dovolane: 0,
-// 		dohodnute: 0,
-// 	},
-// ]);
-
 const handleActivityRowClick = (row) => {
 	console.log("Activity row clicked:", row);
 };
@@ -211,13 +244,56 @@ function calculateAge(yearOfBirth) {
 </script>
 
 <template>
-	<!-- Contact Detail Section -->
-	<UTable :rows="people" :columns="columns" class="mx-10 table-container mt-10">
+	<h1 class="text-2xl font-semibold ml-10 mt-4">Detail</h1>
+	<UTable
+		:rows="people"
+		:columns="columns_first_row"
+		class="mx-10 table-container mt-10 shadow-md z-0 w-5/6"
+	>
 		<template #name-data="{ row }" @click="test">
 			<span
 				:class="[
 					selected.find((person) => person.id === row.id) &&
-						'text-primary-500 dark:text-primary-400',
+						'text-primary-500 dark:text-primary-400 bg-white',
+				]"
+				class="truncate"
+				>{{ row.name }}</span
+			>
+		</template>
+
+		<template #created_at-data="{ row }">
+			<span>{{ formatDate(row.created_at) }}</span>
+		</template>
+
+		<template #rok_narodenia-data="{ row }">
+			<span>{{ calculateAge(row.rok_narodenia) }}</span>
+		</template>
+
+		<template #actions-data="{ row }">
+			<UDropdown
+				:items="items(row)"
+				theme="light"
+				class="bg-white border border-gray-300 rounded-md shadow-lg udropdown"
+			>
+				<UButton
+					color="white"
+					variant="ghost"
+					icon="i-heroicons-ellipsis-horizontal-20-solid"
+				/>
+			</UDropdown>
+		</template>
+	</UTable>
+
+	<UTable
+		:rows="people"
+		:columns="columns_second_row"
+		class="mx-10 table-container mt-10 shadow-md z-0 w-5/6"
+	>
+		<template #name-data="{ row }" @click="test">
+			<span
+				:class="[
+					selected.find((person) => person.id === row.id) &&
+						'text-primary-500 dark:text-primary-400 bg-white',
 				]"
 				>{{ row.name }}</span
 			>
@@ -232,9 +308,13 @@ function calculateAge(yearOfBirth) {
 		</template>
 
 		<template #actions-data="{ row }">
-			<UDropdown :items="items(row)">
+			<UDropdown
+				:items="items(row)"
+				theme="light"
+				class="bg-white border border-gray-300 rounded-md shadow-lg udropdown"
+			>
 				<UButton
-					color="gray"
+					color="white"
 					variant="ghost"
 					icon="i-heroicons-ellipsis-horizontal-20-solid"
 				/>
@@ -242,31 +322,21 @@ function calculateAge(yearOfBirth) {
 		</template>
 	</UTable>
 
-	<!-- Poznamka Section -->
-	<div class="ml-10 mt-4 max-w-[450px]">
-		<!-- Wrapper for consistent width and background color -->
-		<div class="bg-slate-900 text-white text-xl font-semibold p-2">
-			Poznamka
-		</div>
-		<div
-			class="border border-x-0 border-b-0 break-words p-2 border-slate-600 mt-"
-		>
-			{{ people[0]?.poznamka || "No data available" }} Lorem ipsum dolor, sit
-			amet consectetur adipisicing elit. Quidem veniam, voluptates aliquam
-			dignissimos vitae porro necessitatibus enim, fugit, explicabo dicta
+	<div class="ml-10 mt-4 max-w-[450px] shadow-md">
+		<div class="bg-gray-200 text-black text-xl font-semibold p-2">Poznamka</div>
+		<div class="border border-x-0 border-b-0 break-words p-2">
+			{{ people[0]?.poznamka || "No data available" }}
 		</div>
 	</div>
-	<hr class="border-color mx-10" />
-	<!-- Activity Section -->
 
 	<div class="relative">
-		<div class="mt-[60px] mx-8 w-[1800px]">
-			<h1 class="text-white text-2xl text-center mb-6">Aktivity</h1>
+		<div class="mt-[60px] mx-8 shadow-md">
+			<h1 class="text-black text-2xl text-center mb-6">Aktivity</h1>
 			<UTable :rows="activities" :columns="columns_activity">
 				<template #default="{ row }">
 					<tr
 						@click="handleActivityRowClick(row)"
-						class="cursor-pointer hover:bg-gray-100"
+						class="cursor-pointer hover:bg-gray-200 w-5/6 mb-2"
 					>
 						<td v-for="col in columns_activity" :key="col.key">
 							{{ row[col.key] }}
@@ -278,8 +348,8 @@ function calculateAge(yearOfBirth) {
 					<span>{{ formatDateTime(row.created_at) }}</span>
 				</template>
 
-				<template #actions-data="{ row }">
-					<UDropdown :items="activity_items(row)">
+				<template #actions-data="{ row }" v-if="author_id == user_id">
+					<UDropdown :items="activity_items(row)" theme="light">
 						<UButton
 							color="gray"
 							variant="ghost"
@@ -288,15 +358,42 @@ function calculateAge(yearOfBirth) {
 					</UDropdown>
 				</template>
 			</UTable>
+
+			<!-- <UTable :rows="activities" :columns="columnsActivitySecondRow">
+				<template #default="{ row }">
+					<tr
+						@click="handleActivityRowClick(row)"
+						class="cursor-pointer hover:bg-gray-200"
+					>
+						<td v-for="col in columns_activity" :key="col.key">
+							{{ row[col.key] }}
+						</td>
+					</tr>
+				</template>
+
+				<template #created_at-data="{ row }">
+					<span>{{ formatDateTime(row.created_at) }}</span>
+				</template>
+
+				<template #actions-data="{ row }" v-if="author_id == user_id">
+					<UDropdown :items="activity_items(row)" theme="light">
+						<UButton
+							color="gray"
+							variant="ghost"
+							icon="i-heroicons-ellipsis-horizontal-20-solid"
+						/>
+					</UDropdown>
+				</template>
+			</UTable> -->
 		</div>
 		<button
+			v-if="author_id == user_id"
 			@click="changeAddActivityBool"
-			class="bg-blue-700 hover:bg-blue-800 p-2 rounded-lg absolute right-10 top-14 font-semibold"
+			class="bg-blue-500 hover:bg-blue-600 p-2 rounded-lg absolute right-10 top-2 font-semibold shadow-md"
 		>
 			Pridať udalosť
 		</button>
 	</div>
-	<!-- Add Activity Form -->
 
 	<AddActivityForm
 		:contact_id="id"
@@ -305,7 +402,6 @@ function calculateAge(yearOfBirth) {
 		@activityAdded="addActivityToList"
 	/>
 
-	<!-- Alter Activity Form -->
 	<AlterActivityForm
 		v-if="actityFormBool"
 		@cancelAlterActivity="alterActivity"
@@ -313,7 +409,28 @@ function calculateAge(yearOfBirth) {
 </template>
 
 <style scoped>
-.border-color {
-	border-color: #475569;
+:root {
+	--background-color: #f0f0f0;
+	--text-color: #000000;
+}
+
+body {
+	background-color: var(--background-color);
+	color: var(--text-color);
+}
+
+.udropdown {
+	background-color: white !important;
+	border: 1px solid #d1d5db; /* gray-300 */
+	border-radius: 0.375rem; /* md rounding */
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* lg shadow */
+}
+
+.udropdown {
+	background-color: white !important;
+	border: 1px solid #d1d5db !important; /* gray-300 */
+	border-radius: 0.375rem !important; /* rounded-md */
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important; /* lg shadow */
+	color: black !important; /* Ensure text is visible */
 }
 </style>
