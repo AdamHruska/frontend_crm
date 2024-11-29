@@ -11,6 +11,7 @@ const authStore = useAuthStore();
 authStore.loadToken();
 const token = ref("");
 const searchQuery = ref("");
+const loadingState = ref(false);
 
 const emits = defineEmits(["cancleCallListForm", "uncheckAll"]);
 
@@ -56,6 +57,8 @@ const createCallList = async () => {
 		contact_ids: props.selected.map((person) => person.id),
 	};
 	console.log("Call list created 1", callList);
+	console.log("vreate function");
+	loadingState.value = true;
 	if (!filteredCallLists.value[0]) {
 		const response = await axios.post(
 			`${config.public.apiUrl}call-lists`,
@@ -94,9 +97,11 @@ const createCallList = async () => {
 
 	emits("cancleCallListForm", status);
 	emits("uncheckAll");
+	loadingState.value = false;
 };
 
 const addToCallList = async (callList) => {
+	loadingState.value = true;
 	let status = 0;
 	var old_contact_ids = callList.contact_ids;
 	old_contact_ids = JSON.parse(old_contact_ids.replace(/'/g, '"'));
@@ -138,6 +143,7 @@ const addToCallList = async (callList) => {
 	status = response.status;
 	emits("cancleCallListForm", status);
 	emits("uncheckAll");
+	loadingState.value = false;
 };
 </script>
 
@@ -145,9 +151,10 @@ const addToCallList = async (callList) => {
 	<div
 		class="fixed inset-0 bg-gray-200 bg-opacity-50 flex justify-center items-center z-50"
 	>
+		<loadigcomponent v-if="loadingState" />
 		<div class="absolute inset-0 bg-gray-400 bg-opacity-50 backdrop-blur-sm">
 			<form
-				class="relative bg-gray-100 p-6 pt-8 mt-8 rounded-lg shadow-lg max-w-md w-full z-10 mx-auto my-auto w-[350px]"
+				class="relative bg-gray-100 p-6 pt-8 mt-8 rounded-lg shadow-lg max-w-md w-full z-10 mx-auto my-auto w-[350px] top-1/4"
 				@submit="handleSubmit"
 				@keyup.enter="createCallList"
 			>

@@ -179,7 +179,9 @@ function removeRow(index) {
 	<div
 		class="fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center z-40"
 	>
-		<div class="bg-gray-100 p-4 min-w-[1024px] rounded-lg shadow-lg h-[650px]">
+		<div
+			class="bg-gray-100 p-4 min-w-[1024px] rounded-lg shadow-lg h-[650px] mx-8"
+		>
 			<div class="flex items-center justify-between mb-4">
 				<div class="flex justify-center items-center gap-4">
 					<h3>Odporučiteľ:</h3>

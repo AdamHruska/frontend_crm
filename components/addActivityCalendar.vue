@@ -5,6 +5,9 @@ import { format, parseISO, add } from "date-fns";
 
 const config = useRuntimeConfig();
 
+import { useCalendarstore } from "#imports";
+const calendarStore = useCalendarstore();
+
 import { useAuthStore } from "@/stores/authStore";
 const authStore = useAuthStore();
 authStore.loadToken();
@@ -49,14 +52,20 @@ const formatDateToISO = (dateString) => {
 	return formattedDate;
 };
 
+watch(datum_cas, (newValue) => {
+	const startPlusHour = add(parseISO(newValue), { hours: 1 });
+	koniec.value = format(startPlusHour, "yyyy-MM-dd'T'HH:mm");
+});
+
 onMounted(async () => {
 	// Set initial datum_cas to props.end_date
 	datum_cas.value = formatDateToISO(props.end_date);
 
 	// Set koniec to props.end_date + 1 hour
-	const endDate = parseISO(props.end_date);
-	const endDatePlusHour = add(endDate, { hours: 1 });
-	koniec.value = format(endDatePlusHour, "yyyy-MM-dd'T'HH:mm");
+	// const endDate = parseISO(props.end_date);
+	// const endDatePlusHour = add(endDate, { hours: 1 });
+	const startPlusHour = add(datum_cas.value, { hours: 1 });
+	koniec.value = format(startPlusHour, "yyyy-MM-dd'T'HH:mm");
 
 	const response2 = await axios.get(`${config.public.apiUrl}all-contacts`, {
 		headers: {
@@ -94,6 +103,7 @@ function getIdFromString(str) {
 }
 
 const addActivity = async () => {
+	changeLoadingState();
 	//console.log(getIdFromString(kontakt.value));
 	event.preventDefault();
 	// if (aktivita.value === "ine") {
@@ -136,21 +146,33 @@ const addActivity = async () => {
 			}
 		);
 		console.log(response.data.activity);
+		calendarStore.activities.push(response.data.activity);
 
 		// Emit the newly added activity to the parent
 		emit("activityAdded", response.data.activity);
 		emit("addNewEvent", response.data.activity);
 		// Close the form
 		emit("cancelAddActivity");
+
+		// if (response.status == 200 || response.status == 201) {
+		// 	alert("Aktivita bola pridaná");
+		// }
 	} catch (error) {
 		console.error("Error adding activity:", error);
 	}
+	changeLoadingState();
 };
 
 const handleSelectedContact = (contact) => {
 	kontakt.value = `${contact.meno} ${contact.priezvisko} ${contact.id}`;
 	id.value = contact.id;
 	email.value = contact.email;
+};
+
+const loadingState = ref(false);
+
+const changeLoadingState = () => {
+	loadingState.value = !loadingState.value;
 };
 </script>
 
@@ -159,6 +181,7 @@ const handleSelectedContact = (contact) => {
 		class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
 	>
 		<div class="absolute inset-0 bg-gray bg-opacity-50 backdrop-blur-sm"></div>
+		<loadigcomponent v-if="loadingState" />
 		<form
 			class="relative bg-white bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full z-10"
 		>

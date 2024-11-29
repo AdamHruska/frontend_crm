@@ -8,7 +8,14 @@ const props = defineProps({
 	user: Object,
 });
 
+import { useUserStore } from "#imports";
+const userStore = useUserStore();
+
+import { useCalendarstore } from "#imports";
+const calendarStore = useCalendarstore();
+
 import { useAuthStore } from "@/stores/authStore";
+import AlterPersonForm from "./alterPersonForm.vue";
 const authStore = useAuthStore();
 authStore.loadToken();
 
@@ -92,8 +99,9 @@ function getIdFromString(str) {
 	return words[words.length - 1];
 }
 
-const addActivity = async () => {
-	//event.preventDefault();
+const updateActivity = async () => {
+	changeLoading();
+	event.preventDefault();
 	// if (aktivita.value === "ine") {
 	// 	aktivita.value = ina_aktivita.value;
 	// }
@@ -132,41 +140,120 @@ const addActivity = async () => {
 			}
 		);
 
-		console.log(response.data.activity);
+		const activityIndex = calendarStore.activities.findIndex(
+			(activity) => activity.id === response.data.activity.id
+		);
+
+		// If the activity is found, replace it with the updated activity
+		if (activityIndex !== -1) {
+			calendarStore.activities.splice(activityIndex, 1, response.data.activity);
+		}
+
+		// const updatedActivity = response.data.activity;
+		// const transformedActivity = transformData([updatedActivity])[0];
+
+		// Find and replace the activity in the store
+		// const activityIndex = calendarStore.activities.findIndex(
+		// 	(activity) => activity.id === updatedActivity.id
+		// );
+
+		// if (activityIndex !== -1) {
+		// 	// Replace the old activity with the transformed one
+		// 	calendarStore.activities.splice(activityIndex, 1, transformedActivity);
+		// }
+
+		console.log("calendarStore.activities", calendarStore.activities);
 
 		emit("activityAdded", response.data.activity);
 		emit("alterEvents", response.data.activity);
 
 		// Close the form
 		emit("cancelAddActivity");
+		changeLoading();
+		cancelActivity();
 	} catch (error) {
 		console.error("Error adding activity:", error);
 	}
 };
 
+// const transformData = (data) => {
+// 	return data.map((item) => {
+// 		var farba = "";
+// 		const formattedStart = item.datumCas.replace(" ", "T");
+// 		if (item.created_id == userStore.user.id) {
+// 			console.log("porovnanie", item.created_id, " ", userStore.user.id);
+// 			farba = "rgb(37 99 235)";
+// 		} else {
+// 			farba = "red";
+// 		}
+
+// 		console.log("item:", item);
+
+// 		return {
+// 			id: item.id,
+// 			title: item.aktivita,
+// 			start: formattedStart,
+// 			end: item.koniec,
+// 			backgroundColor: farba,
+// 			borderColor: farba,
+// 			user_id: item.created_id,
+// 		};
+// 	});
+// };
+// const deleteActivity = async () => {
+// 	event.preventDefault();
+// 	try {
+// 		// Uncomment and use this when you want to delete from backend
+// 		// const response = await axios.delete(
+// 		// 	`${config.public.apiUrl}delete-activities/${props.activityID}`,
+// 		// 	{
+// 		// 		headers: {
+// 		// 			Authorization: `Bearer ${authStore.token}`,
+// 		// 		},
+// 		// 	}
+// 		// );
+
+// 		// Remove the activity from the calendarStore
+// 		const index = calendarStore.activities.findIndex(
+// 			(activity) => activity.id == props.activityID
+// 		);
+
+// 		if (index !== -1) {
+// 			calendarStore.activities.splice(index, 1);
+// 		}
+
+// 		// Also remove from the parent component's events
+// 		emit("cancelAddActivity");
+// 	} catch (error) {
+// 		console.error("Error deleting activity:", error);
+// 	}
+// };
+
 const deleteActivity = async () => {
 	event.preventDefault();
-	const response = await axios.delete(
-		`${config.public.apiUrl}delete-activities/${props.activityID}`,
-		{
-			headers: {
-				Authorization: `Bearer ${authStore.token}`,
-			},
-		}
-	);
+
+	await calendarStore.deleteActivity(props.activityID);
 	emit("cancelAddActivity");
+	emit("alterEvents", null);
 };
 
 const redirectToContact = () => {
 	router.push(`/contact/${contact.value.id}`);
 };
+
+const loading = ref(false);
+
+const changeLoading = () => {
+	loading.value = !loading.value;
+};
 </script>
 
 <template>
 	<div
-		class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
+		class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-40"
 	>
 		<div class="absolute inset-0 bg-gray bg-opacity-50 backdrop-blur-sm"></div>
+		<loadigcomponent v-if="loading" />
 		<form
 			class="relative bg-white bg-white p-6 rounded-lg shadow-lg max-w-md w-full z-10"
 		>
@@ -369,11 +456,11 @@ const redirectToContact = () => {
 				</div>
 			</div>
 			<div
-				v-if="props.user.id == activity_creator"
+				v-if="userStore.user.id == activity_creator"
 				class="flex justify-center items-center mt-3 gap-6"
 			>
 				<button
-					@click="addActivity()"
+					@click="updateActivity()"
 					class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
 				>
 					Update

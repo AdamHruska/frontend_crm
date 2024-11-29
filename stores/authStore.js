@@ -5,6 +5,7 @@ export const useAuthStore = defineStore("auth", {
 	state: () => ({
 		token: null, // Store the session token here
 		isLoggedIn: false,
+		selectedNavbarItem: "",
 	}),
 
 	actions: {

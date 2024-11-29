@@ -5,6 +5,8 @@ import { useAuthStore } from "@/stores/authStore";
 const authStore = useAuthStore();
 const isAuthenticated = ref(false);
 const isLoading = ref(true);
+import { useUserStore } from "#imports";
+const userStore = useUserStore();
 
 // Function to check authentication status
 const checkAuth = async () => {
@@ -35,6 +37,8 @@ const checkAuth = async () => {
 // Check authentication on initial load
 onMounted(async () => {
 	await checkAuth();
+	await userStore.fetchUser();
+	console.log("User je tu", userStore.user);
 });
 
 // Watch for route changes to recheck auth

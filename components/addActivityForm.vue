@@ -2,6 +2,7 @@
 const config = useRuntimeConfig();
 import { Icon } from "@iconify/vue";
 import axios from "axios";
+import { format, parseISO, add } from "date-fns";
 const props = defineProps({
 	contact_id: {
 		type: String,
@@ -38,16 +39,35 @@ watch(aktivita, (newValue) => {
 	}
 });
 
+watch(datum_cas, (newValue) => {
+	const startDate = new Date(newValue); // Convert the updated value to a Date object
+	const endDate = new Date(startDate);
+	endDate.setHours(startDate.getHours() + 1); // Add 1 hour
+	koniec.value = endDate.toISOString().slice(0, 16); // Update `koniec` with the new end time
+});
+
+watch(datum_cas, (newValue) => {
+	const startPlusHour = add(parseISO(newValue), { hours: 1 });
+	koniec.value = format(startPlusHour, "yyyy-MM-dd'T'HH:mm");
+});
+
 onBeforeMount(async () => {
 	const response = await findPerson(props.contact_id);
-	if (contact.value[0].email) {
+	if (contact.value[0]?.email) {
 		emailBool.value = true;
 	}
 
-	datum_cas.value = new Date(Date.now()).toISOString().slice(0, 16); // ISO format without timezone
-	koniec.value = new Date(Date.now() + 60 * 60 * 1000)
-		.toISOString()
-		.slice(0, 16); // 1 hour later
+	// Initialize `datum_cas` with the current local time in ISO format
+	const now = new Date();
+	datum_cas.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
+		2,
+		"0"
+	)}-${String(now.getDate()).padStart(2, "0")}T${String(
+		now.getHours()
+	).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+	const startPlusHour = add(datum_cas.value, { hours: 1 });
+	koniec.value = format(startPlusHour, "yyyy-MM-dd'T'HH:mm");
 });
 
 const findPerson = async (id) => {

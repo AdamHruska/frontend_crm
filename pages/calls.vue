@@ -310,7 +310,7 @@ const deleteCallList = async (id) => {
 						><p class="truncate text-ellipsis">{{ call_list.name }}</p></span
 					>
 					<button
-						class="pb-2 w-[15px] h-[15px] text-red font-bold text-white rounded-sm hover:text-white"
+						class="pb-2 w-[15px] h-[15px] text-red font-bold text-white rounded-sm hover:text-white hover:text-xl"
 						@click="deleteCallList(call_list.id)"
 					>
 						X

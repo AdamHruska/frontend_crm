@@ -2,8 +2,6 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import { useAuthStore } from "@/stores/authStore";
 
-const config = useRuntimeConfig();
-
 export const useUserStore = defineStore("user", {
 	// Note the change from "auth" to "user"
 	state: () => ({
@@ -14,6 +12,7 @@ export const useUserStore = defineStore("user", {
 	actions: {
 		// Explicitly define as an action
 		async fetchUser() {
+			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
 			const token = authStore.token;
 

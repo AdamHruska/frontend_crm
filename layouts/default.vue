@@ -26,6 +26,8 @@
 				<NuxtLink
 					to="/"
 					class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded"
+					:class="{ 'bg-blue-700 text-gray-200': activeTab === 'home' }"
+					@click="setActiveTab('home')"
 				>
 					<Icon icon="streamline:bullet-list" style="font-size: 22px" />
 				</NuxtLink>
@@ -33,13 +35,17 @@
 				<NuxtLink
 					to="/calendar"
 					class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
+					:class="{ 'bg-blue-700 text-gray-200': activeTab === 'calendar' }"
+					@click="setActiveTab('calendar')"
 				>
 					<Icon icon="streamline:blank-calendar" style="font-size: 22px" />
 				</NuxtLink>
 
 				<NuxtLink
 					class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded border-t border-black"
+					:class="{ 'bg-blue-700 text-gray-200': activeTab === 'calls' }"
 					to="/calls"
+					@click="setActiveTab('calls')"
 				>
 					<Icon
 						icon="ep:phone-filled"
@@ -50,7 +56,9 @@
 
 				<NuxtLink
 					class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
+					:class="{ 'bg-blue-700 text-gray-200': activeTab === 'test' }"
 					to="/test"
+					@click="setActiveTab('test')"
 				>
 					<Icon
 						icon="ep:phone-filled"
@@ -88,6 +96,7 @@
 <script setup>
 import { useAuthStore } from "@/stores/authStore";
 import { Icon } from "@iconify/vue";
+import { set } from "date-fns";
 
 const authStore = useAuthStore();
 authStore.loadLoginState();
@@ -98,6 +107,12 @@ defineProps(["user"]);
 
 const showSignOutFormBool = ref(false);
 
+const activeTab = ref(""); // Default active tab
+
+function setActiveTab(tab) {
+	activeTab.value = tab;
+}
+
 function showSignOutForm() {
 	showSignOutFormBool.value = !showSignOutFormBool.value;
 	console.log(showSignOutFormBool);
@@ -106,6 +121,10 @@ function showSignOutForm() {
 function signOut() {
 	console.log("signed out");
 }
+
+onMounted(() => {
+	setActiveTab("home");
+});
 </script>
 
 <style scoped>

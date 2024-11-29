@@ -2,6 +2,11 @@
 const end_date = ref("");
 const emit = defineEmits(["deleteSharedEventsId"]);
 
+import { useCalendarstore } from "#imports";
+const calendarStore = useCalendarstore();
+import { useUserStore } from "#imports";
+const userStore = useUserStore();
+
 const config = useRuntimeConfig();
 import { Icon } from "@iconify/vue";
 import axios from "axios";
@@ -93,48 +98,51 @@ const calendarOptions = ref({
 // initialEvents: [],
 
 onMounted(async () => {
-	const response = await axios.get(
-		`${config.public.apiUrl}get-activities-diary`,
-		{
-			headers: {
-				Authorization: `Bearer ${authStore.token}`,
-			},
-		}
-	);
+	// const response = await axios.get(
+	// 	`${config.public.apiUrl}get-activities-diary`,
+	// 	{
+	// 		headers: {
+	// 			Authorization: `Bearer ${authStore.token}`,
+	// 		},
+	// 	}
+	// );
 
-	user.value = await axios.get(`${config.public.apiUrl}get-user`, {
-		headers: {
-			Authorization: `Bearer ${authStore.token}`,
-		},
-	});
+	// user.value = await axios.get(`${config.public.apiUrl}get-user`, {
+	// 	headers: {
+	// 		Authorization: `Bearer ${authStore.token}`,
+	// 	},
+	// });
 
-	user.value = user.value.data.user;
-	user.value.id;
+	// user.value = user.value.data.user;
+	// user.value.id;
 
-	const shareIDs = user.value.share_user_id;
-	const array = JSON.parse(shareIDs);
-	sharedIDs.value = array.map(Number);
+	// const shareIDs = user.value.share_user_id;
+	// const array = JSON.parse(shareIDs);
+	// sharedIDs.value = array.map(Number);
 
 	// getting shared users activities
-	const shared_activities = await axios.post(
-		`${config.public.apiUrl}get-activities`,
-		{
-			user_ids: sharedIDs.value,
-		},
-		{
-			headers: {
-				Authorization: `Bearer ${authStore.token}`,
-				"Content-Type": "application/json",
-			},
-		}
-	);
+	// const shared_activities = await axios.post(
+	// 	`${config.public.apiUrl}get-activities`,
+	// 	{
+	// 		user_ids: sharedIDs.value,
+	// 	},
+	// 	{
+	// 		headers: {
+	// 			Authorization: `Bearer ${authStore.token}`,
+	// 			"Content-Type": "application/json",
+	// 		},
+	// 	}
+	// );
 
-	console.log("Shared activities:", shared_activities.data.activities);
+	if (calendarStore.activities.length === 0) {
+		await calendarStore.fetchActivities();
+	}
 
-	rawData.value = response.data.activities;
+	rawData.value = calendarStore.activities;
 	events.value = transformData(rawData.value);
+	console.log("skuska skuska:", calendarStore.shared_activities);
 	const sharedACT = transformData(
-		flattenActivities(shared_activities.data.activities)
+		flattenActivities(calendarStore.shared_activities)
 	);
 	console.log("Shared activities test:", sharedACT);
 
@@ -147,8 +155,9 @@ const transformData = (data) => {
 	return data.map((item) => {
 		var farba = "";
 		const formattedStart = item.datumCas.replace(" ", "T");
-		if (item.created_id == user.value.id) {
-			farba = "blue";
+		if (item.created_id == userStore.user.id) {
+			console.log("porovnanie", item.created_id, " ", userStore.user.id);
+			farba = "rgb(37 99 235)";
 		} else {
 			farba = "red";
 		}
@@ -291,34 +300,143 @@ const displayUpdateEvent = (event) => {
 	activityID.value = event.id;
 };
 
+// const alterEvents = (updatedEvent) => {
+// 	// First update the rawData array since it contains the original format
+// 	rawData.value = rawData.value.map((event) =>
+// 		event.id === updatedEvent.id ? updatedEvent : event
+// 	);
+
+// 	// Then update the events array using your transform function
+// 	events.value = events.value.map((event) => {
+// 		if (event.id === updatedEvent.id) {
+// 			return {
+// 				id: updatedEvent.id,
+// 				title: updatedEvent.aktivita,
+// 				start: updatedEvent.datumCas.replace(" ", "T"),
+// 				end: updatedEvent.koniec,
+// 				backgroundColor:
+// 					updatedEvent.created_id === userStore.user.id
+// 						? "bg-blue-600"
+// 						: "bg-red-500",
+// 				borderColor:
+// 					updatedEvent.created_id === userStore.user.id
+// 						? "bg-blue-600"
+// 						: "bg-red-500",
+// 				user_id: updatedEvent.created_id,
+// 			};
+// 		}
+// 		return event;
+// 	});
+
+// 	// Update calendar options to refresh the view
+// 	calendarOptions.value = {
+// 		...calendarOptions.value,
+// 		events: events.value,
+// 	};
+// };
+
+// const alterEvents = (updatedEvent) => {
+// 	// Remove the event if it's been deleted
+// 	if (updatedEvent === null) {
+// 		events.value = events.value.filter(
+// 			(event) => event.id !== activityID.value
+// 		);
+// 		rawData.value = rawData.value.filter(
+// 			(event) => event.id !== activityID.value
+// 		);
+// 	} else {
+// 		// Existing update logic
+// 		rawData.value = rawData.value.map((event) =>
+// 			event.id === updatedEvent.id ? updatedEvent : event
+// 		);
+
+// 		events.value = events.value.map((event) => {
+// 			if (event.id === updatedEvent.id) {
+// 				return {
+// 					id: updatedEvent.id,
+// 					title: updatedEvent.aktivita,
+// 					start: updatedEvent.datumCas.replace(" ", "T"),
+// 					end: updatedEvent.koniec,
+// 					backgroundColor:
+// 						updatedEvent.created_id === userStore.user.id
+// 							? "bg-blue-600"
+// 							: "bg-red-500",
+// 					borderColor:
+// 						updatedEvent.created_id === userStore.user.id
+// 							? "bg-blue-600"
+// 							: "bg-red-500",
+// 					user_id: updatedEvent.created_id,
+// 				};
+// 			}
+// 			return event;
+// 		});
+// 	}
+
+// 	// Update calendar options to refresh the view
+// 	calendarOptions.value = {
+// 		...calendarOptions.value,
+// 		events: events.value,
+// 	};
+// };
+
 const alterEvents = (updatedEvent) => {
-	// First update the rawData array since it contains the original format
-	rawData.value = rawData.value.map((event) =>
-		event.id === updatedEvent.id ? updatedEvent : event
-	);
+	console.log("Updated event:", updatedEvent);
+	// If the event is null, it means it was deleted
+	if (updatedEvent === null) {
+		// Remove the event from events array
+		events.value = events.value.filter((event) => event.id != activityID.value);
 
-	// Then update the events array using your transform function
-	events.value = events.value.map((event) => {
-		if (event.id === updatedEvent.id) {
-			return {
-				id: updatedEvent.id,
-				title: updatedEvent.aktivita,
-				start: updatedEvent.datumCas.replace(" ", "T"),
-				end: updatedEvent.koniec,
-				backgroundColor:
-					updatedEvent.created_id === user.value.id ? "blue" : "red",
-				borderColor: updatedEvent.created_id === user.value.id ? "blue" : "red",
-				user_id: updatedEvent.created_id,
-			};
-		}
-		return event;
-	});
+		// Remove the event from rawData array
+		rawData.value = rawData.value.filter(
+			(event) => event.id !== activityID.value
+		);
 
-	// Update calendar options to refresh the view
-	calendarOptions.value = {
-		...calendarOptions.value,
-		events: events.value,
-	};
+		// Update calendar options to refresh the view
+		calendarOptions.value = {
+			...calendarOptions.value,
+			events: events.value,
+		};
+
+		// Close the update activity modal
+		updateActivity.value = false;
+		activityID.value = ""; // Reset the activity ID
+	} else {
+		// Existing update logic remains the same
+		rawData.value = rawData.value.map((event) =>
+			event.id === updatedEvent.id ? updatedEvent : event
+		);
+
+		events.value = events.value.map((event) => {
+			if (event.id === updatedEvent.id) {
+				return {
+					id: updatedEvent.id,
+					title: updatedEvent.aktivita,
+					start: updatedEvent.datumCas.replace(" ", "T"),
+					end: updatedEvent.koniec,
+					backgroundColor:
+						updatedEvent.created_id === userStore.user.id
+							? "rgb(37 99 235)" // consistent with transformData method
+							: "red",
+					borderColor:
+						updatedEvent.created_id === userStore.user.id
+							? "rgb(37 99 235)"
+							: "red",
+					user_id: updatedEvent.created_id,
+				};
+			}
+			return event;
+		});
+
+		// Update calendar options to refresh the view
+		calendarOptions.value = {
+			...calendarOptions.value,
+			events: events.value,
+		};
+
+		// Close the update activity modal
+		updateActivity.value = false;
+		activityID.value = ""; // Reset the activity ID
+	}
 };
 
 // const addNewEvent = (newEvent) => {
@@ -356,8 +474,10 @@ const addNewEvent = (newEvent) => {
 		title: newEvent.aktivita,
 		start: newEvent.datumCas.replace(" ", "T"),
 		end: newEvent.koniec,
-		backgroundColor: newEvent.created_id === user.value.id ? "blue" : "red",
-		borderColor: newEvent.created_id === user.value.id ? "blue" : "red",
+		backgroundColor:
+			newEvent.created_id === userStore.user.id ? "rgb(37 99 235)" : "red",
+		borderColor:
+			newEvent.created_id === userStore.user.id ? "rgb(37 99 235)" : "red",
 		user_id: newEvent.created_id,
 	};
 
@@ -386,6 +506,7 @@ function handleDateSelect(selectInfo) {
 
 <template>
 	<div class="h-screen">
+		<loadigcomponent v-if="calendarStore.loadingState" />
 		<AddActivityCalendar
 			v-if="addActivity"
 			@cancelAddActivity="toggleAddActivity"
@@ -402,40 +523,35 @@ function handleDateSelect(selectInfo) {
 		<div class="demo-app bg-white">
 			<div class="demo-app-sidebar bg-white-force">
 				<div
-					class="demo-app-sidebar-section text-black"
-					style="background-color: #c0c2ce"
+					class="shadow-md rounded-lg bg-white p-4 b-grey-300 rounded-2xl mb-10"
 				>
-					<h2 class="font-semibold text-2xl text-center">Diár</h2>
-				</div>
-				<div
-					class="demo-app-sidebar-section text-black"
-					style="background-color: #c0c2ce"
-				>
-					<label class="text-lg">
-						<input
-							type="checkbox"
-							:checked="calendarOptions.weekends"
-							@change="handleWeekendsToggle"
-						/>
-						toggle weekends
-					</label>
-				</div>
-				<div
-					class="demo-app-sidebar-section text-black rounded-b-[30px]"
-					style="background-color: #c0c2ce"
-				>
-					<h2 class="underline">Recent Events:</h2>
-					<ul class="">
-						<li
-							v-for="event in recentEvents"
-							:key="event.id"
-							@click="displayUpdateEvent(event)"
-							class="cursor-pointer hover:bg-blue-50 rounded text-black text-sm flex items-center justify-center"
-						>
-							<b>{{ formatDate(event.startStr) }}</b>
-							<i>{{ event.title }}</i>
-						</li>
-					</ul>
+					<div class="demo-app-sidebar-section text-black">
+						<h2 class="font-semibold text-2xl text-center">Diár</h2>
+					</div>
+					<div class="demo-app-sidebar-section text-black">
+						<label class="text-lg">
+							<input
+								type="checkbox"
+								:checked="calendarOptions.weekends"
+								@change="handleWeekendsToggle"
+							/>
+							toggle weekends
+						</label>
+					</div>
+					<div class="demo-app-sidebar-section text-black rounded-b-[30px]">
+						<h2 class="underline">Recent Events:</h2>
+						<ul class="">
+							<li
+								v-for="event in recentEvents"
+								:key="event.id"
+								@click="displayUpdateEvent(event)"
+								class="cursor-pointer hover:bg-blue-50 rounded text-black text-sm flex items-center justify-center"
+							>
+								<b>{{ formatDate(event.startStr) }}</b>
+								<i>{{ event.title }}</i>
+							</li>
+						</ul>
+					</div>
 				</div>
 				<div>
 					<CalendarSharing
@@ -509,5 +625,32 @@ b {
 .fc {
 	max-width: 1100px;
 	margin: 0 auto;
+}
+
+.special-component {
+	background: linear-gradient(135deg, #ffdee9, #b5fffc);
+	color: #1a202c; /* Navy or dark gray */
+	padding: 1rem;
+	border-radius: 8px;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.fc-button {
+	background-color: #909090 !important; /* Blue background */
+	color: black !important; /* Black text */
+	border: none !important; /* Remove border if desired */
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
+.fc-button:hover {
+	background-color: #505050 !important; /* Slightly darker blue on hover */
+	color: black !important;
+}
+
+.fc-button-active {
+	background-color: rgb(
+		37 99 235
+	) !important; /* Lighter blue for active state */
+	color: black !important;
 }
 </style>

@@ -349,7 +349,7 @@ const cancleCallListForm = (status) => {
 	showCallListForm.value = !showCallListForm.value;
 	console.log("cancleCallListForm");
 	if (status === 201 || status === 200) {
-		alert("Call list created successfully");
+		// alert("Call list created successfully");
 	}
 };
 </script>
@@ -369,19 +369,19 @@ const cancleCallListForm = (status) => {
 				<Icon icon="fa6-solid:plus" style="font-size: 30px" class="" />
 			</button>
 		</div>
-		<div class="flex justify-end mr-8 h-12">
+		<div class="flex justify-end mr-8 h-11 mb-5">
 			<!-- Added fixed height h-12 -->
 			<button
 				v-if="hasSelectedItems"
 				@click="uncheckAll"
-				class="px-4 py-2 bg-red-500 hover:bg-red-700 rounded-lg text-white shadow-xl"
+				class="px-3 py-1 bg-red-500 hover:bg-red-700 rounded-lg text-white shadow-xl"
 			>
 				Unselect all {{ selected.length }}
 			</button>
 			<button
 				v-if="hasSelectedItems"
 				@click="toggleCallList"
-				class="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-white ml-4 shadow-xl"
+				class="px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded-lg text-white ml-4 shadow-xl"
 			>
 				Create Call List
 			</button>
