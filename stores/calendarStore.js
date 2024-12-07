@@ -10,6 +10,7 @@ export const useCalendarstore = defineStore("calendar", {
 		activities: [],
 		shared_activities: [],
 		loadingState: false,
+		checkedUsers: [],
 	}),
 	actions: {
 		async fetchActivities() {
@@ -29,28 +30,39 @@ export const useCalendarstore = defineStore("calendar", {
 
 			this.activities = response.data.activities;
 
-			//getting sharedIDS
-
+			// Getting sharedIDs
 			let sharedIDs = userStore.user.share_user_id;
-			const array = JSON.parse(sharedIDs);
-			sharedIDs = array.map(Number);
-			console.log("toto je sharedIDs", sharedIDs);
-			console.log("toto je sharedIDs", sharedIDs);
 
-			const response_shared_activities = await axios.post(
-				`${config.public.apiUrl}get-activities`,
-				{
-					user_ids: sharedIDs,
-				},
-				{
-					headers: {
-						Authorization: `Bearer ${authStore.token}`,
-						"Content-Type": "application/json",
+			// Parse the shared IDs if they exist
+			sharedIDs = sharedIDs ? JSON.parse(sharedIDs) : [];
+
+			// If sharedIDs is empty, skip the API call or handle it differently
+			if (sharedIDs.length === 0) {
+				console.log("No shared user IDs, skipping shared activities fetch.");
+				this.shared_activities = [];
+				this.loadingState = false;
+				return;
+			}
+
+			try {
+				const response_shared_activities = await axios.post(
+					`${config.public.apiUrl}get-activities`,
+					{
+						user_ids: sharedIDs, // Send shared user IDs only if they exist
 					},
-				}
-			);
-			this.shared_activities = response_shared_activities.data.activities;
-			console.log("toto je ono", this.shared_activities);
+					{
+						headers: {
+							Authorization: `Bearer ${authStore.token}`,
+							"Content-Type": "application/json",
+						},
+					}
+				);
+				this.shared_activities = response_shared_activities.data.activities;
+				console.log("Shared activities:", this.shared_activities);
+			} catch (error) {
+				console.error("Error fetching shared activities:", error);
+			}
+
 			this.loadingState = false;
 		},
 
@@ -90,6 +102,20 @@ export const useCalendarstore = defineStore("calendar", {
 				this.loadingState = false;
 				return false; // Indicate deletion failure
 			}
+		},
+		setCheckedUsers(checkedUsers) {
+			this.checkedUsers = checkedUsers; // Set checked users dynamically
+			console.log("toto je checkedUsers", this.checkedUsers);
+		},
+
+		removeSharedActivitiesByUser(userId) {
+			this.shared_activities = this.shared_activities.filter(
+				(activity) => activity.user_id !== userId // Ensure activity has a user_id field to match
+			);
+			this.activities = this.activities.filter(
+				(activity) => activity.user_id !== userId // For activities directly linked
+			);
+			console.log(`Removed shared activities for user ID ${userId}`);
 		},
 	},
 	getters: {

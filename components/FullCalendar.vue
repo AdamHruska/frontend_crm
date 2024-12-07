@@ -98,42 +98,6 @@ const calendarOptions = ref({
 // initialEvents: [],
 
 onMounted(async () => {
-	// const response = await axios.get(
-	// 	`${config.public.apiUrl}get-activities-diary`,
-	// 	{
-	// 		headers: {
-	// 			Authorization: `Bearer ${authStore.token}`,
-	// 		},
-	// 	}
-	// );
-
-	// user.value = await axios.get(`${config.public.apiUrl}get-user`, {
-	// 	headers: {
-	// 		Authorization: `Bearer ${authStore.token}`,
-	// 	},
-	// });
-
-	// user.value = user.value.data.user;
-	// user.value.id;
-
-	// const shareIDs = user.value.share_user_id;
-	// const array = JSON.parse(shareIDs);
-	// sharedIDs.value = array.map(Number);
-
-	// getting shared users activities
-	// const shared_activities = await axios.post(
-	// 	`${config.public.apiUrl}get-activities`,
-	// 	{
-	// 		user_ids: sharedIDs.value,
-	// 	},
-	// 	{
-	// 		headers: {
-	// 			Authorization: `Bearer ${authStore.token}`,
-	// 			"Content-Type": "application/json",
-	// 		},
-	// 	}
-	// );
-
 	if (calendarStore.activities.length === 0) {
 		await calendarStore.fetchActivities();
 	}
@@ -192,31 +156,6 @@ const handleWeekendsToggle = () => {
 	calendarOptions.value.weekends = !calendarOptions.value.weekends;
 };
 
-// function handleDateSelect(selectInfo) {
-// 	toggleAddActivity();
-// 	// let title = prompt("Please enter a new title for your event");
-// 	let calendarApi = selectInfo.view.calendar;
-
-// 	calendarApi.unselect();
-
-// 	if (title) {
-// 		calendarApi.addEvent({
-// 			id: createEventId(),
-// 			title,
-// 			start: selectInfo.startStr,
-// 			end: selectInfo.endStr,
-// 			allDay: selectInfo.allDay,
-// 		});
-// 	}
-// }
-
-// zlucit shared events with user events
-
-// const handleSharedCalendars = (sharedEvents) => {
-//   // Combine the user's events with shared events
-//   const allEvents = [...events.value, ...sharedEvents]
-//   calendarOptions.value.events = allEvents
-
 function handleEventClick(clickInfo) {
 	toggleUpdateActivity();
 	console.log("skuska", clickInfo.event._def.publicId);
@@ -234,14 +173,13 @@ const flattenActivities = (activitiesObject) => {
 
 const deleteSharedEventsId = (userId) => {
 	console.log("test emit", userId);
-
 	events.value = events.value.filter((event) => event.user_id !== userId);
-
 	// Update the calendar options to reflect the changes
 	calendarOptions.value = { ...calendarOptions.value, events: events.value };
 };
 
 const addSharedEventsId = async (userId) => {
+	loadingStateCalendar.value = true;
 	console.log("test emit add", userId);
 
 	try {
@@ -273,6 +211,7 @@ const addSharedEventsId = async (userId) => {
 		console.error("Error adding share ID:", error);
 		error.value = "Error adding share ID"; // Set error message for user feedback
 	}
+	loadingStateCalendar.value = false;
 };
 
 const recentEvents = computed(() => {
@@ -299,85 +238,6 @@ const displayUpdateEvent = (event) => {
 	toggleUpdateActivity();
 	activityID.value = event.id;
 };
-
-// const alterEvents = (updatedEvent) => {
-// 	// First update the rawData array since it contains the original format
-// 	rawData.value = rawData.value.map((event) =>
-// 		event.id === updatedEvent.id ? updatedEvent : event
-// 	);
-
-// 	// Then update the events array using your transform function
-// 	events.value = events.value.map((event) => {
-// 		if (event.id === updatedEvent.id) {
-// 			return {
-// 				id: updatedEvent.id,
-// 				title: updatedEvent.aktivita,
-// 				start: updatedEvent.datumCas.replace(" ", "T"),
-// 				end: updatedEvent.koniec,
-// 				backgroundColor:
-// 					updatedEvent.created_id === userStore.user.id
-// 						? "bg-blue-600"
-// 						: "bg-red-500",
-// 				borderColor:
-// 					updatedEvent.created_id === userStore.user.id
-// 						? "bg-blue-600"
-// 						: "bg-red-500",
-// 				user_id: updatedEvent.created_id,
-// 			};
-// 		}
-// 		return event;
-// 	});
-
-// 	// Update calendar options to refresh the view
-// 	calendarOptions.value = {
-// 		...calendarOptions.value,
-// 		events: events.value,
-// 	};
-// };
-
-// const alterEvents = (updatedEvent) => {
-// 	// Remove the event if it's been deleted
-// 	if (updatedEvent === null) {
-// 		events.value = events.value.filter(
-// 			(event) => event.id !== activityID.value
-// 		);
-// 		rawData.value = rawData.value.filter(
-// 			(event) => event.id !== activityID.value
-// 		);
-// 	} else {
-// 		// Existing update logic
-// 		rawData.value = rawData.value.map((event) =>
-// 			event.id === updatedEvent.id ? updatedEvent : event
-// 		);
-
-// 		events.value = events.value.map((event) => {
-// 			if (event.id === updatedEvent.id) {
-// 				return {
-// 					id: updatedEvent.id,
-// 					title: updatedEvent.aktivita,
-// 					start: updatedEvent.datumCas.replace(" ", "T"),
-// 					end: updatedEvent.koniec,
-// 					backgroundColor:
-// 						updatedEvent.created_id === userStore.user.id
-// 							? "bg-blue-600"
-// 							: "bg-red-500",
-// 					borderColor:
-// 						updatedEvent.created_id === userStore.user.id
-// 							? "bg-blue-600"
-// 							: "bg-red-500",
-// 					user_id: updatedEvent.created_id,
-// 				};
-// 			}
-// 			return event;
-// 		});
-// 	}
-
-// 	// Update calendar options to refresh the view
-// 	calendarOptions.value = {
-// 		...calendarOptions.value,
-// 		events: events.value,
-// 	};
-// };
 
 const alterEvents = (updatedEvent) => {
 	console.log("Updated event:", updatedEvent);
@@ -439,31 +299,6 @@ const alterEvents = (updatedEvent) => {
 	}
 };
 
-// const addNewEvent = (newEvent) => {
-// 	// First add the event to rawData since it contains the original format
-// 	rawData.value.push(newEvent);
-
-// 	// Create the transformed event object in the calendar format
-// 	const transformedEvent = {
-// 		id: newEvent.id,
-// 		title: newEvent.aktivita,
-// 		start: newEvent.datumCas.replace(" ", "T"),
-// 		end: newEvent.koniec,
-// 		backgroundColor: newEvent.created_id === user.value.id ? "blue" : "red",
-// 		borderColor: newEvent.created_id === user.value.id ? "blue" : "red",
-// 		user_id: newEvent.created_id,
-// 	};
-
-// 	// Add the new event to the events array
-// 	events.value = [...events.value, transformedEvent];
-
-// 	// Update calendar options to refresh the view
-// 	calendarOptions.value = {
-// 		...calendarOptions.value,
-// 		events: events.value,
-// 	};
-// };
-
 const addNewEvent = (newEvent) => {
 	// First add the event to rawData since it contains the original format
 	rawData.value.push(newEvent);
@@ -502,11 +337,14 @@ function handleDateSelect(selectInfo) {
 	console.log("Stark", selectInfo.startStr, "end", selectInfo.endStr);
 	calendarApi.unselect();
 }
+
+const loadingStateCalendar = ref(false);
 </script>
 
 <template>
 	<div class="h-screen">
 		<loadigcomponent v-if="calendarStore.loadingState" />
+		<loadigcomponent v-if="loadingStateCalendar" />
 		<AddActivityCalendar
 			v-if="addActivity"
 			@cancelAddActivity="toggleAddActivity"

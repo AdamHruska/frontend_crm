@@ -38,7 +38,9 @@ const checkAuth = async () => {
 onMounted(async () => {
 	await checkAuth();
 	await userStore.fetchUser();
-	console.log("User je tu", userStore.user);
+
+	await userStore.fetchUsers();
+	await userStore.getSharedUsers();
 });
 
 // Watch for route changes to recheck auth

@@ -23,54 +23,70 @@
 			<div
 				class="flex flex-col items-center mt-3 border-t border-black border-t-1 flex-grow"
 			>
-				<NuxtLink
-					to="/"
-					class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded"
-					:class="{ 'bg-blue-700 text-gray-200': activeTab === 'home' }"
-					@click="setActiveTab('home')"
-				>
-					<Icon icon="streamline:bullet-list" style="font-size: 22px" />
-				</NuxtLink>
+				<UTooltip text="kontakty" :ui="{ background: '', color: '' }" class="">
+					<NuxtLink
+						to="/"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded"
+						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'home' }"
+						@click="setActiveTab('home')"
+					>
+						<Icon icon="streamline:bullet-list" style="font-size: 22px" />
+					</NuxtLink>
+				</UTooltip>
 
-				<NuxtLink
-					to="/calendar"
-					class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
-					:class="{ 'bg-blue-700 text-gray-200': activeTab === 'calendar' }"
-					@click="setActiveTab('calendar')"
-				>
-					<Icon icon="streamline:blank-calendar" style="font-size: 22px" />
-				</NuxtLink>
+				<UTooltip text="Kalendár" :ui="{ background: '', color: '' }" class="">
+					<NuxtLink
+						to="/calendar"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
+						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'calendar' }"
+						@click="setActiveTab('calendar')"
+					>
+						<Icon icon="streamline:blank-calendar" style="font-size: 22px" />
+					</NuxtLink>
+				</UTooltip>
 
-				<NuxtLink
-					class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded border-t border-black"
-					:class="{ 'bg-blue-700 text-gray-200': activeTab === 'calls' }"
-					to="/calls"
-					@click="setActiveTab('calls')"
+				<UTooltip
+					text="Zdielanie Kalendára"
+					:ui="{ background: '', color: '' }"
+					class=""
 				>
-					<Icon
-						icon="ep:phone-filled"
-						style="font-size: 22px"
-						class="text-white"
-					/>
-				</NuxtLink>
+					<NuxtLink
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
+						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'test' }"
+						to="/calendar-sharing"
+						@click="setActiveTab('test')"
+					>
+						<Icon
+							icon="pepicons-pencil:people"
+							style="font-size: 36px"
+							class="text-white"
+						/>
+					</NuxtLink>
+				</UTooltip>
 
-				<NuxtLink
-					class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
-					:class="{ 'bg-blue-700 text-gray-200': activeTab === 'test' }"
-					to="/test"
-					@click="setActiveTab('test')"
+				<UTooltip
+					text="Call Lists"
+					:ui="{ background: '', color: '' }"
+					class=""
 				>
-					<Icon
-						icon="ep:phone-filled"
-						style="font-size: 22px"
-						class="text-white"
-					/>
-				</NuxtLink>
+					<NuxtLink
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded border-t border-black"
+						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'calls' }"
+						to="/calls"
+						@click="setActiveTab('calls')"
+					>
+						<Icon
+							icon="ep:phone-filled"
+							style="font-size: 22px"
+							class="text-white"
+						/>
+					</NuxtLink>
+				</UTooltip>
 			</div>
 
 			<!-- Bottom Navigation Item -->
 			<div
-				class="flex items-center justify-center w-16 h-16 mt-auto hover:bg-gray-700 hover:text-gray-300 mb-2 cursor-pointer"
+				class="flex items-center justify-center w-16 h-16 mt-auto hover:bg-blue-600 hover:text-gray-300 mb-2 cursor-pointer"
 				@click="showSignOutForm()"
 			>
 				<Icon icon="fa6-solid:circle-arrow-right" style="font-size: 22px" />

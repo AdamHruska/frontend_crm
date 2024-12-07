@@ -14,6 +14,9 @@ import { useAuthStore } from "@/stores/authStore";
 const authStore = useAuthStore();
 authStore.loadToken();
 
+import { useCalendarstore } from "#imports";
+const calendarStore = useCalendarstore();
+
 const contact = ref([]);
 
 const aktivita = ref("");
@@ -39,16 +42,24 @@ watch(aktivita, (newValue) => {
 	}
 });
 
-watch(datum_cas, (newValue) => {
-	const startDate = new Date(newValue); // Convert the updated value to a Date object
-	const endDate = new Date(startDate);
-	endDate.setHours(startDate.getHours() + 1); // Add 1 hour
-	koniec.value = endDate.toISOString().slice(0, 16); // Update `koniec` with the new end time
-});
+const manualChangeCount = ref(0);
+const showCalendar = ref(false);
+const dateOnly = ref("");
 
 watch(datum_cas, (newValue) => {
 	const startPlusHour = add(parseISO(newValue), { hours: 1 });
+
 	koniec.value = format(startPlusHour, "yyyy-MM-dd'T'HH:mm");
+
+	dateOnly.value = format(new Date(datum_cas.value), "yyyy-MM-dd");
+	dateOnly.value = String(dateOnly.value);
+	console.log("dateOnly", dateOnly.value);
+	if (manualChangeCount.value > 1) {
+		// Your custom function for manual changes
+		console.log("Datum_cas changed manually:");
+		showCalendar.value = true;
+	}
+	manualChangeCount.value = 10;
 });
 
 onBeforeMount(async () => {
@@ -96,6 +107,9 @@ const addActivity = async () => {
 	if (aktivita.value === "ine") {
 		aktivita.value = ina_aktivita.value;
 	}
+	if (onlineMeeting.value) {
+		miesto_stretnutia.value = "Online Meeting " + contact.value[0].email;
+	}
 	try {
 		const response = await axios.post(
 			`${config.public.apiUrl}add-activity`,
@@ -108,8 +122,8 @@ const addActivity = async () => {
 				volane: volane.value,
 				dovolane: dovolane.value,
 				dohodnute: dohodnute.value,
-				miesto_stretnutia: miesto_stretnutia.value,
 				online_meeting: onlineMeeting.value,
+				miesto_stretnutia: miesto_stretnutia.value,
 			},
 			{
 				headers: {
@@ -130,12 +144,26 @@ const addActivity = async () => {
 				}
 			);
 		}
+		calendarStore.activities.push(response.data.activity);
 		emit("activityAdded", response.data.activity);
 		emit("cancelAddActivity");
 	} catch (error) {
 		console.error("Error adding activity:", error);
 	}
 };
+
+watch(dovolane, (newValue) => {
+	if (newValue) {
+		volane.value = true;
+	}
+});
+
+watch(dohodnute, (newValue) => {
+	if (newValue) {
+		volane.value = true;
+		dovolane.value = true;
+	}
+});
 </script>
 
 <template>
@@ -265,7 +293,7 @@ const addActivity = async () => {
 				>
 			</div>
 
-			<div class="relative z-0 w-full mb-5 group">
+			<div v-if="!onlineMeeting" class="relative z-0 w-full mb-5 group">
 				<label
 					class="text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
 					>Miesto stretnutia</label
@@ -333,6 +361,7 @@ const addActivity = async () => {
 				</button>
 			</div>
 		</form>
+		<AddActivityDay v-if="showCalendar" :date="dateOnly" />
 	</div>
 </template>
 

@@ -330,13 +330,13 @@ function calculateAge(yearOfBirth) {
 	</div>
 
 	<div class="relative">
-		<div class="mt-[60px] mx-8 shadow-md">
+		<div class="mt-[60px] mx-8 shadow-md !text-black">
 			<h1 class="text-black text-2xl text-center mb-6">Aktivity</h1>
 			<UTable :rows="activities" :columns="columns_activity">
 				<template #default="{ row }">
 					<tr
 						@click="handleActivityRowClick(row)"
-						class="cursor-pointer hover:bg-gray-200 w-5/6 mb-2"
+						class="cursor-pointer hover:bg-gray-200 w-5/6 mb-2 !text-black"
 					>
 						<td v-for="col in columns_activity" :key="col.key">
 							{{ row[col.key] }}

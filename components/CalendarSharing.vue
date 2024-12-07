@@ -1,5 +1,6 @@
 <template>
 	<div class="font-[sans-serif] w-[180px] mx-auto" ref="dropdownContainer">
+		<loadigcomponent v-if="loading" />
 		<!-- Button to toggle dropdown -->
 		<button
 			type="button"
@@ -87,6 +88,8 @@
 import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 import axios from "axios";
 import { useAuthStore } from "@/stores/authStore";
+import { useCalendarstore } from "@/stores/calendarStore";
+const calendarStore = useCalendarstore();
 
 const emit = defineEmits(["deleteSharedEventsId", "addSharedEventsId"]);
 
@@ -100,6 +103,7 @@ const error = ref("");
 const isDropdownOpen = ref(false);
 const dropdownContainer = ref(null);
 
+const loading = ref(false);
 let timeout;
 
 const debounce = (func, delay) => {
@@ -179,6 +183,7 @@ const handleCheckboxChange = async (userId, isChecked) => {
 			error.value = "Error adding share ID";
 		}
 	} else {
+		loading.value = true;
 		emit("deleteSharedEventsId", userId);
 		try {
 			await axios.post(
@@ -194,13 +199,18 @@ const handleCheckboxChange = async (userId, isChecked) => {
 			console.error("Error removing share ID:", error);
 			error.value = "Error removing share ID";
 		}
+		loading.value = false;
 	}
+
+	const checkedUsers = users.value.filter((user) => user.checked);
+	calendarStore.setCheckedUsers(checkedUsers);
 };
 
 // Fetch users on component mount
 onMounted(() => {
 	handleSearch();
-
+	const checkedUsers = users.value.filter((user) => user.checked);
+	calendarStore.setCheckedUsers(checkedUsers);
 	// Event listener to close dropdown on click outside
 	const handleClickOutside = (event) => {
 		if (

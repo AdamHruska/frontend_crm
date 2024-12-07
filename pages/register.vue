@@ -11,6 +11,9 @@ const first_name = ref("");
 const last_name = ref("");
 const email = ref("");
 const password = ref("");
+const password_confirmation = ref("");
+
+const loading = ref(false);
 
 const token = ref("");
 
@@ -19,8 +22,15 @@ definePageMeta({
 });
 
 const register = async () => {
+	loading.value = true;
 	event.preventDefault();
+
 	if (first_name.value && last_name.value && email.value && password.value) {
+		if (password.value !== password_confirmation.value) {
+			alert("Heslá sa nezhodujú");
+			loading.value = false;
+			return;
+		}
 		try {
 			const response = await axios.post(
 				`${config.public.apiUrl}register`,
@@ -35,24 +45,21 @@ const register = async () => {
 					headers: {
 						"Content-Type": "application/json",
 						Accept: "application/json",
-						"Access-Control-Allow-Origin": "*",
 					},
 				}
 			);
 
 			if (response.status === 200 || response.status === 201) {
-				token.value = response.data.authorization.token;
-				sessionStorage.setItem("token", response.data.authorization.token);
-				authStore.setToken(token.value);
-				console.log("User registered successfully:", authStore.token);
-				router.push("/");
+				console.log("User registered successfully:", response.data);
+
+				// Call login immediately after successful registration
+				await login(email.value, password.value, rememberMe.value);
 			} else {
 				alert(
 					response.data.message || "Registration failed. Please try again."
 				);
 			}
 		} catch (error) {
-			// Display error message for network or server errors
 			alert(
 				error.response?.data?.message ||
 					"An error occurred during registration."
@@ -65,10 +72,50 @@ const register = async () => {
 	} else {
 		alert("Je potrebné vyplniť všetky polia");
 	}
+	loading.value = false;
 };
+
+const login = async (email, password, rememberMe) => {
+	loading.value = true;
+	try {
+		const response = await axios.post(
+			`${config.public.apiUrl}login`,
+			{ email, password },
+			{
+				headers: {
+					"Content-Type": "application/json",
+					Accept: "application/json",
+				},
+			}
+		);
+
+		const token = response.data.authorization.token;
+		authStore.setToken(token);
+
+		// Store token based on remember me preference
+		if (rememberMe) {
+			localStorage.setItem("auth_token", token);
+		} else {
+			sessionStorage.setItem("auth_token", token);
+		}
+
+		console.log("User logged in successfully:", authStore.token);
+		router.push("/");
+	} catch (error) {
+		alert("Login failed. Please check your credentials.");
+		console.error(
+			"Error during login:",
+			error.response ? error.response.data : error.message
+		);
+	}
+	loading.value = false;
+};
+
+const rememberMe = ref(false);
 </script>
 
 <template>
+	<loadigcomponent v-if="loading" />
 	<div class="flex items-center justify-center min-h-screen bg-gray-900">
 		<div class="w-full max-w-md p-8 space-y-8 bg-gray-800 rounded-lg shadow-md">
 			<div class="flex justify-center">
@@ -140,6 +187,34 @@ const register = async () => {
 							autocomplete="current-password"
 							required
 							class="appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 text-gray-300 bg-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+							:class="{
+								'border-red-500 focus:ring-red-500 focus:border-red-500':
+									password !== password_confirmation,
+								'border-gray-600 focus:ring-indigo-500 focus:border-indigo-500':
+									password === password_confirmation,
+							}"
+						/>
+					</div>
+					<div class="mb-4">
+						<label
+							for="password"
+							class="block text-sm font-medium text-gray-400"
+							>Potvrdiť heslo</label
+						>
+						<input
+							v-model="password_confirmation"
+							id="password"
+							name="password"
+							type="password"
+							autocomplete="current-password"
+							required
+							class="appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 text-gray-300 bg-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+							:class="{
+								'border-red-500 focus:ring-red-500 focus:border-red-500':
+									password !== password_confirmation,
+								'border-gray-600 focus:ring-indigo-500 focus:border-indigo-500':
+									password === password_confirmation,
+							}"
 						/>
 					</div>
 				</div>
@@ -150,6 +225,7 @@ const register = async () => {
 							name="remember_me"
 							type="checkbox"
 							class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-600 bg-gray-900 rounded"
+							v-model="rememberMe"
 						/>
 						<label for="remember_me" class="ml-2 block text-sm text-gray-400"
 							>Zapamätať si ma</label

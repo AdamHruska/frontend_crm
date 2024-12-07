@@ -10,7 +10,7 @@ const callListStore = useCallListStore();
 
 const authStore = useAuthStore();
 authStore.loadToken();
-
+const loadingState = ref(false);
 const token = ref("");
 token.value = sessionStorage.getItem("token");
 const next_page_url = ref("");
@@ -113,10 +113,7 @@ const columns = [
 		key: "odporucitel",
 		label: "Odporucitel",
 	},
-	{
-		key: "odporucitel",
-		label: "Odporucitel",
-	},
+
 	// {
 	// 	key: "created_at",
 	// 	label: "Dátum pridania",
@@ -218,26 +215,7 @@ if (callListStore.selectedCallListPeople.length > 0) {
 const ids_from_call_list = ref([]);
 
 const getCallList = async (id) => {
-	// try {
-	// 	const response = await axios.get(
-	// 		`${config.public.apiUrl}call-lists/${id}`,
-	// 		{
-	// 			headers: {
-	// 				Authorization: `Bearer ${authStore.token}`,
-	// 			},
-	// 		}
-	// 	);
-	// 	// ids_from_call_list.value = response.data.contact_ids;
-	// 	// selectedCallList.value = response.data;
-	// 	// console.log("Selected", selectedCallList.value);
-	// 	// console.log(ids_from_call_list.value);
-	// 	// people.value = response.data.contacts;
-	// 	console.log("Selected skuska skuska", response.data);
-	// } catch (error) {
-	// 	console.error("Error fetching contacts:", error);
-	// 	// Handle the error, e.g., display an error message to the user
-	// }
-
+	loadingState.value = true;
 	callListStore.getCallListById(id);
 	callListStore.setSelectedCallList(id);
 	console.log("singleCallList", callListStore.singleCallList);
@@ -277,6 +255,7 @@ const getCallList = async (id) => {
 			console.error("Error fetching contacts:", error);
 		}
 	}
+	loadingState.value = false;
 };
 
 const deleteCallList = async (id) => {
@@ -288,6 +267,8 @@ const deleteCallList = async (id) => {
 <template>
 	<div class="flex">
 		<loadigcomponent v-if="callListStore.loadingState" />
+		<loadigcomponent v-if="loadingState" />
+
 		<div
 			class="min-w-[280px] max-w-[280px] h-[calc(100vh-1.5rem)] bg-gr px-3 pt-5 mx-3 rounded-2xl my-3 ml-6 shadow-lg overflow-y-auto overflow-x-hidden"
 		>
@@ -327,12 +308,12 @@ const deleteCallList = async (id) => {
 			</div>
 		</div>
 		<div
-			class="bg-gr h-[calc(100vh-1.5rem)] w-full ml-3 mr-6 rounded-2xl my-3 shadow-lg p-4"
+			class="bg-gr h-[calc(100vh-1.5rem)] w-full ml-3 mr-6 rounded-2xl my-3 shadow-lg p-4 table-container"
 		>
 			<UTable
 				:rows="people"
 				:columns="columns"
-				class="mx-6 table-container h-[calc(100vh-3rem)] owerflow-y-auto"
+				class="mx-6 table-container h-[calc(100vh-3rem)] owerflow-y-auto table-black-text"
 			>
 				<template #name-data="{ row }">
 					<div class="test">
@@ -356,19 +337,35 @@ const deleteCallList = async (id) => {
 								class="bg-blue-500 text-white"
 								label="Show Details"
 							/>
-							<UButton
-								@click="findPerson(row.id)"
-								icon="i-heroicons-pencil-square-20-solid"
-								color="gray"
-								variant="ghost"
-							/>
-							<UButton
-								@click="deletePerson(row.id, callListStore.selectedCallList)"
-								icon="i-heroicons-trash-20-solid"
-								color="red"
-								variant="ghost"
-								class="text-red"
-							/>
+							<UTooltip
+								text="Upraviť kontakt"
+								:ui="{ background: '', color: '' }"
+								class=""
+							>
+								<UButton
+									@click="findPerson(row.id)"
+									icon="i-heroicons-pencil-square-20-solid"
+									color="gray"
+									variant="ghost"
+								/>
+							</UTooltip>
+							<div class="">
+								<UTooltip
+									text="Vymazať kontakt z call listu"
+									:ui="{ background: '', color: '' }"
+									class=""
+								>
+									<UButton
+										@click="
+											deletePerson(row.id, callListStore.selectedCallList)
+										"
+										icon="i-heroicons-trash-20-solid"
+										color="red"
+										variant="ghost"
+										class="text-red"
+									/>
+								</UTooltip>
+							</div>
 						</div>
 						<input
 							type="checkbox"
@@ -404,6 +401,10 @@ body {
 }
 
 * {
+	color: #000000;
+}
+
+.table-black-text {
 	color: #000000 !important;
 }
 
@@ -413,5 +414,9 @@ body {
 
 .color-black {
 	color: #000000 !important;
+}
+
+div.table-container * {
+	color: #000000 !important; /* Ensure table text is black */
 }
 </style>

@@ -246,6 +246,19 @@ const loading = ref(false);
 const changeLoading = () => {
 	loading.value = !loading.value;
 };
+
+watch(dovolane, (newValue) => {
+	if (newValue) {
+		volane.value = true;
+	}
+});
+
+watch(dohodnute, (newValue) => {
+	if (newValue) {
+		volane.value = true;
+		dovolane.value = true;
+	}
+});
 </script>
 
 <template>
@@ -280,7 +293,7 @@ const changeLoading = () => {
 				<input
 					v-model="email"
 					type="email"
-					class="w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500"
+					class="w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500 !text-black"
 					placeholder="Zadajte email ..."
 				/>
 			</div>
@@ -292,7 +305,7 @@ const changeLoading = () => {
 				<select
 					v-model="aktivita"
 					id="floating_aktivita"
-					class="w-full bg-gray-200 text-white rounded-lg p-1 mt-1"
+					class="w-full bg-gray-200 text-white rounded-lg p-1 py-2 mt-1 !text-black"
 				>
 					<option value="Telefonát klient">Telefonát klient</option>
 					<option value="Telefonát nábor">Telefonát nábor</option>
@@ -318,7 +331,7 @@ const changeLoading = () => {
 					v-model="ina_aktivita"
 					type="text"
 					v-if="ineBool"
-					class="w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500"
+					class="w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500 !text-black"
 					placeholder="Zadajte aktivitu ..."
 				/>
 			</div>
@@ -331,7 +344,7 @@ const changeLoading = () => {
 					value="true"
 				/>
 				<label
-					class="text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+					class="!text-black text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
 					>Online Meeting</label
 				>
 			</div>
@@ -343,7 +356,7 @@ const changeLoading = () => {
 					step="900"
 					name="datum_cas"
 					id="floating_datum_cas"
-					class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+					class="!text-black block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
 					placeholder=" "
 				/>
 				<label
@@ -360,7 +373,7 @@ const changeLoading = () => {
 					step="900"
 					name="datum_cas_koniec"
 					id="floating_datum_cas_koniec"
-					class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+					class="!text-black block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
 					placeholder=" "
 				/>
 				<label
@@ -376,7 +389,7 @@ const changeLoading = () => {
 					name="poznamka"
 					id="floating_poznamka"
 					rows="3"
-					class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+					class="!text-black block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
 					placeholder=" "
 				></textarea>
 				<label
@@ -394,7 +407,7 @@ const changeLoading = () => {
 				<input
 					v-model="miesto_stretnutia"
 					type="text"
-					class="w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500"
+					class="!text-black w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500"
 					placeholder="Zadajte miesto stretnutia ..."
 				/>
 			</div>
@@ -403,7 +416,7 @@ const changeLoading = () => {
 				<!-- VOLANE -->
 				<label class="cursor-pointer flex flex-col items-center gap-4">
 					<span
-						class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300"
+						class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300 !text-black"
 						>Volané</span
 					>
 					<input
@@ -421,7 +434,7 @@ const changeLoading = () => {
 					<!-- VOLANE -->
 					<label class="cursor-pointer flex flex-col items-center gap-4">
 						<span
-							class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300"
+							class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300 !text-black"
 							>Dovolané</span
 						>
 						<input
@@ -440,7 +453,7 @@ const changeLoading = () => {
 					<!-- VOLANE -->
 					<label class="cursor-pointer flex flex-col items-center gap-4">
 						<span
-							class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300"
+							class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300 !text-black !text-black"
 							>Dohodnuté</span
 						>
 						<input
@@ -475,3 +488,9 @@ const changeLoading = () => {
 		</form>
 	</div>
 </template>
+
+<style scoped>
+* {
+	text: black !important;
+}
+</style>

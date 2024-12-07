@@ -8,8 +8,10 @@ const authStore = useAuthStore();
 const email = ref("");
 const password = ref("");
 const rememberMe = ref(false); // Add this line to track remember me state
+const loading = ref(false);
 
 const login = async (email, password, rememberMe) => {
+	loading.value = true;
 	event.preventDefault();
 	if (email && password) {
 		try {
@@ -41,6 +43,7 @@ const login = async (email, password, rememberMe) => {
 	} else {
 		alert("Please fill in all fields");
 	}
+	loading.value = false;
 };
 
 // Clear any existing tokens on component mount
@@ -50,6 +53,7 @@ onMounted(() => {
 </script>
 
 <template>
+	<loadigcomponent v-if="loading" />
 	<div class="flex items-center justify-center min-h-screen bg-gray-900">
 		<div class="w-full max-w-md p-8 space-y-8 bg-gray-800 rounded-lg shadow-md">
 			<h1 class="mx-auto text-center text-3xl font-bold text-white pb-4">
