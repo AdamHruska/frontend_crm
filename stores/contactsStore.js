@@ -11,6 +11,7 @@ export const useContactsStore = defineStore("contacts", {
 		prev_page_url: null,
 		next_page_url: null,
 		loadingState: false,
+		lastShowenDetails: null,
 	}),
 	actions: {
 		// Fetch contacts from the API using token from authStore

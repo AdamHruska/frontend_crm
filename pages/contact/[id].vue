@@ -1,6 +1,9 @@
 <script setup>
 const config = useRuntimeConfig();
 
+import { useContactsStore } from "#imports";
+const contactsStore = useContactsStore();
+
 import axios from "axios";
 import { format } from "date-fns";
 
@@ -24,6 +27,7 @@ const changeAddActivityBool = () => {
 };
 
 onBeforeMount(async () => {
+	contactsStore.lastShowenDetails = id;
 	await findPerson(id);
 	await findActivities(id);
 	const user = await getUser();

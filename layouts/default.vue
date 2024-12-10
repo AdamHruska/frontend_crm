@@ -82,6 +82,27 @@
 						/>
 					</NuxtLink>
 				</UTooltip>
+
+				<UTooltip
+					v-if="contactsStore.lastShowenDetails"
+					text="Posledný zobrazený kontakt"
+					:ui="{ background: '', color: '' }"
+					class=""
+				>
+					<NuxtLink
+						v-if="contactsStore.lastShowenDetails"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded border-t border-black"
+						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'detail' }"
+						:to="`/contact/${contactsStore.lastShowenDetails}`"
+						@click="setActiveTab('detail')"
+					>
+						<Icon
+							icon="pepicons-pencil:person"
+							style="font-size: 32px"
+							class="text-white"
+						/>
+					</NuxtLink>
+				</UTooltip>
 			</div>
 
 			<!-- Bottom Navigation Item -->
@@ -113,6 +134,8 @@
 import { useAuthStore } from "@/stores/authStore";
 import { Icon } from "@iconify/vue";
 import { set } from "date-fns";
+import { useContactsStore } from "#imports";
+const contactsStore = useContactsStore();
 
 const authStore = useAuthStore();
 authStore.loadLoginState();
