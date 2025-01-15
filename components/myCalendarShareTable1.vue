@@ -39,24 +39,43 @@ const sharedUsers = computed(() => userStore.sharedUsers);
 import eventBus from "@/eventBus";
 
 // Add a loading flag for each user
+// const deleteSharedUser = async (id) => {
+// 	// Find the user being deleted
+// 	const user = userStore.sharedUsers.find((u) => u.id === id);
+
+// 	if (user) {
+// 		user.isLoading = true; // Set individual user loading state to true
+
+// 		try {
+// 			// Call the delete function in the store
+// 			eventBus.emit("deleteSharedEvents", user.id); // toto
+// 			await userStore.deleteSharedUser(id); // toto
+
+// 			// Remove the user from the shared users list
+// 			userStore.sharedUsers = userStore.sharedUsers.filter((u) => u.id !== id);
+// 		} catch (error) {
+// 			console.error("Error deleting user:", error);
+// 		} finally {
+// 			user.isLoading = false; // Set individual user loading state to false
+// 		}
+// 	}
+// };
+
 const deleteSharedUser = async (id) => {
-	// Find the user being deleted
 	const user = userStore.sharedUsers.find((u) => u.id === id);
 
 	if (user) {
-		user.isLoading = true; // Set individual user loading state to true
+		user.isLoading = true;
 
 		try {
-			// Call the delete function in the store
-			eventBus.emit("deleteSharedEvents", user.id); // toto
-			await userStore.deleteSharedUser(id); // toto
-
-			// Remove the user from the shared users list
+			// Emit the user ID correctly
+			eventBus.emit("deleteSharedEvents", { userId: id }); // Changed to emit an object
+			await userStore.deleteSharedUser(id);
 			userStore.sharedUsers = userStore.sharedUsers.filter((u) => u.id !== id);
 		} catch (error) {
 			console.error("Error deleting user:", error);
 		} finally {
-			user.isLoading = false; // Set individual user loading state to false
+			user.isLoading = false;
 		}
 	}
 };

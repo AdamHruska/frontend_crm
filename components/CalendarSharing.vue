@@ -116,6 +116,37 @@ const debounce = (func, delay) => {
 };
 
 // Fetch users on component mount
+// const handleSearch = async () => {
+// 	error.value = ""; // Reset error before making the request
+
+// 	try {
+// 		const current_user = await axios.get(`${config.public.apiUrl}get-user`, {
+// 			headers: {
+// 				Authorization: `Bearer ${authStore.token}`,
+// 			},
+// 		});
+
+// 		const shareIDs = current_user.data.user.share_user_id;
+// 		const array = JSON.parse(shareIDs); // ['2']
+// 		const numbers = array.map(Number); // [2]
+
+// 		const response = await axios.get(`${config.public.apiUrl}get-users`, {
+// 			headers: {
+// 				Authorization: `Bearer ${authStore.token}`,
+// 			},
+// 		});
+
+// 		// Map users and set the `checked` property based on whether share_user_id is not null
+// 		users.value = (response.data.users || []).map((user) => ({
+// 			...user,
+// 			checked: numbers.includes(user.id),
+// 		}));
+// 	} catch (err) {
+// 		console.error("Error fetching users:", err);
+// 		error.value = "Error fetching users";
+// 	}
+// };
+
 const handleSearch = async () => {
 	error.value = ""; // Reset error before making the request
 
@@ -127,8 +158,22 @@ const handleSearch = async () => {
 		});
 
 		const shareIDs = current_user.data.user.share_user_id;
-		const array = JSON.parse(shareIDs); // ['2']
-		const numbers = array.map(Number); // [2]
+
+		// Log the raw share_user_id to see its value
+		console.log("Raw share_user_id:", shareIDs);
+
+		// Attempt to parse shareIDs safely
+		let array = [];
+		if (typeof shareIDs === "string" && shareIDs.trim().startsWith("[")) {
+			array = JSON.parse(shareIDs); // Parse only if it's a valid JSON string
+		} else {
+			console.warn("share_user_id is not a valid JSON string:", shareIDs);
+		}
+
+		// Ensure the result is an array of numbers
+		const numbers = Array.isArray(array) ? array.map(Number) : [];
+
+		console.log("Parsed numbers array:", numbers);
 
 		const response = await axios.get(`${config.public.apiUrl}get-users`, {
 			headers: {

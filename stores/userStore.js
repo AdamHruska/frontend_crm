@@ -34,9 +34,26 @@ export const useUserStore = defineStore("user", {
 				// Ensure data exists before setting
 				if (response.data && response.data.user) {
 					this.user = response.data.user;
-					this.user.confirmed_share_user_id = JSON.parse(
-						this.user.confirmed_share_user_id
-					);
+					try {
+						// Convert to string if it isn't already
+						const rawValue = this.user.confirmed_share_user_id;
+						const jsonString =
+							typeof rawValue === "string"
+								? rawValue
+								: JSON.stringify(rawValue);
+
+						// Parse the JSON string or fallback to an empty array
+						this.user.confirmed_share_user_id = jsonString
+							? JSON.parse(jsonString)
+							: [];
+						console.log(
+							"confirmed_share_user_id:",
+							this.user.confirmed_share_user_id
+						);
+					} catch (parseError) {
+						console.error("Error parsing confirmed_share_user_id:", parseError);
+						this.user.confirmed_share_user_id = []; // Fallback to an empty array
+					}
 				} else {
 					console.error("No user data in response");
 					this.user = null;
@@ -78,6 +95,29 @@ export const useUserStore = defineStore("user", {
 			}
 		},
 
+		// getSharedUsers() {
+		// 	if (!Array.isArray(this.allUsers)) {
+		// 		console.error("allUsers is not an array");
+		// 		return;
+		// 	}
+
+		// 	if (!this.user || !this.user.share_user_id) {
+		// 		console.error("User or share_user_id is not available");
+		// 		return;
+		// 	}
+
+		// 	// Use `this.shareIdArray` correctly
+		// 	this.shareIdArray = JSON.parse(this.user.share_user_id).map(Number);
+
+		// 	//console.log("Parsed share_user_id array:", this.shareIdArray);
+
+		// 	this.sharedUsers = this.allUsers.filter((user) =>
+		// 		this.shareIdArray.includes(user.id)
+		// 	);
+
+		// 	//console.log("Filtered shared users:", this.sharedUsers);
+		// },
+
 		getSharedUsers() {
 			if (!Array.isArray(this.allUsers)) {
 				console.error("allUsers is not an array");
@@ -89,16 +129,35 @@ export const useUserStore = defineStore("user", {
 				return;
 			}
 
-			// Use `this.shareIdArray` correctly
-			this.shareIdArray = JSON.parse(this.user.share_user_id).map(Number);
+			try {
+				console.log("Raw share_user_id:", this.user.share_user_id);
 
-			//console.log("Parsed share_user_id array:", this.shareIdArray);
+				// Parse `share_user_id` only if it's a string
+				const rawShareUserId = this.user.share_user_id;
+				const parsedShareUserId =
+					typeof rawShareUserId === "string" &&
+					rawShareUserId.trim().startsWith("[")
+						? JSON.parse(rawShareUserId)
+						: rawShareUserId;
 
-			this.sharedUsers = this.allUsers.filter((user) =>
-				this.shareIdArray.includes(user.id)
-			);
+				// Ensure the parsed result is an array of numbers
+				this.shareIdArray = Array.isArray(parsedShareUserId)
+					? parsedShareUserId.map(Number)
+					: [];
 
-			//console.log("Filtered shared users:", this.sharedUsers);
+				console.log("Parsed shareIdArray:", this.shareIdArray);
+
+				// Filter `sharedUsers`
+				this.sharedUsers = this.allUsers.filter((user) =>
+					this.shareIdArray.includes(user.id)
+				);
+
+				console.log("Filtered shared users:", this.sharedUsers);
+			} catch (error) {
+				console.error("Error parsing share_user_id:", error);
+				this.shareIdArray = []; // Fallback to an empty array
+				this.sharedUsers = [];
+			}
 		},
 
 		// async deleteSharedUser(id) {
