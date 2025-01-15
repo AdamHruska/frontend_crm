@@ -1,0 +1,104 @@
+<script setup>
+import { ref, watch, onMounted } from "vue";
+import { useAuthStore } from "@/stores/authStore";
+import { useUserStore } from "#imports";
+
+const userStore = useUserStore();
+const authStore = useAuthStore();
+authStore.loadToken();
+
+const searchInput = ref("");
+const dropdownVisible = ref(false); // Controls visibility of the dropdown
+const filteredUsers = ref([]);
+
+// Fetch all users on component mount
+onMounted(() => {
+	filteredUsers.value = userStore.allUsers; // Initially show all users
+});
+
+// Toggle dropdown visibility when input is focused
+const showDropdown = () => {
+	dropdownVisible.value = true;
+	filteredUsers.value = userStore.allUsers; // Reset the list
+};
+
+// Filter users based on the search input
+watch(searchInput, (newValue) => {
+	const searchText = newValue.toLowerCase();
+	filteredUsers.value = userStore.allUsers.filter((user) =>
+		`${user.first_name} ${user.last_name}`.toLowerCase().includes(searchText)
+	);
+});
+
+// Hide dropdown when clicking outside the search container
+const dropdownContainer = ref(null);
+const handleClickOutside = (event) => {
+	if (
+		dropdownContainer.value &&
+		!dropdownContainer.value.contains(event.target)
+	) {
+		dropdownVisible.value = false;
+	}
+};
+
+document.addEventListener("click", handleClickOutside);
+
+onUnmounted(() => {
+	document.removeEventListener("click", handleClickOutside);
+});
+</script>
+
+<template>
+	<div ref="dropdownContainer" class="relative w-full">
+		<!-- Search Input -->
+		<div class="relative">
+			<div
+				class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none"
+			>
+				<svg
+					class="w-4 h-4 text-gray-700"
+					aria-hidden="true"
+					xmlns="http://www.w3.org/2000/svg"
+					fill="none"
+					viewBox="0 0 20 20"
+				>
+					<path
+						stroke="currentColor"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
+					/>
+				</svg>
+			</div>
+			<input
+				v-model="searchInput"
+				type="search"
+				@focus="showDropdown"
+				class="block w-full p-4 ps-10 text-sm text-black border border-gray-400 rounded-lg bg-white focus:ring-blue-500 focus:border-blue-500 placeholder-gray-500"
+				placeholder="Hľadať ..."
+			/>
+		</div>
+
+		<!-- Dropdown with filtered users -->
+		<ul
+			v-if="dropdownVisible"
+			class="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"
+		>
+			<li
+				v-for="user in filteredUsers"
+				:key="user.id"
+				class="p-2 hover:bg-gray-100 cursor-pointer text-black mr-4"
+			>
+				{{ user.first_name }} {{ user.last_name }}
+			</li>
+			<li v-if="filteredUsers.length === 0" class="p-2 text-gray-500">
+				No users found
+			</li>
+		</ul>
+	</div>
+</template>
+
+<style scoped>
+/* Add custom styles if needed */
+</style>

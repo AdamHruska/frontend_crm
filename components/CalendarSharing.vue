@@ -90,6 +90,8 @@ import axios from "axios";
 import { useAuthStore } from "@/stores/authStore";
 import { useCalendarstore } from "@/stores/calendarStore";
 const calendarStore = useCalendarstore();
+import { useUserStore } from "#imports";
+const userStore = useUserStore();
 
 const emit = defineEmits(["deleteSharedEventsId", "addSharedEventsId"]);
 
@@ -166,6 +168,25 @@ const filteredUsers = computed(() => {
 const debounceSearch = debounce(handleSearch, 200);
 
 const handleCheckboxChange = async (userId, isChecked) => {
+	const userIdString = String(userId);
+
+	// Check if the user has permission
+	if (
+		!Object.values(userStore.user.confirmed_share_user_id).some(
+			(id) => String(id) === userIdString
+		)
+	) {
+		alert("Nemáte práva na zmenu kalendára u tohto používateľa");
+		// Revert the checkbox state
+		const user = users.value.find((user) => user.id === userId);
+		if (user) {
+			user.checked = !isChecked;
+		}
+		return; // Stop further execution
+	}
+
+	loading.value = true;
+
 	if (isChecked) {
 		emit("addSharedEventsId", userId);
 		try {
@@ -183,7 +204,6 @@ const handleCheckboxChange = async (userId, isChecked) => {
 			error.value = "Error adding share ID";
 		}
 	} else {
-		loading.value = true;
 		emit("deleteSharedEventsId", userId);
 		try {
 			await axios.post(
@@ -199,9 +219,11 @@ const handleCheckboxChange = async (userId, isChecked) => {
 			console.error("Error removing share ID:", error);
 			error.value = "Error removing share ID";
 		}
-		loading.value = false;
 	}
 
+	loading.value = false;
+
+	// Update checked users in the calendar store
 	const checkedUsers = users.value.filter((user) => user.checked);
 	calendarStore.setCheckedUsers(checkedUsers);
 };

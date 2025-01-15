@@ -34,6 +34,9 @@ export const useUserStore = defineStore("user", {
 				// Ensure data exists before setting
 				if (response.data && response.data.user) {
 					this.user = response.data.user;
+					this.user.confirmed_share_user_id = JSON.parse(
+						this.user.confirmed_share_user_id
+					);
 				} else {
 					console.error("No user data in response");
 					this.user = null;
@@ -169,7 +172,7 @@ export const useUserStore = defineStore("user", {
 				calendarStore.removeSharedActivitiesByUser(id);
 
 				// Update calendar UI
-				calendarStore.updateCalendarEvents();
+				//calendarStore.updateCalendarEvents();
 			} catch (error) {
 				console.error("Error deleting shared user:", error);
 			} finally {

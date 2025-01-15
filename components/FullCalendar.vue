@@ -1,7 +1,7 @@
 <script setup>
 const end_date = ref("");
 const emit = defineEmits(["deleteSharedEventsId"]);
-
+import eventBus from "@/eventBus";
 import { useCalendarstore } from "#imports";
 const calendarStore = useCalendarstore();
 import { useUserStore } from "#imports";
@@ -29,7 +29,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { _backgroundColor } from "#tailwind-config/theme";
-
+import { toRaw } from "vue";
 const rawData = ref([]);
 
 const addActivity = ref(false);
@@ -102,17 +102,21 @@ onMounted(async () => {
 		await calendarStore.fetchActivities();
 	}
 
+	eventBus.on("deleteSharedEvents", ({ userId }) => {
+		deleteSharedEventsId(userId);
+	});
 	rawData.value = calendarStore.activities;
 	events.value = transformData(rawData.value);
-	console.log("skuska skuska:", calendarStore.shared_activities);
 	const sharedACT = transformData(
 		flattenActivities(calendarStore.shared_activities)
 	);
-	console.log("Shared activities test:", sharedACT);
-
 	events.value = [...events.value, ...sharedACT];
-	console.log("Events:", events.value);
+
 	calendarOptions.value.events = events.value;
+});
+
+onUnmounted(() => {
+	eventBus.off("deleteSharedEvents");
 });
 
 const transformData = (data) => {
@@ -120,14 +124,10 @@ const transformData = (data) => {
 		var farba = "";
 		const formattedStart = item.datumCas.replace(" ", "T");
 		if (item.created_id == userStore.user.id) {
-			console.log("porovnanie", item.created_id, " ", userStore.user.id);
 			farba = "rgb(37 99 235)";
 		} else {
 			farba = "red";
 		}
-
-		console.log("item:", item);
-
 		return {
 			id: item.id,
 			title: item.aktivita,
@@ -142,14 +142,6 @@ const transformData = (data) => {
 
 let eventGuid = 0;
 
-const createEventId = () => {
-	return String(eventGuid++);
-};
-
-const todayStr = () => {
-	return new Date().toISOString().replace(/T.*$/, "");
-};
-
 const currentEvents = ref([]);
 
 const handleWeekendsToggle = () => {
@@ -158,7 +150,7 @@ const handleWeekendsToggle = () => {
 
 function handleEventClick(clickInfo) {
 	toggleUpdateActivity();
-	console.log("skuska", clickInfo.event._def.publicId);
+
 	activityID.value = clickInfo.event._def.publicId;
 }
 
@@ -172,7 +164,7 @@ const flattenActivities = (activitiesObject) => {
 };
 
 const deleteSharedEventsId = (userId) => {
-	console.log("test emit", userId);
+	console.log("test delete eventov sa vykonal");
 	events.value = events.value.filter((event) => event.user_id !== userId);
 	// Update the calendar options to reflect the changes
 	calendarOptions.value = { ...calendarOptions.value, events: events.value };
@@ -180,37 +172,53 @@ const deleteSharedEventsId = (userId) => {
 
 const addSharedEventsId = async (userId) => {
 	loadingStateCalendar.value = true;
-	console.log("test emit add", userId);
+	const userIdString = String(userId);
 
-	try {
-		// Fetch activities created by the specified userId
-		const response = await axios.get(
-			`${config.public.apiUrl}get-activities-by-creator/${userId}`,
-			{
-				headers: {
-					Authorization: `Bearer ${authStore.token}`,
-					"Content-Type": "application/json",
-				},
+	if (
+		Object.values(userStore.user.confirmed_share_user_id).some(
+			(id) => String(id) === userIdString
+		)
+	) {
+		console.log("user je tam");
+
+		try {
+			const response = await axios.get(
+				`${config.public.apiUrl}get-activities-by-creator/${userId}`,
+				{
+					headers: {
+						Authorization: `Bearer ${authStore.token}`,
+						"Content-Type": "application/json",
+					},
+				}
+			);
+
+			if (response && response.data && response.data.activities) {
+				const sharedEvents = transformData(
+					flattenActivities(response.data.activities)
+				);
+
+				// Handle both cases - object with array and direct array
+				const rawActivities = toRaw(calendarStore.shared_activities);
+				const currentActivities = Array.isArray(rawActivities)
+					? rawActivities
+					: Object.values(rawActivities)[0] || [];
+
+				calendarStore.shared_activities = [
+					...currentActivities,
+					...response.data.activities,
+				];
+
+				events.value = [...events.value, ...sharedEvents];
+				calendarOptions.value.events = events.value;
 			}
-		);
-
-		// Check if the response contains the expected data
-		if (response && response.data && response.data.activities) {
-			// Transform the fetched activities into the calendar event format
-			const sharedEvents = transformData(response.data.activities);
-
-			// Update the events in the calendar
-			events.value = [...events.value, ...sharedEvents]; // Merge new events
-			calendarOptions.value.events = events.value; // Update calendar options
-
-			console.log("Updated events:", events.value); // Log the updated events for debugging
-		} else {
-			console.error("No activities found in response.");
+		} catch (error) {
+			console.error("Error adding share ID:", error);
+			error.value = "Error adding share ID";
 		}
-	} catch (error) {
-		console.error("Error adding share ID:", error);
-		error.value = "Error adding share ID"; // Set error message for user feedback
+	} else {
+		console.log("user nie je tam");
 	}
+
 	loadingStateCalendar.value = false;
 };
 
@@ -240,7 +248,6 @@ const displayUpdateEvent = (event) => {
 };
 
 const alterEvents = (updatedEvent) => {
-	console.log("Updated event:", updatedEvent);
 	// If the event is null, it means it was deleted
 	if (updatedEvent === null) {
 		// Remove the event from events array
@@ -334,7 +341,7 @@ function handleDateSelect(selectInfo) {
 	toggleAddActivity();
 	let calendarApi = selectInfo.view.calendar;
 	end_date.value = selectInfo.startStr;
-	console.log("Stark", selectInfo.startStr, "end", selectInfo.endStr);
+
 	calendarApi.unselect();
 }
 

@@ -130,6 +130,7 @@ token.value = sessionStorage.getItem("token");
 
 onMounted(async () => {
 	try {
+		console.log("Fetching contacts...");
 		// Fetch the contacts from the API
 		if (contactsStore.contacts.length === 0) {
 			await contactsStore.fetchContacts();

@@ -10,7 +10,6 @@ const userStore = useUserStore();
 
 onMounted(async () => {
 	await userStore.fetchUser();
-	console.log("test", userStore.user);
 });
 
 const logout = async () => {
@@ -61,7 +60,15 @@ const logout = async () => {
 			</button>
 		</div>
 		<!-- Second section -->
-
+		<div>
+			<div class="max-w-sm ml-4 mt-16 mb-2 w-[400px]">
+				<!-- <SearchBarSharing
+					@updateResults="handleSearchResults"
+					class="shadow-md"
+				/> -->
+				<SearchBarSharing class="shadow-md" />
+			</div>
+		</div>
 		<div class="flex w-full">
 			<!-- First Table -->
 			<MyCalendarShareTable1 :user="userStore.user" />

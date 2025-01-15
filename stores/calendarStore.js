@@ -27,7 +27,6 @@ export const useCalendarstore = defineStore("calendar", {
 					},
 				}
 			);
-
 			this.activities = response.data.activities;
 
 			// Getting sharedIDs
@@ -38,7 +37,6 @@ export const useCalendarstore = defineStore("calendar", {
 
 			// If sharedIDs is empty, skip the API call or handle it differently
 			if (sharedIDs.length === 0) {
-				console.log("No shared user IDs, skipping shared activities fetch.");
 				this.shared_activities = [];
 				this.loadingState = false;
 				return;
@@ -58,7 +56,6 @@ export const useCalendarstore = defineStore("calendar", {
 					}
 				);
 				this.shared_activities = response_shared_activities.data.activities;
-				console.log("Shared activities:", this.shared_activities);
 			} catch (error) {
 				console.error("Error fetching shared activities:", error);
 			}
@@ -83,11 +80,11 @@ export const useCalendarstore = defineStore("calendar", {
 				);
 
 				// Remove the activity from both user and shared activities
-				console.log("predtym", this.activities);
+
 				this.activities = this.activities.filter(
 					(activity) => activity.id != activityId
 				);
-				console.log("potom", this.activities);
+
 				// Check and remove from shared activities as well
 				Object.keys(this.shared_activities).forEach((key) => {
 					this.shared_activities[key] = this.shared_activities[key].filter(
@@ -105,17 +102,20 @@ export const useCalendarstore = defineStore("calendar", {
 		},
 		setCheckedUsers(checkedUsers) {
 			this.checkedUsers = checkedUsers; // Set checked users dynamically
-			console.log("toto je checkedUsers", this.checkedUsers);
 		},
 
 		removeSharedActivitiesByUser(userId) {
-			this.shared_activities = this.shared_activities.filter(
+			const shared_activities = JSON.parse(
+				JSON.stringify(this.shared_activities)
+			);
+			this.shared_activities = shared_activities.filter(
 				(activity) => activity.user_id !== userId // Ensure activity has a user_id field to match
 			);
-			this.activities = this.activities.filter(
-				(activity) => activity.user_id !== userId // For activities directly linked
-			);
-			console.log(`Removed shared activities for user ID ${userId}`);
+			console.log(shared_activities);
+			// console.log("activities in store:", this.activities);
+			// this.activities = this.activities.filter(
+			// 	(activity) => activity.user_id !== userId // For activities directly linked
+			// );
 		},
 	},
 	getters: {

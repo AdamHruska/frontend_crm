@@ -1,4 +1,11 @@
 <script setup>
+import { useUserStore } from "#imports";
+const userStore = useUserStore();
+
+onMounted(async () => {
+	//console.log("all", userStore.allUsers);
+});
+
 const sentInvites = ref([
 	{ id: 1, to: "Charlie", status: "true" },
 	{ id: 2, to: "Dana", status: "pending" },
@@ -18,7 +25,7 @@ const filteredSentInvites = computed(() =>
 
 <template>
 	<div class="w-1/3 p-4">
-		<h2 class="font-bold text-lg mb-2">Moje pozvánky</h2>
+		<h2 class="font-bold text-lg mb-2">koho kalendár chcem vidieť</h2>
 		<table class="w-full border shadow">
 			<thead>
 				<tr class="bg-gray-300">

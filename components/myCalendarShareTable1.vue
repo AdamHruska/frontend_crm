@@ -35,16 +35,21 @@ const userStore = useUserStore();
 // Use computed property for reactivity
 const sharedUsers = computed(() => userStore.sharedUsers);
 
+// event BUS
+import eventBus from "@/eventBus";
+
 // Add a loading flag for each user
 const deleteSharedUser = async (id) => {
 	// Find the user being deleted
 	const user = userStore.sharedUsers.find((u) => u.id === id);
+
 	if (user) {
 		user.isLoading = true; // Set individual user loading state to true
 
 		try {
 			// Call the delete function in the store
-			await userStore.deleteSharedUser(id);
+			eventBus.emit("deleteSharedEvents", user.id); // toto
+			await userStore.deleteSharedUser(id); // toto
 
 			// Remove the user from the shared users list
 			userStore.sharedUsers = userStore.sharedUsers.filter((u) => u.id !== id);
