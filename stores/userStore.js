@@ -175,16 +175,26 @@ export const useUserStore = defineStore("user", {
 		// 		const authStore = useAuthStore();
 		// 		const token = authStore.token;
 
+		// 		// await axios.post(
+		// 		// 	`${config.public.apiUrl}null-share-id/${id}`,
+		// 		// 	{},
+		// 		// 	{
+		// 		// 		headers: {
+		// 		// 			Authorization: `Bearer ${authStore.token}`,
+		// 		// 		},
+		// 		// 	}
+		// 		// );
+		// 		console.log("test:");
 		// 		await axios.post(
 		// 			`${config.public.apiUrl}null-share-id/${id}`,
 		// 			{},
 		// 			{
 		// 				headers: {
-		// 					Authorization: `Bearer ${authStore.token}`,
+		// 					Authorization: `Bearer ${authStore.token}`, // Ensure token is valid
+		// 					"Content-Type": "application/json",
 		// 				},
 		// 			}
 		// 		);
-
 		// 		// await axios.put(
 		// 		// 	`${config.public.apiUrl}update-user`,
 		// 		// 	{
@@ -212,32 +222,68 @@ export const useUserStore = defineStore("user", {
 			try {
 				const config = useRuntimeConfig();
 				const authStore = useAuthStore();
-				const token = authStore.token;
 
-				// Backend API call to remove shared user
+				// Call the API to remove shared user
 				await axios.post(
 					`${config.public.apiUrl}null-share-id/${id}`,
 					{},
 					{
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
+							"Content-Type": "application/json",
 						},
 					}
 				);
 
 				// Update local state
+				this.shareIdArray = this.shareIdArray.filter((userId) => userId !== id);
 				this.sharedUsers = this.sharedUsers.filter((user) => user.id !== id);
-				const calendarStore = useCalendarstore();
-				calendarStore.removeSharedActivitiesByUser(id);
 
-				// Update calendar UI
-				//calendarStore.updateCalendarEvents();
+				// Update the user's share_user_id
+				this.user.share_user_id = JSON.stringify(this.shareIdArray);
+
+				// Get calendar store and remove activities
+				const calendarStore = useCalendarstore();
+				await calendarStore.removeSharedActivitiesByUser(id);
 			} catch (error) {
 				console.error("Error deleting shared user:", error);
+				throw error;
 			} finally {
 				this.loadingState = false;
 			}
 		},
+
+		// async deleteSharedUser(id) {
+		// 	this.loadingState = true;
+		// 	try {
+		// 		const config = useRuntimeConfig();
+		// 		const authStore = useAuthStore();
+		// 		const token = authStore.token;
+
+		// 		// Backend API call to remove shared user
+		// 		await axios.post(
+		// 			`${config.public.apiUrl}null-share-id/${id}`,
+		// 			{},
+		// 			{
+		// 				headers: {
+		// 					Authorization: `Bearer ${authStore.token}`,
+		// 				},
+		// 			}
+		// 		);
+
+		// 		// Update local state
+		// 		this.sharedUsers = this.sharedUsers.filter((user) => user.id !== id);
+		// 		const calendarStore = useCalendarstore();
+		// 		calendarStore.removeSharedActivitiesByUser(id);
+
+		// 		// Update calendar UI
+		// 		//calendarStore.updateCalendarEvents();
+		// 	} catch (error) {
+		// 		console.error("Error deleting shared user:", error);
+		// 	} finally {
+		// 		this.loadingState = false;
+		// 	}
+		// },
 	},
 
 	getters: {

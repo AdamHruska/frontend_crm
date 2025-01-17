@@ -89,152 +89,107 @@ import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 import axios from "axios";
 import { useAuthStore } from "@/stores/authStore";
 import { useCalendarstore } from "@/stores/calendarStore";
-const calendarStore = useCalendarstore();
 import { useUserStore } from "#imports";
+
+const calendarStore = useCalendarstore();
 const userStore = useUserStore();
-
-const emit = defineEmits(["deleteSharedEventsId", "addSharedEventsId"]);
-
 const config = useRuntimeConfig();
 const authStore = useAuthStore();
-authStore.loadToken();
 
 const users = ref([]);
 const searchInput = ref("");
 const error = ref("");
 const isDropdownOpen = ref(false);
 const dropdownContainer = ref(null);
-
 const loading = ref(false);
-let timeout;
 
-const debounce = (func, delay) => {
-	return (...args) => {
-		clearTimeout(timeout);
-		timeout = setTimeout(() => func.apply(this, args), delay);
-	};
-};
+const emit = defineEmits(["deleteSharedEventsId", "addSharedEventsId"]);
 
-// Fetch users on component mount
-// const handleSearch = async () => {
-// 	error.value = ""; // Reset error before making the request
-
-// 	try {
-// 		const current_user = await axios.get(`${config.public.apiUrl}get-user`, {
-// 			headers: {
-// 				Authorization: `Bearer ${authStore.token}`,
-// 			},
-// 		});
-
-// 		const shareIDs = current_user.data.user.share_user_id;
-// 		const array = JSON.parse(shareIDs); // ['2']
-// 		const numbers = array.map(Number); // [2]
-
-// 		const response = await axios.get(`${config.public.apiUrl}get-users`, {
-// 			headers: {
-// 				Authorization: `Bearer ${authStore.token}`,
-// 			},
-// 		});
-
-// 		// Map users and set the `checked` property based on whether share_user_id is not null
-// 		users.value = (response.data.users || []).map((user) => ({
-// 			...user,
-// 			checked: numbers.includes(user.id),
-// 		}));
-// 	} catch (err) {
-// 		console.error("Error fetching users:", err);
-// 		error.value = "Error fetching users";
-// 	}
-// };
+// Initialize auth store
+authStore.loadToken();
 
 const handleSearch = async () => {
-	error.value = ""; // Reset error before making the request
+	console.log("Starting handleSearch");
+	loading.value = true;
+	error.value = "";
 
 	try {
+		console.log("Fetching current user...");
 		const current_user = await axios.get(`${config.public.apiUrl}get-user`, {
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,
 			},
 		});
+		console.log("Current user data:", current_user.data);
 
+		let numbers = [];
 		const shareIDs = current_user.data.user.share_user_id;
+		console.log("ShareIDs:", shareIDs);
 
-		// Log the raw share_user_id to see its value
-		console.log("Raw share_user_id:", shareIDs);
-
-		// Attempt to parse shareIDs safely
-		let array = [];
-		if (typeof shareIDs === "string" && shareIDs.trim().startsWith("[")) {
-			array = JSON.parse(shareIDs); // Parse only if it's a valid JSON string
-		} else {
-			console.warn("share_user_id is not a valid JSON string:", shareIDs);
+		if (shareIDs) {
+			try {
+				numbers = Array.isArray(shareIDs)
+					? shareIDs.map(Number)
+					: JSON.parse(shareIDs).map(Number);
+				console.log("Parsed numbers:", numbers);
+			} catch (parseError) {
+				console.error("Error parsing share_user_id:", parseError);
+			}
 		}
 
-		// Ensure the result is an array of numbers
-		const numbers = Array.isArray(array) ? array.map(Number) : [];
-
-		console.log("Parsed numbers array:", numbers);
-
+		console.log("Fetching all users...");
 		const response = await axios.get(`${config.public.apiUrl}get-users`, {
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,
 			},
 		});
+		console.log("All users response:", response.data);
 
-		// Map users and set the `checked` property based on whether share_user_id is not null
 		users.value = (response.data.users || []).map((user) => ({
 			...user,
 			checked: numbers.includes(user.id),
 		}));
-	} catch (err) {
-		console.error("Error fetching users:", err);
-		error.value = "Error fetching users";
-	}
-};
+		console.log("Updated users:", users.value);
 
-const normalizeString = (str) => {
-	return str
-		.normalize("NFD")
-		.replace(/[\u0300-\u036f]/g, "")
-		.toLowerCase();
+		const checkedUsers = users.value.filter((user) => user.checked);
+		calendarStore.setCheckedUsers(checkedUsers);
+		console.log("Updated checked users in store:", checkedUsers);
+	} catch (err) {
+		console.error("Error in handleSearch:", err);
+		error.value = err.message || "Error fetching users";
+	} finally {
+		loading.value = false;
+		console.log("HandleSearch completed. Users:", users.value);
+	}
 };
 
 const filteredUsers = computed(() => {
-	if (!searchInput.value) {
-		return users.value;
-	}
-	const normalizedSearchInput = normalizeString(searchInput.value);
+	console.log("Computing filtered users:", users.value);
+	if (!searchInput.value) return users.value;
+	const normalizedSearchInput = searchInput.value.toLowerCase();
 	return users.value.filter((user) => {
-		const userFullName = `${user.first_name} ${user.last_name}`;
-		return normalizeString(userFullName).includes(normalizedSearchInput);
+		const userFullName = `${user.first_name} ${user.last_name}`.toLowerCase();
+		return userFullName.includes(normalizedSearchInput);
 	});
 });
 
-const debounceSearch = debounce(handleSearch, 200);
+onMounted(async () => {
+	console.log("Component mounted");
+	try {
+		await handleSearch();
+		console.log("Initial search completed");
+	} catch (err) {
+		console.error("Error during mount:", err);
+	}
+});
 
 const handleCheckboxChange = async (userId, isChecked) => {
-	const userIdString = String(userId);
-
-	// Check if the user has permission
-	if (
-		!Object.values(userStore.user.confirmed_share_user_id).some(
-			(id) => String(id) === userIdString
-		)
-	) {
-		alert("Nemáte práva na zmenu kalendára u tohto používateľa");
-		// Revert the checkbox state
-		const user = users.value.find((user) => user.id === userId);
-		if (user) {
-			user.checked = !isChecked;
-		}
-		return; // Stop further execution
-	}
-
+	console.log("Checkbox changed for user:", userId, isChecked);
 	loading.value = true;
 
-	if (isChecked) {
-		emit("addSharedEventsId", userId);
-		try {
+	try {
+		if (isChecked) {
+			emit("addSharedEventsId", userId);
 			await axios.post(
 				`${config.public.apiUrl}add-share-id/${userId}`,
 				{},
@@ -244,13 +199,8 @@ const handleCheckboxChange = async (userId, isChecked) => {
 					},
 				}
 			);
-		} catch (error) {
-			console.error("Error adding share ID:", error);
-			error.value = "Error adding share ID";
-		}
-	} else {
-		emit("deleteSharedEventsId", userId);
-		try {
+		} else {
+			emit("deleteSharedEventsId", userId);
 			await axios.post(
 				`${config.public.apiUrl}null-share-id/${userId}`,
 				{},
@@ -260,51 +210,45 @@ const handleCheckboxChange = async (userId, isChecked) => {
 					},
 				}
 			);
-		} catch (error) {
-			console.error("Error removing share ID:", error);
-			error.value = "Error removing share ID";
 		}
+
+		// Refresh users after change
+		await handleSearch();
+	} catch (error) {
+		console.error("Error updating share ID:", error);
+	} finally {
+		loading.value = false;
 	}
-
-	loading.value = false;
-
-	// Update checked users in the calendar store
-	const checkedUsers = users.value.filter((user) => user.checked);
-	calendarStore.setCheckedUsers(checkedUsers);
 };
 
-// Fetch users on component mount
-onMounted(() => {
-	handleSearch();
-	const checkedUsers = users.value.filter((user) => user.checked);
-	calendarStore.setCheckedUsers(checkedUsers);
-	// Event listener to close dropdown on click outside
-	const handleClickOutside = (event) => {
-		if (
-			dropdownContainer.value &&
-			!dropdownContainer.value.contains(event.target)
-		) {
-			isDropdownOpen.value = false;
-		}
-	};
+const toggleDropdown = () => {
+	isDropdownOpen.value = !isDropdownOpen.value;
+	console.log("Dropdown toggled:", isDropdownOpen.value);
+};
 
-	document.addEventListener("click", handleClickOutside);
-
-	// Cleanup listener on component unmount
-	onBeforeUnmount(() => {
-		document.removeEventListener("click", handleClickOutside);
-	});
+// Cleanup
+onBeforeUnmount(() => {
+	document.removeEventListener("click", handleClickOutside);
 });
 
-// Computed property to get checked users
+// Click outside handler
+const handleClickOutside = (event) => {
+	if (
+		dropdownContainer.value &&
+		!dropdownContainer.value.contains(event.target)
+	) {
+		isDropdownOpen.value = false;
+	}
+};
+
+// Add click outside listener after mount
+onMounted(() => {
+	document.addEventListener("click", handleClickOutside);
+});
+
 const checkedUsers = computed(() => {
 	return users.value.filter((user) => user.checked);
 });
-
-// Dropdown toggle function
-const toggleDropdown = () => {
-	isDropdownOpen.value = !isDropdownOpen.value;
-};
 </script>
 
 <style scoped>

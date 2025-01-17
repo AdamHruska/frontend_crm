@@ -2,9 +2,11 @@
 import { ref, watch, onMounted } from "vue";
 import { useAuthStore } from "@/stores/authStore";
 import { useUserStore } from "#imports";
+import { useRequestStore } from "~/stores/requestStore";
 
 const userStore = useUserStore();
 const authStore = useAuthStore();
+const requestStore = useRequestStore();
 authStore.loadToken();
 
 const searchInput = ref("");
@@ -13,7 +15,7 @@ const filteredUsers = ref([]);
 
 // Fetch all users on component mount
 onMounted(() => {
-	filteredUsers.value = userStore.allUsers; // Initially show all users
+	filteredUsers.value = userStore.allUsers;
 });
 
 // Toggle dropdown visibility when input is focused
@@ -28,6 +30,7 @@ watch(searchInput, (newValue) => {
 	filteredUsers.value = userStore.allUsers.filter((user) =>
 		`${user.first_name} ${user.last_name}`.toLowerCase().includes(searchText)
 	);
+	console.log("Filtered users:", filteredUsers.value);
 });
 
 // Hide dropdown when clicking outside the search container
@@ -46,6 +49,14 @@ document.addEventListener("click", handleClickOutside);
 onUnmounted(() => {
 	document.removeEventListener("click", handleClickOutside);
 });
+
+const createRequestSeeTheirCal = async (userId, first_name, last_name) => {
+	await requestStore.requestToSeeTheirCalendar(userId, first_name, last_name);
+};
+
+const createRequestSeeMyCal = async (userId, first_name, last_name) => {
+	await requestStore.requestToShowMyCalendar(userId, first_name, last_name);
+};
 </script>
 
 <template>
@@ -88,9 +99,27 @@ onUnmounted(() => {
 			<li
 				v-for="user in filteredUsers"
 				:key="user.id"
-				class="p-2 hover:bg-gray-100 cursor-pointer text-black mr-4"
+				class="p-2 hover:bg-gray-100 cursor-pointer text-black mr-4 flex justify-between items-center my-3"
 			>
 				{{ user.first_name }} {{ user.last_name }}
+				<div class="">
+					<button
+						@click="
+							createRequestSeeTheirCal(user.id, user.first_name, user.last_name)
+						"
+						class="mr-1 bg-blue-500 text-white px-2 py-1 rounded-md hover:bg-blue-600 shadow"
+					>
+						vidieť ich
+					</button>
+					<button
+						@click="
+							createRequestSeeMyCal(user.id, user.first_name, user.last_name)
+						"
+						class="ml-1 bg-green-500 text-white px-2 py-1 rounded-md hover:bg-green-600 shadow"
+					>
+						vidieť môj
+					</button>
+				</div>
 			</li>
 			<li v-if="filteredUsers.length === 0" class="p-2 text-gray-500">
 				No users found

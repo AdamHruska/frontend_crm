@@ -116,11 +116,42 @@ const calendarOptions = ref({
 // });
 
 // In your calendar component, update the onMounted section:
+// onMounted(async () => {
+// 	if (calendarStore.activities.length === 0) {
+// 		await calendarStore.fetchActivities();
+// 	}
+
+// 	eventBus.on("deleteSharedEvents", ({ userId }) => {
+// 		// Filter out events from the deleted user
+// 		events.value = events.value.filter((event) => event.user_id !== userId);
+
+// 		// Update calendar options to refresh the view
+// 		calendarOptions.value = {
+// 			...calendarOptions.value,
+// 			events: events.value,
+// 		};
+// 	});
+
+// 	rawData.value = calendarStore.activities;
+// 	events.value = transformData(rawData.value);
+// 	const sharedACT = transformData(
+// 		flattenActivities(calendarStore.shared_activities)
+// 	);
+// 	events.value = [...events.value, ...sharedACT];
+
+// 	calendarOptions.value.events = events.value;
+// });
+
+// onUnmounted(() => {
+// 	eventBus.off("deleteSharedEvents");
+// });
+
 onMounted(async () => {
 	if (calendarStore.activities.length === 0) {
 		await calendarStore.fetchActivities();
 	}
 
+	// Set up event listener for deleteSharedEvents
 	eventBus.on("deleteSharedEvents", ({ userId }) => {
 		// Filter out events from the deleted user
 		events.value = events.value.filter((event) => event.user_id !== userId);
@@ -132,6 +163,7 @@ onMounted(async () => {
 		};
 	});
 
+	// Rest of your mounting logic...
 	rawData.value = calendarStore.activities;
 	events.value = transformData(rawData.value);
 	const sharedACT = transformData(
@@ -142,6 +174,7 @@ onMounted(async () => {
 	calendarOptions.value.events = events.value;
 });
 
+// Don't forget to clean up the event listener
 onUnmounted(() => {
 	eventBus.off("deleteSharedEvents");
 });

@@ -106,7 +106,7 @@ export const useCalendarstore = defineStore("calendar", {
 				const response_shared_activities = await axios.post(
 					`${config.public.apiUrl}get-activities`,
 					{
-						user_ids: sharedIDs, // Send shared user IDs only if they exist
+						user_ids: Array.isArray(sharedIDs) ? sharedIDs : [sharedIDs],
 					},
 					{
 						headers: {
@@ -115,6 +115,7 @@ export const useCalendarstore = defineStore("calendar", {
 						},
 					}
 				);
+
 				this.shared_activities = response_shared_activities.data.activities;
 			} catch (error) {
 				console.error("Error fetching activities or shared activities:", error);
@@ -178,22 +179,43 @@ export const useCalendarstore = defineStore("calendar", {
 		// 	// 	(activity) => activity.user_id !== userId // For activities directly linked
 		// 	// );
 		// },
+
+		// removeSharedActivitiesByUser(userId) {
+		// 	// Convert to number to ensure consistent comparison
+		// 	const userIdNum = Number(userId);
+
+		// 	if (Array.isArray(this.shared_activities)) {
+		// 		this.shared_activities = this.shared_activities.filter(
+		// 			(activity) => Number(activity.created_id) !== userIdNum
+		// 		);
+		// 	} else {
+		// 		// If it's an object with arrays
+		// 		Object.keys(this.shared_activities).forEach((key) => {
+		// 			this.shared_activities[key] = this.shared_activities[key].filter(
+		// 				(activity) => Number(activity.created_id) !== userIdNum
+		// 			);
+		// 		});
+		// 	}
+		// },
 		removeSharedActivitiesByUser(userId) {
-			// Convert to number to ensure consistent comparison
 			const userIdNum = Number(userId);
 
+			// Remove from shared_activities array
 			if (Array.isArray(this.shared_activities)) {
 				this.shared_activities = this.shared_activities.filter(
 					(activity) => Number(activity.created_id) !== userIdNum
 				);
 			} else {
-				// If it's an object with arrays
+				// If shared_activities is an object with arrays
 				Object.keys(this.shared_activities).forEach((key) => {
 					this.shared_activities[key] = this.shared_activities[key].filter(
 						(activity) => Number(activity.created_id) !== userIdNum
 					);
 				});
 			}
+
+			// Force a reactivity update
+			this.shared_activities = [...this.shared_activities];
 		},
 	},
 	getters: {

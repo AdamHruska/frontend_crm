@@ -61,6 +61,25 @@ import eventBus from "@/eventBus";
 // 	}
 // };
 
+// const deleteSharedUser = async (id) => {
+// 	const user = userStore.sharedUsers.find((u) => u.id === id);
+
+// 	if (user) {
+// 		user.isLoading = true;
+
+// 		try {
+// 			// Emit the user ID correctly
+// 			eventBus.emit("deleteSharedEvents", { userId: id }); // Changed to emit an object
+// 			await userStore.deleteSharedUser(id);
+// 			userStore.sharedUsers = userStore.sharedUsers.filter((u) => u.id !== id);
+// 		} catch (error) {
+// 			console.error("Error deleting user:", error);
+// 		} finally {
+// 			user.isLoading = false;
+// 		}
+// 	}
+// };
+
 const deleteSharedUser = async (id) => {
 	const user = userStore.sharedUsers.find((u) => u.id === id);
 
@@ -68,9 +87,17 @@ const deleteSharedUser = async (id) => {
 		user.isLoading = true;
 
 		try {
-			// Emit the user ID correctly
-			eventBus.emit("deleteSharedEvents", { userId: id }); // Changed to emit an object
+			// Emit deleteSharedEvents with the user ID
+			eventBus.emit("deleteSharedEvents", { userId: id });
+
+			// Delete the user from shared users
 			await userStore.deleteSharedUser(id);
+
+			// Remove user's activities from calendar store
+			const calendarStore = useCalendarstore();
+			await calendarStore.removeSharedActivitiesByUser(id);
+
+			// Update shared users list
 			userStore.sharedUsers = userStore.sharedUsers.filter((u) => u.id !== id);
 		} catch (error) {
 			console.error("Error deleting user:", error);
