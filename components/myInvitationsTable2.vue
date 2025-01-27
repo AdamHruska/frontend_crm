@@ -8,11 +8,17 @@ const { viewTheirCalendar } = storeToRefs(requestStore);
 // Local loading state
 const deletingId = ref(null);
 
-const filteredSentInvites = computed(() =>
-	viewTheirCalendar.value.filter(
-		(invite) => invite.status === "true" || invite.status === "pending"
-	)
-);
+// const filteredSentInvites = computed(() =>
+// 	viewTheirCalendar.value.filter(
+// 		(invite) => invite.status === "true" || invite.status === "pending"
+// 	)
+// );
+
+const filteredSentInvites = computed(() => {
+	return requestStore.viewTheirCalendar.filter(
+		(invite) => invite.status === "pending"
+	);
+});
 
 onMounted(async () => {
 	await requestStore.fetchViewTheirCalendar();
@@ -38,14 +44,17 @@ const isDeleting = (id) => deletingId.value === id;
 			<thead>
 				<tr class="bg-gray-300">
 					<th class="border px-4 py-2">Komu</th>
+					<th class="border px-4 py-2">Od koho</th>
 					<th class="border px-4 py-2">Status</th>
 					<th class="border px-4 py-2">Akcie</th>
 				</tr>
 			</thead>
 			<tbody>
 				<tr v-for="invite in filteredSentInvites" :key="invite.id">
-					<td class="border px-4 py-2">{{ invite.requester_name }}</td>
 					<td class="border px-4 py-2">{{ invite.target_user_name }}</td>
+					<td class="border px-4 py-2">{{ invite.requester_name }}</td>
+					<td class="border px-4 py-2">Pebieha</td>
+
 					<td class="border px-4 py-2">
 						<button
 							@click="cancelInvite(invite.id)"

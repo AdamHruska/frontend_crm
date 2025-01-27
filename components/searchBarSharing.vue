@@ -10,21 +10,26 @@ const requestStore = useRequestStore();
 authStore.loadToken();
 
 const searchInput = ref("");
-const dropdownVisible = ref(false); // Controls visibility of the dropdown
+const dropdownVisible = ref(false);
 const filteredUsers = ref([]);
+const isLoading = ref(true); // Add loading state
 
 // Fetch all users on component mount
-onMounted(() => {
-	filteredUsers.value = userStore.allUsers;
+onMounted(async () => {
+	try {
+		isLoading.value = true;
+		await userStore.fetchUsers(); // Assuming this is the method to fetch users
+		filteredUsers.value = userStore.allUsers;
+	} finally {
+		isLoading.value = false;
+	}
 });
 
-// Toggle dropdown visibility when input is focused
 const showDropdown = () => {
 	dropdownVisible.value = true;
-	filteredUsers.value = userStore.allUsers; // Reset the list
+	filteredUsers.value = userStore.allUsers;
 };
 
-// Filter users based on the search input
 watch(searchInput, (newValue) => {
 	const searchText = newValue.toLowerCase();
 	filteredUsers.value = userStore.allUsers.filter((user) =>
@@ -33,7 +38,6 @@ watch(searchInput, (newValue) => {
 	console.log("Filtered users:", filteredUsers.value);
 });
 
-// Hide dropdown when clicking outside the search container
 const dropdownContainer = ref(null);
 const handleClickOutside = (event) => {
 	if (
@@ -91,39 +95,69 @@ const createRequestSeeMyCal = async (userId, first_name, last_name) => {
 			/>
 		</div>
 
-		<!-- Dropdown with filtered users -->
+		<!-- Dropdown with loading state and filtered users -->
 		<ul
 			v-if="dropdownVisible"
 			class="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"
 		>
-			<li
-				v-for="user in filteredUsers"
-				:key="user.id"
-				class="p-2 hover:bg-gray-100 cursor-pointer text-black mr-4 flex justify-between items-center my-3"
-			>
-				{{ user.first_name }} {{ user.last_name }}
-				<div class="">
-					<button
-						@click="
-							createRequestSeeTheirCal(user.id, user.first_name, user.last_name)
-						"
-						class="mr-1 bg-blue-500 text-white px-2 py-1 rounded-md hover:bg-blue-600 shadow"
-					>
-						vidieť ich
-					</button>
-					<button
-						@click="
-							createRequestSeeMyCal(user.id, user.first_name, user.last_name)
-						"
-						class="ml-1 bg-green-500 text-white px-2 py-1 rounded-md hover:bg-green-600 shadow"
-					>
-						vidieť môj
-					</button>
+			<!-- Loading state -->
+			<li v-if="isLoading" class="p-4 text-gray-500 text-center">
+				<div class="flex items-center justify-center">
+					<svg class="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+						<circle
+							class="opacity-25"
+							cx="12"
+							cy="12"
+							r="10"
+							stroke="currentColor"
+							stroke-width="4"
+							fill="none"
+						/>
+						<path
+							class="opacity-75"
+							fill="currentColor"
+							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+						/>
+					</svg>
+					Searching for users...
 				</div>
 			</li>
-			<li v-if="filteredUsers.length === 0" class="p-2 text-gray-500">
-				No users found
-			</li>
+
+			<!-- User list -->
+			<template v-else>
+				<li
+					v-for="user in filteredUsers"
+					:key="user.id"
+					class="p-2 hover:bg-gray-100 cursor-pointer text-black mr-4 flex justify-between items-center my-3"
+				>
+					{{ user.first_name }} {{ user.last_name }}
+					<div class="">
+						<button
+							@click="
+								createRequestSeeMyCal(user.id, user.first_name, user.last_name)
+							"
+							class="mr-1 bg-blue-500 text-white px-2 py-1 rounded-md hover:bg-blue-600 shadow"
+						>
+							vidieť môj
+						</button>
+						<button
+							@click="
+								createRequestSeeTheirCal(
+									user.id,
+									user.first_name,
+									user.last_name
+								)
+							"
+							class="ml-1 bg-green-500 text-white px-2 py-1 rounded-md hover:bg-green-600 shadow"
+						>
+							vidieť ich
+						</button>
+					</div>
+				</li>
+				<li v-if="filteredUsers.length === 0" class="p-2 text-gray-500">
+					No users found
+				</li>
+			</template>
 		</ul>
 	</div>
 </template>

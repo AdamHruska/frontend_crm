@@ -2,19 +2,44 @@
 import { useRequestStore } from "#imports";
 const requestStore = useRequestStore();
 
-const receivedInvites = ref([]);
+const receivedInvites = computed(() =>
+	requestStore.viewTheirCalendarForApproval.filter(
+		(invite) => invite.status === "pending"
+	)
+);
 const loadingButtonId = ref(null);
 
 onMounted(async () => {
-	await requestStore.fetchLetThemViewMine();
-	receivedInvites.value = requestStore.letThemViewMine;
-	console.log("Sent invites:", receivedInvites.value);
+	await requestStore.fetchLetThemViewMineForApproval();
+	// receivedInvites.value = requestStore.viewTheirCalendarForApproval.filter(
+	// 	(invite) => invite.status === "pending"
+	// );
+	//console.log("Sent invites:", receivedInvites.value);
 	// requestStore.fetchLetThemViewMine();
 	// sentInvites.value = requestStore.letThemViewMine;
 });
 
-const approveInvite = async (id) => {
-	await requestStore.approveRequest(id);
+const approveInvite = async (id, requestId) => {
+	try {
+		// Set the loading button ID if you want to show loading state
+		loadingButtonId.value = id;
+
+		// Perform the approve operation
+		await requestStore.approveRequest(id, requestId);
+
+		// Remove the approved invite from the list
+		receivedInvites.value = receivedInvites.value.filter(
+			(invite) => invite.id !== requestId
+		);
+
+		// Optionally refresh the data
+		await requestStore.fetchLetThemViewMineForApproval();
+	} catch (error) {
+		console.error("Error approving invite:", error);
+	} finally {
+		// Reset the loading button ID
+		loadingButtonId.value = null;
+	}
 };
 
 const declineInvite = async (id) => {
@@ -55,10 +80,14 @@ const declineInvite = async (id) => {
 					<td class="border px-4 py-2">{{ invite.requester_name }}</td>
 					<td class="border px-4 py-2 flex justify-center">
 						<button
-							@click="approveInvite(invite.requester_id)"
-							class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mr-4 shadow"
+							@click="approveInvite(invite.requester_id, invite.id)"
+							class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mr-4 shadow flex items-center"
 							:disabled="loadingButtonId === invite.id"
 						>
+							<span
+								v-if="loadingButtonId === invite.id"
+								class="loader mr-2"
+							></span>
 							potvrdiť
 						</button>
 						<button

@@ -17,6 +17,15 @@ export const useUserStore = defineStore("user", {
 
 	actions: {
 		// Explicitly define as an action
+
+		addSharedUser(user) {
+			// Check if user already exists in sharedUsers
+			const exists = this.sharedUsers.some((u) => u.id === user.id);
+			if (!exists) {
+				this.sharedUsers.push(user);
+			}
+		},
+
 		async fetchUser() {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
@@ -130,9 +139,6 @@ export const useUserStore = defineStore("user", {
 			}
 
 			try {
-				console.log("Raw share_user_id:", this.user.share_user_id);
-
-				// Parse `share_user_id` only if it's a string
 				const rawShareUserId = this.user.share_user_id;
 				const parsedShareUserId =
 					typeof rawShareUserId === "string" &&
@@ -140,26 +146,19 @@ export const useUserStore = defineStore("user", {
 						? JSON.parse(rawShareUserId)
 						: rawShareUserId;
 
-				// Ensure the parsed result is an array of numbers
 				this.shareIdArray = Array.isArray(parsedShareUserId)
 					? parsedShareUserId.map(Number)
 					: [];
 
-				console.log("Parsed shareIdArray:", this.shareIdArray);
-
-				// Filter `sharedUsers`
 				this.sharedUsers = this.allUsers.filter((user) =>
 					this.shareIdArray.includes(user.id)
 				);
-
-				console.log("Filtered shared users:", this.sharedUsers);
 			} catch (error) {
 				console.error("Error parsing share_user_id:", error);
-				this.shareIdArray = []; // Fallback to an empty array
+				this.shareIdArray = [];
 				this.sharedUsers = [];
 			}
 		},
-
 		// async deleteSharedUser(id) {
 		// 	try {
 		// 		// Remove the user ID from the shareIdArray
