@@ -35,6 +35,7 @@ const rawData = ref([]);
 const addActivity = ref(false);
 const updateActivity = ref(false);
 const activityID = ref("");
+const showMicrosoftEvents = ref(false);
 
 const toggleUpdateActivity = () => {
 	if (updateActivity.value === true) {
@@ -172,6 +173,44 @@ onMounted(async () => {
 	events.value = [...events.value, ...sharedACT];
 
 	calendarOptions.value.events = events.value;
+
+	const urlParams = new URLSearchParams(window.location.search);
+	const code = urlParams.get("code");
+
+	if (code) {
+		try {
+			// Fetch tokens from the backend
+			const response = await axios.post(
+				`${config.public.apiUrl}auth/callback`,
+				{
+					code,
+				}
+			);
+
+			const { access_token, refresh_token, expires_in } = response.data;
+
+			// Check if "rememberMe" was enabled
+			const rememberMe = sessionStorage.getItem("rememberMe") === "true";
+
+			if (rememberMe) {
+				// Store tokens in localStorage for persistent storage
+				localStorage.setItem("microsoft_access_token", access_token);
+				localStorage.setItem("microsoft_refresh_token", refresh_token); // Optional
+			} else {
+				// Store tokens in sessionStorage for session-only storage
+				sessionStorage.setItem("microsoft_access_token", access_token);
+				sessionStorage.setItem("microsoft_refresh_token", refresh_token); // Optional
+			}
+
+			// Clear the temporary "rememberMe" flag
+			sessionStorage.removeItem("rememberMe");
+
+			// Redirect to the calendar page or another destination
+			window.location.href = "/calendar";
+		} catch (error) {
+			console.error("Error during Microsoft login callback:", error);
+		}
+	}
 });
 
 // Don't forget to clean up the event listener
@@ -208,11 +247,80 @@ const handleWeekendsToggle = () => {
 	calendarOptions.value.weekends = !calendarOptions.value.weekends;
 };
 
-function handleEventClick(clickInfo) {
-	toggleUpdateActivity();
+// function handleEventClick(clickInfo) {
+// 	toggleUpdateActivity();
 
+// 	activityID.value = clickInfo.event._def.publicId;
+// }
+
+const selectedMicrosoftEvent = ref(null);
+
+function handleEventClick(clickInfo) {
+	console.log("prebehol klik");
 	activityID.value = clickInfo.event._def.publicId;
+	eventType.value =
+		clickInfo.event.extendedProps.source === "microsoft"
+			? "microsoft"
+			: "regular";
+
+	if (eventType.value === "microsoft") {
+		selectedMicrosoftEvent.value = {
+			id: clickInfo.event.id,
+			title: clickInfo.event.title,
+			start: clickInfo.event.start,
+			end: clickInfo.event.end,
+			location:
+				clickInfo.event.extendedProps.location || "Nebola zadaná lokalita",
+			link: clickInfo.event.extendedProps.link,
+			organizer: clickInfo.event.extendedProps.organizer,
+			attendees: clickInfo.event.extendedProps.attendees,
+		};
+		console.log(selectedMicrosoftEvent.value);
+		toggleMicrosoftEvents();
+	} else {
+		toggleUpdateActivity();
+	}
 }
+
+// function handleEventClick(clickInfo) {
+// 	activityID.value = clickInfo.event._def.publicId;
+// 	eventType.value =
+// 		clickInfo.event.extendedProps.source === "microsoft"
+// 			? "microsoft"
+// 			: "regular";
+
+// 	if (eventType.value === "microsoft") {
+// 		selectedMicrosoftEvent.value = {
+// 			id: clickInfo.event.id,
+// 			title: clickInfo.event.title,
+// 			start: clickInfo.event.start,
+// 			end: clickInfo.event.end,
+// 			location: clickInfo.event.extendedProps.location || "",
+// 		};
+// 		showMicrosoftEvents.value = true; // Make sure we set this to true
+// 		toggleMicrosoftEvents();
+// 	} else {
+// 		toggleUpdateActivity();
+// 	}
+// }
+
+// function handleEventClick(clickInfo) {
+// 	activityID.value = clickInfo.event._def.publicId;
+// 	// Add check for Microsoft events (they won't have a user_id)
+// 	eventType.value =
+// 		clickInfo.event.extendedProps.source === "microsoft"
+// 			? "microsoft"
+// 			: "regular";
+// 	if (eventType.value !== "microsoft") {
+// 		toggleUpdateActivity();
+// 	} else {
+// 		toggleMicrosoftEvents();
+// 	}
+// }
+
+const toggleMicrosoftEvents = () => {
+	showMicrosoftEvents.value = !showMicrosoftEvents.value;
+};
 
 function handleEvents(events) {
 	currentEvents.value = events;
@@ -406,6 +514,73 @@ function handleDateSelect(selectInfo) {
 }
 
 const loadingStateCalendar = ref(false);
+
+const areMicrosofEventsShown = ref(false);
+
+const fetchMicrosoftEvents = async () => {
+	loadingStateCalendar.value = true;
+	try {
+		const response = await axios.get(`${config.public.apiUrl}microsoft/events`);
+		console.log("Microsoft events:", response);
+		if (response.data.value) {
+			// Transform Microsoft events to match calendar format
+			const microsoftEvents = response.data.value.map((event) => ({
+				id: event.id,
+				title: event.subject,
+				start: event.start.dateTime,
+				end: event.end.dateTime,
+				link: event.onlineMeetingUrl,
+				backgroundColor: "rgb(168 85 247)",
+				borderColor: "rgb(168 85 247)",
+				source: "microsoft",
+				extendedProps: {
+					source: "microsoft",
+					organizer: {
+						name: event.organizer?.emailAddress?.name || "Unknown",
+						email: event.organizer?.emailAddress?.address || "No email",
+					},
+					attendees:
+						event.attendees?.map((attendee) => ({
+							name: attendee.emailAddress?.name,
+							email: attendee.emailAddress?.address,
+							response: attendee.status?.response,
+							type: attendee.type,
+						})) || [],
+					location: event.location?.displayName || "No location",
+					link: event.onlineMeetingUrl,
+				},
+			}));
+
+			if (areMicrosofEventsShown.value) {
+				// Remove Microsoft events if they're currently shown
+				events.value = events.value.filter(
+					(event) => event.source !== "microsoft"
+				);
+			} else {
+				// Add Microsoft events
+				events.value = [...events.value, ...microsoftEvents];
+			}
+
+			// Update calendar options to refresh the view
+			calendarOptions.value = {
+				...calendarOptions.value,
+				events: events.value,
+			};
+
+			// Toggle visibility state
+			areMicrosofEventsShown.value = !areMicrosofEventsShown.value;
+		}
+	} catch (error) {
+		console.error("Error details:", {
+			message: error.message,
+			response: error.response?.data,
+			status: error.response?.status,
+		});
+	}
+	loadingStateCalendar.value = false;
+};
+
+const eventType = ref("regular");
 </script>
 
 <template>
@@ -418,13 +593,30 @@ const loadingStateCalendar = ref(false);
 			@addNewEvent="addNewEvent"
 			:end_date="end_date"
 		/>
-		<EventUpdateCalendar
+		<!-- <EventUpdateCalendar
 			:activityID="activityID"
 			v-if="updateActivity"
 			@cancelAddActivity="toggleUpdateActivity"
 			@alterEvents="alterEvents"
 			:user.value="user"
+		/> -->
+
+		<EventUpdateCalendar
+			:activityID="activityID"
+			:eventType="eventType"
+			v-if="updateActivity"
+			@cancelAddActivity="toggleUpdateActivity"
+			@alterEvents="alterEvents"
+			:user.value="user"
 		/>
+
+		<MicrosoftEventDetail
+			v-if="showMicrosoftEvents"
+			:event="selectedMicrosoftEvent"
+			@close="toggleMicrosoftEvents"
+			@closeMicrosoftEvents="toggleMicrosoftEvents"
+		/>
+
 		<div class="demo-app bg-white">
 			<div class="demo-app-sidebar bg-white-force">
 				<div
@@ -464,6 +656,21 @@ const loadingStateCalendar = ref(false);
 						@deleteSharedEventsId="deleteSharedEventsId"
 						@addSharedEventsId="addSharedEventsId"
 					/>
+				</div>
+				<div>
+					<div
+						@click="fetchMicrosoftEvents"
+						class="flex items-center gap-2 mt-4 ml-7 bg-purple-600 rounded-md hover:bg-purple-700 cursor-pointer w-[240px] px-2 py-1"
+					>
+						<div class="flex items-center pl-4 gap-2 text-white">
+							{{
+								areMicrosofEventsShown
+									? "Zobraziť Microsoft kalendár"
+									: "Skryť Microsoft kalendár"
+							}}
+							<img src="/public/icons8-microsoft-48.png" alt="" />
+						</div>
+					</div>
 				</div>
 			</div>
 			<div class="demo-app-main bg-white text-black">

@@ -1,6 +1,5 @@
 <template>
-	<div class="w-5/8 p-4">
-		<h2 class="font-bold text-lg mb-2">História requestov</h2>
+	<div class="w-5/8 p-4 max-h-70 overflow-auto">
 		<table class="w-full border shadow">
 			<thead>
 				<tr class="bg-gray-300">

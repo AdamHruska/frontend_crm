@@ -98,7 +98,7 @@ const createRequestSeeMyCal = async (userId, first_name, last_name) => {
 		<!-- Dropdown with loading state and filtered users -->
 		<ul
 			v-if="dropdownVisible"
-			class="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"
+			class="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-auto"
 		>
 			<!-- Loading state -->
 			<li v-if="isLoading" class="p-4 text-gray-500 text-center">
