@@ -60,7 +60,23 @@ const closeModal = () => {
 
 				<div class="border-b pb-2">
 					<p class="text-gray-600 font-semibold">Ostatní účastníci</p>
-					<p class="font-medium">{{ event.attendees }}</p>
+					<div
+						v-if="event.attendees && event.attendees.length"
+						class="space-y-2 cursor-pointer hover:underline"
+					>
+						<p
+							v-for="(attendee, index) in event.attendees"
+							:key="index"
+							class="font-medium"
+						>
+							{{
+								attendee.name === attendee.email
+									? attendee.email
+									: `${attendee.name} - ${attendee.email}`
+							}}
+						</p>
+					</div>
+					<div v-else class="font-medium text-gray-500">Žiadni účastníci</div>
 				</div>
 
 				<div v-if="event.id" class="border-b pb-2">
@@ -80,6 +96,13 @@ const closeModal = () => {
 					</a>
 					<div v-else>Link nie je určený</div>
 				</div>
+				<button
+					@click="$emit('deleteMicrosoftEvent', event.id)"
+					class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 flex items-center float-right"
+				>
+					<Icon icon="mdi:delete" class="mr-2" />
+					Delete Event
+				</button>
 			</div>
 		</div>
 	</div>

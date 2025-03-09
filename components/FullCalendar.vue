@@ -51,6 +51,46 @@ const toggleAddActivity = () => {
 const events = ref([]);
 //const events2 = ref({});
 
+// const calendarOptions = ref({
+// 	plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+// 	headerToolbar: {
+// 		left: "prev,next today",
+// 		center: "title",
+// 		right: "dayGridMonth,timeGridWeek,timeGridDay",
+// 	},
+// 	initialView: "timeGridWeek",
+// 	slotMinTime: "06:00:00",
+// 	slotMaxTime: "23:00:00",
+// 	scrollTime: "08:00:00",
+// 	initialEvents: [],
+// 	events: events,
+// 	editable: true,
+// 	selectable: true,
+// 	selectMirror: true,
+// 	dayMaxEvents: true,
+// 	weekends: true,
+// 	select: handleDateSelect,
+// 	eventClick: handleEventClick,
+// 	eventsSet: handleEvents,
+// 	slotDuration: "00:30:00",
+// 	allDaySlot: true,
+// 	nowIndicator: true,
+// 	// Time format settings
+// 	eventTimeFormat: {
+// 		hour: "2-digit",
+// 		minute: "2-digit",
+// 		hour12: false,
+// 	},
+// 	slotLabelFormat: {
+// 		hour: "2-digit",
+// 		minute: "2-digit",
+// 		hour12: false,
+// 	},
+// 	// Locale settings for European date format
+// 	locale: "sk", // Slovak locale for European format
+// 	firstDay: 1, // Monday as first day of week
+// });
+
 const calendarOptions = ref({
 	plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
 	headerToolbar: {
@@ -72,6 +112,8 @@ const calendarOptions = ref({
 	select: handleDateSelect,
 	eventClick: handleEventClick,
 	eventsSet: handleEvents,
+	eventDrop: handleEventDrop, // Add this handler for drag and drop
+	eventResize: handleEventResize, // Add this handler for resizing events
 	slotDuration: "00:30:00",
 	allDaySlot: true,
 	nowIndicator: true,
@@ -90,6 +132,194 @@ const calendarOptions = ref({
 	locale: "sk", // Slovak locale for European format
 	firstDay: 1, // Monday as first day of week
 });
+
+function handleEventDrop(dropInfo) {
+	const eventId = dropInfo.event.id;
+	const newStart = dropInfo.event.start;
+	const newEnd = dropInfo.event.end;
+
+	// Check if this is a Microsoft event
+	if (dropInfo.event.extendedProps.source === "microsoft") {
+		updateMicrosoftEvent(eventId, newStart, newEnd, dropInfo.event.title);
+		return;
+	}
+
+	// Check if user has permission to edit this event
+	const event = rawData.value.find((event) => event.id == eventId);
+	if (event && event.created_id !== userStore.user.id) {
+		alert("You don't have permission to edit this event.");
+		dropInfo.revert(); // Revert the drag if no permission
+		return;
+	}
+
+	// Format dates for backend
+	const formattedStart = formatDateForBackend(newStart);
+	const formattedEnd = formatDateForBackend(newEnd);
+
+	// Update the event in the backend
+	updateEventInBackend(eventId, formattedStart, formattedEnd);
+}
+
+function handleEventResize(resizeInfo) {
+	const eventId = resizeInfo.event.id;
+	const newEnd = resizeInfo.event.end;
+
+	// Check if this is a Microsoft event
+	if (resizeInfo.event.extendedProps.source === "microsoft") {
+		updateMicrosoftEvent(
+			eventId,
+			resizeInfo.event.start,
+			newEnd,
+			resizeInfo.event.title
+		);
+		return;
+	}
+
+	// Check if user has permission to edit this event
+	const event = rawData.value.find((event) => event.id == eventId);
+	if (event && event.created_id !== userStore.user.id) {
+		alert("You don't have permission to edit this event.");
+		resizeInfo.revert(); // Revert the resize if no permission
+		return;
+	}
+
+	// Format date for backend
+	const formattedEnd = formatDateForBackend(newEnd);
+
+	// Update the event in the backend
+	updateEventEndInBackend(eventId, formattedEnd);
+}
+
+function formatDateForBackend(date) {
+	// Convert date to 'YYYY-MM-DD HH:MM:SS' format
+	return format(date, "yyyy-MM-dd HH:mm:ss");
+}
+
+async function updateEventInBackend(eventId, newStart, newEnd) {
+	loadingStateCalendar.value = true;
+
+	try {
+		const response = await axios.put(
+			`${config.public.apiUrl}update-activities/${eventId}`,
+			{
+				datumCas: newStart,
+				koniec: newEnd,
+			},
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+					"Content-Type": "application/json",
+				},
+			}
+		);
+
+		if (response.data.status === "success") {
+			// Update the local data
+			const updatedEvent = response.data.activity;
+
+			// Update in rawData
+			rawData.value = rawData.value.map((event) =>
+				event.id == eventId ? updatedEvent : event
+			);
+
+			// No need to update events.value as FullCalendar already updated the UI
+		} else {
+			// If there was an error, revert the change
+			alert("Failed to update event: " + response.data.message);
+			calendarOptions.value.events = [...events.value]; // Force refresh
+		}
+	} catch (error) {
+		console.error("Error updating event:", error);
+		alert("An error occurred while updating the event. Please try again.");
+		calendarOptions.value.events = [...events.value]; // Force refresh
+	} finally {
+		loadingStateCalendar.value = false;
+	}
+}
+
+async function updateEventEndInBackend(eventId, newEnd) {
+	loadingStateCalendar.value = true;
+
+	try {
+		const response = await axios.put(
+			`${config.public.apiUrl}update-activity-end/${eventId}`,
+			{
+				koniec: newEnd,
+			},
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+					"Content-Type": "application/json",
+				},
+			}
+		);
+
+		if (response.data.status === "success") {
+			// Update the local data
+			const updatedEvent = response.data.activity;
+
+			// Update in rawData
+			rawData.value = rawData.value.map((event) =>
+				event.id == eventId ? updatedEvent : event
+			);
+
+			// No need to update events.value as FullCalendar already updated the UI
+		} else {
+			// If there was an error, revert the change
+			alert("Failed to update event: " + response.data.message);
+			calendarOptions.value.events = [...events.value]; // Force refresh
+		}
+	} catch (error) {
+		console.error("Error updating event:", error);
+		alert("An error occurred while updating the event. Please try again.");
+		calendarOptions.value.events = [...events.value]; // Force refresh
+	} finally {
+		loadingStateCalendar.value = false;
+	}
+}
+
+// Update Microsoft event
+async function updateMicrosoftEvent(eventId, newStart, newEnd, title) {
+	loadingStateCalendar.value = true;
+
+	try {
+		const response = await axios.patch(
+			`${config.public.apiUrl}events/${eventId}`,
+			{
+				subject: title,
+				start: {
+					dateTime: format(newStart, "yyyy-MM-dd'T'HH:mm:ss"),
+					timeZone: "UTC",
+				},
+				end: {
+					dateTime: format(newEnd, "yyyy-MM-dd'T'HH:mm:ss"),
+					timeZone: "UTC",
+				},
+			},
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+					"Content-Type": "application/json",
+				},
+			}
+		);
+
+		if (response.status === 200) {
+			// Success - no need to do anything, FullCalendar already updated the UI
+		} else {
+			alert("Failed to update Microsoft event");
+			calendarOptions.value.events = [...events.value]; // Force refresh
+		}
+	} catch (error) {
+		console.error("Error updating Microsoft event:", error);
+		alert(
+			"An error occurred while updating the Microsoft event. Please try again."
+		);
+		calendarOptions.value.events = [...events.value]; // Force refresh
+	} finally {
+		loadingStateCalendar.value = false;
+	}
+}
 
 // zobrazenie roznych hranic casov
 // initialView: "timeGridWeek", // Changed from dayGridWeek to timeGridWeek
@@ -505,7 +735,16 @@ const addNewEvent = (newEvent) => {
 	toggleAddActivity();
 };
 
+// function handleDateSelect(selectInfo) {
+// 	toggleAddActivity();
+// 	let calendarApi = selectInfo.view.calendar;
+// 	end_date.value = selectInfo.startStr;
+
+// 	calendarApi.unselect();
+// }
+
 function handleDateSelect(selectInfo) {
+	selectedDate.value = selectInfo.startStr;
 	toggleAddActivity();
 	let calendarApi = selectInfo.view.calendar;
 	end_date.value = selectInfo.startStr;
@@ -520,7 +759,7 @@ const areMicrosofEventsShown = ref(false);
 const fetchMicrosoftEvents = async () => {
 	loadingStateCalendar.value = true;
 	try {
-		const response = await axios.get(`${config.public.apiUrl}microsoft/events`);
+		const response = await axios.get(`${config.public.apiUrl}get-events`);
 		console.log("Microsoft events:", response);
 		if (response.data.value) {
 			// Transform Microsoft events to match calendar format
@@ -529,7 +768,7 @@ const fetchMicrosoftEvents = async () => {
 				title: event.subject,
 				start: event.start.dateTime,
 				end: event.end.dateTime,
-				link: event.onlineMeetingUrl,
+				link: event.onlineMeetingUrl ?? "",
 				backgroundColor: "rgb(168 85 247)",
 				borderColor: "rgb(168 85 247)",
 				source: "microsoft",
@@ -580,7 +819,221 @@ const fetchMicrosoftEvents = async () => {
 	loadingStateCalendar.value = false;
 };
 
+// const fetchMicrosoftEvents = async () => {
+// 	loadingStateCalendar.value = true;
+// 	let allEvents = [];
+// 	let nextLink = `${config.public.apiUrl}get-events`;
+
+// 	try {
+// 		while (nextLink) {
+// 			const response = await axios.get(nextLink);
+// 			console.log("Microsoft events response:", response);
+
+// 			if (response.data.value) {
+// 				// Transform Microsoft events to match calendar format
+// 				const microsoftEvents = response.data.value.map((event) => ({
+// 					id: event.id,
+// 					title: event.subject,
+// 					start: event.start.dateTime,
+// 					end: event.end.dateTime,
+// 					link: event.onlineMeetingUrl ?? "", // Ensure no null values
+// 					backgroundColor: "rgb(168 85 247)",
+// 					borderColor: "rgb(168 85 247)",
+// 					source: "microsoft",
+// 					extendedProps: {
+// 						source: "microsoft",
+// 						organizer: {
+// 							name: event.organizer?.emailAddress?.name || "Unknown",
+// 							email: event.organizer?.emailAddress?.address || "No email",
+// 						},
+// 						attendees:
+// 							event.attendees?.map((attendee) => ({
+// 								name: attendee.emailAddress?.name,
+// 								email: attendee.emailAddress?.address,
+// 								response: attendee.status?.response,
+// 								type: attendee.type,
+// 							})) || [],
+// 						location: event.location?.displayName || "No location",
+// 						link: event.onlineMeetingUrl ?? "", // Ensure no null values
+// 					},
+// 				}));
+
+// 				// Add events to the list
+// 				allEvents = [...allEvents, ...microsoftEvents];
+
+// 				// Check if there are more pages to fetch
+// 				nextLink = response.data["@odata.nextLink"] || null;
+// 			} else {
+// 				nextLink = null;
+// 			}
+// 		}
+
+// 		if (areMicrosofEventsShown.value) {
+// 			// Remove Microsoft events if they're currently shown
+// 			events.value = events.value.filter(
+// 				(event) => event.source !== "microsoft"
+// 			);
+// 		} else {
+// 			// Add all fetched events
+// 			events.value = [...events.value, ...allEvents];
+// 		}
+
+// 		// Update calendar options to refresh the view
+// 		calendarOptions.value = {
+// 			...calendarOptions.value,
+// 			events: events.value,
+// 		};
+
+// 		// Toggle visibility state
+// 		areMicrosofEventsShown.value = !areMicrosofEventsShown.value;
+// 	} catch (error) {
+// 		console.error("Error details:", {
+// 			message: error.message,
+// 			response: error.response?.data,
+// 			status: error.response?.status,
+// 		});
+// 	}
+// 	loadingStateCalendar.value = false;
+// };
+
+// const microsoftEvents = response.data.value.map((event) => ({
+//     id: event.id,
+//     title: event.subject,
+//     start: event.start.dateTime,
+//     end: event.end.dateTime,
+//     link: event.onlineMeetingUrl,
+//     backgroundColor: "rgb(168 85 247)",
+//     borderColor: "rgb(168 85 247)",
+//     source: "microsoft",
+//     extendedProps: {
+//         source: "microsoft",
+//         organizer: {
+//             name: event.organizer?.emailAddress?.name || "Unknown",
+//             email: event.organizer?.emailAddress?.address || "No email",
+//         },
+//         attendees:
+//             event.attendees?.map((attendee) => ({
+//                 name: attendee.emailAddress?.name,
+//                 email: attendee.emailAddress?.address,
+//                 response: attendee.status?.response,
+//                 type: attendee.type,
+//             })) || [],
+//         location: event.location?.displayName || "No location",
+//         link: event.onlineMeetingUrl,
+//     },
+// }));
+
 const eventType = ref("regular");
+
+// const clientId = "47f56431-555e-4b05-b1b3-c8e6e79e7f4d";
+// const redirectUri = encodeURIComponent(
+// 	"http://localhost:8000/auth/callbackAzure"
+// );
+// const scope =
+// 	"offline_access Calendars.Read Calendars.ReadWrite Calendars.Read.Shared User.Read Mail.Read OnlineMeetings.Read OnlineMeetings.ReadWrite";
+
+// const loginWithMicrosoft = () => {
+// 	const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}&response_mode=query`;
+// 	window.location.href = authUrl;
+// 	loginWithMicrosoft.value = true;
+// };
+
+const loginWithMicrosoft = () => {
+	const config = useRuntimeConfig();
+
+	// Get values from environment
+	const clientId = config.public.AZURE_CLIENT_ID;
+	const redirectUriRaw = config.public.AZURE_REDIRECT_URI;
+	const scope = config.public.AZURE_SCOPE;
+
+	// Encode the redirect URI just like in the original working version
+	const redirectUri = encodeURIComponent(redirectUriRaw);
+
+	const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${encodeURIComponent(
+		scope
+	)}&response_mode=query`;
+	window.location.href = authUrl;
+};
+
+const createMicrosoftEvent = ref(false);
+const selectedDate = ref("");
+
+const toggleCreateMicrosoftEvent = () => {
+	createMicrosoftEvent.value = !createMicrosoftEvent.value;
+};
+
+const handleMicrosoftEventCreated = (newEvent) => {
+	// Refresh Microsoft events to show the new one
+	fetchMicrosoftEvents();
+	// Or manually add it to the events array if you prefer
+};
+
+const deleteMicrosoftEvent = async (eventId) => {
+	if (!eventId) {
+		console.error("No event ID provided for deletion");
+		return;
+	}
+
+	loadingStateCalendar.value = true;
+	try {
+		// Confirm deletion with the user
+		if (!confirm("Are you sure you want to delete this Microsoft event?")) {
+			loadingStateCalendar.value = false;
+			return;
+		}
+
+		const response = await axios.delete(
+			`${config.public.apiUrl}events/${eventId}`,
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+					"Content-Type": "application/json",
+				},
+			}
+		);
+
+		if (response.status === 200) {
+			// Remove the event from the local events array
+			events.value = events.value.filter((event) => event.id !== eventId);
+
+			// Update calendar options to refresh the view
+			calendarOptions.value = {
+				...calendarOptions.value,
+				events: events.value,
+			};
+
+			// Close the Microsoft event detail modal if open
+			if (showMicrosoftEvents.value) {
+				toggleMicrosoftEvents();
+			}
+
+			// Show success notification
+			alert("Microsoft event deleted successfully");
+		}
+	} catch (error) {
+		console.error("Error deleting Microsoft event:", error);
+		alert("Failed to delete Microsoft event. Please try again.");
+	} finally {
+		loadingStateCalendar.value = false;
+	}
+};
+
+const isLoggedInWithMicrosoft = ref(false);
+
+const checkAuth = async () => {
+	try {
+		const response = await this.$axios.get("/api/check-auth");
+		if (response.data.authenticated) {
+			// User is authenticated
+		} else {
+			// Redirect to login
+			this.loginWithMicrosoft();
+		}
+	} catch (error) {
+		// Handle error or redirect to login
+		this.loginWithMicrosoft();
+	}
+};
 </script>
 
 <template>
@@ -615,6 +1068,14 @@ const eventType = ref("regular");
 			:event="selectedMicrosoftEvent"
 			@close="toggleMicrosoftEvents"
 			@closeMicrosoftEvents="toggleMicrosoftEvents"
+			@deleteMicrosoftEvent="deleteMicrosoftEvent"
+		/>
+
+		<MicrosoftEventComponent
+			v-if="createMicrosoftEvent"
+			:selectedDate="selectedDate"
+			@close="toggleCreateMicrosoftEvent"
+			@eventCreated="handleMicrosoftEventCreated"
 		/>
 
 		<div class="demo-app bg-white">
@@ -650,36 +1111,72 @@ const eventType = ref("regular");
 						</ul>
 					</div>
 				</div>
-				<div>
+				<div class="shadow pb-4 rounded-b-lg">
 					<CalendarSharing
 						class="mt-4"
 						@deleteSharedEventsId="deleteSharedEventsId"
 						@addSharedEventsId="addSharedEventsId"
 					/>
 				</div>
-				<div>
+				<div class="flex flex-col items-center py-6 shadow-lg rounded-b-lg">
 					<div
 						@click="fetchMicrosoftEvents"
-						class="flex items-center gap-2 mt-4 ml-7 bg-purple-600 rounded-md hover:bg-purple-700 cursor-pointer w-[240px] px-2 py-1"
+						class="flex items-center gap-2 mt-4 bg-purple-600 rounded-md hover:bg-purple-700 cursor-pointer w-[240px] px-2 py-1 shadow"
 					>
 						<div class="flex items-center pl-4 gap-2 text-white">
 							{{
 								areMicrosofEventsShown
-									? "Zobraziť Microsoft kalendár"
-									: "Skryť Microsoft kalendár"
+									? "Skryť Microsoft kalendár"
+									: "Zobraziť Microsoft kalendár"
 							}}
 							<img src="/public/icons8-microsoft-48.png" alt="" />
 						</div>
 					</div>
+					<button
+						v-if="!isLoggedInWithMicrosoft"
+						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+						@click="loginWithMicrosoft"
+					>
+						<span>Prihlásiť pomocou Microsoft</span>
+						<img src="/public/icons8-microsoft-48.png" alt="logo" />
+					</button>
+					<button
+						class="bg-red-800 px-4 rounded-md shadow hover:bg-red-700 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+						@click="toggleCreateMicrosoftEvent"
+					>
+						<span class="text-white">Vytvoriť outlook event</span>
+						<img src="/public/icons8-microsoft-48.png" alt="logo" />
+					</button>
 				</div>
 			</div>
 			<div class="demo-app-main bg-white text-black">
 				<!-- <CalendarSharing class="absolute left-5" /> -->
-
-				<FullCalendar class="demo-app-calendar" :options="calendarOptions">
+				<!-- <FullCalendar class="demo-app-calendar" :options="calendarOptions">
 					<template v-slot:eventContent="arg">
 						<b>{{ arg.timeText }}</b>
 						<i>{{ arg.event.title }}</i>
+					</template>
+				</FullCalendar> -->
+				<FullCalendar class="demo-app-calendar" :options="calendarOptions">
+					<template v-slot:eventContent="arg">
+						<div class="event-content-wrapper">
+							<div class="event-time">
+								<b>{{ arg.timeText }}</b>
+							</div>
+							<div class="event-title">{{ arg.event.title }}</div>
+							<!-- Display location for Microsoft events -->
+							<div class="">
+								<div>Adam Adam</div>
+							</div>
+
+							<!-- Display event type indicator -->
+							<!-- <div class="event-type">
+								<small v-if="arg.event.extendedProps.source === 'microsoft'"
+									>📅 Microsoft</small
+								>
+								<small v-else>🗓️ Local</small>
+							</div> -->
+						</div>
 					</template>
 				</FullCalendar>
 			</div>
@@ -764,5 +1261,46 @@ b {
 		37 99 235
 	) !important; /* Lighter blue for active state */
 	color: black !important;
+}
+
+.event-content-wrapper {
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	min-height: 100%;
+	width: 100%;
+}
+
+.event-time {
+	font-weight: bold;
+	margin-bottom: 2px;
+}
+
+.event-title {
+	font-weight: 500;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.event-location {
+	font-size: 0.8em;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.event-type {
+	font-size: 0.8em;
+	margin-top: 2px;
+}
+
+/* Make the event boxes larger to fit more content */
+.fc-timegrid-event-harness {
+	margin-right: 1px;
+}
+
+.fc-timegrid-event {
+	min-height: 60px !important;
 }
 </style>

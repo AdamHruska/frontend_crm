@@ -28,13 +28,9 @@ const logout = async () => {
 	});
 };
 
-const clientId = "3eaf604a-c4a7-42d2-b0d9-cc041af68824";
-const redirectUri = encodeURIComponent(
-	"http://localhost:8000/auth/callbackAzure"
-);
-const scope = encodeURIComponent(
-	"offline_access Calendars.Read Calendars.Read.Shared User.Read Mail.Read OnlineMeetings.Read Calendar.ReadWrite"
-);
+const clientId = "a954e4c2-3247-4484-9be7-3a6c941377ec";
+const redirectUri = encodeURIComponent("http://localhost:3000/calendar");
+const scope = encodeURIComponent("offline_access Calendars.Read User.Read");
 
 const loginWithMicrosoft = () => {
 	const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}&response_mode=query`;

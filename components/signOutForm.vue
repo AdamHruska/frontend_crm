@@ -3,6 +3,7 @@ const config = useRuntimeConfig();
 const emit = defineEmits(["cancelSignOut", "confirmSignOut"]);
 import axios from "axios";
 const router = useRouter();
+import { resetAllStores } from "@/stores/resetStores";
 import { useAuthStore } from "@/stores/authStore";
 const authStore = useAuthStore();
 
@@ -23,7 +24,6 @@ async function confirmSignOut() {
 
 const logout = async () => {
 	try {
-		// Call the logout API endpoint
 		await axios.post(
 			`${config.public.apiUrl}logout`,
 			{},
@@ -33,7 +33,7 @@ const logout = async () => {
 				},
 			}
 		);
-
+		resetAllStores(); // Clears all Pinia stores
 		// Clear auth store
 		authStore.clearToken();
 

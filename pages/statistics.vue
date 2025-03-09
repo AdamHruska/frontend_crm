@@ -1,5 +1,5 @@
-<!-- pages/statistics.vue -->
 <template>
+	<loadigcomponent v-if="loadingStateCalendar" />
 	<div class="p-6">
 		<div class="mb-6">
 			<h1 class="text-2xl font-bold mb-4">Štatistika aktivít</h1>
@@ -12,6 +12,7 @@
 						type="date"
 						v-model="dateRange.from"
 						class="border rounded p-2 bg-white shadow-sm"
+						@change="fetchData"
 					/>
 				</div>
 				<div>
@@ -20,38 +21,39 @@
 						type="date"
 						v-model="dateRange.to"
 						class="border rounded p-2 bg-white shadow-sm"
+						@change="fetchData"
 					/>
 				</div>
 
 				<!-- Period Quick Select -->
-				<select
-					v-model="selectedPeriod"
-					class="border rounded p-2 bg-white shadow-sm"
-					@change="updateDateRange"
-				>
-					<option value="week">Týždeň</option>
-					<option value="month">Mesiac</option>
-					<option value="quarter">Štvrťrok</option>
-					<option value="halfYear">Polrok</option>
-					<option value="year">Rok</option>
-				</select>
+				<div>
+					<label class="block text-sm mb-1">Obdobie</label>
+					<select
+						v-model="selectedPeriod"
+						class="border rounded p-[11px] bg-white shadow-sm"
+						@change="updateDateRange"
+					>
+						<option value="week">Týždeň</option>
+						<option value="month">Mesiac</option>
+						<option value="quarter">Štvrťrok</option>
+						<option value="halfYear">Polrok</option>
+						<option value="year">Rok</option>
+					</select>
+				</div>
 			</div>
 
-			<!-- Activity Type Filter -->
-			<div class="mb-4">
-				<label class="block text-sm mb-1">Typ aktivity</label>
-				<select
-					v-model="selectedActivityType"
-					class="border rounded p-2 bg-white shadow-md"
-				>
-					<option value="all">Všetky aktivity</option>
-					<option value="telefonat">Telefonát</option>
-					<option value="klient">Prvé stretnutie</option>
-					<option value="aof">AOF</option>
-					<option value="poradenstvo">Poradenstvo</option>
-					<option value="realizacia">Realizácia</option>
-				</select>
-			</div>
+			<select
+				v-model="selectedActivityType"
+				class="border rounded p-2 bg-white shadow-md"
+				@change="fetchData"
+			>
+				<option value="all">Všetky aktivity</option>
+				<option value="Telefonát klient">Telefonát</option>
+				<option value="Prvé stretnutie">Prvé stretnutie</option>
+				<option value="Analýza osobných financí">AOF</option>
+				<option value="poradenstvo">Poradenstvo</option>
+				<option value="realizácia">Realizácia</option>
+			</select>
 
 			<!-- Statistics Cards -->
 			<div
@@ -71,6 +73,25 @@
 				</div>
 			</div>
 
+			<!-- Statistics Cards
+			<div
+				class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 shadow-sm bg-white p-4"
+			>
+				<div
+					v-for="(value, key) in statistics"
+					:key="key"
+					class="p-4 rounded"
+					:class="{
+						'bg-blue-100': key === 'called',
+						'bg-green-100': key === 'reached',
+						'bg-purple-100': key === 'scheduled',
+					}"
+				>
+					<h3 class="font-bold">{{ formatCardTitle(key) }}</h3>
+					<p class="text-2xl">{{ value }}</p>
+				</div>
+			</div> -->
+
 			<!-- Chart -->
 			<div class="bg-white p-4 rounded shadow mb-6">
 				<BarChart :data="chartData" />
@@ -88,11 +109,19 @@
 							<th class="p-3 text-left">Status</th>
 						</tr>
 					</thead>
+					<EventUpdateCalendar
+						:activityID="activityID"
+						v-if="updateActivity"
+						@cancelAddActivity="toggleUpdateActivity"
+						@alterEvents="alterEvents"
+						:user.value="user"
+					/>
 					<tbody>
 						<tr
-							v-for="activity in filteredActivities"
+							v-for="activity in activities"
 							:key="activity.id"
-							class="border-t"
+							class="border-t cursor-pointer hover:bg-gray-50"
+							@click="toggleUpdateActivity(activity.id)"
 						>
 							<td class="p-3">{{ activity.meno }}</td>
 							<td class="p-3">{{ activity.priezvisko }}</td>
@@ -110,51 +139,31 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import BarChart from "~/components/BarChart.vue";
+import axios from "axios";
+const config = useRuntimeConfig();
+import { useAuthStore } from "#imports";
+const authStore = useAuthStore();
+
+const updateActivity = ref(false);
+const activityID = ref(null);
+
+const toggleUpdateActivity = (id) => {
+	activityID.value = id;
+	if (updateActivity.value === true) {
+		//location.reload();
+	}
+	updateActivity.value = !updateActivity.value;
+};
 
 // State
 const dateRange = ref({ from: "", to: "" });
 const selectedPeriod = ref("month");
 const selectedActivityType = ref("all");
+const statistics = ref({ called: 0, reached: 0, scheduled: 0 });
+const activities = ref([]);
+const loadingStateCalendar = ref(false);
 
-// Mock data - replace with actual API calls
-const activities = ref([
-	{
-		id: 1,
-		meno: "Olivia",
-		priezvisko: "Martinez",
-		type: "telefonat",
-		date: "2024-01-15",
-		status: "volané",
-	},
-	// Add more mock data...
-]);
-
-// Computed properties
-const filteredActivities = computed(() => {
-	return activities.value.filter((activity) => {
-		if (
-			selectedActivityType.value !== "all" &&
-			activity.type !== selectedActivityType.value
-		) {
-			return false;
-		}
-		const activityDate = new Date(activity.date);
-		return (
-			activityDate >= new Date(dateRange.value.from) &&
-			activityDate <= new Date(dateRange.value.to)
-		);
-	});
-});
-
-const statistics = computed(() => {
-	const filtered = filteredActivities.value;
-	return {
-		called: filtered.filter((a) => a.status === "volané").length,
-		reached: filtered.filter((a) => a.status === "dovolané").length,
-		scheduled: filtered.filter((a) => a.status === "dohodnuté").length,
-	};
-});
-
+// Chart data computed property
 const chartData = computed(() => ({
 	labels: ["Volané", "Dovolané", "Dohodnuté"],
 	datasets: [
@@ -170,6 +179,54 @@ const chartData = computed(() => ({
 }));
 
 // Methods
+const formatCardTitle = (key) => {
+	switch (key) {
+		case "called":
+			return "Volané";
+		case "reached":
+			return "Dovolané";
+		case "scheduled":
+			return "Dohodnuté";
+		default:
+			return "";
+	}
+};
+
+// Methods
+const fetchData = async () => {
+	loadingStateCalendar.value = true;
+
+	try {
+		const fromDate = new Date(dateRange.value.from);
+		const toDate = new Date(dateRange.value.to);
+		toDate.setHours(23, 59, 59, 999); // Set to the end of the day
+
+		const response = await axios.post(
+			`${config.public.apiUrl}activity-statistics`,
+			{
+				from_date: fromDate.toISOString().split("T")[0],
+				to_date: toDate.toISOString(),
+				activity_type: selectedActivityType.value,
+			},
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+				},
+			}
+		);
+
+		statistics.value = response.data.statistics;
+		console.log("Statistics:", response.data);
+		activities.value = response.data.activities;
+	} catch (error) {
+		console.error(
+			"Error fetching statistics:",
+			error.response?.data || error.message
+		);
+	}
+	loadingStateCalendar.value = false;
+};
+
 const updateDateRange = () => {
 	const now = new Date();
 	const from = new Date();
@@ -196,6 +253,8 @@ const updateDateRange = () => {
 		from: from.toISOString().split("T")[0],
 		to: now.toISOString().split("T")[0],
 	};
+
+	fetchData();
 };
 
 const formatDate = (date) => {

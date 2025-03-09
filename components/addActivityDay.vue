@@ -103,9 +103,9 @@ const transformData = (data) => {
 	});
 };
 
-const toggleAddActivity = () => {
-	addActivity.value = !addActivity.value;
-};
+// const toggleAddActivity = () => {
+// 	addActivity.value = !addActivity.value;
+// };
 
 const toggleUpdateActivity = () => {
 	updateActivity.value = !updateActivity.value;

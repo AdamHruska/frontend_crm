@@ -104,21 +104,22 @@ function getIdFromString(str) {
 
 const addActivity = async () => {
 	changeLoadingState();
-	//console.log(getIdFromString(kontakt.value));
 	event.preventDefault();
-	// if (aktivita.value === "ine") {
-	// 	aktivita.value = ina_aktivita.value;
-	// }
 
 	if (!email.value) {
 		alert("Kontakt nemá email, pridajte email");
+		changeLoadingState();
+		return;
 	}
+
 	try {
-		const response = await axios.post(
+		// Store the first response in a separate variable
+		const activityResponse = await axios.post(
 			`${config.public.apiUrl}add-activity`,
 			{
 				contact_id: getIdFromString(kontakt.value),
-				aktivita: aktivita.value,
+				aktivita:
+					aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
 				datumCas: datum_cas.value,
 				koniec: koniec.value,
 				poznamka: poznamka.value,
@@ -134,7 +135,9 @@ const addActivity = async () => {
 				},
 			}
 		);
-		const responseMail = await axios.patch(
+
+		// Update email if needed
+		await axios.patch(
 			`${config.public.apiUrl}contact/${id.value}/email`,
 			{
 				email: email.value,
@@ -145,21 +148,47 @@ const addActivity = async () => {
 				},
 			}
 		);
-		console.log(response.data.activity);
-		calendarStore.activities.push(response.data.activity);
 
-		// Emit the newly added activity to the parent
-		emit("activityAdded", response.data.activity);
-		emit("addNewEvent", response.data.activity);
-		// Close the form
+		// Create Teams meeting if online meeting is selected
+		if (onlineMeeting.value) {
+			try {
+				const teamsResponse = await axios.post(
+					`${config.public.apiUrl}create-teams-meeting`,
+					{ activityId: activityResponse.data.activity.id },
+					{ headers: { Authorization: `Bearer ${authStore.token}` } }
+				);
+
+				console.log("Teams meeting created:", teamsResponse.data);
+
+				// Update the activity with the meeting URL if needed
+				if (teamsResponse.data.joinUrl) {
+					activityResponse.data.activity.miesto_stretnutia =
+						teamsResponse.data.joinUrl;
+				}
+			} catch (error) {
+				console.error(
+					"Error creating Teams meeting:",
+					error.response?.data || error.message
+				);
+				// Consider showing an error message to the user here
+			}
+		}
+
+		// Update the calendar store
+		calendarStore.activities.push(activityResponse.data.activity);
+
+		// Emit events
+		emit("activityAdded", activityResponse.data.activity);
+		emit("addNewEvent", activityResponse.data.activity);
 		emit("cancelAddActivity");
-
-		// if (response.status == 200 || response.status == 201) {
-		// 	alert("Aktivita bola pridaná");
-		// }
 	} catch (error) {
 		console.error("Error adding activity:", error);
+		alert(
+			"Nastala chyba pri pridaní aktivity: " +
+				(error.response?.data?.error || error.message)
+		);
 	}
+
 	changeLoadingState();
 };
 
