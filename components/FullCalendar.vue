@@ -946,13 +946,19 @@ const loginWithMicrosoft = () => {
 	const redirectUriRaw = config.public.AZURE_REDIRECT_URI;
 	const scope = config.public.AZURE_SCOPE;
 
-	// Encode the redirect URI just like in the original working version
-	const redirectUri = encodeURIComponent(redirectUriRaw);
+	console.log("Azure config:", {
+		clientId,
+		redirectUriRaw,
+		scope,
+	});
 
-	const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${encodeURIComponent(
-		scope
-	)}&response_mode=query`;
-	window.location.href = authUrl;
+	// Encode the redirect URI just like in the original working version
+	// const redirectUri = encodeURIComponent(redirectUriRaw);
+
+	// const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${encodeURIComponent(
+	// 	scope
+	// )}&response_mode=query`;
+	// window.location.href = authUrl;
 };
 
 const createMicrosoftEvent = ref(false);
