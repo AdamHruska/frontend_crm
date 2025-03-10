@@ -818,7 +818,7 @@ const fetchMicrosoftEvents = async () => {
 	}
 	loadingStateCalendar.value = false;
 };
-
+//test
 // const fetchMicrosoftEvents = async () => {
 // 	loadingStateCalendar.value = true;
 // 	let allEvents = [];
