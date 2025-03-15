@@ -938,56 +938,56 @@ const eventType = ref("regular");
 // 	loginWithMicrosoft.value = true;
 // };
 
-// const loginWithMicrosoft = () => {
-// 	const config = useRuntimeConfig();
-
-// 	// Get values from environment
-// 	const clientId = config.public.AZURE_CLIENT_ID;
-// 	const redirectUriRaw = config.public.AZURE_REDIRECT_URI;
-// 	const scope = config.public.AZURE_SCOPE;
-
-// 	console.log("Azure config:", {
-// 		clientId,
-// 		redirectUriRaw,
-// 		scope,
-// 	});
-
-// 	// Encode the redirect URI just like in the original working version
-// 	const redirectUri = encodeURIComponent(redirectUriRaw);
-
-// 	const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${encodeURIComponent(
-// 		scope
-// 	)}&response_mode=query`;
-// 	window.location.href = authUrl;
-// };
-
 const loginWithMicrosoft = () => {
 	const config = useRuntimeConfig();
+
+	// Get values from environment
 	const clientId = config.public.AZURE_CLIENT_ID;
-	const redirectUri = encodeURIComponent(config.public.AZURE_REDIRECT_URI);
-	const scope = encodeURIComponent(config.public.AZURE_SCOPE);
+	const redirectUriRaw = config.public.AZURE_REDIRECT_URI;
+	const scope = config.public.AZURE_SCOPE;
 
-	const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}&response_mode=query`;
-
-	// Open the popup
-	const popup = window.open(authUrl, "MicrosoftLogin", "width=600,height=600");
-
-	// Listen for messages from the popup
-	window.addEventListener("message", (event) => {
-		if (event.data.type === "microsoft-auth-callback") {
-			// Close the popup
-			popup.close();
-
-			// Process the auth code
-			const code = event.data.code;
-			// Send the code to your backend
-			axios.post("/api/process-microsoft-auth", { code }).then((response) => {
-				// Handle successful authentication
-				console.log("Authentication successful:", response.data);
-			});
-		}
+	console.log("Azure config:", {
+		clientId,
+		redirectUriRaw,
+		scope,
 	});
+
+	// Encode the redirect URI just like in the original working version
+	const redirectUri = encodeURIComponent(redirectUriRaw);
+
+	const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${encodeURIComponent(
+		scope
+	)}&response_mode=query`;
+	window.location.href = authUrl;
 };
+
+// const loginWithMicrosoft = () => {
+// 	const config = useRuntimeConfig();
+// 	const clientId = config.public.AZURE_CLIENT_ID;
+// 	const redirectUri = encodeURIComponent(config.public.AZURE_REDIRECT_URI);
+// 	const scope = encodeURIComponent(config.public.AZURE_SCOPE);
+
+// 	const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}&response_mode=query`;
+
+// 	// Open the popup
+// 	const popup = window.open(authUrl, "MicrosoftLogin", "width=600,height=600");
+
+// 	// Listen for messages from the popup
+// 	window.addEventListener("message", (event) => {
+// 		if (event.data.type === "microsoft-auth-callback") {
+// 			// Close the popup
+// 			popup.close();
+
+// 			// Process the auth code
+// 			const code = event.data.code;
+// 			// Send the code to your backend
+// 			axios.post("/api/process-microsoft-auth", { code }).then((response) => {
+// 				// Handle successful authentication
+// 				console.log("Authentication successful:", response.data);
+// 			});
+// 		}
+// 	});
+// };
 
 const createMicrosoftEvent = ref(false);
 const selectedDate = ref("");
