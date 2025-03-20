@@ -259,6 +259,17 @@ watch(dohodnute, (newValue) => {
 		dovolane.value = true;
 	}
 });
+
+const isValidUrl = (url) => {
+	try {
+		new URL(url);
+		console.log("true");
+		return true;
+	} catch (_) {
+		console.log("false");
+		return false;
+	}
+};
 </script>
 
 <template>
@@ -399,12 +410,35 @@ watch(dohodnute, (newValue) => {
 				>
 			</div>
 
+			<!-- Replace the current miesto_stretnutia input with this code -->
+			<!-- Replace the current miesto_stretnutia input with this code -->
 			<div class="relative z-0 w-full mb-5 group">
 				<label
 					class="text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
 					>Miesto stretnutia</label
 				>
+
+				<div
+					v-if="miesto_stretnutia && isValidUrl(miesto_stretnutia)"
+					class="mt-3"
+				>
+					<a
+						:href="miesto_stretnutia"
+						target="_blank"
+						class="text-blue-600 hover:underline block w-4/5 overflow-hidden whitespace-nowrap text-ellipsis"
+						:title="miesto_stretnutia"
+					>
+						{{ miesto_stretnutia }}
+					</a>
+					<input
+						v-model="miesto_stretnutia"
+						type="text"
+						class="!text-black w-full mt-1 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500"
+						placeholder="Zadajte miesto stretnutia ..."
+					/>
+				</div>
 				<input
+					v-else
 					v-model="miesto_stretnutia"
 					type="text"
 					class="!text-black w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500"
