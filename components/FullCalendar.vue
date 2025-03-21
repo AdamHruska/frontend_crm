@@ -937,7 +937,7 @@ const eventType = ref("regular");
 // 	window.location.href = authUrl;
 // 	loginWithMicrosoft.value = true;
 // };
-//acanocjn
+//acanocjnscsc
 const loginWithMicrosoft = () => {
 	const config = useRuntimeConfig();
 
