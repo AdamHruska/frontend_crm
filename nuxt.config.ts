@@ -25,7 +25,7 @@ export default defineNuxtConfig({
 			apiUrl: "https://backend.partners-crm.sk/",
 			// AZURE_CLIENT_ID: process.env.NUXT_PUBLIC_AZURE_CLIENT_ID,
 			// AZURE_REDIRECT_URI: process.env.NUXT_PUBLIC_AZURE_REDIRECT_URI,
-			// AZURE_SCOPE: process.env.NUXT_PUBLIC_AZURE_SCOPE,
+			// AZURE_SCOPE: process.env.NUXT_PUBLIC_AZURE_SCOPE,s
 		},
 	},
 });
