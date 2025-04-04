@@ -13,6 +13,9 @@ export const useUserStore = defineStore("user", {
 		shareIdArray: [],
 		loadingState: false,
 		error: null,
+		vizitka_name: "",
+		vizitka_email: "",
+		vizitka_phone_num: "",
 	}),
 
 	actions: {

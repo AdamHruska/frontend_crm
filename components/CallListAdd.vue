@@ -183,6 +183,12 @@ const addToCallList = async (callList) => {
 						<div class="font-semibold">{{ callList.name }}</div>
 					</li>
 				</ul>
+				<button
+					@click="createCallList"
+					class="bg-blue-600 px-2 py-2 rounded text-white hover:bg-blue-700 w-full mt-4 shadow-md"
+				>
+					Vytvoriť Call List
+				</button>
 			</form>
 		</div>
 	</div>

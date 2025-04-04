@@ -4,7 +4,8 @@ const router = useRouter();
 const config = useRuntimeConfig();
 import { useAuthStore } from "@/stores/authStore";
 const authStore = useAuthStore();
-
+import { useToast } from "vue-toastification";
+const toast = useToast();
 const email = ref("");
 const password = ref("");
 const rememberMe = ref(false); // Add this line to track remember me state
@@ -38,10 +39,28 @@ const login = async (email, password, rememberMe) => {
 
 			router.push("/");
 		} catch (error) {
-			alert("Login failed. Please check your credentials.");
+			toast.error("Prihlásenie zlyhalo. Skontrolujte svoje poverenia.", {
+				position: "top-center",
+				timeout: 5000,
+				closeOnClick: true,
+				pauseOnHover: true,
+				draggable: true,
+				draggablePercent: 60,
+				showCloseButtonOnHover: false,
+				hideProgressBar: false,
+			});
 		}
 	} else {
-		alert("Please fill in all fields");
+		toast.error("Vyplňte všetky polia", {
+			position: "top-center",
+			timeout: 5000,
+			closeOnClick: true,
+			pauseOnHover: true,
+			draggable: true,
+			draggablePercent: 60,
+			showCloseButtonOnHover: false,
+			hideProgressBar: false,
+		});
 	}
 	loading.value = false;
 };

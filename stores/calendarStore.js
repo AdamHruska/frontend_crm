@@ -11,6 +11,7 @@ export const useCalendarstore = defineStore("calendar", {
 		shared_activities: [],
 		loadingState: false,
 		checkedUsers: [],
+		microsoftEventCache: {}, // Format: {"2025-4": [...events]}
 	}),
 	actions: {
 		// async fetchActivities() {
@@ -123,6 +124,80 @@ export const useCalendarstore = defineStore("calendar", {
 			} finally {
 				this.loadingState = false;
 			}
+		},
+
+		async fetchMicrosoftEvents(month, year) {
+			// Create a cache key using month and year
+			const cacheKey = `${year}-${month}`;
+
+			// Check if data already exists in cache
+			if (this.microsoftEventCache[cacheKey]) {
+				console.log(`Using cached Microsoft events for ${cacheKey}`);
+				return this.microsoftEventCache[cacheKey];
+			}
+
+			// If not in cache, fetch from API
+			this.loadingState = true;
+			try {
+				const config = useRuntimeConfig();
+				const response = await axios.get(`${config.public.apiUrl}get-events`, {
+					params: { month, year },
+				});
+
+				// Transform Microsoft events to match calendar format
+				const microsoftEvents = response.data.value.map((event) => ({
+					id: event.id,
+					title: event.subject,
+					start: event.start.dateTime,
+					end: event.end.dateTime,
+					link: event.onlineMeeting?.joinUrl || "",
+					backgroundColor: "rgb(168 85 247)",
+					borderColor: "rgb(168 85 247)",
+					source: "microsoft",
+					extendedProps: {
+						source: "microsoft",
+						organizer: {
+							name: event.organizer?.emailAddress?.name || "Unknown",
+							email: event.organizer?.emailAddress?.address || "No email",
+						},
+						attendees:
+							event.attendees?.map((attendee) => ({
+								name: attendee.emailAddress?.name,
+								email: attendee.emailAddress?.address,
+								response: attendee.status?.response,
+								type: attendee.type,
+							})) || [],
+						location: event.location?.displayName || "No location",
+						link: event.onlineMeeting?.joinUrl || "",
+					},
+				}));
+
+				// Store in cache
+				this.microsoftEventCache[cacheKey] = microsoftEvents;
+
+				this.loadingState = false;
+				return microsoftEvents;
+			} catch (error) {
+				console.error("Error fetching Microsoft events:", error);
+				this.loadingState = false;
+				return [];
+			}
+		},
+
+		// Get all events from all sources for a specific month/year
+		getAllEventsForPeriod(month, year) {
+			const cacheKey = `${year}-${month}`;
+			const microsoftEvents = this.microsoftEventCache[cacheKey] || [];
+
+			// Combine with activities and shared_activities if needed
+			// You might need to filter activities based on dates
+
+			return microsoftEvents;
+		},
+
+		// Clear cache for testing or memory management
+		clearEventCache() {
+			this.microsoftEventCache = {};
 		},
 
 		async deleteActivity(activityId) {

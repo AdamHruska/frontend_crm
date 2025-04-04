@@ -3,6 +3,7 @@ import { defineStore } from "pinia";
 const config = useRuntimeConfig();
 import axios from "axios";
 import { useAuthStore } from "@/stores/authStore";
+import { useToast } from "vue-toastification";
 
 export const useContactsStore = defineStore("contacts", {
 	state: () => ({
@@ -35,7 +36,6 @@ export const useContactsStore = defineStore("contacts", {
 				this.next_page_url = response.data.contacts.next_page_url;
 				this.page = response.data.contacts.current_page;
 				this.contacts = response.data.contacts; // Store contacts in state
-				console.log("v store to aj tak islo");
 			} catch (error) {
 				console.error("Error fetching contacts:", error.response || error);
 			}
@@ -95,6 +95,7 @@ export const useContactsStore = defineStore("contacts", {
 		},
 
 		async deleteContact(id) {
+			const toast = useToast();
 			this.loadingState = true;
 			const authStore = useAuthStore(); // Access authStore
 			const token = authStore.token;
@@ -115,10 +116,11 @@ export const useContactsStore = defineStore("contacts", {
 
 				console.log(this.contacts.data);
 				if (response.status === 201 || response.status === 200) {
-					alert("Contact deleted successfully");
+					toast.success("Kontakt bol úspešne zmazaný");
 				}
 			} catch (error) {
 				console.error("Error deleting contact:", error.response || error);
+				toast.error("Kontakt sa nepodarilo zmazať");
 			}
 			this.loadingState = false;
 		},
@@ -149,6 +151,7 @@ export const useContactsStore = defineStore("contacts", {
 			this.loadingState = false;
 		},
 		addToContactsStore(addedPeople) {
+			const toast = useToast();
 			this.loadingState = true;
 			if (addedPeople && addedPeople.length > 0) {
 				// Ensure contacts.data exists and is an array
@@ -158,7 +161,7 @@ export const useContactsStore = defineStore("contacts", {
 
 				// Add new people to the beginning of the data array
 				this.contacts.data.unshift(...addedPeople);
-				alert("Kontakt bol pridaný");
+				toast.success("Kontakt bol pridaný");
 			}
 			this.loadingState = false;
 		},

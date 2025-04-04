@@ -163,13 +163,32 @@ const handleSearch = async () => {
 	}
 };
 
+// const filteredUsers = computed(() => {
+// 	console.log("Computing filtered users:", users.value);
+// 	if (!searchInput.value) return users.value;
+// 	const normalizedSearchInput = searchInput.value.toLowerCase();
+// 	return users.value.filter((user) => {
+// 		const userFullName = `${user.first_name} ${user.last_name}`.toLowerCase();
+// 		return userFullName.includes(normalizedSearchInput);
+// 	});
+// });
+
 const filteredUsers = computed(() => {
-	console.log("Computing filtered users:", users.value);
-	if (!searchInput.value) return users.value;
+	const confirmedIds = Object.values(
+		userStore.user.confirmed_share_user_id || {}
+	).map(String);
+
+	if (!searchInput.value) {
+		return users.value.filter((user) => confirmedIds.includes(String(user.id)));
+	}
+
 	const normalizedSearchInput = searchInput.value.toLowerCase();
 	return users.value.filter((user) => {
 		const userFullName = `${user.first_name} ${user.last_name}`.toLowerCase();
-		return userFullName.includes(normalizedSearchInput);
+		return (
+			userFullName.includes(normalizedSearchInput) &&
+			confirmedIds.includes(String(user.id))
+		);
 	});
 });
 

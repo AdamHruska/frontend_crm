@@ -17,6 +17,9 @@ authStore.loadToken();
 import { useCalendarstore } from "#imports";
 const calendarStore = useCalendarstore();
 
+import { useToast } from "vue-toastification";
+const toast = useToast();
+
 const contact = ref([]);
 
 const aktivita = ref("");
@@ -131,7 +134,32 @@ const addActivity = async () => {
 				},
 			}
 		);
-		if (!emailBool.value) {
+
+		if (response.data.status === 201) {
+			toast.success("Aktivita bola úspešne pridaná", {
+				position: "top-right",
+				timeout: 5000,
+				closeOnClick: true,
+				pauseOnHover: true,
+				draggable: true,
+				draggablePercent: 60,
+				showCloseButtonOnHover: false,
+				hideProgressBar: false,
+			});
+		} else {
+			toast.error("Chyba pri pridávaní aktivity", {
+				position: "top-right",
+				timeout: 5000,
+				closeOnClick: true,
+				pauseOnHover: true,
+				draggable: true,
+				draggablePercent: 60,
+				showCloseButtonOnHover: false,
+				hideProgressBar: false,
+			});
+		}
+
+		if (!emailBool.value && onlineMeeting.value) {
 			const emailResponse = await axios.patch(
 				`${config.public.apiUrl}contact/${props.contact_id}/email`,
 				{
@@ -144,7 +172,42 @@ const addActivity = async () => {
 				}
 			);
 		}
+
+		if (onlineMeeting.value) {
+			console.log("Creating Teams meeting...");
+			try {
+				const teamsResponse = await axios.post(
+					`${config.public.apiUrl}create-teams-meeting`,
+					{ activityId: response.data.activity.id },
+					{ headers: { Authorization: `Bearer ${authStore.token}` } }
+				);
+
+				console.log("Teams meeting created:", teamsResponse.data);
+
+				// Update the activity with the meeting URL if needed
+				if (teamsResponse.data.joinUrl) {
+					response.data.activity.miesto_stretnutia = teamsResponse.data.joinUrl;
+				}
+			} catch (error) {
+				console.error(
+					"Error creating Teams meeting:",
+					error.response?.data || error.message
+				);
+				// Consider showing an error message to the user here
+			}
+		}
+
 		calendarStore.activities.push(response.data.activity);
+		// toast.success("Aktivita bola úspešne pridaná", {
+		// 	position: "top-right",
+		// 	timeout: 5000,
+		// 	closeOnClick: true,
+		// 	pauseOnHover: true,
+		// 	draggable: true,
+		// 	draggablePercent: 60,
+		// 	showCloseButtonOnHover: false,
+		// 	hideProgressBar: false,
+		// });
 		emit("activityAdded", response.data.activity);
 		emit("cancelAddActivity");
 	} catch (error) {
@@ -179,7 +242,7 @@ watch(dohodnute, (newValue) => {
 			<div class="cursor-pointer" @click="cancelActivity()">
 				<Icon icon="fa6-solid:xmark" class="absolute top-4 right-6" />
 			</div>
-			<div v-if="!emailBool">
+			<div v-if="!emailBool && onlineMeeting">
 				<label
 					class="text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
 				>

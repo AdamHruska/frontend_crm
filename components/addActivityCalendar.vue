@@ -11,7 +11,8 @@ const calendarStore = useCalendarstore();
 import { useAuthStore } from "@/stores/authStore";
 const authStore = useAuthStore();
 authStore.loadToken();
-
+import { useToast } from "vue-toastification";
+const toast = useToast();
 const props = defineProps({
 	end_date: String,
 });
@@ -58,6 +59,7 @@ watch(datum_cas, (newValue) => {
 });
 
 onMounted(async () => {
+	console.log(email.value);
 	// Set initial datum_cas to props.end_date
 	datum_cas.value = formatDateToISO(props.end_date);
 
@@ -102,12 +104,129 @@ function getIdFromString(str) {
 	return words[words.length - 1];
 }
 
+// const addActivity = async () => {
+// 	changeLoadingState();
+// 	event.preventDefault();
+
+// 	// if (!email.value) {
+// 	// 	alert("Kontakt nemá email, pridajte email");
+// 	// 	changeLoadingState();
+// 	// 	return;
+// 	// }
+
+// 	try {
+// 		// Store the first response in a separate variable
+// 		const activityResponse = await axios.post(
+// 			`${config.public.apiUrl}add-activity`,
+// 			{
+// 				contact_id: getIdFromString(kontakt.value),
+// 				aktivita:
+// 					aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
+// 				datumCas: datum_cas.value,
+// 				koniec: koniec.value,
+// 				poznamka: poznamka.value,
+// 				volane: volane.value,
+// 				dovolane: dovolane.value,
+// 				dohodnute: dohodnute.value,
+// 				miesto_stretnutia: miesto_stretnutia.value,
+// 				online_meeting: onlineMeeting.value,
+// 			},
+// 			{
+// 				headers: {
+// 					Authorization: `Bearer ${authStore.token}`,
+// 				},
+// 			}
+// 		);
+
+// 		if (activityResponse.data.status === 201) {
+// 			toast.success("Aktivita bola úspešne pridaná", {
+// 				position: "top-right",
+// 				timeout: 5000,
+// 				closeOnClick: true,
+// 				pauseOnHover: true,
+// 				draggable: true,
+// 				draggablePercent: 60,
+// 				showCloseButtonOnHover: false,
+// 				hideProgressBar: false,
+// 			});
+// 		} else {
+// 			toast.error("Chyba pri pridávaní aktivity", {
+// 				position: "top-right",
+// 				timeout: 5000,
+// 				closeOnClick: true,
+// 				pauseOnHover: true,
+// 				draggable: true,
+// 				draggablePercent: 60,
+// 				showCloseButtonOnHover: false,
+// 				hideProgressBar: false,
+// 			});
+// 		}
+
+// 		// Update email if needed
+// 		if (!emailBool.value) {
+// 			console.log("Adding email to contact:", email.value);
+// 			await axios.patch(
+// 				`${config.public.apiUrl}contact/${id.value}/email`,
+// 				{
+// 					email: email.value,
+// 				},
+// 				{
+// 					headers: {
+// 						Authorization: `Bearer ${authStore.token}`,
+// 					},
+// 				}
+// 			);
+// 		}
+// 		// Create Teams meeting if online meeting is selected
+// 		if (onlineMeeting.value) {
+// 			try {
+// 				const teamsResponse = await axios.post(
+// 					`${config.public.apiUrl}create-teams-meeting`,
+// 					{ activityId: activityResponse.data.activity.id },
+// 					{ headers: { Authorization: `Bearer ${authStore.token}` } }
+// 				);
+
+// 				console.log("Teams meeting created:", teamsResponse.data);
+
+// 				// Update the activity with the meeting URL if needed
+// 				if (teamsResponse.data.joinUrl) {
+// 					activityResponse.data.activity.miesto_stretnutia =
+// 						teamsResponse.data.joinUrl;
+// 				}
+// 			} catch (error) {
+// 				console.error(
+// 					"Error creating Teams meeting:",
+// 					error.response?.data || error.message
+// 				);
+// 				// Consider showing an error message to the user here
+// 			}
+// 		}
+
+// 		// Update the calendar store
+// 		calendarStore.activities.push(activityResponse.data.activity);
+
+// 		// Emit events
+// 		emit("activityAdded", activityResponse.data.activity);
+// 		emit("addNewEvent", activityResponse.data.activity);
+// 		emit("cancelAddActivity");
+// 	} catch (error) {
+// 		console.error("Error adding activity:", error);
+// 		alert(
+// 			"Nastala chyba pri pridaní aktivity: " +
+// 				(error.response?.data?.error || error.message)
+// 		);
+// 	}
+
+// 	changeLoadingState();
+// };
+
 const addActivity = async () => {
 	changeLoadingState();
 	event.preventDefault();
 
-	if (!email.value) {
-		alert("Kontakt nemá email, pridajte email");
+	// Validate email only if online meeting is checked and contact doesn't have an email
+	if (onlineMeeting.value && !emailBool.value && !email.value) {
+		alert("Pre online stretnutie je potrebné zadať email kontaktu");
 		changeLoadingState();
 		return;
 	}
@@ -136,18 +255,48 @@ const addActivity = async () => {
 			}
 		);
 
-		// Update email if needed
-		await axios.patch(
-			`${config.public.apiUrl}contact/${id.value}/email`,
-			{
-				email: email.value,
-			},
-			{
-				headers: {
-					Authorization: `Bearer ${authStore.token}`,
+		if (activityResponse.data.status === 201) {
+			toast.success("Aktivita bola úspešne pridaná", {
+				position: "top-right",
+				timeout: 5000,
+				closeOnClick: true,
+				pauseOnHover: true,
+				draggable: true,
+				draggablePercent: 60,
+				showCloseButtonOnHover: false,
+				hideProgressBar: false,
+			});
+		} else {
+			toast.error("Chyba pri pridávaní aktivity", {
+				position: "top-right",
+				timeout: 5000,
+				closeOnClick: true,
+				pauseOnHover: true,
+				draggable: true,
+				draggablePercent: 60,
+				showCloseButtonOnHover: false,
+				hideProgressBar: false,
+			});
+		}
+
+		// Update email ONLY if:
+		// 1. Online meeting is checked
+		// 2. Contact doesn't have an email (emailBool is false)
+		// 3. A new email value has been provided
+		if (onlineMeeting.value && !emailBool.value && email.value) {
+			console.log("Adding email to contact:", email.value);
+			await axios.patch(
+				`${config.public.apiUrl}contact/${id.value}/email`,
+				{
+					email: email.value,
 				},
-			}
-		);
+				{
+					headers: {
+						Authorization: `Bearer ${authStore.token}`,
+					},
+				}
+			);
+		}
 
 		// Create Teams meeting if online meeting is selected
 		if (onlineMeeting.value) {
@@ -251,7 +400,7 @@ watch(dohodnute, (newValue) => {
 				@selectedContact="handleSelectedContact"
 			/>
 
-			<div v-if="!emailBool">
+			<div v-if="onlineMeeting">
 				<label
 					class="text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
 				>
