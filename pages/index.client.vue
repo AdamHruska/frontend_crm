@@ -74,7 +74,23 @@ function addPerson(addedPeople) {
 	if (addedPeople) {
 		contactsStore.addToContactsStore(addedPeople);
 		// Refresh the local people ref with the updated store data
-		people.value = contactsStore.contacts.data;
+		//people.value = contactsStore.contacts.data;
+		people.value = contactsStore.contacts.data.map((person) => {
+			let cssClass = "";
+
+			if (person.first_event === 0) {
+				cssClass += "bg-green-200 ";
+			}
+
+			if (person.only_called_never_answered === 1) {
+				cssClass += "bg-orange-200 ";
+			}
+
+			return {
+				...person,
+				class: cssClass.trim(),
+			};
+		});
 	}
 }
 
@@ -135,9 +151,26 @@ onMounted(async () => {
 		if (contactsStore.contacts.length === 0) {
 			await contactsStore.fetchContacts();
 		}
-		people.value = contactsStore.contacts.data;
+		// people.value = contactsStore.contacts.data;
 
-		console.log(callListNames.value);
+		people.value = contactsStore.contacts.data.map((person) => {
+			let cssClass = "";
+
+			if (person.first_event === 0) {
+				cssClass += "bg-green-200 ";
+			}
+
+			if (person.only_called_never_answered === 1) {
+				cssClass += "bg-orange-200 ";
+			}
+
+			return {
+				...person,
+				class: cssClass.trim(),
+			};
+		});
+
+		console.log("poeple value", people.value);
 	} catch (error) {
 		console.error("Error:", error);
 	}
@@ -190,6 +223,10 @@ const columns = [
 		key: "odporucitel",
 		label: "Odporucitel",
 	},
+	// {
+	// 	key: "poznamka",
+	// 	label: "Poznámka",
+	// },
 
 	{
 		key: "actions",
@@ -242,13 +279,46 @@ const items = (row) => [
 const nextPage = async () => {
 	await contactsStore.nextPage();
 	page.value = contactsStore.contacts.current_page;
-	people.value = contactsStore.contacts.data;
+	//people.value = contactsStore.contacts.data;
+	people.value = contactsStore.contacts.data.map((person) => {
+		let cssClass = "";
+
+		if (person.first_event === 0) {
+			cssClass += "bg-green-200 ";
+		}
+
+		if (person.only_called_never_answered === 1) {
+			cssClass += "bg-orange-200 ";
+		}
+
+		return {
+			...person,
+			class: cssClass.trim(),
+		};
+	});
 };
 
 const prevPage = async () => {
 	await contactsStore.prevPage();
 	page.value = contactsStore.contacts.current_page;
-	people.value = contactsStore.contacts.data;
+	//people.value = contactsStore.contacts.data;
+
+	people.value = contactsStore.contacts.data.map((person) => {
+		let cssClass = "";
+
+		if (person.first_event === 0) {
+			cssClass += "bg-green-200 ";
+		}
+
+		if (person.only_called_never_answered === 1) {
+			cssClass += "bg-orange-200 ";
+		}
+
+		return {
+			...person,
+			class: cssClass.trim(),
+		};
+	});
 };
 
 // const updatePerson = async (updatedContact) => {
@@ -353,6 +423,72 @@ const cancleCallListForm = (status) => {
 		// alert("Call list created successfully");
 	}
 };
+
+const totalPages = computed(() => contactsStore.contacts.last_page || 1);
+
+const goToPage = async (pageNum) => {
+	await contactsStore.goToPage(pageNum);
+	page.value = contactsStore.contacts.current_page;
+	//people.value = contactsStore.contacts.data;
+
+	people.value = contactsStore.contacts.data.map((person) => {
+		let cssClass = "";
+
+		if (person.first_event === 0) {
+			cssClass += "bg-green-200 ";
+		}
+
+		if (person.only_called_never_answered === 1) {
+			cssClass += "bg-orange-200 ";
+		}
+
+		return {
+			...person,
+			class: cssClass.trim(),
+		};
+	});
+};
+
+const pageNumbers = computed(() => {
+	const total = totalPages.value;
+	const current = contactsStore.page;
+	const delta = 2; // Number of pages to show before and after current page
+
+	// If we have 7 or fewer pages, show all of them
+	if (total <= 7) {
+		return Array.from({ length: total }, (_, i) => i + 1);
+	}
+
+	// Calculate range to display
+	let range = [];
+
+	// Always include first page
+	range.push(1);
+
+	// Calculate start and end of range around current page
+	const rangeStart = Math.max(2, current - delta);
+	const rangeEnd = Math.min(total - 1, current + delta);
+
+	// Add ellipsis if needed before rangeStart
+	if (rangeStart > 2) {
+		range.push("...");
+	}
+
+	// Add pages around current page
+	for (let i = rangeStart; i <= rangeEnd; i++) {
+		range.push(i);
+	}
+
+	// Add ellipsis if needed after rangeEnd
+	if (rangeEnd < total - 1) {
+		range.push("...");
+	}
+
+	// Always include last page
+	range.push(total);
+
+	return range;
+});
 </script>
 
 <template>
@@ -392,20 +528,9 @@ const cancleCallListForm = (status) => {
 	<UTable
 		:rows="people"
 		:columns="columns"
-		class="mx-6 table-container max-h-[1000px] owerlflow-y-auto shadow-md rounded-md"
+		class="mx-6 table-container shadow-md rounded-md"
+		:row-class="(row) => row.class"
 	>
-		<template #name-data="{ row }">
-			<div class="test">
-				<span
-					:class="[
-						selected.find((person) => person.id === row.id) &&
-							'text-primary-500 dark:text-primary-400',
-					]"
-					>{{ row.name }}</span
-				>
-			</div>
-		</template>
-
 		<template #actions-data="{ row }">
 			<div class="flex justify-between">
 				<div class="flex space-x-4">
@@ -435,11 +560,17 @@ const cancleCallListForm = (status) => {
 				</div>
 				<input type="checkbox" @change="toggleCheckbox(row.id)" />
 			</div>
+			<tr v-if="row.poznamka" class="absolute left-0 w-full">
+				<td colspan="7" class="px-4 py-2 text-sm text-gray-600 bg-gray-50">
+					<span class="font-semibold">Poznámka:</span>
+					{{ row.poznamka }}
+				</td>
+			</tr>
 		</template>
 	</UTable>
 
 	<!-- <pagination /> -->
-	<div class="flex gap-[40px] justify-center mt-[30px] mb-[50px]">
+	<!-- <div class="flex gap-[40px] justify-center mt-[30px] mb-[50px]">
 		<div class="cursor-pointer" @click="prevPage()">
 			<Icon
 				class="hover:size-[38px]"
@@ -449,6 +580,53 @@ const cancleCallListForm = (status) => {
 		</div>
 		<div class="font-semibold text-xl">{{ contactsStore.page }}</div>
 		<div class="cursor-pointer" @click="nextPage()">
+			<Icon
+				class="hover:size-[38px]"
+				icon="fa6-solid:circle-arrow-right"
+				style="font-size: 35px; color: #0074b7"
+			/>
+		</div>
+	</div> -->
+
+	<div class="flex justify-center items-center gap-2 mt-[30px] mb-[50px]">
+		<div
+			class="cursor-pointer"
+			@click="prevPage()"
+			:class="{ 'opacity-50': contactsStore.page <= 1 }"
+		>
+			<Icon
+				class="hover:size-[38px]"
+				icon="fa6-solid:circle-arrow-left"
+				style="font-size: 35px; color: #0074b7"
+			/>
+		</div>
+
+		<!-- Page numbers -->
+		<div class="flex gap-2">
+			<template v-for="pageNum in pageNumbers" :key="pageNum">
+				<div v-if="pageNum === '...'" class="px-3 py-1 text-gray-500">
+					{{ pageNum }}
+				</div>
+				<div
+					v-else
+					@click="goToPage(pageNum)"
+					class="px-3 py-1 rounded-md cursor-pointer"
+					:class="[
+						contactsStore.page === pageNum
+							? 'bg-blue-600 text-white'
+							: 'bg-gray-200 hover:bg-gray-300',
+					]"
+				>
+					{{ pageNum }}
+				</div>
+			</template>
+		</div>
+
+		<div
+			class="cursor-pointer"
+			@click="nextPage()"
+			:class="{ 'opacity-50': contactsStore.page >= totalPages }"
+		>
 			<Icon
 				class="hover:size-[38px]"
 				icon="fa6-solid:circle-arrow-right"
@@ -479,6 +657,6 @@ const cancleCallListForm = (status) => {
 
 <style scoped>
 .table-container {
-	overflow-x: auto;
+	overflow-x: none;
 }
 </style>

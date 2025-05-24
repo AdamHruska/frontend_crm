@@ -19,6 +19,9 @@ import AlterPersonForm from "./alterPersonForm.vue";
 const authStore = useAuthStore();
 authStore.loadToken();
 
+import { useToast } from "vue-toastification";
+const toast = useToast();
+
 const contact = ref([]);
 
 const kontakt = ref("");
@@ -29,7 +32,7 @@ const koniec = ref("");
 const poznamka = ref("");
 const volane = ref("");
 const dovolane = ref("");
-const dohodnute = ref("");
+const dohodnute = ref(0);
 const ineBool = ref(false);
 const miesto_stretnutia = ref("");
 const onlineMeeting = ref(false);
@@ -39,6 +42,7 @@ const emailBool = ref(false);
 const email = ref("");
 
 const showAlterButtons = ref(false);
+const originalOnlineMeetingValue = ref(false);
 
 watch(aktivita, (newValue) => {
 	if (newValue === "ine") {
@@ -57,7 +61,7 @@ onMounted(async () => {
 			},
 		}
 	);
-	//console.log("Response:", response.data.activity);
+	console.log("Response:", response.data.activity);
 	activity_creator.value = response.data.activity.created_id;
 	aktivita.value = response.data.activity.aktivita;
 	ina_aktivita.value = response.data.activity.aktivita;
@@ -66,10 +70,16 @@ onMounted(async () => {
 	poznamka.value = response.data.activity.poznamka;
 	volane.value = response.data.activity.volane;
 	dovolane.value = response.data.activity.dovolane;
-	dohodnute.value = response.data.activity.dohodnute;
+	if (response.data.activity.dohodnute === 1) {
+		dohodnute.value = true;
+	} else {
+		dohodnute.value = false;
+	}
+
 	ineBool.value = response.data.activity.ineBool;
 	miesto_stretnutia.value = response.data.activity.miesto_stretnutia;
 	onlineMeeting.value = response.data.activity.onlineMeeting;
+	originalOnlineMeetingValue.value = response.data.activity.onlineMeeting;
 
 	const responseContact = await axios.get(
 		`${config.public.apiUrl}contact/${response.data.activity.contact_id}`,
@@ -85,7 +95,10 @@ onMounted(async () => {
 		emailBool.value = false;
 	} else {
 		email.value = contact.value.email;
+		emailBool.value = true;
 	}
+
+	console.log("skuska id:", extractMicrosoftEventId(miesto_stretnutia.value));
 });
 
 const emit = defineEmits(["cancelAddActivity", "activityAdded", "alterEvents"]);
@@ -102,16 +115,21 @@ function getIdFromString(str) {
 const updateActivity = async () => {
 	changeLoading();
 	event.preventDefault();
-	// if (aktivita.value === "ine") {
-	// 	aktivita.value = ina_aktivita.value;
-	// }
+
+	// Validate email if online meeting is checked and contact doesn't have an email
+	if (onlineMeeting.value && !emailBool.value && !email.value) {
+		alert("Pre online stretnutie je potrebné zadať email kontaktu");
+		changeLoading();
+		return;
+	}
+
 	try {
 		const response = await axios.put(
 			`${config.public.apiUrl}update-activities/${props.activityID}`,
 			{
-				contact_id: getIdFromString(kontakt.value),
-				//email: email.value,
-				aktivita: aktivita.value,
+				contact_id: contact.value.id,
+				aktivita:
+					aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
 				datumCas: datum_cas.value,
 				koniec: koniec.value,
 				poznamka: poznamka.value,
@@ -128,17 +146,91 @@ const updateActivity = async () => {
 			}
 		);
 
-		const responseMail = await axios.patch(
-			`${config.public.apiUrl}contact/${contact.value.id}/email`,
-			{
-				email: email.value,
-			},
-			{
-				headers: {
-					Authorization: `Bearer ${authStore.token}`,
+		// Update email if necessary - only if onlineMeeting is checked and there's a new email to add
+		if (onlineMeeting.value && !emailBool.value && email.value) {
+			console.log("Adding email to contact:", email.value);
+			await axios.patch(
+				`${config.public.apiUrl}contact/${contact.value.id}/email`,
+				{
+					email: email.value,
 				},
+				{
+					headers: {
+						Authorization: `Bearer ${authStore.token}`,
+					},
+				}
+			);
+		}
+
+		// Handle Teams meeting creation/update
+		if (onlineMeeting.value && !originalOnlineMeetingValue.value) {
+			// Only create a new Teams meeting if it wasn't an online meeting before
+			try {
+				const teamsResponse = await axios.post(
+					`${config.public.apiUrl}create-teams-meeting`,
+					{ activityId: props.activityID },
+					{ headers: { Authorization: `Bearer ${authStore.token}` } }
+				);
+
+				console.log("Teams meeting created:", teamsResponse.data);
+
+				// Update the activity with the meeting URL if needed
+				if (teamsResponse.data.joinUrl) {
+					response.data.activity.miesto_stretnutia = teamsResponse.data.joinUrl;
+					// Update the activity again with the meeting URL
+					await axios.put(
+						`${config.public.apiUrl}update-activities/${props.activityID}`,
+						{
+							...response.data.activity,
+							miesto_stretnutia: teamsResponse.data.joinUrl,
+						},
+						{
+							headers: {
+								Authorization: `Bearer ${authStore.token}`,
+							},
+						}
+					);
+				}
+
+				toast.success("Online stretnutie bolo úspešne vytvorené", {
+					position: "top-right",
+					timeout: 5000,
+					closeOnClick: true,
+					pauseOnHover: true,
+					draggable: true,
+					draggablePercent: 60,
+					showCloseButtonOnHover: false,
+					hideProgressBar: false,
+				});
+			} catch (error) {
+				console.error(
+					"Error creating Teams meeting:",
+					error.response?.data || error.message
+				);
+				toast.error("Chyba pri vytváraní online stretnutia", {
+					position: "top-right",
+					timeout: 5000,
+					closeOnClick: true,
+					pauseOnHover: true,
+					draggable: true,
+					draggablePercent: 60,
+					showCloseButtonOnHover: false,
+					hideProgressBar: false,
+				});
 			}
-		);
+		}
+
+		// Display success message
+		toast.success("Aktivita bola úspešne aktualizovaná", {
+			position: "top-right",
+			timeout: 5000,
+			closeOnClick: true,
+			pauseOnHover: true,
+			draggable: true,
+			draggablePercent: 60,
+			showCloseButtonOnHover: false,
+			hideProgressBar: false,
+		});
 
 		const activityIndex = calendarStore.activities.findIndex(
 			(activity) => activity.id === response.data.activity.id
@@ -149,21 +241,6 @@ const updateActivity = async () => {
 			calendarStore.activities.splice(activityIndex, 1, response.data.activity);
 		}
 
-		// const updatedActivity = response.data.activity;
-		// const transformedActivity = transformData([updatedActivity])[0];
-
-		// Find and replace the activity in the store
-		// const activityIndex = calendarStore.activities.findIndex(
-		// 	(activity) => activity.id === updatedActivity.id
-		// );
-
-		// if (activityIndex !== -1) {
-		// 	// Replace the old activity with the transformed one
-		// 	calendarStore.activities.splice(activityIndex, 1, transformedActivity);
-		// }
-
-		console.log("calendarStore.activities", calendarStore.activities);
-
 		emit("activityAdded", response.data.activity);
 		emit("alterEvents", response.data.activity);
 
@@ -172,71 +249,51 @@ const updateActivity = async () => {
 		changeLoading();
 		cancelActivity();
 	} catch (error) {
-		console.error("Error adding activity:", error);
+		console.error("Error updating activity:", error);
+		toast.error(
+			"Nastala chyba pri aktualizácii aktivity: " +
+				(error.response?.data?.error || error.message),
+			{
+				position: "top-right",
+				timeout: 5000,
+				closeOnClick: true,
+				pauseOnHover: true,
+				draggable: true,
+				draggablePercent: 60,
+				showCloseButtonOnHover: false,
+				hideProgressBar: false,
+			}
+		);
+		changeLoading();
 	}
 };
 
-// const transformData = (data) => {
-// 	return data.map((item) => {
-// 		var farba = "";
-// 		const formattedStart = item.datumCas.replace(" ", "T");
-// 		if (item.created_id == userStore.user.id) {
-// 			console.log("porovnanie", item.created_id, " ", userStore.user.id);
-// 			farba = "rgb(37 99 235)";
-// 		} else {
-// 			farba = "red";
-// 		}
-
-// 		console.log("item:", item);
-
-// 		return {
-// 			id: item.id,
-// 			title: item.aktivita,
-// 			start: formattedStart,
-// 			end: item.koniec,
-// 			backgroundColor: farba,
-// 			borderColor: farba,
-// 			user_id: item.created_id,
-// 		};
-// 	});
-// };
 // const deleteActivity = async () => {
 // 	event.preventDefault();
-// 	try {
-// 		// Uncomment and use this when you want to delete from backend
-// 		// const response = await axios.delete(
-// 		// 	`${config.public.apiUrl}delete-activities/${props.activityID}`,
-// 		// 	{
-// 		// 		headers: {
-// 		// 			Authorization: `Bearer ${authStore.token}`,
-// 		// 		},
-// 		// 	}
-// 		// );
 
-// 		// Remove the activity from the calendarStore
-// 		const index = calendarStore.activities.findIndex(
-// 			(activity) => activity.id == props.activityID
-// 		);
-
-// 		if (index !== -1) {
-// 			calendarStore.activities.splice(index, 1);
-// 		}
-
-// 		// Also remove from the parent component's events
-// 		emit("cancelAddActivity");
-// 	} catch (error) {
-// 		console.error("Error deleting activity:", error);
-// 	}
+// 	await calendarStore.deleteActivity(props.activityID);
+// 	emit("cancelAddActivity");
+// 	emit("alterEvents", null);
 // };
 
-const deleteActivity = async () => {
-	event.preventDefault();
+function extractMicrosoftEventId(teamsLink) {
+	if (!teamsLink) return null;
 
-	await calendarStore.deleteActivity(props.activityID);
-	emit("cancelAddActivity");
-	emit("alterEvents", null);
-};
+	// Decode the URL-encoded string
+	const decodedLink = decodeURIComponent(teamsLink);
 
+	// Extract the meeting ID part
+	const match = decodedLink.match(/meetup-join\/(.+?)\//);
+	if (!match) return null;
+
+	const fullMeetingId = match[1];
+
+	// The actual event ID is the Base64 part between "meeting_" and "@thread"
+	const base64IdMatch = fullMeetingId.match(/meeting_(.+?)@thread/);
+	if (!base64IdMatch) return null;
+
+	return base64IdMatch[1]; // Returns "NjA4NDJhYmMtODgyOS00N2VkLThmMGItYjEwMTVjNGYzMTJk"
+}
 const redirectToContact = () => {
 	router.push(`/contact/${contact.value.id}`);
 };
@@ -284,7 +341,6 @@ const isValidUrl = (url) => {
 			<div class="cursor-pointer" @click="cancelActivity()">
 				<Icon icon="fa6-solid:xmark" class="absolute top-4 right-6" />
 			</div>
-
 			<div>
 				<div
 					class="flex gap-3 my-4 cursor-pointer hover:bg-gray-200 p-2 border-b-2 border-black"
@@ -296,17 +352,20 @@ const isValidUrl = (url) => {
 					<div>{{ contact.priezvisko }}</div>
 				</div>
 
-				<label
-					class="text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
-				>
-					Upraviť email ku kontaktu:
-				</label>
-				<input
-					v-model="email"
-					type="email"
-					class="w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500 !text-black"
-					placeholder="Zadajte email ..."
-				/>
+				<div v-if="onlineMeeting">
+					<label
+						class="text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+					>
+						{{ emailBool ? "Email kontaktu:" : "Pridať email ku kontaktu:" }}
+					</label>
+					<input
+						v-model="email"
+						type="email"
+						class="w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500 !text-black"
+						placeholder="Zadajte email ..."
+						required
+					/>
+				</div>
 			</div>
 			<div class="relative z-0 w-full mb-5 mt-2 group">
 				<label
@@ -410,9 +469,8 @@ const isValidUrl = (url) => {
 				>
 			</div>
 
-			<!-- Replace the current miesto_stretnutia input with this code -->
-			<!-- Replace the current miesto_stretnutia input with this code -->
-			<div class="relative z-0 w-full mb-5 group">
+			<!-- Miesto stretnutia section -->
+			<div class="relative z-0 w-full mb-5 group" v-if="!onlineMeeting">
 				<label
 					class="text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
 					>Miesto stretnutia</label
@@ -492,7 +550,7 @@ const isValidUrl = (url) => {
 						>
 						<input
 							type="checkbox"
-							value="1"
+							:value="1"
 							class="sr-only peer"
 							v-model="dohodnute"
 						/>

@@ -16,6 +16,37 @@ export const useContactsStore = defineStore("contacts", {
 	}),
 	actions: {
 		// Fetch contacts from the API using token from authStore
+		async goToPage(pageNumber) {
+			this.loadingState = true;
+			const authStore = useAuthStore();
+			const token = authStore.token;
+
+			if (!token) {
+				console.error("Token not found. Please log in.");
+				return;
+			}
+
+			try {
+				const response = await axios.get(
+					`${config.public.apiUrl}contacts?page=${pageNumber}`,
+					{
+						headers: {
+							Authorization: `Bearer ${authStore.token}`,
+						},
+					}
+				);
+				this.prev_page_url = response.data.contacts.prev_page_url;
+				this.next_page_url = response.data.contacts.next_page_url;
+				this.page = response.data.contacts.current_page;
+				this.contacts = response.data.contacts;
+			} catch (error) {
+				console.error("Error fetching contacts page:", error.response || error);
+				const toast = useToast();
+				toast.error("Nepodarilo sa načítať kontakty");
+			}
+			this.loadingState = false;
+		},
+
 		async fetchContacts() {
 			this.loadingState = true;
 			const authStore = useAuthStore(); // Access authStore
@@ -125,9 +156,45 @@ export const useContactsStore = defineStore("contacts", {
 			this.loadingState = false;
 		},
 
+		// async updatePerson(updatedContact) {
+		// 	this.loadingState = true;
+		// 	try {
+		// 		// Find the index of the contact to update
+		// 		const index = this.contacts.data.findIndex(
+		// 			(person) => person.id === updatedContact.id
+		// 		);
+
+		// 		// If contact is found, replace it with the updated contact
+		// 		if (index !== -1) {
+		// 			// Create a new array to ensure reactivity
+		// 			this.contacts.data = [
+		// 				...this.contacts.data.slice(0, index),
+		// 				{ ...updatedContact },
+		// 				...this.contacts.data.slice(index + 1),
+		// 			];
+		// 		}
+		// 		this.loadingState = false;
+		// 		return true;
+		// 	} catch (error) {
+		// 		console.error("Error updating contact in store:", error);
+		// 		this.loadingState = false;
+		// 		throw error;
+		// 	}
+		// },
+
 		async updatePerson(updatedContact) {
 			this.loadingState = true;
 			try {
+				// Check if contacts and data exist before trying to find the index
+				if (!this.contacts || !this.contacts.data) {
+					console.warn(
+						"Contacts data not initialized. Initializing with the updated contact."
+					);
+					this.contacts = { data: [updatedContact] };
+					this.loadingState = false;
+					return true;
+				}
+
 				// Find the index of the contact to update
 				const index = this.contacts.data.findIndex(
 					(person) => person.id === updatedContact.id
@@ -141,15 +208,20 @@ export const useContactsStore = defineStore("contacts", {
 						{ ...updatedContact },
 						...this.contacts.data.slice(index + 1),
 					];
+				} else {
+					// If contact not found in the array, add it
+					this.contacts.data.push({ ...updatedContact });
 				}
 
+				this.loadingState = false;
 				return true;
 			} catch (error) {
 				console.error("Error updating contact in store:", error);
+				this.loadingState = false;
 				throw error;
 			}
-			this.loadingState = false;
 		},
+
 		addToContactsStore(addedPeople) {
 			const toast = useToast();
 			this.loadingState = true;

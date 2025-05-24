@@ -20,7 +20,7 @@ export default defineNuxtConfig({
 
 	runtimeConfig: {
 		public: {
-			// apiUrl: "https://crm-be-main.vercel.app/",
+			//apiUrl: "https://crm-be-main.vercel.app/",
 			//apiUrl: "http://localhost:8000/",
 			apiUrl: "https://backend.partners-crm.sk/",
 			AZURE_CLIENT_ID: process.env.NUXT_PUBLIC_AZURE_CLIENT_ID,

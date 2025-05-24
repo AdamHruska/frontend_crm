@@ -1,5 +1,6 @@
 <script setup>
 import { Icon } from "@iconify/vue";
+import { computed } from "vue";
 const props = defineProps({
 	event: {
 		type: Object,
@@ -7,11 +8,40 @@ const props = defineProps({
 	},
 });
 
-const emit = defineEmits(["close"]);
+// Ensure all required properties exist with defaults
+const event = computed(() => {
+	return {
+		title: props.event.title || "Untitled Event",
+		start: props.event.start,
+		end: props.event.end,
+		location: props.event.location || "No location",
+		organizator: props.event.organizator || "Not specified",
+		link: props.event.link || "",
+		id: props.event.id || "",
+		attendees: props.event.attendees || [],
+		allDay: props.event.allDay || false,
+	};
+});
 
-const formatDateTime = (date) => {
-	if (!date) return "";
-	return new Date(date).toLocaleString();
+const emit = defineEmits(["close", "deleteMicrosoftEvent"]);
+
+const formatDateTime = (date, isAllDay = false) => {
+	if (!date) return "Not specified";
+
+	try {
+		const dateObj = new Date(date);
+
+		// For all-day events, show only the date without time
+		if (isAllDay) {
+			return dateObj.toLocaleDateString();
+		}
+
+		// For regular events, show date and time
+		return dateObj.toLocaleString();
+	} catch (error) {
+		console.error("Error formatting date:", error);
+		return "Date format error";
+	}
 };
 
 const closeModal = () => {
@@ -37,67 +67,90 @@ const closeModal = () => {
 				</button>
 
 				<!-- Event details -->
-				<h2 class="text-xl font-bold mb-4">{{ event.title }}</h2>
+				<h2 class="text-xl font-bold mb-4">
+					{{ props.event.title || "Untitled Event" }}
+				</h2>
+				<div
+					v-if="props.event.allDay"
+					class="text-sm font-medium text-blue-600 mb-2"
+				>
+					Celodenná udalosť
+				</div>
 			</div>
 
 			<div class="space-y-4">
 				<div class="border-b pb-2">
 					<p class="text-gray-600 font-semibold">Začiatok</p>
-					<p class="font-medium">{{ formatDateTime(event.start) }}</p>
+					<p class="font-medium">
+						{{ formatDateTime(props.event.start, props.event.allDay) }}
+					</p>
 				</div>
 
 				<div class="border-b pb-2">
 					<p class="text-gray-600 font-semibold">Koniec</p>
-					<p class="font-medium">{{ formatDateTime(event.end) }}</p>
+					<p class="font-medium">
+						{{ formatDateTime(props.event.end, props.event.allDay) }}
+					</p>
 				</div>
 
 				<div class="border-b pb-2">
 					<p class="text-gray-600 font-semibold">Organizátor</p>
-					<p class="font-medium">{{ event.organizator }}</p>
-					<!-- <p class="text-gray-600 font-semibold">Email organizátora</p>
-					<p class="font-medium">{{ event.extendedProps.organizer.email }}</p> -->
+					<p class="font-medium">
+						{{ props.event.organizator || "Not specified" }}
+					</p>
 				</div>
 
 				<div class="border-b pb-2">
 					<p class="text-gray-600 font-semibold">Ostatní účastníci</p>
 					<div
-						v-if="event.attendees && event.attendees.length"
-						class="space-y-2 cursor-pointer hover:underline"
+						v-if="props.event.attendees && props.event.attendees.length"
+						class="space-y-2"
 					>
 						<p
-							v-for="(attendee, index) in event.attendees"
+							v-for="(attendee, index) in props.event.attendees"
 							:key="index"
 							class="font-medium"
 						>
 							{{
-								attendee.name === attendee.email
+								attendee && attendee.name === attendee.email
 									? attendee.email
-									: `${attendee.name} - ${attendee.email}`
+									: attendee && attendee.name && attendee.email
+									? `${attendee.name} - ${attendee.email}`
+									: attendee && attendee.name
+									? attendee.name
+									: attendee && attendee.email
+									? attendee.email
+									: "Unknown attendee"
 							}}
 						</p>
 					</div>
 					<div v-else class="font-medium text-gray-500">Žiadni účastníci</div>
 				</div>
 
-				<div v-if="event.id" class="border-b pb-2">
+				<div class="border-b pb-2">
 					<p class="text-gray-600 font-semibold">Lokalita</p>
-					<p class="font-medium break-words">{{ event.location }}</p>
+					<p class="font-medium break-words">
+						{{ props.event.location || "Not specified" }}
+					</p>
 				</div>
-				<div v-if="event.id" class="border-b pb-2">
+
+				<div class="border-b pb-2">
 					<p class="text-gray-600 font-semibold">Link na meeting</p>
 					<a
-						v-if="event.link"
-						:href="event.link"
+						v-if="props.event.link"
+						:href="props.event.link"
 						class="font-medium break-words text-blue-600 hover:underline"
 						target="_blank"
 						rel="noopener noreferrer"
 					>
-						{{ event.link }}
+						{{ props.event.link }}
 					</a>
-					<div v-else>Link nie je určený</div>
+					<div v-else class="font-medium text-gray-500">Link nie je určený</div>
 				</div>
+
 				<button
-					@click="$emit('deleteMicrosoftEvent', event.id)"
+					v-if="props.event.id"
+					@click="$emit('deleteMicrosoftEvent', props.event.id)"
 					class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 flex items-center float-right"
 				>
 					<Icon icon="mdi:delete" class="mr-2" />

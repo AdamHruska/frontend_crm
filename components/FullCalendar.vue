@@ -30,6 +30,8 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { _backgroundColor } from "#tailwind-config/theme";
 import { toRaw } from "vue";
+import { useToast } from "vue-toastification";
+const toast = useToast();
 const rawData = ref([]);
 
 const addActivity = ref(false);
@@ -51,50 +53,9 @@ const toggleAddActivity = () => {
 const events = ref([]);
 //const events2 = ref({});
 
-// const calendarOptions = ref({
-// 	plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
-// 	headerToolbar: {
-// 		left: "prev,next today",
-// 		center: "title",
-// 		right: "dayGridMonth,timeGridWeek,timeGridDay",
-// 	},
-// 	initialView: "timeGridWeek",
-// 	slotMinTime: "06:00:00",
-// 	slotMaxTime: "23:00:00",
-// 	scrollTime: "08:00:00",
-// 	initialEvents: [],
-// 	events: events,
-// 	editable: true,
-// 	selectable: true,
-// 	selectMirror: true,
-// 	dayMaxEvents: true,
-// 	weekends: true,
-// 	select: handleDateSelect,
-// 	eventClick: handleEventClick,
-// 	eventsSet: handleEvents,
-// 	slotDuration: "00:30:00",
-// 	allDaySlot: true,
-// 	nowIndicator: true,
-// 	// Time format settings
-// 	eventTimeFormat: {
-// 		hour: "2-digit",
-// 		minute: "2-digit",
-// 		hour12: false,
-// 	},
-// 	slotLabelFormat: {
-// 		hour: "2-digit",
-// 		minute: "2-digit",
-// 		hour12: false,
-// 	},
-// 	// Locale settings for European date format
-// 	locale: "sk", // Slovak locale for European format
-// 	firstDay: 1, // Monday as first day of week
-// });
-
 const currentLoadedMonth = ref(null);
 const currentLoadedYear = ref(null);
 
-// posledna verzia
 // const calendarOptions = ref({
 // 	plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
 // 	headerToolbar: {
@@ -116,12 +77,11 @@ const currentLoadedYear = ref(null);
 // 	select: handleDateSelect,
 // 	eventClick: handleEventClick,
 // 	eventsSet: handleEvents,
-// 	eventDrop: handleEventDrop, // Add this handler for drag and drop
-// 	eventResize: handleEventResize, // Add this handler for resizing events
+// 	eventDrop: handleEventDrop,
+// 	eventResize: handleEventResize,
 // 	slotDuration: "00:30:00",
 // 	allDaySlot: true,
 // 	nowIndicator: true,
-// 	// Time format settings
 // 	eventTimeFormat: {
 // 		hour: "2-digit",
 // 		minute: "2-digit",
@@ -132,23 +92,22 @@ const currentLoadedYear = ref(null);
 // 		minute: "2-digit",
 // 		hour12: false,
 // 	},
-// 	// Locale settings for European date format
-// 	locale: "sk", // Slovak locale for European format
-// 	firstDay: 1, // Monday as first day of week
+// 	locale: "sk",
+// 	firstDay: 1,
 // 	datesSet: (dateInfo) => {
 // 		// Extract the current view's start date
 // 		const currentDate = dateInfo.view.currentStart;
 
 // 		// Get the month (0-11) and year
-// 		const month = currentDate.getMonth() + 1; // FullCalendar uses 0-indexed months
+// 		const month = currentDate.getMonth() + 1;
 // 		const year = currentDate.getFullYear();
 
 // 		// Check if this is a new month or year
 // 		if (
-// 			month !== currentLoadedMonth.value ||
+// 			month !== currentLoadedMonth.value + 2 ||
 // 			year !== currentLoadedYear.value
 // 		) {
-// 			// Call your fetchMicrosoftEvents function with current month and year
+// 			// Call fetchMicrosoftEvents function with current month and year
 // 			fetchMicrosoftEvents(month, year);
 
 // 			// Update the current loaded month and year
@@ -174,7 +133,7 @@ const calendarOptions = ref({
 	editable: true,
 	selectable: true,
 	selectMirror: true,
-	dayMaxEvents: true,
+	dayMaxEvents: 1,
 	weekends: true,
 	select: handleDateSelect,
 	eventClick: handleEventClick,
@@ -182,7 +141,8 @@ const calendarOptions = ref({
 	eventDrop: handleEventDrop,
 	eventResize: handleEventResize,
 	slotDuration: "00:30:00",
-	allDaySlot: true,
+	allDaySlot: true, // This is already set correctly
+	allDayText: "Celý deň", // Slovak for "All Day"
 	nowIndicator: true,
 	eventTimeFormat: {
 		hour: "2-digit",
@@ -217,16 +177,67 @@ const calendarOptions = ref({
 			currentLoadedYear.value = year;
 		}
 	},
+	// Add this event render function to verify all-day events are being processed correctly
+	eventDidMount: (info) => {
+		// Log event details for debugging
+		console.log(`Event: ${info.event.title}`);
+		console.log(`Is all-day: ${info.event.allDay}`);
+
+		// You could also visually mark all-day events differently if needed
+		if (info.event.allDay) {
+			info.el.style.fontWeight = "bold";
+		}
+	},
 });
 
-function handleEventDrop(dropInfo) {
+// function handleEventDrop(dropInfo) {
+// 	const eventId = dropInfo.event.id;
+// 	const newStart = dropInfo.event.start;
+// 	const newEnd = dropInfo.event.end;
+
+// 	// Check if this is a Microsoft event
+// 	if (dropInfo.event.extendedProps.source === "microsoft") {
+// 		updateMicrosoftEvent(eventId, newStart, newEnd, dropInfo.event.title);
+// 		return;
+// 	}
+
+// 	// Check if user has permission to edit this event
+// 	const event = rawData.value.find((event) => event.id == eventId);
+// 	if (event && event.created_id !== userStore.user.id) {
+// 		alert("You don't have permission to edit this event.");
+// 		dropInfo.revert(); // Revert the drag if no permission
+// 		return;
+// 	}
+
+// 	// Format dates for backend
+// 	const formattedStart = formatDateForBackend(newStart);
+// 	const formattedEnd = formatDateForBackend(newEnd);
+
+// 	// Update the event in the backend
+// 	updateEventInBackend(eventId, formattedStart, formattedEnd);
+// }
+
+// Troubleshooting version of handleEventDrop with detailed logging
+
+async function handleEventDrop(dropInfo) {
 	const eventId = dropInfo.event.id;
 	const newStart = dropInfo.event.start;
-	const newEnd = dropInfo.event.end;
+	const newEnd = dropInfo.event.end ?? newStart; // fallback if end is null
 
 	// Check if this is a Microsoft event
 	if (dropInfo.event.extendedProps.source === "microsoft") {
-		updateMicrosoftEvent(eventId, newStart, newEnd, dropInfo.event.title);
+		try {
+			await updateMicrosoftEvent(
+				eventId,
+				newStart.toISOString(),
+				newEnd.toISOString(),
+				dropInfo.event.title
+			);
+		} catch (error) {
+			console.error("Failed to update Microsoft event:", error);
+			alert("Failed to update Microsoft event.");
+			dropInfo.revert(); // revert UI
+		}
 		return;
 	}
 
@@ -234,17 +245,112 @@ function handleEventDrop(dropInfo) {
 	const event = rawData.value.find((event) => event.id == eventId);
 	if (event && event.created_id !== userStore.user.id) {
 		alert("You don't have permission to edit this event.");
-		dropInfo.revert(); // Revert the drag if no permission
+		dropInfo.revert();
 		return;
 	}
 
-	// Format dates for backend
+	// Format for backend
 	const formattedStart = formatDateForBackend(newStart);
 	const formattedEnd = formatDateForBackend(newEnd);
 
-	// Update the event in the backend
-	updateEventInBackend(eventId, formattedStart, formattedEnd);
+	try {
+		await updateEventInBackend(eventId, formattedStart, formattedEnd);
+	} catch (error) {
+		console.error("Failed to update local event:", error);
+		alert("Failed to update event. Please try again.");
+		dropInfo.revert(); // revert UI
+	}
 }
+
+async function updateEventInBackend(eventId, formattedStart, formattedEnd) {
+	const calendarStore = useCalendarstore();
+	const authStore = useAuthStore();
+	const config = useRuntimeConfig();
+
+	const updatedEvent = {
+		id: eventId,
+		datumCas: formattedStart,
+		koniec: formattedEnd,
+	};
+
+	console.log("Updating event in backend:", updatedEvent);
+
+	try {
+		const response = await axios.put(
+			`${config.public.apiUrl}update-activities/${eventId}`,
+			updatedEvent,
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+					"Content-Type": "application/json",
+				},
+			}
+		);
+
+		console.log("Backend update response:", response.data);
+		if (response.data.status !== 200) {
+			toast.error("Failed to update event: ");
+		} else {
+			toast.success("Event updated successfully");
+			// Update the local data
+			const updatedEvent = response.data.activity;
+
+			// Update in rawData
+			rawData.value = rawData.value.map((event) =>
+				event.id == eventId ? updatedEvent : event
+			);
+
+			// No need to update events.value as FullCalendar already updated the UI
+		}
+		return response.data;
+	} catch (error) {
+		console.error("Error updating event in backend:", error);
+		throw error;
+	}
+}
+
+// async function handleEventDrop(dropInfo) {
+// 	const eventId = dropInfo.event.id;
+// 	const newStart = dropInfo.event.start;
+// 	const newEnd = dropInfo.event.end ?? newStart; // fallback if end is null
+
+// 	// Check if this is a Microsoft event
+// 	if (dropInfo.event.extendedProps.source === "microsoft") {
+// 		try {
+// 			await updateMicrosoftEvent(
+// 				eventId,
+// 				newStart.toISOString(),
+// 				newEnd.toISOString(),
+// 				dropInfo.event.title
+// 			);
+// 		} catch (error) {
+// 			console.error("Failed to update Microsoft event:", error);
+// 			alert("Failed to update Microsoft event.");
+// 			dropInfo.revert(); // revert UI
+// 		}
+// 		return;
+// 	}
+
+// 	// Check if user has permission to edit this event
+// 	const event = rawData.value.find((event) => event.id == eventId);
+// 	if (event && event.created_id !== userStore.user.id) {
+// 		alert("You don't have permission to edit this event.");
+// 		dropInfo.revert();
+// 		return;
+// 	}
+
+// 	// Format for backend
+// 	const formattedStart = formatDateForBackend(newStart);
+// 	const formattedEnd = formatDateForBackend(newEnd);
+
+// 	try {
+// 		await updateEventInBackend(eventId, formattedStart, formattedEnd);
+// 	} catch (error) {
+// 		console.error("Failed to update local event:", error);
+// 		alert("Failed to update event. Please try again.");
+// 		dropInfo.revert(); // revert UI
+// 	}
+// }
 
 function handleEventResize(resizeInfo) {
 	const eventId = resizeInfo.event.id;
@@ -279,48 +385,6 @@ function handleEventResize(resizeInfo) {
 function formatDateForBackend(date) {
 	// Convert date to 'YYYY-MM-DD HH:MM:SS' format
 	return format(date, "yyyy-MM-dd HH:mm:ss");
-}
-
-async function updateEventInBackend(eventId, newStart, newEnd) {
-	loadingStateCalendar.value = true;
-
-	try {
-		const response = await axios.put(
-			`${config.public.apiUrl}update-activities/${eventId}`,
-			{
-				datumCas: newStart,
-				koniec: newEnd,
-			},
-			{
-				headers: {
-					Authorization: `Bearer ${authStore.token}`,
-					"Content-Type": "application/json",
-				},
-			}
-		);
-
-		if (response.data.status === "success") {
-			// Update the local data
-			const updatedEvent = response.data.activity;
-
-			// Update in rawData
-			rawData.value = rawData.value.map((event) =>
-				event.id == eventId ? updatedEvent : event
-			);
-
-			// No need to update events.value as FullCalendar already updated the UI
-		} else {
-			// If there was an error, revert the change
-			alert("Failed to update event: " + response.data.message);
-			calendarOptions.value.events = [...events.value]; // Force refresh
-		}
-	} catch (error) {
-		console.error("Error updating event:", error);
-		alert("An error occurred while updating the event. Please try again.");
-		calendarOptions.value.events = [...events.value]; // Force refresh
-	} finally {
-		loadingStateCalendar.value = false;
-	}
 }
 
 async function updateEventEndInBackend(eventId, newEnd) {
@@ -407,67 +471,11 @@ async function updateMicrosoftEvent(eventId, newStart, newEnd, title) {
 	}
 }
 
-// zobrazenie roznych hranic casov
-// initialView: "timeGridWeek", // Changed from dayGridWeek to timeGridWeek
-// slotMinTime: "06:00:00", // Optional: Set start time of day
-// slotMaxTime: "22:00:00", // Optional: Set end time of day
-// scrollTime: "08:00:00", // Optional: Set initial scroll time
-// initialEvents: [],
-
-// onMounted(async () => {
-// 	if (calendarStore.activities.length === 0) {
-// 		await calendarStore.fetchActivities();
-// 	}
-
-// 	eventBus.on("deleteSharedEvents", ({ userId }) => {
-// 		deleteSharedEventsId(userId);
-// 	});
-// 	rawData.value = calendarStore.activities;
-// 	events.value = transformData(rawData.value);
-// 	const sharedACT = transformData(
-// 		flattenActivities(calendarStore.shared_activities)
-// 	);
-// 	events.value = [...events.value, ...sharedACT];
-
-// 	calendarOptions.value.events = events.value;
-// });
-
-// In your calendar component, update the onMounted section:
-// onMounted(async () => {
-// 	if (calendarStore.activities.length === 0) {
-// 		await calendarStore.fetchActivities();
-// 	}
-
-// 	eventBus.on("deleteSharedEvents", ({ userId }) => {
-// 		// Filter out events from the deleted user
-// 		events.value = events.value.filter((event) => event.user_id !== userId);
-
-// 		// Update calendar options to refresh the view
-// 		calendarOptions.value = {
-// 			...calendarOptions.value,
-// 			events: events.value,
-// 		};
-// 	});
-
-// 	rawData.value = calendarStore.activities;
-// 	events.value = transformData(rawData.value);
-// 	const sharedACT = transformData(
-// 		flattenActivities(calendarStore.shared_activities)
-// 	);
-// 	events.value = [...events.value, ...sharedACT];
-
-// 	calendarOptions.value.events = events.value;
-// });
-
-// onUnmounted(() => {
-// 	eventBus.off("deleteSharedEvents");
-// });
-
 onMounted(async () => {
 	if (calendarStore.activities.length === 0) {
 		await calendarStore.fetchActivities();
 	}
-	await fetchMicrosoftEvents(currentLoadedMonth.value, currentLoadedYear.value);
+	//await fetchMicrosoftEvents(currentLoadedMonth.value, currentLoadedYear.value);
 
 	// Set up event listener for deleteSharedEvents
 	eventBus.on("deleteSharedEvents", ({ userId }) => {
@@ -600,48 +608,13 @@ function handleEventClick(clickInfo) {
 	}
 }
 
-// function handleEventClick(clickInfo) {
-// 	activityID.value = clickInfo.event._def.publicId;
-// 	eventType.value =
-// 		clickInfo.event.extendedProps.source === "microsoft"
-// 			? "microsoft"
-// 			: "regular";
-
-// 	if (eventType.value === "microsoft") {
-// 		selectedMicrosoftEvent.value = {
-// 			id: clickInfo.event.id,
-// 			title: clickInfo.event.title,
-// 			start: clickInfo.event.start,
-// 			end: clickInfo.event.end,
-// 			location: clickInfo.event.extendedProps.location || "",
-// 		};
-// 		showMicrosoftEvents.value = true; // Make sure we set this to true
-// 		toggleMicrosoftEvents();
-// 	} else {
-// 		toggleUpdateActivity();
-// 	}
-// }
-
-// function handleEventClick(clickInfo) {
-// 	activityID.value = clickInfo.event._def.publicId;
-// 	// Add check for Microsoft events (they won't have a user_id)
-// 	eventType.value =
-// 		clickInfo.event.extendedProps.source === "microsoft"
-// 			? "microsoft"
-// 			: "regular";
-// 	if (eventType.value !== "microsoft") {
-// 		toggleUpdateActivity();
-// 	} else {
-// 		toggleMicrosoftEvents();
-// 	}
-// }
-
 const toggleMicrosoftEvents = () => {
 	showMicrosoftEvents.value = !showMicrosoftEvents.value;
 };
 
 function handleEvents(events) {
 	currentEvents.value = events;
+	console.log("Current events:", currentEvents.value);
 }
 
 const flattenActivities = (activitiesObject) => {
@@ -708,16 +681,33 @@ const addSharedEventsId = async (userId) => {
 	loadingStateCalendar.value = false;
 };
 
+// const recentEvents = computed(() => {
+// 	const now = new Date();
+// 	const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+// 	const endOfDay = new Date(now);
+// 	endOfDay.setHours(23, 59, 59, 999); // Set to the end of the current day
+
+// 	return currentEvents.value.filter((event) => {
+// 		const eventStart = new Date(event.start);
+// 		return eventStart >= twoHoursAgo && eventStart <= endOfDay;
+// 	});
+// });
+
 const recentEvents = computed(() => {
 	const now = new Date();
 	const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
 	const endOfDay = new Date(now);
 	endOfDay.setHours(23, 59, 59, 999); // Set to the end of the current day
 
-	return currentEvents.value.filter((event) => {
-		const eventStart = new Date(event.start);
-		return eventStart >= twoHoursAgo && eventStart <= endOfDay;
-	});
+	return currentEvents.value
+		.filter((event) => {
+			const eventStart = new Date(event.start);
+			return eventStart >= twoHoursAgo && eventStart <= endOfDay;
+		})
+		.sort((a, b) => {
+			// Sort by start time in ascending order
+			return new Date(a.start) - new Date(b.start);
+		});
 });
 
 const formatDate = (dateString) => {
@@ -844,127 +834,6 @@ const loadingStateCalendar = ref(false);
 
 const areMicrosofEventsShown = ref(false);
 
-// const fetchMicrosoftEvents = async () => {
-// 	loadingStateCalendar.value = true;
-// 	try {
-// 		const response = await axios.get(`${config.public.apiUrl}get-events`);
-// 		console.log("Microsoft events:", response);
-// 		if (response.data.value) {
-// 			// Transform Microsoft events to match calendar format
-// 			const microsoftEvents = response.data.value.map((event) => ({
-// 				id: event.id,
-// 				title: event.subject,
-// 				start: event.start.dateTime,
-// 				end: event.end.dateTime,
-// 				link: event.onlineMeeting?.joinUrl || "",
-// 				backgroundColor: "rgb(168 85 247)",
-// 				borderColor: "rgb(168 85 247)",
-// 				source: "microsoft",
-// 				extendedProps: {
-// 					source: "microsoft",
-// 					organizer: {
-// 						name: event.organizer?.emailAddress?.name || "Unknown",
-// 						email: event.organizer?.emailAddress?.address || "No email",
-// 					},
-// 					attendees:
-// 						event.attendees?.map((attendee) => ({
-// 							name: attendee.emailAddress?.name,
-// 							email: attendee.emailAddress?.address,
-// 							response: attendee.status?.response,
-// 							type: attendee.type,
-// 						})) || [],
-// 					location: event.location?.displayName || "No location",
-// 					link: event.onlineMeeting?.joinUrl || "",
-// 				},
-// 			}));
-
-// 			if (areMicrosofEventsShown.value) {
-// 				// Remove Microsoft events if they're currently shown
-// 				events.value = events.value.filter(
-// 					(event) => event.source !== "microsoft"
-// 				);
-// 			} else {
-// 				// Add Microsoft events
-// 				events.value = [...events.value, ...microsoftEvents];
-// 			}
-
-// 			// Update calendar options to refresh the view
-// 			calendarOptions.value = {
-// 				...calendarOptions.value,
-// 				events: events.value,
-// 			};
-
-// 			// Toggle visibility state
-// 			areMicrosofEventsShown.value = !areMicrosofEventsShown.value;
-// 		}
-// 	} catch (error) {
-// 		console.error("Error details:", {
-// 			message: error.message,
-// 			response: error.response?.data,
-// 			status: error.response?.status,
-// 		});
-// 	}
-// 	loadingStateCalendar.value = false;
-// };
-
-//posledna verzia
-// const fetchMicrosoftEvents = async (month, year) => {
-// 	loadingStateCalendar.value = true;
-// 	try {
-// 		const response = await axios.get(`${config.public.apiUrl}get-events`, {
-// 			params: { month, year },
-// 		});
-// 		console.log("Microsoft events:", response);
-
-// 		// Transform Microsoft events to match calendar format
-// 		const microsoftEvents = response.data.value.map((event) => ({
-// 			id: event.id,
-// 			title: event.subject,
-// 			start: event.start.dateTime,
-// 			end: event.end.dateTime,
-// 			link: event.onlineMeeting?.joinUrl || "",
-// 			backgroundColor: "rgb(168 85 247)",
-// 			borderColor: "rgb(168 85 247)",
-// 			source: "microsoft",
-// 			extendedProps: {
-// 				source: "microsoft",
-// 				organizer: {
-// 					name: event.organizer?.emailAddress?.name || "Unknown",
-// 					email: event.organizer?.emailAddress?.address || "No email",
-// 				},
-// 				attendees:
-// 					event.attendees?.map((attendee) => ({
-// 						name: attendee.emailAddress?.name,
-// 						email: attendee.emailAddress?.address,
-// 						response: attendee.status?.response,
-// 						type: attendee.type,
-// 					})) || [],
-// 				location: event.location?.displayName || "No location",
-// 				link: event.onlineMeeting?.joinUrl || "",
-// 			},
-// 		}));
-
-// 		// Prevent duplicate events by checking existing IDs
-// 		const existingEventIds = new Set(events.value.map((event) => event.id));
-// 		const newEvents = microsoftEvents.filter(
-// 			(event) => !existingEventIds.has(event.id)
-// 		);
-
-// 		// Add only new events while keeping old ones
-// 		events.value = [...events.value, ...newEvents];
-
-// 		// Update calendar options to refresh the view
-// 		calendarOptions.value = { ...calendarOptions.value, events: events.value };
-
-// 		loadingStateCalendar.value = false;
-// 		return newEvents;
-// 	} catch (error) {
-// 		console.error("Error fetching Microsoft events:", error);
-// 		loadingStateCalendar.value = false;
-// 		return [];
-// 	}
-// };
-
 const fetchMicrosoftEvents = async (month, year) => {
 	loadingStateCalendar.value = true;
 
@@ -987,126 +856,8 @@ const fetchMicrosoftEvents = async (month, year) => {
 	return uniqueNewEvents;
 };
 
-//test
-// const fetchMicrosoftEvents = async () => {
-// 	loadingStateCalendar.value = true;
-// 	let allEvents = [];
-// 	let nextLink = `${config.public.apiUrl}get-events`;
-
-// 	try {
-// 		while (nextLink) {
-// 			const response = await axios.get(nextLink);
-// 			console.log("Microsoft events response:", response);
-
-// 			if (response.data.value) {
-// 				// Transform Microsoft events to match calendar format
-// 				const microsoftEvents = response.data.value.map((event) => ({
-// 					id: event.id,
-// 					title: event.subject,
-// 					start: event.start.dateTime,
-// 					end: event.end.dateTime,
-// 					link: event.onlineMeetingUrl ?? "", // Ensure no null values
-// 					backgroundColor: "rgb(168 85 247)",
-// 					borderColor: "rgb(168 85 247)",
-// 					source: "microsoft",
-// 					extendedProps: {
-// 						source: "microsoft",
-// 						organizer: {
-// 							name: event.organizer?.emailAddress?.name || "Unknown",
-// 							email: event.organizer?.emailAddress?.address || "No email",
-// 						},
-// 						attendees:
-// 							event.attendees?.map((attendee) => ({
-// 								name: attendee.emailAddress?.name,
-// 								email: attendee.emailAddress?.address,
-// 								response: attendee.status?.response,
-// 								type: attendee.type,
-// 							})) || [],
-// 						location: event.location?.displayName || "No location",
-// 						link: event.onlineMeetingUrl ?? "", // Ensure no null values
-// 					},
-// 				}));
-
-// 				// Add events to the list
-// 				allEvents = [...allEvents, ...microsoftEvents];
-
-// 				// Check if there are more pages to fetch
-// 				nextLink = response.data["@odata.nextLink"] || null;
-// 			} else {
-// 				nextLink = null;
-// 			}
-// 		}
-
-// 		if (areMicrosofEventsShown.value) {
-// 			// Remove Microsoft events if they're currently shown
-// 			events.value = events.value.filter(
-// 				(event) => event.source !== "microsoft"
-// 			);
-// 		} else {
-// 			// Add all fetched events
-// 			events.value = [...events.value, ...allEvents];
-// 		}
-
-// 		// Update calendar options to refresh the view
-// 		calendarOptions.value = {
-// 			...calendarOptions.value,
-// 			events: events.value,
-// 		};
-
-// 		// Toggle visibility state
-// 		areMicrosofEventsShown.value = !areMicrosofEventsShown.value;
-// 	} catch (error) {
-// 		console.error("Error details:", {
-// 			message: error.message,
-// 			response: error.response?.data,
-// 			status: error.response?.status,
-// 		});
-// 	}
-// 	loadingStateCalendar.value = false;
-// };
-
-// const microsoftEvents = response.data.value.map((event) => ({
-//     id: event.id,
-//     title: event.subject,
-//     start: event.start.dateTime,
-//     end: event.end.dateTime,
-//     link: event.onlineMeetingUrl,
-//     backgroundColor: "rgb(168 85 247)",
-//     borderColor: "rgb(168 85 247)",
-//     source: "microsoft",
-//     extendedProps: {
-//         source: "microsoft",
-//         organizer: {
-//             name: event.organizer?.emailAddress?.name || "Unknown",
-//             email: event.organizer?.emailAddress?.address || "No email",
-//         },
-//         attendees:
-//             event.attendees?.map((attendee) => ({
-//                 name: attendee.emailAddress?.name,
-//                 email: attendee.emailAddress?.address,
-//                 response: attendee.status?.response,
-//                 type: attendee.type,
-//             })) || [],
-//         location: event.location?.displayName || "No location",
-//         link: event.onlineMeetingUrl,
-//     },
-// }));
-
 const eventType = ref("regular");
 
-// const clientId = "47f56431-555e-4b05-b1b3-c8e6e79e7f4d";
-// const redirectUri = encodeURIComponent(
-// 	"http://localhost:8000/auth/callbackAzure"
-// );
-// const scope =
-// 	"offline_access Calendars.Read Calendars.ReadWrite Calendars.Read.Shared User.Read Mail.Read OnlineMeetings.Read OnlineMeetings.ReadWrite";
-
-// const loginWithMicrosoft = () => {
-// 	const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}&response_mode=query`;
-// 	window.location.href = authUrl;
-// 	loginWithMicrosoft.value = true;
-// };
-//acanocjnscsc
 const loginWithMicrosoft = () => {
 	const config = useRuntimeConfig();
 
@@ -1129,34 +880,6 @@ const loginWithMicrosoft = () => {
 	)}&response_mode=query`;
 	window.location.href = authUrl;
 };
-
-// const loginWithMicrosoft = () => {
-// 	const config = useRuntimeConfig();
-// 	const clientId = config.public.AZURE_CLIENT_ID;
-// 	const redirectUri = encodeURIComponent(config.public.AZURE_REDIRECT_URI);
-// 	const scope = encodeURIComponent(config.public.AZURE_SCOPE);
-
-// 	const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}&response_mode=query`;
-
-// 	// Open the popup
-// 	const popup = window.open(authUrl, "MicrosoftLogin", "width=600,height=600");
-
-// 	// Listen for messages from the popup
-// 	window.addEventListener("message", (event) => {
-// 		if (event.data.type === "microsoft-auth-callback") {
-// 			// Close the popup
-// 			popup.close();
-
-// 			// Process the auth code
-// 			const code = event.data.code;
-// 			// Send the code to your backend
-// 			axios.post("/api/process-microsoft-auth", { code }).then((response) => {
-// 				// Handle successful authentication
-// 				console.log("Authentication successful:", response.data);
-// 			});
-// 		}
-// 	});
-// };
 
 const createMicrosoftEvent = ref(false);
 const selectedDate = ref("");
@@ -1416,6 +1139,7 @@ b {
 	min-height: 100%;
 	font-family: Arial, Helvetica Neue, Helvetica, sans-serif;
 	font-size: 14px;
+	width: 100%;
 }
 
 .demo-app-sidebar {
@@ -1423,6 +1147,7 @@ b {
 	line-height: 1.5;
 	background: #eaf9ff;
 	border-right: 1px solid #d3e2e8;
+	flex-shrink: 0;
 }
 
 .demo-app-sidebar-section {
@@ -1432,11 +1157,23 @@ b {
 .demo-app-main {
 	flex-grow: 1;
 	padding: 3em;
+	width: calc(100% - 300px); /* Calculate remaining width */
+	display: flex; /* Enable flexbox for this container */
+	justify-content: center; /* Center horizontally */
 }
 
 .fc {
-	max-width: 1100px;
-	margin: 0 auto;
+	max-width: none;
+	width: 100%; /* Take full width of parent */
+	margin: 0;
+}
+
+.demo-app-calendar {
+	width: 100%;
+}
+
+.fc-view-harness {
+	width: 100% !important;
 }
 
 .special-component {

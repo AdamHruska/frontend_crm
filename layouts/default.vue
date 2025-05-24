@@ -123,6 +123,21 @@
 						/>
 					</NuxtLink>
 				</UTooltip>
+
+				<UTooltip text="ToDo List" :ui="{ background: '', color: '' }" class="">
+					<NuxtLink
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
+						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'todo' }"
+						to="/todo"
+						@click="setActiveTab('todo')"
+					>
+						<Icon
+							icon="material-symbols:event-list"
+							style="font-size: 36px"
+							class="text-white"
+						/>
+					</NuxtLink>
+				</UTooltip>
 			</div>
 
 			<!-- Bottom Navigation Item -->

@@ -51,15 +51,10 @@ const dateOnly = ref("");
 
 watch(datum_cas, (newValue) => {
 	const startPlusHour = add(parseISO(newValue), { hours: 1 });
-
 	koniec.value = format(startPlusHour, "yyyy-MM-dd'T'HH:mm");
-
 	dateOnly.value = format(new Date(datum_cas.value), "yyyy-MM-dd");
 	dateOnly.value = String(dateOnly.value);
-	console.log("dateOnly", dateOnly.value);
 	if (manualChangeCount.value > 1) {
-		// Your custom function for manual changes
-		console.log("Datum_cas changed manually:");
 		showCalendar.value = true;
 	}
 	manualChangeCount.value = 10;
@@ -92,7 +87,7 @@ const findPerson = async (id) => {
 			},
 		});
 		if (response.data && response.data.contact) {
-			contact.value = [response.data.contact]; // Wrap the contact in an array
+			contact.value = [response.data.contact];
 		}
 	} catch (error) {
 		console.error("Error fetching contact:", error);
@@ -107,12 +102,35 @@ const cancelActivity = () => {
 
 const addActivity = async () => {
 	event.preventDefault();
+
+	// Validate email for online meetings
+	if (onlineMeeting.value) {
+		const hasEmail =
+			emailBool.value || (email.value && email.value.trim() !== "");
+		if (!hasEmail) {
+			toast.error("Pre online stretnutie je potrebné zadať email", {
+				position: "top-right",
+				timeout: 5000,
+				closeOnClick: true,
+				pauseOnHover: true,
+				draggable: true,
+				draggablePercent: 60,
+				showCloseButtonOnHover: false,
+				hideProgressBar: false,
+			});
+			return; // Stop execution if validation fails
+		}
+	}
+
 	if (aktivita.value === "ine") {
 		aktivita.value = ina_aktivita.value;
 	}
+
 	if (onlineMeeting.value) {
-		miesto_stretnutia.value = "Online Meeting " + contact.value[0].email;
+		miesto_stretnutia.value =
+			"Online Meeting " + (email.value || contact.value[0].email);
 	}
+
 	try {
 		const response = await axios.post(
 			`${config.public.apiUrl}add-activity`,
@@ -146,21 +164,11 @@ const addActivity = async () => {
 				showCloseButtonOnHover: false,
 				hideProgressBar: false,
 			});
-		} else {
-			toast.error("Chyba pri pridávaní aktivity", {
-				position: "top-right",
-				timeout: 5000,
-				closeOnClick: true,
-				pauseOnHover: true,
-				draggable: true,
-				draggablePercent: 60,
-				showCloseButtonOnHover: false,
-				hideProgressBar: false,
-			});
 		}
 
-		if (!emailBool.value && onlineMeeting.value) {
-			const emailResponse = await axios.patch(
+		// Update email if needed
+		if (!emailBool.value && onlineMeeting.value && email.value) {
+			await axios.patch(
 				`${config.public.apiUrl}contact/${props.contact_id}/email`,
 				{
 					email: email.value,
@@ -174,7 +182,6 @@ const addActivity = async () => {
 		}
 
 		if (onlineMeeting.value) {
-			console.log("Creating Teams meeting...");
 			try {
 				const teamsResponse = await axios.post(
 					`${config.public.apiUrl}create-teams-meeting`,
@@ -182,36 +189,39 @@ const addActivity = async () => {
 					{ headers: { Authorization: `Bearer ${authStore.token}` } }
 				);
 
-				console.log("Teams meeting created:", teamsResponse.data);
-
-				// Update the activity with the meeting URL if needed
 				if (teamsResponse.data.joinUrl) {
 					response.data.activity.miesto_stretnutia = teamsResponse.data.joinUrl;
 				}
 			} catch (error) {
-				console.error(
-					"Error creating Teams meeting:",
-					error.response?.data || error.message
-				);
-				// Consider showing an error message to the user here
+				console.error("Error creating Teams meeting:", error);
+				toast.error("Chyba pri vytváraní online stretnutia", {
+					position: "top-right",
+					timeout: 5000,
+					closeOnClick: true,
+					pauseOnHover: true,
+					draggable: true,
+					draggablePercent: 60,
+					showCloseButtonOnHover: false,
+					hideProgressBar: false,
+				});
 			}
 		}
 
 		calendarStore.activities.push(response.data.activity);
-		// toast.success("Aktivita bola úspešne pridaná", {
-		// 	position: "top-right",
-		// 	timeout: 5000,
-		// 	closeOnClick: true,
-		// 	pauseOnHover: true,
-		// 	draggable: true,
-		// 	draggablePercent: 60,
-		// 	showCloseButtonOnHover: false,
-		// 	hideProgressBar: false,
-		// });
 		emit("activityAdded", response.data.activity);
 		emit("cancelAddActivity");
 	} catch (error) {
 		console.error("Error adding activity:", error);
+		toast.error("Chyba pri pridávaní aktivity", {
+			position: "top-right",
+			timeout: 5000,
+			closeOnClick: true,
+			pauseOnHover: true,
+			draggable: true,
+			draggablePercent: 60,
+			showCloseButtonOnHover: false,
+			hideProgressBar: false,
+		});
 	}
 };
 

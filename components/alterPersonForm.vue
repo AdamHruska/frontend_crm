@@ -4,6 +4,9 @@ const config = useRuntimeConfig();
 import { useContactsStore } from "@/stores/contactsStore";
 const contactsStore = useContactsStore();
 
+import { useToast } from "vue-toastification";
+const toast = useToast();
+
 import { ref, watch } from "vue";
 import axios from "axios";
 import { Icon } from "@iconify/vue";
@@ -111,6 +114,7 @@ const alterPerson = async (id) => {
 		poznamka: poznamka.value,
 		Investicny_dotaznik: Investicny_dotaznik.value,
 		author_id: selectedAuthorId.value,
+		is_deleted: true,
 	};
 	// console.log(person);
 	const response = await axios.put(
@@ -122,6 +126,12 @@ const alterPerson = async (id) => {
 			},
 		}
 	);
+
+	if (response.status === 200) {
+		toast.success("Úspešne upravené!");
+	} else {
+		toast.error("Niečo sa pokazilo!");
+	}
 	emit("alterPerson", response.data.contact);
 };
 </script>

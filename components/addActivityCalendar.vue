@@ -226,7 +226,17 @@ const addActivity = async () => {
 
 	// Validate email only if online meeting is checked and contact doesn't have an email
 	if (onlineMeeting.value && !emailBool.value && !email.value) {
-		alert("Pre online stretnutie je potrebné zadať email kontaktu");
+		toast.error("Pre online stretnutie je potrebné zadať email kontaktu", {
+			position: "top-right",
+			timeout: 5000,
+			closeOnClick: true,
+			pauseOnHover: true,
+			draggable: true,
+			draggablePercent: 60,
+			showCloseButtonOnHover: false,
+			hideProgressBar: false,
+		});
+		//alert("Pre online stretnutie je potrebné zadať email kontaktu");
 		changeLoadingState();
 		return;
 	}

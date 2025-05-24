@@ -18,10 +18,13 @@ const config = useRuntimeConfig();
 
 const rawData = ref([]);
 const events = ref([]);
+const microsoftEvents = ref([]);
 const addActivity = ref(false);
 const updateActivity = ref(false);
 const activityID = ref("");
 const end_date = ref("");
+const currentLoadedMonth = ref(new Date().getMonth());
+const currentLoadedYear = ref(new Date().getFullYear());
 
 const props = defineProps({
 	date: {
@@ -29,6 +32,7 @@ const props = defineProps({
 		required: true,
 	},
 });
+
 const calendarOptions = ref({
 	plugins: [timeGridPlugin, interactionPlugin],
 	headerToolbar: {
@@ -51,6 +55,7 @@ const calendarOptions = ref({
 	eventClick: handleEventClick,
 	slotDuration: "00:30:00",
 	allDaySlot: true,
+	allDayText: "Celý deň", // Slovak for "All Day"
 	nowIndicator: true,
 	// Time format settings
 	eventTimeFormat: {
@@ -65,9 +70,69 @@ const calendarOptions = ref({
 	},
 	locale: "sk", // Slovak locale for European format
 	firstDay: 1, // Monday as first day of week
+	// Add event mount handler for all-day events
+	datesSet: (dateInfo) => {
+		// Extract the current view's start date
+		const currentDate = dateInfo.view.currentStart;
+
+		// Get the month (0-11) and year
+		const month = currentDate.getMonth() + 1;
+		const year = currentDate.getFullYear();
+
+		// Check if this is a new month or year
+		if (
+			month !== currentLoadedMonth.value + 2 ||
+			year !== currentLoadedYear.value
+		) {
+			// Call fetchMicrosoftEvents function with current month and year
+			fetchMicrosoftEvents(month, year);
+
+			// Update the current loaded month and year
+			currentLoadedMonth.value = month;
+			currentLoadedYear.value = year;
+		}
+	},
+	// Add this event render function to verify all-day events are being processed correctly
+	eventDidMount: (info) => {
+		// Log event details for debugging
+		console.log(`Event: ${info.event.title}`);
+		console.log(`Is all-day: ${info.event.allDay}`);
+
+		// You could also visually mark all-day events differently if needed
+		if (info.event.allDay) {
+			info.el.style.fontWeight = "bold";
+		}
+	},
 });
 
 console.log("date ", props.date);
+
+const fetchMicrosoftEvents = async (month, year) => {
+	const startDate = new Date(year, month - 1, 1).toISOString();
+	const endDate = new Date(year, month, 0, 23, 59, 59).toISOString(); // Last day of month
+
+	await calendarStore.fetchMicrosoftEvents(startDate, endDate);
+	updateEventsWithMicrosoft();
+};
+
+// const updateEventsWithMicrosoft = () => {
+// 	const allEvents = [...events.value, ...calendarStore.microsoftEventCache];
+// 	calendarOptions.value = {
+// 		...calendarOptions.value,
+// 		events: allEvents,
+// 	};
+// };
+
+const updateEventsWithMicrosoft = () => {
+	// Combine all events
+	const allEvents = [...events.value, ...microsoftEvents.value];
+
+	// Update the calendar options with the combined events
+	calendarOptions.value = {
+		...calendarOptions.value,
+		events: allEvents,
+	};
+};
 
 onMounted(async () => {
 	if (calendarStore.activities.length === 0) {
@@ -77,13 +142,20 @@ onMounted(async () => {
 	rawData.value = calendarStore.activities;
 	events.value = transformData(rawData.value);
 
-	// Include shared activities
 	const sharedACT = transformData(
 		flattenActivities(calendarStore.shared_activities)
 	);
-
 	events.value = [...events.value, ...sharedACT];
-	calendarOptions.value.events = events.value;
+
+	const selectedDate = new Date(props.date);
+	await fetchMicrosoftEvents(
+		selectedDate.getMonth() + 1,
+		selectedDate.getFullYear()
+	);
+
+	updateEventsWithMicrosoft();
+
+	// Optional: handle auth code (you can keep this logic if needed)
 });
 
 const transformData = (data) => {
@@ -103,9 +175,9 @@ const transformData = (data) => {
 	});
 };
 
-// const toggleAddActivity = () => {
-// 	addActivity.value = !addActivity.value;
-// };
+const toggleAddActivity = () => {
+	addActivity.value = !addActivity.value;
+};
 
 const toggleUpdateActivity = () => {
 	updateActivity.value = !updateActivity.value;
@@ -119,6 +191,16 @@ function handleDateSelect(selectInfo) {
 }
 
 function handleEventClick(clickInfo) {
+	// Check if it's a Microsoft event
+	if (clickInfo.event.extendedProps.isMicrosoftEvent) {
+		// You might want to handle Microsoft events differently
+		// For example, show details but don't allow editing
+		console.log("Microsoft event clicked:", clickInfo.event);
+		// You could show a different modal or details view for Microsoft events
+		return;
+	}
+
+	// Handle regular events
 	toggleUpdateActivity();
 	activityID.value = clickInfo.event._def.publicId;
 }
@@ -143,13 +225,11 @@ const addNewEvent = (newEvent) => {
 	};
 
 	events.value = [...events.value, transformedEvent];
-	calendarOptions.value = {
-		...calendarOptions.value,
-		events: events.value,
-	};
+
+	// Update the calendar with all events
+	updateEventsWithMicrosoft();
 
 	addActivity.value = false;
-	toggleAddActivity();
 };
 
 const alterEvents = (updatedEvent) => {
@@ -158,14 +238,6 @@ const alterEvents = (updatedEvent) => {
 		rawData.value = rawData.value.filter(
 			(event) => event.id !== activityID.value
 		);
-
-		calendarOptions.value = {
-			...calendarOptions.value,
-			events: events.value,
-		};
-
-		updateActivity.value = false;
-		activityID.value = "";
 	} else {
 		rawData.value = rawData.value.map((event) =>
 			event.id === updatedEvent.id ? updatedEvent : event
@@ -191,15 +263,13 @@ const alterEvents = (updatedEvent) => {
 			}
 			return event;
 		});
-
-		calendarOptions.value = {
-			...calendarOptions.value,
-			events: events.value,
-		};
-
-		updateActivity.value = false;
-		activityID.value = "";
 	}
+
+	// Update the calendar with all events
+	updateEventsWithMicrosoft();
+
+	updateActivity.value = false;
+	activityID.value = "";
 };
 </script>
 
@@ -231,8 +301,17 @@ const alterEvents = (updatedEvent) => {
 						:options="calendarOptions"
 					>
 						<template v-slot:eventContent="arg">
-							<b>{{ arg.timeText }}</b>
-							<i>{{ arg.event.title }}</i>
+							<div class="flex items-center">
+								<!-- Add Microsoft icon for Microsoft events -->
+								<Icon
+									v-if="arg.event.extendedProps.isMicrosoftEvent"
+									icon="mdi:microsoft"
+									class="mr-1 text-white"
+									:width="16"
+								/>
+								<b>{{ arg.timeText }}</b>
+								<i class="ml-1">{{ arg.event.title }}</i>
+							</div>
 						</template>
 					</FullCalendar>
 				</div>
@@ -242,9 +321,13 @@ const alterEvents = (updatedEvent) => {
 </template>
 
 <style scoped>
-/* You can keep the existing styles from the previous component */
 .demo-app-main {
 	flex-grow: 1;
 	padding: 3em;
+}
+
+/* Styling for Microsoft events */
+:deep(.fc-event-main) {
+	padding: 2px 4px;
 }
 </style>
