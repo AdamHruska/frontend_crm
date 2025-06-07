@@ -8,6 +8,7 @@ import { useToast } from "vue-toastification";
 export const useContactsStore = defineStore("contacts", {
 	state: () => ({
 		contacts: [],
+		delegatedContacts: [],
 		page: null,
 		prev_page_url: null,
 		next_page_url: null,
@@ -15,7 +16,37 @@ export const useContactsStore = defineStore("contacts", {
 		lastShowenDetails: null,
 	}),
 	actions: {
-		// Fetch contacts from the API using token from authStore
+		async fetchDelegatedContacts() {
+			this.loadingState = true;
+			const authStore = useAuthStore();
+			const token = authStore.token;
+
+			if (!token) {
+				console.error("Token not found. Please log in.");
+				return;
+			}
+
+			try {
+				const response = await axios.get(
+					`${config.public.apiUrl}delegated-contacts`,
+					{
+						headers: {
+							Authorization: `Bearer ${authStore.token}`,
+						},
+					}
+				);
+				this.delegatedContacts = response.data.contacts;
+			} catch (error) {
+				console.error(
+					"Error fetching delegated contacts:",
+					error.response || error
+				);
+				const toast = useToast();
+				toast.error("Nepodarilo sa načítať delegované kontakty");
+			}
+			this.loadingState = false;
+		},
+
 		async goToPage(pageNumber) {
 			this.loadingState = true;
 			const authStore = useAuthStore();
@@ -236,6 +267,51 @@ export const useContactsStore = defineStore("contacts", {
 				toast.success("Kontakt bol pridaný");
 			}
 			this.loadingState = false;
+		},
+
+		async findContactById(id) {
+			// First try to find in local contacts data
+			if (this.contacts?.data) {
+				const localContact = this.contacts.data.find(
+					(contact) => contact.id === id
+				);
+				if (localContact) {
+					return localContact;
+				}
+			}
+
+			// If not found locally, try to fetch from API
+			this.loadingState = true;
+			const authStore = useAuthStore();
+			const token = authStore.token;
+
+			if (!token) {
+				console.error("Token not found. Please log in.");
+				return null;
+			}
+
+			try {
+				const response = await axios.get(
+					`${config.public.apiUrl}contacts/${id}`,
+					{
+						headers: {
+							Authorization: `Bearer ${authStore.token}`,
+						},
+					}
+				);
+
+				if (response.data.contact) {
+					return response.data.contact;
+				}
+			} catch (error) {
+				console.error("Error fetching contact by ID:", error.response || error);
+				const toast = useToast();
+				toast.error("Nepodarilo sa nájsť kontakt");
+			} finally {
+				this.loadingState = false;
+			}
+
+			return null;
 		},
 
 		// Clear contacts from the store

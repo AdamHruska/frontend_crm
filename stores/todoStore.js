@@ -33,6 +33,7 @@ export const useTodosStore = defineStore("todos", {
 					},
 				});
 				this.todos = response.data.data;
+				console.log("Todos fetched successfully:", this.todos);
 			} catch (error) {
 				console.error("Error fetching todos:", error.response || error);
 				const toast = useToast();
@@ -360,6 +361,65 @@ export const useTodosStore = defineStore("todos", {
 		// Add a new todo to the store (for real-time updates)
 		addTodoToStore(newTodo) {
 			this.todos.unshift({ ...newTodo });
+		},
+
+		async fetchTodosWithoutContact() {
+			try {
+				this.loadingState = true;
+
+				const response = await $fetch("/api/todos/without-contact", {
+					method: "GET",
+					headers: {
+						Authorization: `Bearer ${token.value}`,
+					},
+				});
+
+				if (response.success) {
+					// You might want to store these separately or merge with existing todos
+					// For now, I'll assume you want to replace the current todos
+					todos.value = response.data;
+					return response.data;
+				} else {
+					throw new Error(
+						response.message || "Failed to fetch todos without contact"
+					);
+				}
+			} catch (error) {
+				console.error("Error fetching todos without contact:", error);
+				throw error;
+			} finally {
+				this.loadingState = false;
+			}
+		},
+
+		async createTodoWithoutContact(todoData) {
+			const authStore = useAuthStore();
+			const token = authStore.token;
+			try {
+				this.loadingState = true; // or loadingState.value = true
+
+				const response = await $fetch("/api/todos/without-contact", {
+					method: "POST",
+					body: todoData,
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token.value}`,
+					},
+				});
+
+				if (response.success) {
+					// Add the new todo to the existing todos array
+					todos.value.unshift(response.data);
+					return response.data;
+				} else {
+					throw new Error(response.message || "Failed to create todo");
+				}
+			} catch (error) {
+				console.error("Error creating todo without contact:", error);
+				throw error;
+			} finally {
+				this.loadingState = false; // or loadingState.value = false
+			}
 		},
 	},
 	getters: {

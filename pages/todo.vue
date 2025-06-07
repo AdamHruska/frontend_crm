@@ -5,9 +5,129 @@ import "air-datepicker/air-datepicker.css";
 import { useTodosStore } from "../stores/todoStore";
 const todoStore = useTodosStore();
 
+import { useContactsStore } from "#imports";
+const contactsStore = useContactsStore();
+
 const datepickerInput = ref(null);
 
 const todoItems = ref([]);
+
+// Add current date state for pagination
+const currentDate = ref(new Date());
+
+// Add state to track if showing all todos
+const showingAllTodos = ref(false);
+
+// Add state to track if showing todos without contact
+const showingTodosWithoutContact = ref(false);
+
+const contactNames = reactive({});
+
+const loadContactName = async (contactId) => {
+	if (!contactId || contactNames[contactId]) return;
+
+	contactNames[contactId] = "Načítava...";
+	try {
+		const contact = await contactsStore.findContactById(contactId);
+		const name = contact?.meno + " " + contact?.priezvisko;
+		contactNames[contactId] = name ? name.trim() : "Neznámy kontakt";
+	} catch (error) {
+		contactNames[contactId] = "Neznámy kontakt";
+	}
+};
+
+// Format date for display;
+const formatCurrentDate = (date) => {
+	return date.toLocaleDateString("sk-SK", {
+		weekday: "long",
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+	});
+};
+
+// Navigate to previous day
+const goToPreviousDay = async () => {
+	const newDate = new Date(currentDate.value);
+	newDate.setDate(newDate.getDate() - 1);
+	currentDate.value = newDate;
+	showingAllTodos.value = false;
+	showingTodosWithoutContact.value = false;
+	await loadTodosForCurrentDate();
+};
+
+// Navigate to next day
+const goToNextDay = async () => {
+	const newDate = new Date(currentDate.value);
+	newDate.setDate(newDate.getDate() + 1);
+	currentDate.value = newDate;
+	showingAllTodos.value = false;
+	showingTodosWithoutContact.value = false;
+	await loadTodosForCurrentDate();
+};
+
+// Go to today
+const goToToday = async () => {
+	currentDate.value = new Date();
+	showingAllTodos.value = false;
+	showingTodosWithoutContact.value = false;
+	await loadTodosForCurrentDate();
+};
+
+// Show all todos
+const showAllTodos = async () => {
+	showingAllTodos.value = true;
+	showingTodosWithoutContact.value = false;
+	await todoStore.fetchTodos();
+	todoItems.value = todoStore.todos.map((todo, index) => ({
+		id: todo.id || index,
+		activity: todo.activity_name,
+		dueDate: todo.due_date,
+		assignedTo: todo.contact_id,
+		completed: todo.is_completed,
+		updated_at: todo.is_completed ? todo.updated_at : null,
+	}));
+};
+
+// Show todos without contact
+const showTodosWithoutContact = async () => {
+	showingTodosWithoutContact.value = true;
+	showingAllTodos.value = false;
+	await todoStore.fetchTodosWithoutContact();
+	todoItems.value = todoStore.todos.map((todo, index) => ({
+		id: todo.id || index,
+		activity: todo.activity_name,
+		dueDate: todo.due_date,
+		assignedTo: todo.contact_id,
+		completed: todo.is_completed,
+		updated_at: todo.is_completed ? todo.updated_at : null,
+	}));
+};
+
+// Load todos for current date
+const loadTodosForCurrentDate = async () => {
+	const year = currentDate.value.getFullYear();
+	const month = String(currentDate.value.getMonth() + 1).padStart(2, "0");
+	const day = String(currentDate.value.getDate()).padStart(2, "0");
+	const selectedDate = `${year}-${month}-${day}`;
+
+	await todoStore.fetchTodosByDate(selectedDate);
+
+	todoItems.value = todoStore.todosByDate.map((todo, index) => ({
+		id: todo.id || index,
+		activity: todo.activity_name,
+		dueDate: todo.due_date,
+		assignedTo: todo.contact_id,
+		completed: todo.is_completed,
+		updated_at: todo.is_completed ? todo.updated_at : null,
+	}));
+};
+
+// Check if current date is today
+const isToday = computed(() => {
+	const today = new Date();
+	return currentDate.value.toDateString() === today.toDateString();
+});
 
 watch(
 	() => todoStore.todos,
@@ -15,83 +135,63 @@ watch(
 		todoItems.value = newTodos.map((todo, index) => ({
 			id: todo.id || index,
 			activity: todo.activity_name,
-			dueDate: todo.due_date.split("T")[0],
+			dueDate: todo.due_date, // Keep full datetime
 			completed: todo.is_completed,
+			updated_at: todo.is_completed ? todo.updated_at : null,
 		}));
 	},
 	{ deep: true, immediate: true }
 );
 
 onMounted(async () => {
+	if (contactsStore.contacts.length === 0) {
+		await contactsStore.fetchContacts();
+	}
+	console.log("skuska kontakty", contactsStore.contacts);
 	if (datepickerInput.value) {
 		new AirDatepicker(datepickerInput.value, {
 			autoClose: true,
+			timepicker: true, // Enable time picker
 			dateFormat: "yyyy-MM-dd",
+			timeFormat: "HH:mm",
+			position: "bottom left",
 			async onSelect({ date }) {
-				// Fix: Use local date instead of UTC
+				// Format datetime for backend (ISO format)
+				const selectedDateTime = date.toISOString();
+
+				// Format for display (local format)
 				const year = date.getFullYear();
 				const month = String(date.getMonth() + 1).padStart(2, "0");
 				const day = String(date.getDate()).padStart(2, "0");
-				const selectedDate = `${year}-${month}-${day}`;
+				const hours = String(date.getHours()).padStart(2, "0");
+				const minutes = String(date.getMinutes()).padStart(2, "0");
+				const selectedDateTimeLocal = `${year}-${month}-${day}T${hours}:${minutes}`;
 
-				newTodo.value.dueDate = selectedDate;
-				console.log("Selected date:", selectedDate);
-				await todoStore.fetchTodosByDate(selectedDate);
+				newTodo.value.dueDate = selectedDateTimeLocal;
+				console.log("Selected datetime:", selectedDateTime);
 
-				todoItems.value = todoStore.todosByDate.map((todo, index) => ({
-					id: todo.id || index,
-					activity: todo.activity_name,
-					dueDate: todo.due_date.split("T")[0],
-					assignedTo: todo.contact_id,
-					completed: todo.is_completed,
-				}));
+				// Update current date and load todos for selected date
+				currentDate.value = new Date(date);
+				showingAllTodos.value = false;
+				showingTodosWithoutContact.value = false;
+				await loadTodosForCurrentDate();
 			},
 		});
 	}
 
-	await todoStore.fetchTodos();
-
-	todoItems.value = todoStore.todos.map((todo, index) => ({
-		id: todo.id || index, // use actual id if available, otherwise use index
-		activity: todo.activity_name,
-		dueDate: todo.due_date.split("T")[0],
-
-		assignedTo: todo.contact_id,
-		// use a fallback if not present
-		completed: todo.is_completed,
-	}));
+	// Load todos for today initially
+	await loadTodosForCurrentDate();
 });
-
-// const todoItems = ref([
-// 	{
-// 		activity: "Dokončiť projektovú dokumentáciu",
-// 		dueDate: "2025-06-15",
-// 		assignedTo: "Adam Hruska",
-// 		completed: false,
-// 	},
-// 	{
-// 		activity: "Pripraviť prezentáciu",
-// 		dueDate: "2025-06-10",
-// 		assignedTo: "Lucia Kováčová",
-// 		completed: true,
-// 	},
-// 	{
-// 		activity: "Kontaktovať dodávateľa",
-// 		dueDate: "2025-05-25",
-// 		assignedTo: "Peter Novák",
-// 		completed: false,
-// 	},
-// ]);
 
 // Define the table columns
 const columns = [
 	{
-		key: "activity",
-		label: "Aktivita",
-	},
-	{
 		key: "dueDate",
 		label: "Termín dokončenia",
+	},
+	{
+		key: "activity",
+		label: "Aktivita",
 	},
 	{
 		key: "assignedTo",
@@ -100,6 +200,10 @@ const columns = [
 	{
 		key: "completed",
 		label: "Dokončené",
+	},
+	{
+		key: "updated_at",
+		label: "Dokonané dňa",
 	},
 	{
 		key: "actions",
@@ -118,8 +222,22 @@ const editTodo = (id, activity) => {
 	console.log("activity:", activity);
 };
 
-// Function to format date
+// Function to format datetime
+const formatDateTime = (dateTimeString) => {
+	if (!dateTimeString) return "";
+	const date = new Date(dateTimeString);
+	return date.toLocaleString("sk-SK", {
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+};
+
+// Function to format date only (for backward compatibility)
 const formatDate = (dateString) => {
+	if (!dateString) return "";
 	const date = new Date(dateString);
 	return date.toLocaleDateString("sk-SK");
 };
@@ -130,31 +248,77 @@ const newTodo = ref({
 	dueDate: "",
 	assignedTo: "",
 	completed: false,
+	updated_at: "",
 });
 
-const addTodo = () => {
+const addTodo = async () => {
 	if (
 		newTodo.value.activity &&
 		newTodo.value.dueDate &&
 		newTodo.value.assignedTo
 	) {
-		const newId =
-			todoItems.value.length > 0
-				? Math.max(...todoItems.value.map((item) => item.id || 0)) + 1
-				: 1;
-		todoItems.value.push({
-			...newTodo.value,
-			id: newId,
-		});
-		// Reset form
-		newTodo.value = {
-			activity: "",
-			dueDate: "",
-			assignedTo: "",
-			completed: false,
+		// Send datetime to backend
+		const todoData = {
+			activity_name: newTodo.value.activity,
+			due_date: newTodo.value.dueDate,
+			contact_id: newTodo.value.assignedTo,
+			is_completed: false,
 		};
+
+		try {
+			await todoStore.createTodo(todoData);
+			// Reset form
+			newTodo.value = {
+				activity: "",
+				dueDate: "",
+				assignedTo: "",
+				completed: false,
+			};
+			// Refresh the todo list for current date
+			if (showingAllTodos.value) {
+				await showAllTodos();
+			} else if (showingTodosWithoutContact.value) {
+				await showTodosWithoutContact();
+			} else {
+				await loadTodosForCurrentDate();
+			}
+		} catch (error) {
+			console.error("Error creating todo:", error);
+		}
 	}
 };
+
+// Add new todo without contact
+const addTodoWithoutContact = async () => {
+	if (newTodo.value.activity && newTodo.value.dueDate) {
+		const todoData = {
+			activity_name: newTodo.value.activity,
+			due_date: newTodo.value.dueDate,
+		};
+
+		try {
+			await todoStore.createTodoWithoutContact(todoData);
+			// Reset form
+			newTodo.value = {
+				activity: "",
+				dueDate: "",
+				assignedTo: "",
+				completed: false,
+			};
+			// Refresh the todo list
+			if (showingAllTodos.value) {
+				await showAllTodos();
+			} else if (showingTodosWithoutContact.value) {
+				await showTodosWithoutContact();
+			} else {
+				await loadTodosForCurrentDate();
+			}
+		} catch (error) {
+			console.error("Error creating todo without contact:", error);
+		}
+	}
+};
+
 const selectedItem = ref(null);
 
 const showUpdateForm = ref(false);
@@ -168,29 +332,51 @@ const deleteToDo = async (id) => {
 	await todoStore.deleteTodo(id);
 	todoItems.value = todoItems.value.filter((item) => item.id !== id);
 };
+
 const router = useRouter();
 const goToContact = (id) => {
-	router.push(`/contact/${id}`);
+	if (id) {
+		router.push(`/contact/${id}`);
+	}
 };
 
-const markAsDDone = async (id) => {
+const markAsDone = async (id) => {
+	const todo = todoItems.value.find((item) => item.id === id);
+	if (!todo) return;
+
+	// Check the current completion status and toggle it
+	const newCompletionStatus = !todo.completed;
+
 	await todoStore.updateTodo(id, {
-		activity_name: todoItems.value.find((item) => item.id === id).activity,
-		due_date: todoItems.value.find((item) => item.id === id).dueDate,
-		is_completed: true,
+		activity_name: todo.activity,
+		due_date: todo.dueDate,
+		is_completed: newCompletionStatus,
 	});
+
+	// Reload the list after update
+	if (showingAllTodos.value) {
+		await showAllTodos();
+	} else if (showingTodosWithoutContact.value) {
+		await showTodosWithoutContact();
+	} else {
+		await loadTodosForCurrentDate();
+	}
 };
 
-const resetDate = () => {
+const resetDate = async () => {
 	console.log("resetDate");
-
 	newTodo.value.dueDate = "";
-	todoStore.fetchTodos();
+	currentDate.value = new Date(); // Reset to today
+	showingAllTodos.value = false;
+	showingTodosWithoutContact.value = false;
+	await todoStore.fetchTodos();
 	todoItems.value = todoStore.todos.map((todo, index) => ({
 		id: todo.id || index,
 		activity: todo.activity_name,
-		dueDate: todo.due_date.split("T")[0],
+		dueDate: todo.due_date,
 		completed: todo.is_completed,
+		assignedTo: todo.contact_id,
+		updated_at: todo.updated_at,
 	}));
 };
 </script>
@@ -203,15 +389,58 @@ const resetDate = () => {
 			@cancelToDoActivity="toggleUpdateForm"
 			:item="selectedItem"
 		/>
-		/>
-		<!-- <addToDoForm /> -->
 		<h1 class="heading">ToDo Zoznam</h1>
+
+		<!-- Day Navigation -->
+		<div class="day-navigation">
+			<button class="nav-button" @click="goToPreviousDay">
+				← Predchádzajúci deň
+			</button>
+			<div class="current-date">
+				<h2 v-if="!showingAllTodos && !showingTodosWithoutContact">
+					{{ formatCurrentDate(currentDate) }}
+				</h2>
+				<h2 v-else-if="showingAllTodos">Všetky úlohy</h2>
+				<h2 v-else-if="showingTodosWithoutContact">Úlohy bez kontaktu</h2>
+				<div class="date-buttons">
+					<button
+						v-if="!isToday && !showingAllTodos && !showingTodosWithoutContact"
+						class="today-button"
+						@click="goToToday"
+					>
+						Dnes
+					</button>
+					<button
+						v-if="!showingAllTodos && !showingTodosWithoutContact"
+						class="show-all-button"
+						@click="showAllTodos"
+					>
+						Zobraziť všetky
+					</button>
+					<button
+						v-if="!showingTodosWithoutContact && !showingAllTodos"
+						class="show-without-contact-button"
+						@click="showTodosWithoutContact"
+					>
+						Bez kontaktu
+					</button>
+					<button
+						v-if="showingAllTodos || showingTodosWithoutContact"
+						class="today-button"
+						@click="goToToday"
+					>
+						Späť na dnes
+					</button>
+				</div>
+			</div>
+			<button class="nav-button" @click="goToNextDay">Nasledujúci deň →</button>
+		</div>
 
 		<div class="todo-container">
 			<!-- Add new todo form -->
 			<div class="left">
 				<div class="date-picker">
-					<div>Vyberte dátum:</div>
+					<div>Vyberte dátum a čas:</div>
 					<input
 						type="text"
 						id="datepicker"
@@ -219,23 +448,40 @@ const resetDate = () => {
 						v-model="newTodo.dueDate"
 						readonly
 						class="datepicker-input"
+						placeholder="Vyberte dátum a čas"
 					/>
 					<button class="reset-button" @click="resetDate">Reset</button>
 				</div>
 
-				<div class="add-form">
-					<h3 class="form-title">Pridať novú úlohu</h3>
+				<!-- Form for todo with contact -->
+
+				<!-- Form for todo without contact -->
+				<div class="add-form without-contact">
+					<h3 class="form-title">Pridať úlohu bez kontaktu</h3>
 					<div class="form-group">
-						<label for="activity">Aktivita:</label>
-						<input type="text" id="activity" v-model="newTodo.activity" />
+						<label for="activity-no-contact">Aktivita:</label>
+						<input
+							type="text"
+							id="activity-no-contact"
+							v-model="newTodo.activity"
+						/>
 					</div>
 
 					<div class="form-group">
-						<label for="date">Termín:</label>
-						<input type="date" id="date" v-model="newTodo.dueDate" />
+						<label for="datetime-no-contact">Termín a čas:</label>
+						<input
+							type="datetime-local"
+							id="datetime-no-contact"
+							v-model="newTodo.dueDate"
+						/>
 					</div>
 
-					<button class="add-button" @click="addTodo">Pridať úlohu</button>
+					<button
+						class="add-button without-contact-btn"
+						@click="addTodoWithoutContact"
+					>
+						Pridať úlohu bez kontaktu
+					</button>
 				</div>
 			</div>
 
@@ -244,7 +490,11 @@ const resetDate = () => {
 				<table class="todo-table">
 					<thead>
 						<tr>
-							<th v-for="column in columns" :key="column.key">
+							<th
+								v-for="column in columns"
+								:key="column.key"
+								:class="'col-' + column.key"
+							>
 								{{ column.label }}
 							</th>
 						</tr>
@@ -255,35 +505,38 @@ const resetDate = () => {
 							:key="index"
 							:class="{ 'completed-row': item.completed }"
 						>
-							<td>{{ item.activity }}</td>
-							<td>{{ formatDate(item.dueDate) }}</td>
-							<td @click="goToContact(item.assignedTo)">
-								{{ item.assignedTo }}
+							<td class="col-dueDate">{{ formatDateTime(item.dueDate) }}</td>
+							<td class="col-activity">{{ item.activity }}</td>
+							<td class="col-assignedTo" @click="goToContact(item.assignedTo)">
+								<span v-if="item.assignedTo">
+									{{
+										contactNames[item.assignedTo] ||
+										loadContactName(item.assignedTo) ||
+										"Načítava..."
+									}}
+								</span>
+								<span v-else class="no-contact">Bez kontaktu</span>
 							</td>
-							<td>
+							<td class="col-completed">
 								<input
 									type="checkbox"
 									:checked="item.completed"
-									@change="toggleCompleted(index)"
+									@click="markAsDone(item.id)"
 									class="checkbox"
 								/>
 							</td>
-							<td>
-								<button class="edit-button" @click="toggleUpdateForm(item)">
-									Upraviť
-								</button>
+							<td class="col-updated_at">
+								{{ formatDateTime(item.updated_at) }}
 							</td>
-
-							<td>
-								<button class="delete-button" @click="deleteToDo(item.id)">
-									Vymazať
-								</button>
-							</td>
-
-							<td>
-								<button class="done-button" @click="markAsDDone(item.id)">
-									Dokončené
-								</button>
+							<td class="col-actions">
+								<div class="action-buttons">
+									<button class="edit-button" @click="toggleUpdateForm(item)">
+										Upraviť
+									</button>
+									<button class="delete-button" @click="deleteToDo(item.id)">
+										Vymazať
+									</button>
+								</div>
 							</td>
 						</tr>
 					</tbody>
@@ -294,6 +547,11 @@ const resetDate = () => {
 </template>
 
 <style scoped>
+.date-buttons {
+	display: flex;
+	gap: 10px;
+}
+
 input {
 	background-color: white;
 	border-radius: 6px;
@@ -301,17 +559,93 @@ input {
 	padding-left: 10px;
 }
 
+.day-navigation {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 30px;
+	padding: 20px;
+	background-color: #f8f9fa;
+	border-radius: 8px;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	max-width: 70%;
+	margin: 0 auto;
+}
+
+.nav-button {
+	background-color: #007bff;
+	color: white;
+	border: none;
+	padding: 12px 20px;
+	border-radius: 6px;
+	cursor: pointer;
+	font-weight: bold;
+	font-size: 14px;
+	transition: background-color 0.3s;
+}
+
+.nav-button:hover {
+	background-color: #0056b3;
+}
+
+.current-date {
+	text-align: center;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+}
+
+.current-date h2 {
+	margin: 0;
+	color: #333;
+	font-size: 20px;
+	font-weight: 600;
+}
+
+.today-button {
+	background-color: #28a745;
+	color: white;
+	border: none;
+	padding: 6px 12px;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 12px;
+	font-weight: bold;
+	transition: background-color 0.3s;
+}
+
+.today-button:hover {
+	background-color: #218838;
+}
+
 .date-picker {
 	width: 100%;
 	padding: 16px;
 	display: flex;
 	justify-content: space-between;
+	align-items: center;
 	margin-bottom: 10px;
 	padding-top: 0;
 	background-color: #f5f5f5;
 	padding: 20px;
 	border-radius: 8px;
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	position: relative;
+}
+
+.reset-button {
+	position: absolute;
+	top: 0;
+	right: 0;
+}
+
+.datepicker-input {
+	margin: 0 10px;
+	padding: 8px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
 }
 
 .heading {
@@ -330,7 +664,7 @@ input {
 }
 
 .left {
-	width: 25%;
+	width: 20%;
 	padding: 20px;
 }
 
@@ -339,6 +673,12 @@ input {
 	padding: 20px;
 	border-radius: 8px;
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	margin-bottom: 20px;
+}
+
+.add-form.without-contact {
+	background-color: #e8f4fd;
+	border: 2px solid #007bff;
 }
 
 .form-title {
@@ -380,8 +720,17 @@ input {
 	background-color: #45a049;
 }
 
-.edit-button {
-	background-color: #2196f3;
+.add-button.without-contact-btn {
+	background-color: #007bff;
+}
+
+.add-button.without-contact-btn:hover {
+	background-color: #0056b3;
+}
+
+.show-all-button,
+.show-without-contact-button {
+	background-color: #007bff;
 	color: white;
 	border: none;
 	padding: 6px 12px;
@@ -391,30 +740,24 @@ input {
 	font-weight: bold;
 }
 
-.edit-button:hover {
-	background-color: #1976d2;
+.show-all-button:hover,
+.show-without-contact-button:hover {
+	background-color: #0056b3;
 }
 
-.delete-button {
-	background-color: red;
-	color: white;
-	border: none;
-	padding: 6px 12px;
-	border-radius: 4px;
-	cursor: pointer;
-	font-size: 12px;
-	font-weight: bold;
+.show-without-contact-button {
+	background-color: #6c757d;
 }
 
-.delete-button:hover {
-	background-color: #d32f2f;
+.show-without-contact-button:hover {
+	background-color: #545b62;
 }
 
 .reset-button {
 	background-color: #2196f3;
 	color: white;
 	border: none;
-	padding: 1px 10px;
+	padding: 8px 10px;
 	border-radius: 4px;
 	cursor: pointer;
 	font-size: 12px;
@@ -425,24 +768,9 @@ input {
 	background-color: #1976d2;
 }
 
-.done-button {
-	background-color: #4caf50;
-	color: white;
-	border: none;
-	padding: 6px 12px;
-	border-radius: 4px;
-	cursor: pointer;
-	font-size: 12px;
-	font-weight: bold;
-}
-
-.done-button:hover {
-	background-color: #45a049;
-}
-
 .right {
-	width: 75%;
-	padding: 20px;
+	width: 80%;
+	padding: 40px 20px;
 }
 
 .todo-table {
@@ -450,13 +778,15 @@ input {
 	border-collapse: collapse;
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	background-color: white;
+	table-layout: fixed;
 }
 
 .todo-table th,
 .todo-table td {
-	padding: 12px 15px;
+	padding: 8px 6px;
 	text-align: left;
 	border-bottom: 1px solid #ddd;
+	font-size: 13px;
 }
 
 .todo-table th {
@@ -469,9 +799,85 @@ input {
 	background-color: #f9f9f9;
 }
 
+/* Adjusted column widths - all narrower except activity */
+.col-dueDate {
+	width: 14%;
+}
+
+.col-activity {
+	width: 35%;
+	word-wrap: break-word;
+	word-break: break-word;
+}
+
+.col-assignedTo {
+	width: 10%;
+	cursor: pointer;
+}
+
+.col-completed {
+	width: 6%;
+	text-align: center;
+}
+
+.col-updated_at {
+	width: 12%;
+}
+
+.col-actions {
+	width: 23%;
+}
+
+.action-buttons {
+	display: flex;
+	gap: 4px;
+	flex-wrap: wrap;
+}
+
+.edit-button,
+.delete-button,
+.done-button {
+	border: none;
+	padding: 4px 6px;
+	border-radius: 3px;
+	cursor: pointer;
+	font-size: 10px;
+	font-weight: bold;
+	white-space: nowrap;
+	flex: 1;
+	min-width: 50px;
+}
+
+.edit-button {
+	background-color: #2196f3;
+	color: white;
+}
+
+.edit-button:hover {
+	background-color: #1976d2;
+}
+
+.delete-button {
+	background-color: #f44336;
+	color: white;
+}
+
+.delete-button:hover {
+	background-color: #d32f2f;
+}
+
+.done-button {
+	background-color: #4caf50;
+	color: white;
+}
+
+.done-button:hover {
+	background-color: #45a049;
+}
+
 .checkbox {
-	width: 18px;
-	height: 18px;
+	width: 16px;
+	height: 16px;
 	cursor: pointer;
 }
 
@@ -482,5 +888,10 @@ input {
 
 .completed-row td:first-child {
 	text-decoration: line-through;
+}
+
+.no-contact {
+	color: #6c757d;
+	font-style: italic;
 }
 </style>

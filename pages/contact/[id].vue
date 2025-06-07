@@ -40,7 +40,10 @@ watch(
 			.map((todo, index) => ({
 				id: todo.id || index,
 				activity: todo.activity_name,
-				dueDate: todo.due_date.split("T")[0],
+				dueDate: todo.due_date.split("+")[0].replace("T", " ").slice(0, -3),
+				updated_at: todo.is_completed
+					? todo.updated_at.split("+")[0].replace("T", " ").slice(0, -3)
+					: null,
 				completed: todo.is_completed,
 			}));
 	},
@@ -59,7 +62,10 @@ onBeforeMount(async () => {
 		.map((todo) => ({
 			id: todo.id,
 			activity: todo.activity_name,
-			dueDate: todo.due_date.split("T")[0], // get only the date part
+			dueDate: todo.due_date.split("+")[0].replace("T", " ").slice(0, -3),
+			updated_at: todo.is_completed
+				? todo.updated_at.split("+")[0].replace("T", " ").slice(0, -3)
+				: null,
 			completed: todo.is_completed,
 		}));
 	// activities_todo.value = todoStore.todos.map((todo) => ({
@@ -111,6 +117,10 @@ const findActivities = async (id) => {
 		}
 	);
 	activities.value = response.data.activities;
+	// activities = activities.map((item) => ({
+	// 	...item,
+	// 	selectedLetter: null,
+	// }));
 	console.log("Activities test:", activities.value);
 };
 
@@ -244,6 +254,11 @@ const columns_activity = ref([
 		label: "Dohodnuté",
 		class: "bg-gray-200 w-20",
 	},
+	{
+		key: "letters",
+		label: "ABC",
+		class: "bg-gray-200 w-20",
+	},
 	{ key: "created_at", label: "Vytvorené", class: "bg-gray-200 w-28" },
 	{
 		key: "miesto_stretnutia",
@@ -340,15 +355,19 @@ const updatePerson = async (updatedContact) => {
 
 const columns_todo = [
 	{
-		key: "activity",
-		label: "Aktivita",
-	},
-	{
 		key: "dueDate",
 		label: "Termín dokončenia",
 	},
 	{
+		key: "activity",
+		label: "Aktivita",
+	},
+	{
 		key: "completed",
+		label: "Dokončené",
+	},
+	{
+		key: "updated_at",
 		label: "Dokončené",
 	},
 	{ key: "actions", class: "bg-gray-200" },
@@ -410,6 +429,30 @@ const callListBool = ref(false);
 
 const changeCallListBool = () => {
 	callListBool.value = !callListBool.value;
+};
+
+const changeActivityStatus = async (row, status) => {
+	try {
+		await axios.patch(
+			`${config.public.apiUrl}activities/${row.id}/status`,
+			{
+				activity_status: status,
+			},
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+				},
+			}
+		);
+
+		// Update the local state immediately after successful API call
+		row.activity_status = status;
+
+		console.log(`Activity ${row.id} status updated to: ${status}`);
+	} catch (error) {
+		console.error("Error updating activity status:", error);
+		// Handle error appropriately (show toast notification, etc.)
+	}
 };
 </script>
 
@@ -638,6 +681,50 @@ const changeCallListBool = () => {
 						<span v-else class="break-all">
 							{{ row.miesto_stretnutia }}
 						</span>
+					</template>
+
+					<template #letters-data="{ row }">
+						<div class="flex gap-2">
+							<span
+								class="cursor-pointer"
+								@click.stop="changeActivityStatus(row, 'questionmark')"
+							>
+								<Icon
+									name="pepicons-pencil:question"
+									:class="{
+										'text-red-600': row.activity_status === 'questionmark',
+										'text-black': row.activity_status !== 'questionmark',
+									}"
+									size="20"
+								/>
+							</span>
+							<span
+								class="cursor-pointer"
+								@click.stop="changeActivityStatus(row, 'check')"
+							>
+								<Icon
+									name="fa6-solid:check"
+									:class="{
+										'text-green-600': row.activity_status === 'check',
+										'text-black': row.activity_status !== 'check',
+									}"
+									size="20"
+								/>
+							</span>
+							<span
+								class="cursor-pointer"
+								@click.stop="changeActivityStatus(row, 'discarded')"
+							>
+								<Icon
+									name="material-symbols:close"
+									:class="{
+										'text-red-600': row.activity_status === 'discarded',
+										'text-black': row.activity_status !== 'discarded',
+									}"
+									size="20"
+								/>
+							</span>
+						</div>
 					</template>
 
 					<template #actions-data="{ row }" v-if="author_id == user_id">
