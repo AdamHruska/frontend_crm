@@ -76,7 +76,7 @@ onMounted(() => {
 	<div class="flex items-center justify-center min-h-screen bg-gray-900">
 		<div class="w-full max-w-md p-8 space-y-8 bg-gray-800 rounded-lg shadow-md">
 			<h1 class="mx-auto text-center text-3xl font-bold text-white pb-4">
-				Partners Group
+				Partners Group SK
 			</h1>
 			<!-- ... previous header content ... -->
 			<form class="mt-8 space-y-6">

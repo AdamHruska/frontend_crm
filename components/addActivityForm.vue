@@ -38,10 +38,13 @@ const emailBool = ref(false);
 const email = ref("");
 
 watch(aktivita, (newValue) => {
-	if (newValue === "ine") {
-		ineBool.value = true;
-	} else {
-		ineBool.value = false;
+	// Show/hide extra field
+	ineBool.value = newValue === "ine";
+
+	// If aktivita is "Telefonát klient", set koniec to datum_cas + 5 minutes
+	if (newValue === "Telefonát klient" && datum_cas.value) {
+		const newEndTime = add(parseISO(datum_cas.value), { minutes: 5 });
+		koniec.value = format(newEndTime, "yyyy-MM-dd'T'HH:mm");
 	}
 });
 
@@ -50,13 +53,24 @@ const showCalendar = ref(false);
 const dateOnly = ref("");
 
 watch(datum_cas, (newValue) => {
-	const startPlusHour = add(parseISO(newValue), { hours: 1 });
-	koniec.value = format(startPlusHour, "yyyy-MM-dd'T'HH:mm");
+	if (!newValue) return;
+
+	// Set koniec based on aktivita
+	const addedTime =
+		aktivita.value === "Telefonát klient" ? { minutes: 5 } : { hours: 1 };
+
+	const newEnd = add(parseISO(newValue), addedTime);
+	koniec.value = format(newEnd, "yyyy-MM-dd'T'HH:mm");
+
+	// Set dateOnly
 	dateOnly.value = format(new Date(datum_cas.value), "yyyy-MM-dd");
 	dateOnly.value = String(dateOnly.value);
+
+	// Show calendar after 1 manual change
 	if (manualChangeCount.value > 1) {
 		showCalendar.value = true;
 	}
+
 	manualChangeCount.value = 10;
 });
 

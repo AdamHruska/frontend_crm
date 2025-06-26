@@ -42,6 +42,101 @@
 				</div>
 			</div>
 
+			<div
+				class="container"
+				v-if="statistics && responseData && responseData.detailed_statistics"
+			>
+				<div class="item">
+					<div class="item-left">
+						<p>Pohovory:</p>
+					</div>
+					<div class="item-right">
+						<div class="right-count">
+							Pocet vsetkych:
+							{{ responseData.detailed_statistics.pohovory.total }}
+						</div>
+						<div class="right-count green">
+							Pocet zrealizovanych:
+							{{ responseData.detailed_statistics.pohovory.with_check_status }}
+						</div>
+					</div>
+				</div>
+
+				<div class="item">
+					<div class="item-left">
+						<p>Poradenstvá:</p>
+					</div>
+					<div class="item-right">
+						<div class="right-count">
+							Pocet vsetkych:
+							{{ responseData.detailed_statistics.poradenstva.total }}
+						</div>
+						<div class="right-count green">
+							Pocet zrealizovanych:
+							{{
+								responseData.detailed_statistics.poradenstva.with_check_status
+							}}
+						</div>
+					</div>
+				</div>
+
+				<div class="item">
+					<div class="item-left">
+						<p>Prvé stretnutia:</p>
+					</div>
+					<div class="item-right">
+						<div class="right-count">
+							Pocet vsetkych:
+							{{ responseData.detailed_statistics.prve_stretnutie.total }}
+						</div>
+						<div class="right-count green">
+							Pocet zrealizovanych:
+							{{
+								responseData.detailed_statistics.prve_stretnutie
+									.with_check_status
+							}}
+						</div>
+					</div>
+				</div>
+
+				<div class="item">
+					<div class="item-left">
+						<p>Realizácie:</p>
+					</div>
+					<div class="item-right">
+						<div class="right-count">
+							Pocet vsetkych:
+							{{ responseData.detailed_statistics.realizacie.total }}
+						</div>
+						<div class="right-count green">
+							Pocet zrealizovanych:
+							{{
+								responseData.detailed_statistics.realizacie.with_check_status
+							}}
+						</div>
+					</div>
+				</div>
+
+				<div class="item">
+					<div class="item-left">
+						<p>unikátne analýzy:</p>
+					</div>
+					<div class="item-right">
+						<div class="right-count">
+							Pocet vsetkych:
+							{{ responseData.detailed_statistics.unikatne_analyzy.total }}
+						</div>
+						<div class="right-count green">
+							Pocet zrealizovanych:
+							{{
+								responseData.detailed_statistics.unikatne_analyzy
+									.with_check_status
+							}}
+						</div>
+					</div>
+				</div>
+			</div>
+
 			<select
 				v-model="selectedActivityType"
 				class="border rounded p-2 bg-white shadow-md"
@@ -146,7 +241,7 @@ const authStore = useAuthStore();
 
 const updateActivity = ref(false);
 const activityID = ref(null);
-
+const responseData = ref(null);
 const toggleUpdateActivity = (id) => {
 	activityID.value = id;
 	if (updateActivity.value === true) {
@@ -215,6 +310,7 @@ const fetchData = async () => {
 			}
 		);
 
+		responseData.value = response.data;
 		statistics.value = response.data.statistics;
 		console.log("Statistics:", response.data);
 		activities.value = response.data.activities;
@@ -266,3 +362,27 @@ onMounted(() => {
 	updateDateRange();
 });
 </script>
+
+<style scoped>
+.container {
+	padding: 50px 0;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(0, max-content));
+	gap: 3rem;
+}
+
+.item {
+	display: flex;
+	gap: 24px;
+}
+
+.right-count {
+	font-weight: bold;
+	background-color: #fff;
+	padding: 10px 15px;
+}
+
+.green {
+	background-color: #86efac;
+}
+</style>

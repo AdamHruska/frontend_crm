@@ -550,7 +550,7 @@ const isValidUrl = (url) => {
 						>
 						<input
 							type="checkbox"
-							:value="1"
+							value="1"
 							class="sr-only peer"
 							v-model="dohodnute"
 						/>

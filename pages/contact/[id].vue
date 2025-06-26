@@ -724,6 +724,36 @@ const changeActivityStatus = async (row, status) => {
 									size="20"
 								/>
 							</span>
+
+							<!-- Additional options for Pohovor activity -->
+							<template v-if="row.aktivita === 'Pohovor'">
+								<span
+									class="cursor-pointer"
+									@click.stop="changeActivityStatus(row, 'accepted')"
+								>
+									<Icon
+										name="fa6-solid:thumbs-up"
+										:class="{
+											'text-blue-600': row.activity_status === 'accepted',
+											'text-black': row.activity_status !== 'accepted',
+										}"
+										size="20"
+									/>
+								</span>
+								<span
+									class="cursor-pointer"
+									@click.stop="changeActivityStatus(row, 'rejected')"
+								>
+									<Icon
+										name="fa6-solid:thumbs-down"
+										:class="{
+											'text-orange-600': row.activity_status === 'rejected',
+											'text-black': row.activity_status !== 'rejected',
+										}"
+										size="20"
+									/>
+								</span>
+							</template>
 						</div>
 					</template>
 

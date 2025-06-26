@@ -67,7 +67,19 @@ const columns = [
 		key: "odporucitel",
 		label: "Odporucitel",
 	},
+	{
+		key: "poznamka",
+		label: "Poznámka",
+	},
+	{
+		key: "actions",
+		label: "Akcie",
+	},
 ];
+
+const detailView = (id) => {
+	router.push(`/contact/${id}`);
+};
 </script>
 
 <template>
@@ -85,6 +97,12 @@ const columns = [
 		:row-class="(row) => row.class"
 	>
 		<template #actions-data="{ row }">
+			<UButton
+				@click="detailView(row.id)"
+				class="bg-blue-500 text-white shadow-xl"
+				label="Show Details"
+			/>
+
 			<tr v-if="row.poznamka" class="absolute left-0 w-full">
 				<td colspan="7" class="px-4 py-2 text-sm text-gray-600 bg-gray-50">
 					<span class="font-semibold">Poznámka:</span>

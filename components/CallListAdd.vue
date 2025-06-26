@@ -46,6 +46,13 @@ const filteredCallLists = computed(() => {
 	);
 });
 
+// Find exact match for the search query
+const exactMatch = computed(() => {
+	return props.callListNames.find(
+		(list) => list.name.toLowerCase() === searchQuery.value.toLowerCase().trim()
+	);
+});
+
 const cancelCallListForm = (e) => {
 	e.preventDefault();
 	emits("cancleCallListForm");
@@ -59,58 +66,14 @@ const handleSubmit = (e) => {
 	e.preventDefault(); // Prevent form submission
 };
 
-// const createCallList = async () => {
-// 	let status = 0;
-// 	var callList = {
-// 		author_id: props.user_id,
-// 		name: searchQuery.value,
-// 		contact_ids: props.selected.map((person) => person.id),
-// 	};
-// 	console.log("Call list created 1", callList);
-// 	console.log("vreate function");
-// 	loadingState.value = true;
-// 	if (!filteredCallLists.value[0]) {
-// 		const response = await axios.post(
-// 			`${config.public.apiUrl}call-lists`,
-// 			{
-// 				author_id: props.user_id,
-// 				name: searchQuery.value,
-// 				contact_ids: props.selected.map((person) => person.id),
-// 			},
-// 			{
-// 				headers: {
-// 					Authorization: `Bearer ${authStore.token}`,
-// 					"Content-Type": "application/json",
-// 				},
-// 			}
-// 		);
-// 		callListStore.callLists.push(response.data);
-// 		console.log("Call list created 1", response.status);
-// 		status = response.status;
-// 	} else {
-// 		const response = await axios.post(
-// 			`${config.public.apiUrl}call-lists`,
-// 			{
-// 				author_id: props.user_id,
-// 				name: filteredCallLists.value[0].name,
-// 				contact_ids: props.selected.map((person) => person.id),
-// 			},
-// 			{
-// 				headers: {
-// 					Authorization: `Bearer ${authStore.token}`,
-// 					"Content-Type": "application/json",
-// 				},
-// 			}
-// 		);
-// 		status = response.status;
-// 	}
-
-// 	emits("cancleCallListForm", status);
-// 	emits("uncheckAll");
-// 	loadingState.value = false;
-// };
-
 const createCallList = async () => {
+	// Check if there's an exact match first
+	if (exactMatch.value) {
+		// If exact match exists, add to existing call list
+		await addToCallList(exactMatch.value);
+		return;
+	}
+
 	// Handle both cases: single ID or array of objects
 	const contactIds = Array.isArray(props.selected)
 		? props.selected.map((person) => person.id) // If array, extract IDs
@@ -118,7 +81,7 @@ const createCallList = async () => {
 
 	const callList = {
 		author_id: author_id.value,
-		name: searchQuery.value,
+		name: searchQuery.value.trim(),
 		contact_ids: contactIds, // Always an array
 	};
 
@@ -130,7 +93,7 @@ const createCallList = async () => {
 			`${config.public.apiUrl}call-lists`,
 			{
 				author_id: author_id.value,
-				name: filteredCallLists.value[0]?.name || searchQuery.value,
+				name: searchQuery.value.trim(),
 				contact_ids: contactIds,
 			},
 			{
@@ -151,52 +114,6 @@ const createCallList = async () => {
 	}
 };
 
-// const addToCallList = async (callList) => {
-// 	loadingState.value = true;
-// 	let status = 0;
-// 	var old_contact_ids = callList.contact_ids;
-// 	old_contact_ids = JSON.parse(old_contact_ids.replace(/'/g, '"'));
-// 	var new_contact_ids = [
-// 		...old_contact_ids,
-// 		...props.selected.map((person) => person.id),
-// 	];
-
-// 	const response = await axios.put(
-// 		`${config.public.apiUrl}call-lists/${callList.id}`,
-// 		{
-// 			author_id: props.user_id,
-// 			name: callList.name,
-// 			contact_ids: new_contact_ids,
-// 		},
-// 		{
-// 			headers: {
-// 				Authorization: `Bearer ${authStore.token}`,
-// 				"Content-Type": "application/json",
-// 			},
-// 		}
-// 	);
-
-// 	const callListResponse = await axios.post(
-// 		`${config.public.apiUrl}call-list`,
-// 		{ ids: new_contact_ids }, // Make sure it's sent as {ids: [...]}
-// 		{
-// 			headers: {
-// 				Authorization: `Bearer ${authStore.token}`,
-// 				"Content-Type": "application/json",
-// 			},
-// 		}
-// 	);
-// 	console.log("skuska skuska skuska", callListResponse.data.contacts);
-// 	callListStore.selectedCallListPeople = callListResponse.data.contacts;
-// 	if (callListStore.selectedCallList === callList.id) {
-// 		console.log("Call list sa rovna");
-// 	}
-// 	status = response.status;
-// 	emits("cancleCallListForm", status);
-// 	emits("uncheckAll");
-// 	loadingState.value = false;
-// };
-
 const addToCallList = async (callList) => {
 	loadingState.value = true;
 
@@ -209,8 +126,8 @@ const addToCallList = async (callList) => {
 		// Parse existing IDs (handle SQL array format)
 		const oldContactIds = JSON.parse(callList.contact_ids.replace(/'/g, '"'));
 
-		// Merge old and new IDs
-		const mergedIds = [...oldContactIds, ...newContactIds];
+		// Merge old and new IDs, removing duplicates
+		const mergedIds = [...new Set([...oldContactIds, ...newContactIds])];
 
 		// Update call list
 		await axios.put(
@@ -283,15 +200,29 @@ const addToCallList = async (callList) => {
 						:key="callList.id"
 						@click="addToCallList(callList)"
 						class="py-2 px-4 hover:bg-gray-300 rounded text-black text-sm cursor-pointer my-2"
+						:class="{
+							'bg-blue-100 border-l-4 border-blue-500':
+								callList.name.toLowerCase() ===
+								searchQuery.toLowerCase().trim(),
+						}"
 					>
 						<div class="font-semibold">{{ callList.name }}</div>
+						<div
+							v-if="
+								callList.name.toLowerCase() === searchQuery.toLowerCase().trim()
+							"
+							class="text-xs text-blue-600 mt-1"
+						>
+							Exact match - contacts will be added here
+						</div>
 					</li>
 				</ul>
 				<button
 					@click="createCallList"
 					class="bg-blue-600 px-2 py-2 rounded text-white hover:bg-blue-700 w-full mt-4 shadow-md"
 				>
-					Vytvoriť Call List
+					<span v-if="exactMatch"> Pridať do "{{ exactMatch.name }}" </span>
+					<span v-else> Vytvoriť Call List </span>
 				</button>
 			</form>
 		</div>

@@ -223,10 +223,10 @@ const columns = [
 		key: "odporucitel",
 		label: "Odporucitel",
 	},
-	// {
-	// 	key: "poznamka",
-	// 	label: "Poznámka",
-	// },
+	{
+		key: "poznamka",
+		label: "Poznámka",
+	},
 
 	{
 		key: "actions",
@@ -560,33 +560,23 @@ const pageNumbers = computed(() => {
 				</div>
 				<input type="checkbox" @change="toggleCheckbox(row.id)" />
 			</div>
-			<tr v-if="row.poznamka" class="absolute left-0 w-full">
-				<td colspan="7" class="px-4 py-2 text-sm text-gray-600 bg-gray-50">
-					<span class="font-semibold">Poznámka:</span>
+		</template>
+
+		<template #poznamka-data="{ row }">
+			<div v-if="row.poznamka" class="group relative">
+				<div class="truncate max-w-[200px]">
 					{{ row.poznamka }}
-				</td>
-			</tr>
+				</div>
+				<div
+					class="absolute hidden group-hover:block z-10 w-[300px] p-2 bg-white border border-gray-200 rounded shadow-lg"
+				>
+					<div class="text-sm text-gray-700 whitespace-normal">
+						{{ row.poznamka }}
+					</div>
+				</div>
+			</div>
 		</template>
 	</UTable>
-
-	<!-- <pagination /> -->
-	<!-- <div class="flex gap-[40px] justify-center mt-[30px] mb-[50px]">
-		<div class="cursor-pointer" @click="prevPage()">
-			<Icon
-				class="hover:size-[38px]"
-				icon="fa6-solid:circle-arrow-left"
-				style="font-size: 35px; color: #0074b7"
-			/>
-		</div>
-		<div class="font-semibold text-xl">{{ contactsStore.page }}</div>
-		<div class="cursor-pointer" @click="nextPage()">
-			<Icon
-				class="hover:size-[38px]"
-				icon="fa6-solid:circle-arrow-right"
-				style="font-size: 35px; color: #0074b7"
-			/>
-		</div>
-	</div> -->
 
 	<div class="flex justify-center items-center gap-2 mt-[30px] mb-[50px]">
 		<div

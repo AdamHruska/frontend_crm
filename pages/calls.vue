@@ -67,16 +67,6 @@ const toggleCheckbox = (id) => {
 	}
 };
 
-// const findPerson = async (id) => {
-// 	const response = await axios.get(`${config.public.apiUrl}contact/${id}`, {
-// 		headers: {
-// 			Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-// 		},
-// 	});
-// 	single_contact.value = response.data.contact;
-// 	showAlterPersonForm.value = true;
-// };
-
 const deletePerson = async (id, callListId) => {
 	try {
 		await callListStore.deletePersonStore(id, callListId);
@@ -96,11 +86,6 @@ const columns = [
 		key: "priezvisko",
 		label: "Priezvisko",
 	},
-	// {
-	// 	key: "poradca",
-	// 	label: "Poradca",
-	// },
-
 	{
 		key: "cislo",
 		label: "tel. číslo",
@@ -113,31 +98,10 @@ const columns = [
 		key: "odporucitel",
 		label: "Odporucitel",
 	},
-
-	// {
-	// 	key: "created_at",
-	// 	label: "Dátum pridania",
-	// },
-	// {
-	// 	key: "adresa",
-	// 	label: "Adresa",
-	// },
-	// {
-	// 	key: "rok_narodenia",
-	// 	label: "Vek",
-	// },
-	// {
-	// 	key: "zamestanie",
-	// 	label: "Zamestnanie",
-	// },
-	// {
-	// 	key: "poznamka",
-	// 	label: "Poznámka",
-	// },
-	// {
-	// 	key: "Investicny_dotaznik",
-	// 	label: "Investicny dotazník vyplenený",
-	// },
+	{
+		key: "poznamka",
+		label: "Poznámka",
+	},
 	{
 		key: "actions",
 	},
@@ -161,7 +125,6 @@ const items = (row) => [
 			label: "Show Contact Details",
 			icon: "i-heroicons-information-circle-20-solid",
 			click: () => {
-				// Navigate to the contact details page
 				router.push(`/contact/${row.id}`);
 			},
 		},
@@ -188,10 +151,7 @@ const items = (row) => [
 const hasSelectedItems = computed(() => selected.value.length > 0);
 
 const uncheckAll = () => {
-	// Clear the selected array
 	selected.value = [];
-
-	// Find all checkboxes and uncheck them
 	const checkboxes = document.querySelectorAll('input[type="checkbox"]');
 	checkboxes.forEach((checkbox) => {
 		checkbox.checked = false;
@@ -221,9 +181,6 @@ const getCallList = async (id) => {
 	console.log("singleCallList", callListStore.singleCallList);
 
 	try {
-		// Log the data to verify its format
-		// console.log("Sending IDs:", ids_from_call_list.value);
-
 		let contactIds;
 
 		try {
@@ -234,7 +191,7 @@ const getCallList = async (id) => {
 		}
 		const callListResponse = await axios.post(
 			`${config.public.apiUrl}call-list`,
-			{ ids: contactIds }, // Make sure it's sent as {ids: [...]}
+			{ ids: contactIds },
 			{
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
@@ -327,6 +284,22 @@ const deleteCallList = async (id) => {
 							{{ row.name }}
 						</span>
 					</div>
+				</template>
+
+				<template #poznamka-data="{ row }">
+					<div v-if="row.poznamka" class="group relative max-w-xs">
+						<div class="truncate">
+							{{ row.poznamka }}
+						</div>
+						<div
+							class="absolute hidden group-hover:block z-10 w-[300px] p-2 bg-white border border-gray-200 rounded shadow-lg"
+						>
+							<div class="text-sm text-gray-700 whitespace-normal">
+								{{ row.poznamka }}
+							</div>
+						</div>
+					</div>
+					<div v-else class="text-gray-400">-</div>
 				</template>
 
 				<template #actions-data="{ row }">

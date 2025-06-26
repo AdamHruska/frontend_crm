@@ -67,7 +67,7 @@ const closeModal = () => {
 				</button>
 
 				<!-- Event details -->
-				<h2 class="text-xl font-bold mb-4">
+				<h2 class="text-xl font-bold mb-4 pr-4">
 					{{ props.event.title || "Untitled Event" }}
 				</h2>
 				<div
@@ -100,7 +100,7 @@ const closeModal = () => {
 					</p>
 				</div>
 
-				<div class="border-b pb-2">
+				<div class="border-b pb-2 max-h-[300px] overflow-y-auto">
 					<p class="text-gray-600 font-semibold">Ostatní účastníci</p>
 					<div
 						v-if="props.event.attendees && props.event.attendees.length"
@@ -143,7 +143,7 @@ const closeModal = () => {
 						target="_blank"
 						rel="noopener noreferrer"
 					>
-						{{ props.event.link }}
+						Kliknite sem pre otvorenie meetingu
 					</a>
 					<div v-else class="font-medium text-gray-500">Link nie je určený</div>
 				</div>

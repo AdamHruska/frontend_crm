@@ -35,11 +35,22 @@ const onlineMeeting = ref(false);
 const emailBool = ref(false);
 const email = ref("");
 
+// watch(aktivita, (newValue) => {
+// 	if (newValue === "ine") {
+// 		ineBool.value = true;
+// 	} else {
+// 		ineBool.value = false;
+// 	}
+// });
+
 watch(aktivita, (newValue) => {
-	if (newValue === "ine") {
-		ineBool.value = true;
-	} else {
-		ineBool.value = false;
+	// Show/hide extra field
+	ineBool.value = newValue === "ine";
+
+	// If aktivita is "Telefonát klient", set koniec to datum_cas + 5 minutes
+	if (newValue === "Telefonát klient" && datum_cas.value) {
+		const newEndTime = add(parseISO(datum_cas.value), { minutes: 5 });
+		koniec.value = format(newEndTime, "yyyy-MM-dd'T'HH:mm");
 	}
 });
 
@@ -53,9 +64,23 @@ const formatDateToISO = (dateString) => {
 	return formattedDate;
 };
 
+// watch(datum_cas, (newValue) => {
+// 	const startPlusHour = add(parseISO(newValue), { hours: 1 });
+// 	koniec.value = format(startPlusHour, "yyyy-MM-dd'T'HH:mm");
+// });
+
 watch(datum_cas, (newValue) => {
-	const startPlusHour = add(parseISO(newValue), { hours: 1 });
-	koniec.value = format(startPlusHour, "yyyy-MM-dd'T'HH:mm");
+	if (!newValue) return;
+
+	let newEndTime;
+
+	if (aktivita.value === "Telefonát klient") {
+		newEndTime = add(parseISO(newValue), { minutes: 5 });
+	} else {
+		newEndTime = add(parseISO(newValue), { hours: 1 });
+	}
+
+	koniec.value = format(newEndTime, "yyyy-MM-dd'T'HH:mm");
 });
 
 onMounted(async () => {
@@ -375,6 +400,8 @@ watch(dohodnute, (newValue) => {
 		dovolane.value = true;
 	}
 });
+
+const emailCount = ref(0);
 </script>
 
 <template>
@@ -463,7 +490,7 @@ watch(dohodnute, (newValue) => {
 				/>
 			</div>
 
-			<div class="relative z-0 w-full mb-6 group">
+			<div class="relative z-0 w-full mb-1 group">
 				<input
 					v-model="onlineMeeting"
 					type="checkbox"
@@ -476,7 +503,53 @@ watch(dohodnute, (newValue) => {
 				>
 			</div>
 
-			<div class="relative z-0 w-full mb-5 group">
+			<div class="flex gap-3 mb-3 items-center">
+				<!-- Add Email Button -->
+				<div
+					@click="emailCount++"
+					class="cursor-pointer transition-all duration-200 hover:scale-110"
+					title="Add another email"
+				>
+					<Icon
+						icon="solar:add-circle-linear"
+						class="text-green-500 hover:text-green-600"
+						width="24"
+						height="24"
+					/>
+				</div>
+
+				<!-- Remove Email Button (only shows when emailCount > 1) -->
+				<div
+					@click="emailCount--"
+					class="cursor-pointer transition-all duration-200 hover:scale-110"
+					v-if="emailCount > 1"
+					title="Remove last email"
+				>
+					<Icon
+						icon="solar:minus-circle-linear"
+						class="text-red-500 hover:text-red-600"
+						width="24"
+						height="24"
+					/>
+				</div>
+			</div>
+
+			<div
+				class="relative z-0 w-full mb-2 group"
+				v-for="i in emailCount"
+				:key="i"
+				v-if="emailCount > 0"
+			>
+				<input
+					v-model="email"
+					type="email"
+					class="w-full p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500 !text-black"
+					placeholder="Zadajte email ..."
+					required
+				/>
+			</div>
+
+			<div class="relative z-0 w-full mb-5 mt-5 group">
 				<input
 					v-model="datum_cas"
 					type="datetime-local"
