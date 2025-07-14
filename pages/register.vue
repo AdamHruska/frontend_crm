@@ -133,11 +133,11 @@ const rememberMe = ref(false);
 							id="meno"
 							name="meno"
 							required
-							class="appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
 						/>
 					</div>
 					<div class="mb-4">
-						<label for="priezvisko" class="block text-sm font-medium"
+						<label for="priezvisko" class="block text-sm font-medium text-black"
 							>Priezvisko</label
 						>
 						<input
@@ -145,11 +145,11 @@ const rememberMe = ref(false);
 							id="priezvisko"
 							name="priezvisko"
 							required
-							class="appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
 						/>
 					</div>
 					<div class="mb-4">
-						<label for="email" class="block text-sm font-medium"
+						<label for="email" class="block text-sm font-medium text-black"
 							>Emailová adresa</label
 						>
 						<input
@@ -159,11 +159,11 @@ const rememberMe = ref(false);
 							type="email"
 							autocomplete="email"
 							required
-							class="appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
 						/>
 					</div>
 					<div class="mb-4">
-						<label for="password" class="block text-sm font-medium"
+						<label for="password" class="block text-sm font-medium text-black"
 							>Heslo</label
 						>
 						<input
@@ -173,7 +173,7 @@ const rememberMe = ref(false);
 							type="password"
 							autocomplete="current-password"
 							required
-							class="appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
 							:class="{
 								'border-red-500 focus:ring-red-500 focus:border-red-500':
 									password !== password_confirmation,
@@ -183,7 +183,7 @@ const rememberMe = ref(false);
 						/>
 					</div>
 					<div class="mb-4">
-						<label for="password" class="block text-sm font-medium"
+						<label for="password" class="block text-sm font-medium text-black"
 							>Potvrdiť heslo</label
 						>
 						<input
@@ -193,7 +193,7 @@ const rememberMe = ref(false);
 							type="password"
 							autocomplete="current-password"
 							required
-							class="appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
 							:class="{
 								'border-red-500 focus:ring-red-500 focus:border-red-500':
 									password !== password_confirmation,
@@ -212,7 +212,7 @@ const rememberMe = ref(false);
 							class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-900 rounded"
 							v-model="rememberMe"
 						/>
-						<label for="remember_me" class="ml-2 block text-sm"
+						<label for="remember_me" class="ml-2 block text-sm text-black"
 							>Zapamätať si ma</label
 						>
 					</div>

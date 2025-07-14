@@ -82,7 +82,7 @@ onMounted(() => {
 			<form class="mt-8 space-y-6">
 				<div class="rounded-md shadow-sm">
 					<div class="mb-4">
-						<label for="email" class="block text-sm font-medium"
+						<label for="email" class="block text-sm text-black font-medium"
 							>Emailová adresa</label
 						>
 						<input
@@ -92,11 +92,11 @@ onMounted(() => {
 							type="email"
 							autocomplete="email"
 							required
-							class="appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
 						/>
 					</div>
 					<div class="mb-4">
-						<label for="password" class="block text-sm font-medium"
+						<label for="password" class="block text-sm text-black font-medium"
 							>Heslo</label
 						>
 						<input
@@ -106,7 +106,7 @@ onMounted(() => {
 							type="password"
 							autocomplete="current-password"
 							required
-							class="appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
 						/>
 					</div>
 				</div>
@@ -119,7 +119,7 @@ onMounted(() => {
 							type="checkbox"
 							class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-900 rounded"
 						/>
-						<label for="remember_me" class="ml-2 block text-sm"
+						<label for="remember_me" class="ml-2 block text-sm text-black"
 							>Zapamätať si ma</label
 						>
 					</div>
