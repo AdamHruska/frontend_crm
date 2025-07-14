@@ -421,6 +421,70 @@ export const useTodosStore = defineStore("todos", {
 				this.loadingState = false; // or loadingState.value = false
 			}
 		},
+
+		async fetchPastUncompletedTodos() {
+			this.loadingState = true;
+			const authStore = useAuthStore();
+			const token = authStore.token;
+
+			if (!token) {
+				console.error("Token not found. Please log in.");
+				return;
+			}
+
+			try {
+				const response = await axios.get(
+					`${config.public.apiUrl}past-uncompleted-todos`,
+					{
+						headers: {
+							Authorization: `Bearer ${authStore.token}`,
+						},
+					}
+				);
+				this.todosByDate = response.data.data;
+				this.selectedDate = null;
+			} catch (error) {
+				console.error(
+					"Error fetching past uncompleted todos:",
+					error.response || error
+				);
+				const toast = useToast();
+				toast.error("Nepodarilo sa načítať nedokončené úlohy z minulosti");
+			}
+			this.loadingState = false;
+		},
+
+		async fetchFutureUncompletedTodos() {
+			this.loadingState = true;
+			const authStore = useAuthStore();
+			const token = authStore.token;
+
+			if (!token) {
+				console.error("Token not found. Please log in.");
+				return;
+			}
+
+			try {
+				const response = await axios.get(
+					`${config.public.apiUrl}future-uncompleted-todos`,
+					{
+						headers: {
+							Authorization: `Bearer ${authStore.token}`,
+						},
+					}
+				);
+				this.todosByDate = response.data.data;
+				this.selectedDate = null;
+			} catch (error) {
+				console.error(
+					"Error fetching past uncompleted todos:",
+					error.response || error
+				);
+				const toast = useToast();
+				toast.error("Nepodarilo sa načítať nedokončené úlohy z minulosti");
+			}
+			this.loadingState = false;
+		},
 	},
 	getters: {
 		// Get all todos

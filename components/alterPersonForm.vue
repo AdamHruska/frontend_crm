@@ -33,6 +33,7 @@ const poznamka = ref("");
 const Investicny_dotaznik = ref("");
 const selectedAuthorId = ref("");
 const author_id = ref("");
+const aktualnyPoradca = ref("");
 
 // Define emits and props
 const emit = defineEmits(["cancelAlter", "alterPerson"]);
@@ -71,6 +72,7 @@ watch(
 			poznamka.value = newVal.poznamka || "";
 			Investicny_dotaznik.value = newVal.Investicny_dotaznik || "";
 			selectedAuthorId.value = newVal.author_id || "";
+			aktualnyPoradca.value = newVal.current_advisor || "";
 		} else {
 			resetForm();
 		}
@@ -91,6 +93,7 @@ function resetForm() {
 	poznamka.value = "";
 	Investicny_dotaznik.value = null;
 	selectedAuthorId.value = null;
+	aktualnyPoradca.value = "";
 }
 
 function cancelAlter() {
@@ -99,7 +102,6 @@ function cancelAlter() {
 }
 
 const alterPerson = async (id) => {
-	console.log(props.single_contact);
 	const person = {
 		id: props.single_contact.id,
 		meno: meno.value,
@@ -115,6 +117,7 @@ const alterPerson = async (id) => {
 		Investicny_dotaznik: Investicny_dotaznik.value,
 		author_id: selectedAuthorId.value,
 		is_deleted: true,
+		current_advisor: aktualnyPoradca.value,
 	};
 	// console.log(person);
 	const response = await axios.put(
@@ -339,6 +342,21 @@ const alterPerson = async (id) => {
 										{{ user.first_name }} {{ user.last_name }}
 									</option>
 								</select>
+							</div>
+
+							<div class="flex-1">
+								<label
+									v-if="zamestanie"
+									class="text-gray-600 absolute top-[-22px] font-medium"
+									>Aktuálny poradca</label
+								>
+								<input
+									v-model="aktualnyPoradca"
+									id="aktualnyPoradca"
+									type="text"
+									class="w-full"
+									placeholder="Aktuálny poradca"
+								/>
 							</div>
 						</div>
 					</div>

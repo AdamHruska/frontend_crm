@@ -354,6 +354,7 @@ const addActivity = async () => {
 					"Error creating Teams meeting:",
 					error.response?.data || error.message
 				);
+				toast.error("Je potrebné prihlásiť sa do Microsoft účtu");
 				// Consider showing an error message to the user here
 			}
 		}
@@ -470,6 +471,11 @@ const emailCount = ref(0);
 					</option>
 					<option value="poradenstvo">Poradenstvo</option>
 					<option value="realizácia">realizácia</option>
+					<option value="welcome seminar">Welcome seminár</option>
+					<option value="basic 1">Basic 1</option>
+					<option value="basic 2">Basic 2</option>
+					<option value="basic 3">Basic 3</option>
+					<option value="basic 4">Basic 4</option>
 					<option value="konfirmačný servis">konfirmačný servis</option>
 					<option value="servis">servis</option>
 					<option value="bringer bonus">bringer bonus</option>

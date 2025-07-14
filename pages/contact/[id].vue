@@ -101,7 +101,7 @@ const findPerson = async (id) => {
 			people.value = [response.data.contact];
 		}
 		author_id.value = response.data.contact.author_id;
-		console.log("Author ID:", author_id.value);
+		console.log("people value:", people.value);
 	} catch (error) {
 		console.error("Error fetching contact:", error);
 	}
@@ -134,7 +134,10 @@ const getUser = async (id) => {
 };
 
 const actityFormBool = ref(false);
+const activityID = ref(null);
+
 const alterActivity = (id) => {
+	activityID.value = id;
 	actityFormBool.value = !actityFormBool.value;
 	console.log("alterActivity", actityFormBool.value);
 };
@@ -238,28 +241,32 @@ const columns_activity = ref([
 	{
 		key: "aktivita",
 		label: "Aktivita",
-		class: "bg-gray-200",
+		class: "bg-gray-200 w-10",
 	},
-	{ key: "datumCas", label: "Začiatok", class: "bg-gray-200 w-28" },
-	{ key: "koniec", label: "Koniec", class: "bg-gray-200 w-28" },
-	{ key: "poznamka", label: "Poznámka k aktivite", class: "bg-gray-200" },
-	{ key: "volane", label: "Volané", class: "bg-gray-200 w-20" },
+	{ key: "datumCas", label: "Začiatok", class: "bg-gray-200 w-10" },
+	{ key: "koniec", label: "Koniec", class: "bg-gray-200 w-10" },
+	{
+		key: "poznamka",
+		label: "Poznámka k aktivite",
+		class: "bg-gray-200 w-[800px]",
+	},
+	{ key: "volane", label: "Volané", class: "bg-gray-200 w-10" },
 	{
 		key: "dovolane",
 		label: "Dovolané",
-		class: "bg-gray-200 w-20",
+		class: "bg-gray-200 w-10",
 	},
 	{
 		key: "dohodnute",
 		label: "Dohodnuté",
-		class: "bg-gray-200 w-20",
+		class: "bg-gray-200 w-10",
 	},
 	{
 		key: "letters",
-		label: "ABC",
-		class: "bg-gray-200 w-20",
+		label: "Vyhodnotenie stretnutia",
+		class: "bg-gray-200 w-10",
 	},
-	{ key: "created_at", label: "Vytvorené", class: "bg-gray-200 w-28" },
+	{ key: "created_at", label: "Vytvorené", class: "bg-gray-200 w-10" },
 	{
 		key: "miesto_stretnutia",
 		label: "Miesto stretnutia",
@@ -578,10 +585,24 @@ const changeActivityStatus = async (row, status) => {
 		</template>
 	</UTable>
 
-	<div class="ml-10 mt-4 max-w-[450px] shadow-md">
-		<div class="bg-gray-200 text-black text-xl font-semibold p-2">Poznamka</div>
-		<div class="border border-x-0 border-b-0 break-words p-2">
-			{{ people[0]?.poznamka || "No data available" }}
+	<div class="ml-10 mt-4 shadow-md flex gap-8 flex-col max-w-[83.5%]">
+		<div class="max-w-[450px]">
+			<div class="bg-gray-200 text-black text-xl font-semibold p-2">
+				Aktuálny poradca
+			</div>
+
+			<div class="border border-x-0 border-b-0 break-words p-2 max-w-[85%]">
+				{{ people[0]?.current_advisor || "No data available" }}
+			</div>
+		</div>
+
+		<div class="">
+			<div class="bg-gray-200 text-black text-xl font-semibold p-2">
+				Poznamka
+			</div>
+			<div class="border border-x-0 border-b-0 break-words p-2">
+				{{ people[0]?.poznamka || "Kontakt nemá žiadnu poznámku" }}
+			</div>
 		</div>
 	</div>
 
@@ -822,7 +843,8 @@ const changeActivityStatus = async (row, status) => {
 
 	<AlterActivityForm
 		v-if="actityFormBool"
-		@cancelAlterActivity="alterActivity"
+		:activityID="activityID"
+		@cancelAddActivity="alterActivity"
 	/>
 </template>
 

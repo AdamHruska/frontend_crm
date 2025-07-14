@@ -486,7 +486,7 @@ const isValidUrl = (url) => {
 						class="text-blue-600 hover:underline block w-4/5 overflow-hidden whitespace-nowrap text-ellipsis"
 						:title="miesto_stretnutia"
 					>
-						{{ miesto_stretnutia }}
+						Link na online stretnutie
 					</a>
 					<input
 						v-model="miesto_stretnutia"

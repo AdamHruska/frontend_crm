@@ -6,6 +6,8 @@ import { useCalendarstore } from "#imports";
 const calendarStore = useCalendarstore();
 import { useUserStore } from "#imports";
 const userStore = useUserStore();
+import { useContactsStore } from "#imports";
+const contactsStore = useContactsStore();
 
 const config = useRuntimeConfig();
 import { Icon } from "@iconify/vue";
@@ -55,67 +57,6 @@ const events = ref([]);
 
 const currentLoadedMonth = ref(null);
 const currentLoadedYear = ref(null);
-
-// const calendarOptions = ref({
-// 	plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
-// 	headerToolbar: {
-// 		left: "prev,next today",
-// 		center: "title",
-// 		right: "dayGridMonth,timeGridWeek,timeGridDay",
-// 	},
-// 	initialView: "timeGridWeek",
-// 	slotMinTime: "06:00:00",
-// 	slotMaxTime: "23:00:00",
-// 	scrollTime: "08:00:00",
-// 	initialEvents: [],
-// 	events: events,
-// 	editable: true,
-// 	selectable: true,
-// 	selectMirror: true,
-// 	dayMaxEvents: true,
-// 	weekends: true,
-// 	select: handleDateSelect,
-// 	eventClick: handleEventClick,
-// 	eventsSet: handleEvents,
-// 	eventDrop: handleEventDrop,
-// 	eventResize: handleEventResize,
-// 	slotDuration: "00:30:00",
-// 	allDaySlot: true,
-// 	nowIndicator: true,
-// 	eventTimeFormat: {
-// 		hour: "2-digit",
-// 		minute: "2-digit",
-// 		hour12: false,
-// 	},
-// 	slotLabelFormat: {
-// 		hour: "2-digit",
-// 		minute: "2-digit",
-// 		hour12: false,
-// 	},
-// 	locale: "sk",
-// 	firstDay: 1,
-// 	datesSet: (dateInfo) => {
-// 		// Extract the current view's start date
-// 		const currentDate = dateInfo.view.currentStart;
-
-// 		// Get the month (0-11) and year
-// 		const month = currentDate.getMonth() + 1;
-// 		const year = currentDate.getFullYear();
-
-// 		// Check if this is a new month or year
-// 		if (
-// 			month !== currentLoadedMonth.value + 2 ||
-// 			year !== currentLoadedYear.value
-// 		) {
-// 			// Call fetchMicrosoftEvents function with current month and year
-// 			fetchMicrosoftEvents(month, year);
-
-// 			// Update the current loaded month and year
-// 			currentLoadedMonth.value = month;
-// 			currentLoadedYear.value = year;
-// 		}
-// 	},
-// });
 
 const calendarOptions = ref({
 	plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
@@ -179,45 +120,12 @@ const calendarOptions = ref({
 	},
 	// Add this event render function to verify all-day events are being processed correctly
 	eventDidMount: (info) => {
-		// Log event details for debugging
-		console.log(`Event: ${info.event.title}`);
-		console.log(`Is all-day: ${info.event.allDay}`);
-
 		// You could also visually mark all-day events differently if needed
 		if (info.event.allDay) {
 			info.el.style.fontWeight = "bold";
 		}
 	},
 });
-
-// function handleEventDrop(dropInfo) {
-// 	const eventId = dropInfo.event.id;
-// 	const newStart = dropInfo.event.start;
-// 	const newEnd = dropInfo.event.end;
-
-// 	// Check if this is a Microsoft event
-// 	if (dropInfo.event.extendedProps.source === "microsoft") {
-// 		updateMicrosoftEvent(eventId, newStart, newEnd, dropInfo.event.title);
-// 		return;
-// 	}
-
-// 	// Check if user has permission to edit this event
-// 	const event = rawData.value.find((event) => event.id == eventId);
-// 	if (event && event.created_id !== userStore.user.id) {
-// 		alert("You don't have permission to edit this event.");
-// 		dropInfo.revert(); // Revert the drag if no permission
-// 		return;
-// 	}
-
-// 	// Format dates for backend
-// 	const formattedStart = formatDateForBackend(newStart);
-// 	const formattedEnd = formatDateForBackend(newEnd);
-
-// 	// Update the event in the backend
-// 	updateEventInBackend(eventId, formattedStart, formattedEnd);
-// }
-
-// Troubleshooting version of handleEventDrop with detailed logging
 
 async function handleEventDrop(dropInfo) {
 	const eventId = dropInfo.event.id;
@@ -308,49 +216,6 @@ async function updateEventInBackend(eventId, formattedStart, formattedEnd) {
 		throw error;
 	}
 }
-
-// async function handleEventDrop(dropInfo) {
-// 	const eventId = dropInfo.event.id;
-// 	const newStart = dropInfo.event.start;
-// 	const newEnd = dropInfo.event.end ?? newStart; // fallback if end is null
-
-// 	// Check if this is a Microsoft event
-// 	if (dropInfo.event.extendedProps.source === "microsoft") {
-// 		try {
-// 			await updateMicrosoftEvent(
-// 				eventId,
-// 				newStart.toISOString(),
-// 				newEnd.toISOString(),
-// 				dropInfo.event.title
-// 			);
-// 		} catch (error) {
-// 			console.error("Failed to update Microsoft event:", error);
-// 			alert("Failed to update Microsoft event.");
-// 			dropInfo.revert(); // revert UI
-// 		}
-// 		return;
-// 	}
-
-// 	// Check if user has permission to edit this event
-// 	const event = rawData.value.find((event) => event.id == eventId);
-// 	if (event && event.created_id !== userStore.user.id) {
-// 		alert("You don't have permission to edit this event.");
-// 		dropInfo.revert();
-// 		return;
-// 	}
-
-// 	// Format for backend
-// 	const formattedStart = formatDateForBackend(newStart);
-// 	const formattedEnd = formatDateForBackend(newEnd);
-
-// 	try {
-// 		await updateEventInBackend(eventId, formattedStart, formattedEnd);
-// 	} catch (error) {
-// 		console.error("Failed to update local event:", error);
-// 		alert("Failed to update event. Please try again.");
-// 		dropInfo.revert(); // revert UI
-// 	}
-// }
 
 function handleEventResize(resizeInfo) {
 	const eventId = resizeInfo.event.id;
@@ -475,7 +340,10 @@ onMounted(async () => {
 	if (calendarStore.activities.length === 0) {
 		await calendarStore.fetchActivities();
 	}
-	//await fetchMicrosoftEvents(currentLoadedMonth.value, currentLoadedYear.value);
+
+	if (contactsStore.contacts.data.length === 0) {
+		await contactsStore.fetchContacts();
+	}
 
 	// Set up event listener for deleteSharedEvents
 	eventBus.on("deleteSharedEvents", ({ userId }) => {
@@ -543,15 +411,42 @@ onUnmounted(() => {
 	eventBus.off("deleteSharedEvents");
 });
 
+// const transformData = (data) => {
+// 	return data.map((item) => {
+// 		var farba = "";
+// 		const formattedStart = item.datumCas.replace(" ", "T");
+// 		if (item.created_id == userStore.user.id) {
+// 			farba = "rgb(37 99 235)";
+// 		} else {
+// 			farba = "red";
+// 		}
+
+// 		return {
+// 			id: item.id,
+// 			title: item.aktivita,
+// 			start: formattedStart,
+// 			end: item.koniec,
+// 			backgroundColor: farba,
+// 			borderColor: farba,
+// 			user_id: item.created_id,
+// 			extendedProps: {
+// 				contact_id: item.contact_id,
+// 			},
+// 		};
+// 	});
+// };
+
 const transformData = (data) => {
 	return data.map((item) => {
-		var farba = "";
+		const farba =
+			item.created_id == userStore.user.id ? "rgb(37 99 235)" : "red";
 		const formattedStart = item.datumCas.replace(" ", "T");
-		if (item.created_id == userStore.user.id) {
-			farba = "rgb(37 99 235)";
-		} else {
-			farba = "red";
-		}
+
+		// Get contact info - use optional chaining for safety
+		const contact = item.contact_id
+			? contactsStore.contacts.data?.find((c) => c.id === item.contact_id)
+			: null;
+
 		return {
 			id: item.id,
 			title: item.aktivita,
@@ -560,6 +455,12 @@ const transformData = (data) => {
 			backgroundColor: farba,
 			borderColor: farba,
 			user_id: item.created_id,
+			extendedProps: {
+				contact_id: item.contact_id || null,
+				firstName: contact?.meno || "",
+				lastName: contact?.priezvisko || "",
+				// Add any other contact properties you need
+			},
 		};
 	});
 };
@@ -787,17 +688,19 @@ const addNewEvent = (newEvent) => {
 	rawData.value.push(newEvent);
 
 	// Create the transformed event object in the calendar format
-	const transformedEvent = {
-		id: newEvent.id,
-		title: newEvent.aktivita,
-		start: newEvent.datumCas.replace(" ", "T"),
-		end: newEvent.koniec,
-		backgroundColor:
-			newEvent.created_id === userStore.user.id ? "rgb(37 99 235)" : "red",
-		borderColor:
-			newEvent.created_id === userStore.user.id ? "rgb(37 99 235)" : "red",
-		user_id: newEvent.created_id,
-	};
+	// const transformedEvent = {
+	// 	id: newEvent.id,
+	// 	title: newEvent.aktivita,
+	// 	start: newEvent.datumCas.replace(" ", "T"),
+	// 	end: newEvent.koniec,
+	// 	backgroundColor:
+	// 		newEvent.created_id === userStore.user.id ? "rgb(37 99 235)" : "red",
+	// 	borderColor:
+	// 		newEvent.created_id === userStore.user.id ? "rgb(37 99 235)" : "red",
+	// 	user_id: newEvent.created_id,
+	// };
+
+	const [transformedEvent] = transformData([newEvent]);
 
 	// Add the new event to the events array
 	events.value = [...events.value, transformedEvent];
@@ -879,6 +782,28 @@ const loginWithMicrosoft = () => {
 		scope
 	)}&response_mode=query`;
 	window.location.href = authUrl;
+};
+
+const logoutWithMicrosoft = async () => {
+	try {
+		const response = await axios.post(
+			`${config.public.apiUrl}microsoft/logout`,
+			{}, // empty body
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+					"Content-Type": "application/json",
+				},
+			}
+		);
+
+		console.log(response.data.message);
+		toast.success("Successfully logged out from Microsoft");
+		return response.data;
+	} catch (error) {
+		console.error("Microsoft logout failed:", error);
+		throw error;
+	}
 };
 
 const createMicrosoftEvent = ref(false);
@@ -1067,6 +992,13 @@ const checkAuth = async () => {
 						<img src="/public/icons8-microsoft-48.png" alt="logo" />
 					</button>
 					<button
+						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+						@click="logoutWithMicrosoft"
+					>
+						<span>Odhlásiť sa z Microsoft účtu</span>
+						<img src="/public/icons8-microsoft-48.png" alt="logo" />
+					</button>
+					<button
 						class="bg-red-800 px-4 rounded-md shadow hover:bg-red-700 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
 						@click="toggleCreateMicrosoftEvent"
 					>
@@ -1092,7 +1024,10 @@ const checkAuth = async () => {
 							<div class="event-title">{{ arg.event.title }}</div>
 							<!-- Display location for Microsoft events -->
 							<div class="">
-								<div>Adam Adam</div>
+								<div>
+									{{ arg.event.extendedProps.firstName }}
+									{{ arg.event.extendedProps.lastName }}
+								</div>
 							</div>
 
 							<!-- Display event type indicator -->

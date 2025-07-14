@@ -46,7 +46,7 @@
 				class="container"
 				v-if="statistics && responseData && responseData.detailed_statistics"
 			>
-				<div class="item">
+				<!-- <div class="item">
 					<div class="item-left">
 						<p>Pohovory:</p>
 					</div>
@@ -60,7 +60,7 @@
 							{{ responseData.detailed_statistics.pohovory.with_check_status }}
 						</div>
 					</div>
-				</div>
+				</div> -->
 
 				<div class="item">
 					<div class="item-left">
@@ -143,7 +143,7 @@
 				@change="fetchData"
 			>
 				<option value="all">Všetky aktivity</option>
-				<option value="Telefonát klient">Telefonát</option>
+				<option value="Telefonát klient">Telefonát klient</option>
 				<option value="Prvé stretnutie">Prvé stretnutie</option>
 				<option value="Analýza osobných financí">AOF</option>
 				<option value="poradenstvo">Poradenstvo</option>
@@ -194,39 +194,171 @@
 
 			<!-- Results Table -->
 			<div class="bg-white rounded shadow">
-				<table class="w-full">
-					<thead>
-						<tr class="bg-gray-50">
-							<th class="p-3 text-left">Meno</th>
-							<th class="p-3 text-left">Priezvisko</th>
-							<th class="p-3 text-left">Typ aktivity</th>
-							<th class="p-3 text-left">Dátum</th>
-							<th class="p-3 text-left">Status</th>
-						</tr>
-					</thead>
-					<EventUpdateCalendar
-						:activityID="activityID"
-						v-if="updateActivity"
-						@cancelAddActivity="toggleUpdateActivity"
-						@alterEvents="alterEvents"
-						:user.value="user"
-					/>
-					<tbody>
-						<tr
-							v-for="activity in activities"
-							:key="activity.id"
-							class="border-t cursor-pointer hover:bg-gray-50"
-							@click="toggleUpdateActivity(activity.id)"
-						>
-							<td class="p-3">{{ activity.meno }}</td>
-							<td class="p-3">{{ activity.priezvisko }}</td>
-							<td class="p-3">{{ activity.type }}</td>
-							<td class="p-3">{{ formatDate(activity.date) }}</td>
-							<td class="p-3">{{ activity.status }}</td>
-						</tr>
-					</tbody>
-				</table>
+				<div class="max-h-[400px] overflow-y-auto">
+					<table class="w-full">
+						<thead>
+							<tr class="bg-gray-50">
+								<th class="p-3 text-left">Meno</th>
+								<th class="p-3 text-left">Priezvisko</th>
+								<th class="p-3 text-left">Typ aktivity</th>
+								<th class="p-3 text-left">Dátum</th>
+								<th class="p-3 text-left">Status</th>
+							</tr>
+						</thead>
+						<EventUpdateCalendar
+							:activityID="activityID"
+							v-if="updateActivity"
+							@cancelAddActivity="toggleUpdateActivity"
+							@alterEvents="alterEvents"
+							:user.value="user"
+						/>
+						<tbody>
+							<tr
+								v-for="activity in activities"
+								:key="activity.id"
+								class="border-t cursor-pointer hover:bg-gray-50"
+								@click="toggleUpdateActivity(activity.id)"
+							>
+								<td class="p-3">{{ activity.meno }}</td>
+								<td class="p-3">{{ activity.priezvisko }}</td>
+								<td class="p-3">{{ activity.type }}</td>
+								<td class="p-3">{{ formatDate(activity.date) }}</td>
+								<td class="p-3">{{ activity.status }}</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
 			</div>
+		</div>
+
+		<!-- Pohovory Statistika -->
+		<h1 class="text-2xl font-bold mb-4 mt-16">Štatistika pre Pohovory</h1>
+
+		<div
+			class="container"
+			v-if="dataPohovory && dataPohovory.pohovory_statistics"
+		>
+			<div class="item">
+				<div class="item-left">
+					<p>Telefonát nábor:</p>
+				</div>
+				<div class="item-right">
+					<div class="right-count">
+						Všetky:
+						{{ dataPohovory.pohovory_statistics.telefonat_nabor.total }}
+					</div>
+					<div class="right-count green">
+						Dohodnuté:
+						{{ dataPohovory.pohovory_statistics.telefonat_nabor.dohodnute }}
+					</div>
+				</div>
+			</div>
+
+			<div class="item">
+				<div class="item-left">
+					<p>Pohovor:</p>
+				</div>
+				<div class="item-right">
+					<div class="right-count">
+						Zaujatý: {{ dataPohovory.pohovory_statistics.pohovor.zaujaty }}
+					</div>
+					<div class="right-count green">
+						Nezaujatý: {{ dataPohovory.pohovory_statistics.pohovor.nezaujaty }}
+					</div>
+					<div class="right-count dark-green">
+						Zrelizované:
+						{{ dataPohovory.pohovory_statistics.pohovor.with_check_status }}
+					</div>
+				</div>
+			</div>
+
+			<div class="item">
+				<div class="item-left">
+					<p>Welcome Seminár:</p>
+				</div>
+				<div class="item-right">
+					<div class="right-count">
+						Všetky:
+						{{ dataPohovory.pohovory_statistics.welcome_seminar.total }}
+					</div>
+					<div class="right-count green">
+						Zrealizované:
+						{{
+							dataPohovory.pohovory_statistics.welcome_seminar.with_check_status
+						}}
+					</div>
+				</div>
+			</div>
+
+			<div class="item">
+				<div class="item-left">
+					<p>Basic 1:</p>
+				</div>
+				<div class="item-right">
+					<div class="right-count">
+						Všetky:
+						{{ dataPohovory.pohovory_statistics.basic_1.total }}
+					</div>
+					<div class="right-count green">
+						Zrealizované:
+						{{ dataPohovory.pohovory_statistics.basic_1.with_check_status }}
+					</div>
+				</div>
+			</div>
+
+			<div class="item">
+				<div class="item-left">
+					<p>Basic 2:</p>
+				</div>
+				<div class="item-right">
+					<div class="right-count">
+						Všetky:
+						{{ dataPohovory.pohovory_statistics.basic_2.total }}
+					</div>
+					<div class="right-count green">
+						Zrealizované:
+						{{ dataPohovory.pohovory_statistics.basic_2.with_check_status }}
+					</div>
+				</div>
+			</div>
+
+			<div class="item">
+				<div class="item-left">
+					<p>Basic 3:</p>
+				</div>
+				<div class="item-right">
+					<div class="right-count">
+						Všetky:
+						{{ dataPohovory.pohovory_statistics.basic_3.total }}
+					</div>
+					<div class="right-count green">
+						Zrealizované:
+						{{ dataPohovory.pohovory_statistics.basic_3.with_check_status }}
+					</div>
+				</div>
+			</div>
+
+			<div class="item">
+				<div class="item-left">
+					<p>Basic 4:</p>
+				</div>
+				<div class="item-right">
+					<div class="right-count">
+						Všetky:
+						{{ dataPohovory.pohovory_statistics.basic_4.total }}
+					</div>
+					<div class="right-count green">
+						Zrealizované:
+						{{ dataPohovory.pohovory_statistics.basic_4.with_check_status }}
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="p-2 bg-white font-semibold text-lg">Pohovory</div>
+
+		<div class="bg-white p-4 rounded shadow mb-6">
+			<BarChart :data="chartDataPohovory" />
 		</div>
 	</div>
 </template>
@@ -257,8 +389,10 @@ const selectedActivityType = ref("all");
 const statistics = ref({ called: 0, reached: 0, scheduled: 0 });
 const activities = ref([]);
 const loadingStateCalendar = ref(false);
+const dataPohovory = ref();
 
 // Chart data computed property
+
 const chartData = computed(() => ({
 	labels: ["Volané", "Dovolané", "Dohodnuté"],
 	datasets: [
@@ -272,6 +406,49 @@ const chartData = computed(() => ({
 		},
 	],
 }));
+
+const chartDataPohovory = computed(() => {
+	// Guard clause to prevent errors when data isn't loaded yet
+	if (!dataPohovory.value?.pohovory_statistics?.pohovor) {
+		return {
+			labels: ["Volané", "Dovolané", "Dohodnuté", "Zaujatý", "Nezaujatý"],
+			datasets: [
+				{
+					data: [0, 0, 0, 0, 0], // Default values
+					backgroundColor: [
+						"#93C5FD",
+						"#86EFAC",
+						"#C084FC",
+						"#FBBF24",
+						"#F87171",
+					],
+				},
+			],
+		};
+	}
+
+	return {
+		labels: ["Volané", "Dovolané", "Dohodnuté", "Zaujatý", "Nezaujatý"],
+		datasets: [
+			{
+				data: [
+					dataPohovory.value.pohovory_statistics.pohovor.volane,
+					dataPohovory.value.pohovory_statistics.pohovor.dovolane,
+					dataPohovory.value.pohovory_statistics.pohovor.dohodnute,
+					dataPohovory.value.pohovory_statistics.pohovor.zaujaty,
+					dataPohovory.value.pohovory_statistics.pohovor.nezaujaty,
+				],
+				backgroundColor: [
+					"#93C5FD",
+					"#86EFAC",
+					"#C084FC",
+					"#FBBF24",
+					"#F87171",
+				],
+			},
+		],
+	};
+});
 
 // Methods
 const formatCardTitle = (key) => {
@@ -290,12 +467,11 @@ const formatCardTitle = (key) => {
 // Methods
 const fetchData = async () => {
 	loadingStateCalendar.value = true;
+	const fromDate = new Date(dateRange.value.from);
+	const toDate = new Date(dateRange.value.to);
+	toDate.setHours(23, 59, 59, 999); // Set to the end of the day
 
 	try {
-		const fromDate = new Date(dateRange.value.from);
-		const toDate = new Date(dateRange.value.to);
-		toDate.setHours(23, 59, 59, 999); // Set to the end of the day
-
 		const response = await axios.post(
 			`${config.public.apiUrl}activity-statistics`,
 			{
@@ -312,8 +488,23 @@ const fetchData = async () => {
 
 		responseData.value = response.data;
 		statistics.value = response.data.statistics;
-		console.log("Statistics:", response.data);
 		activities.value = response.data.activities;
+
+		const responsePohovory = await axios.post(
+			`${config.public.apiUrl}statistics-pohovory`,
+			{
+				from_date: fromDate.toISOString().split("T")[0],
+				to_date: toDate.toISOString(),
+				activity_type: selectedActivityType.value,
+			},
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+				},
+			}
+		);
+		dataPohovory.value = responsePohovory.data;
+		console.log("responsePohovory", dataPohovory.value);
 	} catch (error) {
 		console.error(
 			"Error fetching statistics:",
@@ -384,5 +575,9 @@ onMounted(() => {
 
 .green {
 	background-color: #86efac;
+}
+
+.dark-green {
+	background-color: #22c55e;
 }
 </style>

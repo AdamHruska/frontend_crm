@@ -1,16 +1,25 @@
 <script setup>
 import AirDatepicker from "air-datepicker";
 import "air-datepicker/air-datepicker.css";
-
+import axios from "axios";
+const config = useRuntimeConfig();
 import { useTodosStore } from "../stores/todoStore";
 const todoStore = useTodosStore();
+
+import { useAuthStore } from "@/stores/authStore";
+const authStore = useAuthStore();
 
 import { useContactsStore } from "#imports";
 const contactsStore = useContactsStore();
 
+import { useToast } from "vue-toastification";
+const toast = useToast();
+
 const datepickerInput = ref(null);
 
 const todoItems = ref([]);
+
+const yesterDayUncompletedActivities = ref([]);
 
 // Add current date state for pagination
 const currentDate = ref(new Date());
@@ -148,6 +157,23 @@ onMounted(async () => {
 		await contactsStore.fetchContacts();
 	}
 	console.log("skuska kontakty", contactsStore.contacts);
+
+	const yesterDay = await axios.get(
+		`${config.public.apiUrl}get-yesterday-uncompleted-activities`,
+		{
+			headers: {
+				Authorization: `Bearer ${authStore.token}`,
+			},
+		}
+	);
+
+	yesterDayUncompletedActivities.value = yesterDay.data.activities;
+
+	console.log(
+		"yesterday uncompleted activities",
+		yesterDayUncompletedActivities.value
+	);
+
 	if (datepickerInput.value) {
 		new AirDatepicker(datepickerInput.value, {
 			autoClose: true,
@@ -208,6 +234,25 @@ const columns = [
 	{
 		key: "actions",
 		label: "Akcie",
+	},
+];
+
+const columns_yesterday = [
+	{
+		key: "aktivita",
+		label: "Aktivita",
+	},
+	{
+		key: "datumCas",
+		label: "Plánovaná",
+	},
+	{
+		key: "poznamka",
+		label: "Poznámka",
+	},
+	{
+		key: "activity_status",
+		label: "Status aktivity",
 	},
 ];
 
@@ -379,6 +424,63 @@ const resetDate = async () => {
 		updated_at: todo.updated_at,
 	}));
 };
+
+const changeActivityStatus = async (item, status) => {
+	try {
+		await axios.patch(
+			`${config.public.apiUrl}activities/${item.id}/status`,
+			{
+				activity_status: status,
+			},
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+				},
+			}
+		);
+
+		yesterDayUncompletedActivities.value =
+			yesterDayUncompletedActivities.value.filter(
+				(activity) => activity.id !== item.id
+			);
+		toast.success("Status aktivity bol úspešne aktualizovaný!");
+	} catch (error) {
+		console.error("Error updating activity status:", error);
+		// Handle error appropriately (show toast notification, etc.)
+	}
+};
+
+const showPastUncompletedTodos = async () => {
+	showingAllTodos.value = true;
+	showingTodosWithoutContact.value = false;
+
+	await todoStore.fetchPastUncompletedTodos();
+
+	todoItems.value = todoStore.todosByDate.map((todo, index) => ({
+		id: todo.id || index,
+		activity: todo.activity_name,
+		dueDate: todo.due_date,
+		assignedTo: todo.contact_id,
+		completed: todo.is_completed,
+		updated_at: todo.is_completed ? todo.updated_at : null,
+	}));
+};
+
+const showFutureUncompletedTodos = async () => {
+	showingAllTodos.value = true;
+	showingTodosWithoutContact.value = false;
+
+	await todoStore.fetchFutureUncompletedTodos();
+
+	todoItems.value = todoStore.todosByDate.map((todo, index) => ({
+		id: todo.id || index,
+		activity: todo.activity_name,
+		dueDate: todo.due_date,
+		assignedTo: todo.contact_id,
+		completed: todo.is_completed,
+		updated_at: todo.is_completed ? todo.updated_at : null,
+	}));
+};
 </script>
 
 <template>
@@ -416,6 +518,20 @@ const resetDate = async () => {
 						@click="showAllTodos"
 					>
 						Zobraziť všetky
+					</button>
+					<button
+						v-if="!showingAllTodos && !showingTodosWithoutContact"
+						class="show-all-button !bg-green-500 hover:!bg-green-600"
+						@click="showPastUncompletedTodos"
+					>
+						Nedokončené z minulosti
+					</button>
+					<button
+						v-if="!showingAllTodos && !showingTodosWithoutContact"
+						class="show-all-button !bg-purple-500 hover:!bg-purple-600"
+						@click="showFutureUncompletedTodos"
+					>
+						Nedokončené z budúcnosti
 					</button>
 					<button
 						v-if="!showingTodosWithoutContact && !showingAllTodos"
@@ -487,6 +603,76 @@ const resetDate = async () => {
 
 			<!-- Todo list table -->
 			<div class="right">
+				<h3 class="font-semibold mb-2">Nevyhodnotené aktivity zo včera:</h3>
+				<table class="todo-table mb-8 w-full">
+					<thead>
+						<tr>
+							<th
+								v-for="column in columns_yesterday"
+								:key="column.key"
+								:class="'col-' + column.key"
+							>
+								{{ column.label }}
+							</th>
+						</tr>
+					</thead>
+					<tbody class="">
+						<tr
+							v-for="(item, index) in yesterDayUncompletedActivities"
+							:key="index"
+						>
+							<td class="col-dueDate">{{ item.aktivita }}</td>
+							<td class="col-dueDate">{{ formatDateTime(item.datumCas) }}</td>
+							<td class="col-dueDate">
+								{{ item.poznamka || "Žiadna poznámka" }}
+							</td>
+							<td class="col-dueDate">
+								<div class="flex items-center gap-4">
+									<!-- Checkmark (success) -->
+									<span
+										@click.stop="changeActivityStatus(item, 'check')"
+										class="text-xl cursor-pointer"
+										>✓</span
+									>
+
+									<span
+										@click.stop="changeActivityStatus(item, 'questionmark')"
+										:class="{
+											'text-red-500': item.activity_status === 'questionmark',
+											'text-black': item.activity_status !== 'questionmark',
+										}"
+										class="text-xl cursor-pointer"
+										>?</span
+									>
+
+									<!-- X mark (failed/closed) -->
+									<span
+										@click.stop="changeActivityStatus(item, 'discarded')"
+										class="text-xl cursor-pointer"
+										>✕</span
+									>
+
+									<span
+										v-if="item.aktivita === 'Pohovor'"
+										@click.stop="changeActivityStatus(item, 'accepted')"
+										class="cursor-pointer"
+									>
+										<Icon name="fa6-solid:thumbs-up" class="h-5 w-5" />
+									</span>
+
+									<span
+										v-if="item.aktivita === 'Pohovor'"
+										@click.stop="changeActivityStatus(item, 'rejected')"
+										class="cursor-pointer ml-2"
+									>
+										<Icon name="fa6-solid:thumbs-down" class="h-5 w-5" />
+									</span>
+								</div>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+
 				<table class="todo-table">
 					<thead>
 						<tr>
