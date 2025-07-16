@@ -81,7 +81,7 @@ export const useCalendarstore = defineStore("calendar", {
 					}
 				);
 				this.activities = response.data.activities;
-
+				console.log("Fetched activities:", this.activities);
 				// Log and parse sharedIDs
 				let sharedIDs = userStore.user.share_user_id;
 				console.log("Raw share_user_id:", sharedIDs);

@@ -116,7 +116,7 @@ const rememberMe = ref(false);
 
 <template>
 	<loadigcomponent v-if="loading" />
-	<div class="flex items-center justify-center min-h-screen bg-blue-500">
+	<div class="flex items-center justify-center min-h-screen bg-blue-800">
 		<div class="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
 			<div class="flex justify-center">
 				<h1 class="mx-auto text-center text-3xl font-bold pb-4 text-black">

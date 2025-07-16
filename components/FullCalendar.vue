@@ -398,7 +398,6 @@ onMounted(async () => {
 			// Clear the temporary "rememberMe" flag
 			sessionStorage.removeItem("rememberMe");
 
-			// Redirect to the calendar page or another destination
 			window.location.href = "/calendar";
 		} catch (error) {
 			console.error("Error during Microsoft login callback:", error);
@@ -442,7 +441,7 @@ const transformData = (data) => {
 			item.created_id == userStore.user.id ? "rgb(37 99 235)" : "red";
 		const formattedStart = item.datumCas.replace(" ", "T");
 
-		// Get contact info - use optional chaining for safety
+		//Get contact info - use optional chaining for safety
 		const contact = item.contact_id
 			? contactsStore.contacts.data?.find((c) => c.id === item.contact_id)
 			: null;
@@ -459,7 +458,6 @@ const transformData = (data) => {
 				contact_id: item.contact_id || null,
 				firstName: contact?.meno || "",
 				lastName: contact?.priezvisko || "",
-				// Add any other contact properties you need
 			},
 		};
 	});
@@ -737,10 +735,39 @@ const loadingStateCalendar = ref(false);
 
 const areMicrosofEventsShown = ref(false);
 
-const fetchMicrosoftEvents = async (month, year) => {
+// const fetchMicrosoftEvents = async (month, year) => {
+// 	loadingStateCalendar.value = true;
+
+// 	// Use the store to get events
+// 	const newEvents = await calendarStore.fetchMicrosoftEvents(month, year);
+
+// 	// Process events to prevent duplicates
+// 	const existingEventIds = new Set(events.value.map((event) => event.id));
+// 	const uniqueNewEvents = newEvents.filter(
+// 		(event) => !existingEventIds.has(event.id)
+// 	);
+
+// 	// Add new events to the calendar
+// 	events.value = [...events.value, ...uniqueNewEvents];
+
+// 	// Update calendar options
+// 	calendarOptions.value = { ...calendarOptions.value, events: events.value };
+
+// 	loadingStateCalendar.value = false;
+// 	return uniqueNewEvents;
+// };
+
+async function fetchMicrosoftEvents(month, year) {
 	loadingStateCalendar.value = true;
 
-	// Use the store to get events
+	// First ensure local events are loaded
+	if (calendarStore.activities.length === 0) {
+		await calendarStore.fetchActivities();
+		rawData.value = calendarStore.activities;
+		events.value = transformData(rawData.value);
+	}
+
+	// Then get Microsoft events
 	const newEvents = await calendarStore.fetchMicrosoftEvents(month, year);
 
 	// Process events to prevent duplicates
@@ -749,15 +776,13 @@ const fetchMicrosoftEvents = async (month, year) => {
 		(event) => !existingEventIds.has(event.id)
 	);
 
-	// Add new events to the calendar
+	// Merge events while preserving existing ones
 	events.value = [...events.value, ...uniqueNewEvents];
 
-	// Update calendar options
 	calendarOptions.value = { ...calendarOptions.value, events: events.value };
-
 	loadingStateCalendar.value = false;
 	return uniqueNewEvents;
-};
+}
 
 const eventType = ref("regular");
 

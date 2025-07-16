@@ -592,7 +592,7 @@ const changeActivityStatus = async (row, status) => {
 			</div>
 
 			<div class="border border-x-0 border-b-0 break-words p-2 max-w-[85%]">
-				{{ people[0]?.current_advisor || "No data available" }}
+				{{ people[0]?.current_advisor || "Poradca nebol vyplnený" }}
 			</div>
 		</div>
 

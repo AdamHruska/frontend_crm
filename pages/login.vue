@@ -73,7 +73,7 @@ onMounted(() => {
 
 <template>
 	<loadigcomponent v-if="loading" />
-	<div class="flex items-center justify-center min-h-screen bg-blue-500">
+	<div class="flex items-center justify-center min-h-screen bg-blue-800">
 		<div class="w-full max-w-md p-8 space-y-8 rounded-lg shadow-md bg-white">
 			<h1 class="mx-auto text-center text-3xl font-bold pb-4 text-black">
 				Partners Group SK
