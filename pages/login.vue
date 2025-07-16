@@ -69,6 +69,8 @@ const login = async (email, password, rememberMe) => {
 onMounted(() => {
 	console.log("Remember me status:", rememberMe.value);
 });
+
+//skuska
 </script>
 
 <template>
