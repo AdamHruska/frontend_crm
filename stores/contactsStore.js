@@ -8,6 +8,7 @@ import { useToast } from "vue-toastification";
 export const useContactsStore = defineStore("contacts", {
 	state: () => ({
 		contacts: [],
+		allContacts: [],
 		delegatedContacts: [],
 		page: null,
 		prev_page_url: null,
@@ -43,6 +44,34 @@ export const useContactsStore = defineStore("contacts", {
 				);
 				const toast = useToast();
 				toast.error("Nepodarilo sa načítať delegované kontakty");
+			}
+			this.loadingState = false;
+		},
+
+		async fetchAllContacts() {
+			this.loadingState = true;
+			const authStore = useAuthStore();
+			const token = authStore.token;
+
+			if (!token) {
+				console.error("Token not found. Please log in.");
+				return;
+			}
+
+			try {
+				const response = await axios.get(
+					`${config.public.apiUrl}all-contacts`,
+					{
+						headers: {
+							Authorization: `Bearer ${authStore.token}`,
+						},
+					}
+				);
+				this.allContacts = response.data.contacts;
+			} catch (error) {
+				console.error("Error fetching all contacts:", error.response || error);
+				const toast = useToast();
+				toast.error("Nepodarilo sa načítať všetky kontakty");
 			}
 			this.loadingState = false;
 		},
@@ -175,6 +204,8 @@ export const useContactsStore = defineStore("contacts", {
 					.filter((contact) => contact.id !== id)
 					// Optional: ensure we're dealing with plain objects
 					.map((contact) => ({ ...contact }));
+
+				this.contacts.data = [...this.contacts.data];
 
 				console.log(this.contacts.data);
 				if (response.status === 201 || response.status === 200) {

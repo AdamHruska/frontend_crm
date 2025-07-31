@@ -469,6 +469,7 @@ const emailCount = ref(0);
 					<option value="Analýza osobných financí">
 						Analýza osobných financí
 					</option>
+					<option value="Servisná analýza">Servisná analýza</option>
 					<option value="poradenstvo">Poradenstvo</option>
 					<option value="realizácia">realizácia</option>
 					<option value="welcome seminar">Welcome seminár</option>

@@ -197,6 +197,10 @@ const addActivityToList = (activity) => {
 // 	}
 // };
 
+const deleteContact = async (id) => {
+	contactsStore.deleteContact(id);
+};
+
 const columns_first_row = [
 	{ key: "meno", label: "Meno", class: "bg-gray-200" },
 	{ key: "priezvisko", label: "Priezvisko", class: "bg-gray-200" },
@@ -229,10 +233,7 @@ const items = (row) => [
 		{
 			label: "Delete",
 			icon: "i-heroicons-trash-20-solid",
-			click: () =>
-				axios
-					.delete(`${config.public.apiUrl}delete_contacts/${row.id}`)
-					.then(navigateTo("/")),
+			click: () => deleteContact(row.id).then(navigateTo("/")),
 		},
 	],
 ];
@@ -438,8 +439,22 @@ const changeCallListBool = () => {
 	callListBool.value = !callListBool.value;
 };
 
+const pendingFirstMeetingRow = ref(null);
+
 const changeActivityStatus = async (row, status) => {
 	try {
+		if (row.aktivita === "Prvé stretnutie" && status === "check") {
+			// Show confirmation modal instead of directly creating the activity
+			changeConfirmEventModal();
+			// Store the row data for later use
+			pendingFirstMeetingRow.value = row;
+			return;
+		}
+
+		// Update local state immediately for better UX
+		const originalStatus = row.activity_status;
+		row.activity_status = status;
+
 		await axios.patch(
 			`${config.public.apiUrl}activities/${row.id}/status`,
 			{
@@ -452,14 +467,103 @@ const changeActivityStatus = async (row, status) => {
 			}
 		);
 
-		// Update the local state immediately after successful API call
-		row.activity_status = status;
-
 		console.log(`Activity ${row.id} status updated to: ${status}`);
 	} catch (error) {
+		// Revert local state if API call fails
+		row.activity_status = originalStatus;
 		console.error("Error updating activity status:", error);
-		// Handle error appropriately (show toast notification, etc.)
 	}
+};
+
+const handleConfirmEvent = async () => {
+	try {
+		if (pendingFirstMeetingRow.value) {
+			// Update local state immediately for better UX
+			pendingFirstMeetingRow.value.activity_status = "check";
+
+			// Create the financial analysis activity
+			await addFinancialAnalysisActivity(
+				pendingFirstMeetingRow.value.contact_id,
+				pendingFirstMeetingRow.value.koniec
+			);
+
+			// Now update the status of the original meeting in the backend
+			await axios.patch(
+				`${config.public.apiUrl}activities/${pendingFirstMeetingRow.value.id}/status`,
+				{
+					activity_status: "check",
+				},
+				{
+					headers: {
+						Authorization: `Bearer ${authStore.token}`,
+					},
+				}
+			);
+
+			// Refresh activities to show the new one
+			await findActivities(id);
+		}
+	} catch (error) {
+		console.error("Error handling confirmation:", error);
+		// Optionally show error message to user
+	} finally {
+		// Close the modal and clear the pending row
+		changeConfirmEventModal();
+		pendingFirstMeetingRow.value = null;
+	}
+};
+
+async function addFinancialAnalysisActivity(contactId, dateTimeStart) {
+	try {
+		// Convert the start time string to a Date object
+		const startTime = new Date(dateTimeStart);
+
+		// Add one hour to create the end time
+		const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+
+		// Format the end time back to the same string format
+		const dateTimeEnd = endTime
+			.toISOString()
+			.replace("T", " ")
+			.substring(0, 19);
+
+		const response = await axios.post(
+			`${config.public.apiUrl}add-activity`,
+			{
+				contact_id: contactId,
+				aktivita: "Analýza osobných financí",
+				datumCas: dateTimeStart,
+				koniec: dateTimeEnd,
+				volane: null,
+				dovozene: null,
+				dohodnute: null,
+				online_meeting: false,
+			},
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+				},
+			}
+		);
+
+		// Add the new activity to the local state
+		activities.value.push(response.data.activity);
+
+		console.log("Activity created:", response.data);
+		return response.data;
+	} catch (error) {
+		console.error(
+			"Error creating activity:",
+			error.response?.data || error.message
+		);
+		throw error;
+	}
+}
+
+const showConfirmEvent = ref(false);
+
+const changeConfirmEventModal = () => {
+	showConfirmEvent.value = !showConfirmEvent.value;
 };
 </script>
 
@@ -470,6 +574,11 @@ const changeActivityStatus = async (row, status) => {
 		@alterPerson="updatePerson"
 		:single_contact="single_contact"
 	/> -->
+	<ConfirmEventModal
+		v-if="showConfirmEvent"
+		@close="changeConfirmEventModal"
+		@confirm="handleConfirmEvent"
+	/>
 	<Loadigcomponent v-if="todoStore.loadingState" />
 
 	<CallListAdd
@@ -490,6 +599,7 @@ const changeActivityStatus = async (row, status) => {
 		v-if="todoBool"
 		@cancelToDoActivity="changeToDoBool"
 		:contact_id="id"
+		:contact="people"
 	/>
 
 	<AlterPersonForm
@@ -726,7 +836,9 @@ const changeActivityStatus = async (row, status) => {
 								<Icon
 									name="fa6-solid:check"
 									:class="{
-										'text-green-600': row.activity_status === 'check',
+										'text-green-600':
+											row.activity_status === 'check' ||
+											row.activity_status === 'accepted',
 										'text-black': row.activity_status !== 'check',
 									}"
 									size="20"

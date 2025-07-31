@@ -384,6 +384,7 @@ const isValidUrl = (url) => {
 					<option value="Analýza osobných financí">
 						Analýza osobných financí
 					</option>
+					<option value="Servisná analýza">Servisná analýza</option>
 					<option value="poradenstvo">Poradenstvo</option>
 					<option value="realizácia">realizácia</option>
 					<option value="konfirmačný servis">konfirmačný servis</option>

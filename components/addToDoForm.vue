@@ -13,6 +13,10 @@ const props = defineProps({
 	contact_id: {
 		type: String,
 	},
+	contact: {
+		type: Object,
+		default: () => ({}),
+	},
 });
 
 const aktivita = ref("");
@@ -28,6 +32,11 @@ onMounted(async () => {
 	const minutes = String(now.getMinutes()).padStart(2, "0");
 
 	datum_cas.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+	console.log(
+		"meno kotaktu:",
+		props.contact[0].meno,
+		props.contact[0].priezvisko
+	);
 });
 
 const addActivity = async () => {
@@ -51,6 +60,7 @@ const addActivity = async () => {
 			activity_name: aktivita.value,
 			due_date: datum_cas.value, // Send as YYYY-MM-DDTHH:MM format
 			contact_id: props.contact_id,
+			contact_name: props.contact[0].meno + " " + props.contact[0].priezvisko,
 		});
 
 		emit("cancelToDoActivity");
@@ -95,8 +105,8 @@ const formatDateTime = (dateTimeString) => {
 			<div class="relative z-0 w-full mb-5 mt-2 group">
 				<label
 					class="text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
-					>Aktivita *</label
-				>
+					>Aktivita *
+				</label>
 
 				<input
 					type="text"
@@ -121,9 +131,6 @@ const formatDateTime = (dateTimeString) => {
 					required
 					class="w-full p-3 text-sm text-black bg-white border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
 				/>
-				<div class="text-xs text-gray-400 mt-1">
-					Aktuálne: {{ formatDateTime(new Date(datum_cas)) }}
-				</div>
 			</div>
 
 			<div class="flex justify-center items-center mt-6 gap-3">

@@ -7,6 +7,8 @@ import { Icon } from "@iconify/vue";
 import { useAuthStore } from "@/stores/authStore";
 
 import { useContactsStore } from "@/stores/contactsStore";
+import { useToast } from "vue-toastification";
+const toast = useToast();
 const contactsStore = useContactsStore();
 
 const authStore = useAuthStore();
@@ -67,6 +69,19 @@ function resetForm() {
 	];
 }
 
+function formatDate(dateString) {
+	if (!dateString) return "";
+
+	const date = new Date(dateString);
+	if (isNaN(date.getTime())) return dateString; // return original if invalid date
+
+	const day = String(date.getDate()).padStart(2, "0");
+	const month = String(date.getMonth() + 1).padStart(2, "0");
+	const year = date.getFullYear();
+
+	return `${day}.${month}.${year}`;
+}
+
 // Function to handle cancel
 function cancelAdd() {
 	resetForm();
@@ -87,6 +102,8 @@ watch(odporucitelInput, (newVal) => {
 		user.odporucitel = newVal;
 	});
 });
+
+const duplicates = ref([]);
 
 const addPeople = async () => {
 	contactsStore.loadingState = true;
@@ -147,23 +164,87 @@ const addPeople = async () => {
 
 	try {
 		for (let person of people) {
-			const response = await axios.post(
-				`${config.public.apiUrl}post-create-contact`,
-				person,
-				{
-					headers: {
-						Authorization: `Bearer ${authStore.token}`,
-					},
+			try {
+				const response = await axios.post(
+					`${config.public.apiUrl}post-create-contact`,
+					person,
+					{
+						headers: {
+							Authorization: `Bearer ${authStore.token}`,
+						},
+					}
+				);
+				peopleFromResposne.value.push(response.data.contact);
+				console.log("Person added:", response);
+			} catch (error) {
+				if (error.response && error.response.status === 409) {
+					// Handle duplicate contact case
+					console.warn("Duplicate contact found:", error.response.data.message);
+					console.log(
+						"Existing contact:",
+						error.response.data.existing_contact
+					);
+
+					// You can display this to the user or add to a separate array
+					// For example, you might want to show a notification:
+					// alert(
+					// 	`${person.meno} ${person.priezvisko} wasn't added - ${error.response.data.message}`
+					// );
+
+					toast.error(
+						`${person.meno} ${person.priezvisko} wasn't added - ${error.response.data.message}` +
+							(error.response.data.existing_contact.last_activity
+								? ` (last activity: ${formatDate(
+										error.response.data.existing_contact.last_activity
+								  )})`
+								: ""),
+						{
+							position: "top-center",
+							timeout: 10000,
+							closeOnClick: true,
+							pauseOnHover: true,
+							draggable: true,
+							draggablePercent: 60,
+							showCloseButtonOnHover: false,
+							hideProgressBar: false,
+						}
+					);
+					// Or store duplicates to show later
+					duplicates.value.push({
+						attempted: person,
+						existing: error.response.data.existing_contact,
+						message: error.response.data.message,
+					});
+					console.log("duplicates", duplicates.value[0].existing.last_activity);
+
+					continue; // Skip to next person
+				} else {
+					// Re-throw other errors
+					throw error;
 				}
-			);
-			peopleFromResposne.value.push(response.data.contact);
+			}
 		}
+
 		Cookies.remove("users");
 
-		emit("addPeople", peopleFromResposne.value);
-		resetForm();
+		if (duplicates.value.length > 0) {
+			// Show toast or alert summary of skipped contacts
+			toast.warning(
+				`Bolo pridaných ${peopleFromResposne.value.length} kontaktov, ale ${duplicates.value.length} bolo preskočených kvôli duplicitám.`,
+				{
+					position: "top-center",
+					timeout: 5000,
+				}
+			);
+			// Do NOT emit or reset the form — user can edit remaining fields
+		} else {
+			emit("addPeople", peopleFromResposne.value);
+			resetForm();
+		}
 	} catch (error) {
 		console.error("Error adding people:", error);
+		// Handle other errors (network issues, server errors, etc.)
+		alert("An error occurred while adding contacts. Please try again.");
 	}
 	contactsStore.loadingState = false;
 };
@@ -180,7 +261,7 @@ function removeRow(index) {
 		class="fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center z-40"
 	>
 		<div
-			class="bg-gray-100 p-4 min-w-[1024px] rounded-lg shadow-lg h-[650px] mx-8"
+			class="bg-gray-100 p-4 min-w-[1024px] rounded-lg shadow-lg h-[650px] mx-8 ml-[100px]"
 		>
 			<div class="flex items-center justify-between mb-4">
 				<div class="flex justify-center items-center gap-4">

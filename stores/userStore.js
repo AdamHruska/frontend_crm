@@ -14,6 +14,7 @@ export const useUserStore = defineStore("user", {
 		loadingState: false,
 		error: null,
 		vizitka_name: "",
+		vizitka_position: "",
 		vizitka_email: "",
 		vizitka_phone_num: "",
 	}),

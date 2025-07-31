@@ -93,6 +93,7 @@ const showAllTodos = async () => {
 		activity: todo.activity_name,
 		dueDate: todo.due_date,
 		assignedTo: todo.contact_id,
+		contact_name: todo.contact_name,
 		completed: todo.is_completed,
 		updated_at: todo.is_completed ? todo.updated_at : null,
 	}));
@@ -127,6 +128,7 @@ const loadTodosForCurrentDate = async () => {
 		activity: todo.activity_name,
 		dueDate: todo.due_date,
 		assignedTo: todo.contact_id,
+		contact_name: todo.contact_name,
 		completed: todo.is_completed,
 		updated_at: todo.is_completed ? todo.updated_at : null,
 	}));
@@ -147,6 +149,7 @@ watch(
 			dueDate: todo.due_date, // Keep full datetime
 			completed: todo.is_completed,
 			updated_at: todo.is_completed ? todo.updated_at : null,
+			contact_name: todo.contact_name,
 		}));
 	},
 	{ deep: true, immediate: true }
@@ -156,7 +159,12 @@ onMounted(async () => {
 	if (contactsStore.contacts.length === 0) {
 		await contactsStore.fetchContacts();
 	}
-	console.log("skuska kontakty", contactsStore.contacts);
+
+	if (contactsStore.allContacts.length === 0) {
+		await contactsStore.fetchAllContacts();
+	}
+
+	console.log("skuska vsetky kontakty", contactsStore.allContacts);
 
 	const yesterDay = await axios.get(
 		`${config.public.apiUrl}get-yesterday-uncompleted-activities`,
@@ -169,8 +177,28 @@ onMounted(async () => {
 
 	yesterDayUncompletedActivities.value = yesterDay.data.activities;
 
+	yesterDayUncompletedActivities.value =
+		yesterDayUncompletedActivities.value.map((activity) => {
+			// Find the corresponding contact
+			const contact = contactsStore.allContacts.find(
+				(contact) => contact.id === activity.contact_id
+			);
+
+			// If contact is found, add meno and priezvisko to the activity
+			if (contact) {
+				return {
+					...activity,
+					meno: contact.meno,
+					priezvisko: contact.priezvisko,
+				};
+			}
+
+			// If no contact found, return the activity as is
+			return activity;
+		});
+
 	console.log(
-		"yesterday uncompleted activities",
+		"yesterday uncompleted activities with names",
 		yesterDayUncompletedActivities.value
 	);
 
@@ -247,6 +275,9 @@ const columns_yesterday = [
 		label: "Plánovaná",
 	},
 	{
+		label: "Meno a priezvisko",
+	},
+	{
 		key: "poznamka",
 		label: "Poznámka",
 	},
@@ -296,42 +327,42 @@ const newTodo = ref({
 	updated_at: "",
 });
 
-const addTodo = async () => {
-	if (
-		newTodo.value.activity &&
-		newTodo.value.dueDate &&
-		newTodo.value.assignedTo
-	) {
-		// Send datetime to backend
-		const todoData = {
-			activity_name: newTodo.value.activity,
-			due_date: newTodo.value.dueDate,
-			contact_id: newTodo.value.assignedTo,
-			is_completed: false,
-		};
+// const addTodo = async () => {
+// 	if (
+// 		newTodo.value.activity &&
+// 		newTodo.value.dueDate &&
+// 		newTodo.value.assignedTo
+// 	) {
+// 		// Send datetime to backend
+// 		const todoData = {
+// 			activity_name: newTodo.value.activity,
+// 			due_date: newTodo.value.dueDate,
+// 			contact_id: newTodo.value.assignedTo,
+// 			is_completed: false,
+// 		};
 
-		try {
-			await todoStore.createTodo(todoData);
-			// Reset form
-			newTodo.value = {
-				activity: "",
-				dueDate: "",
-				assignedTo: "",
-				completed: false,
-			};
-			// Refresh the todo list for current date
-			if (showingAllTodos.value) {
-				await showAllTodos();
-			} else if (showingTodosWithoutContact.value) {
-				await showTodosWithoutContact();
-			} else {
-				await loadTodosForCurrentDate();
-			}
-		} catch (error) {
-			console.error("Error creating todo:", error);
-		}
-	}
-};
+// 		try {
+// 			await todoStore.createTodo(todoData);
+// 			// Reset form
+// 			newTodo.value = {
+// 				activity: "",
+// 				dueDate: "",
+// 				assignedTo: "",
+// 				completed: false,
+// 			};
+// 			// Refresh the todo list for current date
+// 			if (showingAllTodos.value) {
+// 				await showAllTodos();
+// 			} else if (showingTodosWithoutContact.value) {
+// 				await showTodosWithoutContact();
+// 			} else {
+// 				await loadTodosForCurrentDate();
+// 			}
+// 		} catch (error) {
+// 			console.error("Error creating todo:", error);
+// 		}
+// 	}
+// };
 
 // Add new todo without contact
 const addTodoWithoutContact = async () => {
@@ -425,7 +456,19 @@ const resetDate = async () => {
 	}));
 };
 
+const pendingFirstMeetingRow = ref(null);
+const showConfirmEvent = ref(false);
+const changeConfirmEventModal = () => {
+	showConfirmEvent.value = !showConfirmEvent.value;
+};
+
 const changeActivityStatus = async (item, status) => {
+	if (item.aktivita === "Prvé stretnutie" && status === "check") {
+		changeConfirmEventModal();
+
+		pendingFirstMeetingRow.value = item;
+	}
+
 	try {
 		await axios.patch(
 			`${config.public.apiUrl}activities/${item.id}/status`,
@@ -447,6 +490,91 @@ const changeActivityStatus = async (item, status) => {
 	} catch (error) {
 		console.error("Error updating activity status:", error);
 		// Handle error appropriately (show toast notification, etc.)
+	}
+};
+
+async function addFinancialAnalysisActivity(contactId, dateTimeStart) {
+	try {
+		// Convert the start time string to a Date object
+		const startTime = new Date(dateTimeStart);
+
+		// Add one hour to create the end time
+		const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+
+		// Format the end time back to the same string format
+		const dateTimeEnd = endTime
+			.toISOString()
+			.replace("T", " ")
+			.substring(0, 19);
+
+		const response = await axios.post(
+			`${config.public.apiUrl}add-activity`,
+			{
+				contact_id: contactId,
+				aktivita: "Analýza osobných financí",
+				datumCas: dateTimeStart,
+				koniec: dateTimeEnd,
+				volane: null,
+				dovozene: null,
+				dohodnute: null,
+				online_meeting: false,
+			},
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+				},
+			}
+		);
+
+		// Add the new activity to the local state
+		yesterDayUncompletedActivities.value.push(response.data.activity);
+
+		console.log("Activity created:", response.data);
+		return response.data;
+	} catch (error) {
+		console.error(
+			"Error creating activity:",
+			error.response?.data || error.message
+		);
+		throw error;
+	}
+}
+
+const handleConfirmEvent = async () => {
+	try {
+		if (pendingFirstMeetingRow.value) {
+			// Update local state immediately for better UX
+			pendingFirstMeetingRow.value.activity_status = "check";
+
+			// Create the financial analysis activity
+			await addFinancialAnalysisActivity(
+				pendingFirstMeetingRow.value.contact_id,
+				pendingFirstMeetingRow.value.koniec
+			);
+
+			// Now update the status of the original meeting in the backend
+			await axios.patch(
+				`${config.public.apiUrl}activities/${pendingFirstMeetingRow.value.id}/status`,
+				{
+					activity_status: "check",
+				},
+				{
+					headers: {
+						Authorization: `Bearer ${authStore.token}`,
+					},
+				}
+			);
+
+			// Refresh activities to show the new one
+			await findActivities(id);
+		}
+	} catch (error) {
+		console.error("Error handling confirmation:", error);
+		// Optionally show error message to user
+	} finally {
+		// Close the modal and clear the pending row
+		changeConfirmEventModal();
+		pendingFirstMeetingRow.value = null;
 	}
 };
 
@@ -484,6 +612,12 @@ const showFutureUncompletedTodos = async () => {
 </script>
 
 <template>
+	<ConfirmEventModal
+		v-if="showConfirmEvent"
+		@close="changeConfirmEventModal"
+		@confirm="handleConfirmEvent"
+	/>
+
 	<loadigcomponent v-if="todoStore.loadingState" />
 	<div>
 		<UpdateToDoForm
@@ -603,7 +737,9 @@ const showFutureUncompletedTodos = async () => {
 
 			<!-- Todo list table -->
 			<div class="right">
-				<h3 class="font-semibold mb-2">Nevyhodnotené aktivity zo včera:</h3>
+				<h3 class="font-semibold mb-2">
+					Nevyhodnotené aktivity za posledný týždeň:
+				</h3>
 				<table class="todo-table mb-8 w-full">
 					<thead>
 						<tr>
@@ -623,6 +759,14 @@ const showFutureUncompletedTodos = async () => {
 						>
 							<td class="col-dueDate">{{ item.aktivita }}</td>
 							<td class="col-dueDate">{{ formatDateTime(item.datumCas) }}</td>
+							<td class="col-dueDate">
+								<a
+									:href="'/contact/' + item.contact_id"
+									class="text-blue-700 hover:underline"
+								>
+									{{ item.meno }} {{ item.priezvisko }}
+								</a>
+							</td>
 							<td class="col-dueDate">
 								{{ item.poznamka || "Žiadna poznámka" }}
 							</td>
@@ -694,12 +838,8 @@ const showFutureUncompletedTodos = async () => {
 							<td class="col-dueDate">{{ formatDateTime(item.dueDate) }}</td>
 							<td class="col-activity">{{ item.activity }}</td>
 							<td class="col-assignedTo" @click="goToContact(item.assignedTo)">
-								<span v-if="item.assignedTo">
-									{{
-										contactNames[item.assignedTo] ||
-										loadContactName(item.assignedTo) ||
-										"Načítava..."
-									}}
+								<span v-if="item.contact_name">
+									{{ item.contact_name }}
 								</span>
 								<span v-else class="no-contact">Bez kontaktu</span>
 							</td>

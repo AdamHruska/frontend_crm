@@ -135,6 +135,25 @@
 						</div>
 					</div>
 				</div>
+
+				<div class="item">
+					<div class="item-left">
+						<p>Servisná analýza:</p>
+					</div>
+					<div class="item-right">
+						<div class="right-count">
+							Pocet vsetkych:
+							{{ responseData.detailed_statistics.servisna_analyza.total }}
+						</div>
+						<div class="right-count green">
+							Pocet zrealizovanych:
+							{{
+								responseData.detailed_statistics.servisna_analyza
+									.with_check_status
+							}}
+						</div>
+					</div>
+				</div>
 			</div>
 
 			<select
@@ -360,6 +379,30 @@
 		<div class="bg-white p-4 rounded shadow mb-6">
 			<BarChart :data="chartDataPohovory" />
 		</div>
+
+		<!-- Zoznam zaujatych po pohovore -->
+		<h1 class="font-semibold mb-4 mt-8">Zoznam zaujatych ľudí po pohovore:</h1>
+		<div class="max-h-[400px] overflow-y-auto bg-white max-w-[650px]">
+			<table class="w-full">
+				<thead>
+					<tr class="bg-gray-50">
+						<th class="p-3 text-left">Meno a Priezvisko</th>
+						<th class="p-3 text-left">Dátum Pohovoru</th>
+					</tr>
+				</thead>
+
+				<tbody>
+					<tr
+						v-for="kanditat in zaujatiKandidati"
+						class="border-t cursor-pointer hover:bg-gray-50"
+						@click="goToContact(kanditat.id)"
+					>
+						<td class="p-3">{{ kanditat.meno }} {{ kanditat.priezvisko }}</td>
+						<td class="p-3">{{ formatDate(kanditat.date) }}</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
 	</div>
 </template>
 
@@ -370,6 +413,9 @@ import axios from "axios";
 const config = useRuntimeConfig();
 import { useAuthStore } from "#imports";
 const authStore = useAuthStore();
+
+import { useRouter } from "vue-router";
+const router = useRouter();
 
 const updateActivity = ref(false);
 const activityID = ref(null);
@@ -383,6 +429,7 @@ const toggleUpdateActivity = (id) => {
 };
 
 // State
+const zaujatiKandidati = ref([]);
 const dateRange = ref({ from: "", to: "" });
 const selectedPeriod = ref("month");
 const selectedActivityType = ref("all");
@@ -392,6 +439,10 @@ const loadingStateCalendar = ref(false);
 const dataPohovory = ref();
 
 // Chart data computed property
+
+const goToContact = (id) => {
+	router.push(`/contact/${id}`);
+};
 
 const chartData = computed(() => ({
 	labels: ["Volané", "Dovolané", "Dohodnuté"],
@@ -504,7 +555,20 @@ const fetchData = async () => {
 			}
 		);
 		dataPohovory.value = responsePohovory.data;
-		console.log("responsePohovory", dataPohovory.value);
+
+		console.log("dataPohovory", dataPohovory.value.activities);
+
+		zaujatiKandidati.value = dataPohovory.value.activities
+			.filter(
+				(activity) =>
+					activity.type === "Pohovor" && activity.status == "zaujatý"
+			)
+			.map((activity) => ({
+				id: activity.contact_id,
+				meno: activity.meno,
+				priezvisko: activity.priezvisko,
+				date: activity.date,
+			}));
 	} catch (error) {
 		console.error(
 			"Error fetching statistics:",

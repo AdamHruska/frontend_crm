@@ -146,6 +146,15 @@ const addActivity = async () => {
 	}
 
 	try {
+		if (
+			aktivita.value === "Telefonát klient" ||
+			aktivita.value === "Telefonát nábor"
+		) {
+			volane.value = true;
+			dovolane.value = true;
+			dohodnute.value = true;
+		}
+
 		const response = await axios.post(
 			`${config.public.apiUrl}add-activity`,
 			{
@@ -222,6 +231,7 @@ const addActivity = async () => {
 		}
 
 		calendarStore.activities.push(response.data.activity);
+
 		emit("activityAdded", response.data.activity);
 		emit("cancelAddActivity");
 	} catch (error) {
@@ -296,6 +306,7 @@ watch(dohodnute, (newValue) => {
 					<option value="Analýza osobných financí">
 						Analýza osobných financí
 					</option>
+					<option value="Servisná analýza">Servisná analýza</option>
 					<option value="poradenstvo">Poradenstvo</option>
 					<option value="realizácia">realizácia</option>
 					<option value="welcome seminár">Welcome seminár</option>

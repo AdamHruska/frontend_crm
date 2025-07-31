@@ -61,6 +61,7 @@ export const useTodosStore = defineStore("todos", {
 						activity_name: todoData.activity_name,
 						due_date: todoData.due_date,
 						contact_id: todoData.contact_id,
+						contact_name: todoData.contact_name,
 					},
 					{
 						headers: {
@@ -394,31 +395,36 @@ export const useTodosStore = defineStore("todos", {
 
 		async createTodoWithoutContact(todoData) {
 			const authStore = useAuthStore();
-			const token = authStore.token;
 			try {
-				this.loadingState = true; // or loadingState.value = true
+				this.loadingState = true;
 
-				const response = await $fetch("/api/todos/without-contact", {
-					method: "POST",
-					body: todoData,
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token.value}`,
-					},
-				});
+				const response = await axios.post(
+					`${config.public.apiUrl}todos/without-contact`,
+					todoData,
+					{
+						headers: {
+							Authorization: `Bearer ${authStore.token}`,
+							"Content-Type": "application/json",
+						},
+					}
+				);
 
-				if (response.success) {
-					// Add the new todo to the existing todos array
-					todos.value.unshift(response.data);
-					return response.data;
+				if (response.data.success) {
+					todos.value.unshift(response.data.data);
+					return response.data.data;
 				} else {
-					throw new Error(response.message || "Failed to create todo");
+					throw new Error(response.data.message || "Failed to create todo");
 				}
 			} catch (error) {
 				console.error("Error creating todo without contact:", error);
-				throw error;
+				if (error.response) {
+					// Handle HTTP errors
+					throw new Error(error.response.data.message || "Request failed");
+				} else {
+					throw error;
+				}
 			} finally {
-				this.loadingState = false; // or loadingState.value = false
+				this.loadingState = false;
 			}
 		},
 

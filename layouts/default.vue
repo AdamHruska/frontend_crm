@@ -4,7 +4,7 @@
 		<div
 			class="flex flex-col h-screen w-16 overflow-hidden text-gray-400 bg-blue-800 fixed top-0 left-0 nav-shadow"
 			v-if="isAuthenticated"
-			style="z-index: 1000"
+			style="z-index: 999"
 		>
 			<!-- Logo or Top Icon -->
 			<a class="flex items-center justify-center mt-3" href="/">

@@ -14,6 +14,7 @@ const userStore = useUserStore();
 const showHistory = ref(false);
 
 const menoRef = ref('');
+const poziciaRef = ref('');
 const emailRef = ref('');
 const telRef = ref('');
 const textRef = ref('');
@@ -33,17 +34,20 @@ onMounted(async () => {
 			);
 
 			userStore.user.vizitka_name = vizitka.data.vizitka_name;
+			userStore.user.vizitka_position = vizitka.data.vizitka_position;
 			userStore.user.vizitka_email = vizitka.data.vizitka_email;
 			userStore.user.vizitka_phone_num = vizitka.data.vizitka_phone_num;
 			userStore.user.vizitka_body = vizitka.data.vizitka_body;
 	}
 	menoRef.value = userStore.user.vizitka_name;
+	poziciaRef.value = userStore.user.vizitka_position || '';
   emailRef.value = userStore.user.vizitka_email;
   telRef.value = userStore.user.vizitka_phone_num;
 	textRef.value = userStore.user.vizitka_body;
 });
 
 const menoComputed = computed(() => userStore.user.vizitka_name);
+const poziciaComputed = computed(() => userStore.user.vizitka_position || '');
 const emailComputed = computed(() => userStore.user.vizitka_email);
 const telComputed = computed(() => userStore.user.vizitka_phone_num);
 const textComputed = computed(() => userStore.user.vizitka_body);
@@ -57,6 +61,7 @@ const updateVizitka = async () => {
 				`${config.public.apiUrl}update-vizitka`,
 				{
 					vizitka_name: menoRef.value,
+					vizitka_position: poziciaRef.value,
           vizitka_email: emailRef.value,
           vizitka_phone_num: telRef.value,
 					vizitka_body: textRef.value,
@@ -93,27 +98,32 @@ const updateVizitka = async () => {
 			<div
 				class="ml-4 mt-16 mb-2 w-[1150px] flex gap-[50px] items-start flex-col"
 			>
-				<SearchBarSharing class="shadow-md max-w-[475px]" />
+				<SearchBarSharing class="shadow-md max-w-[550px]" />
 				<div class="bg-white p-4 rounded-md shadow-md"> 
 					<h3 class="font-semibold text-xl mb-4">Vizitka</h3>
 				<div class="flex flex-col gap-4">
 
-					<div class="flex gap-6">
+					<div class="flex  justify-between gap-4">
 						<label>Text:</label>
 						<textarea v-model="textRef" type="text" class="bg-white rounded-md border border-blue-500 pl-1 h-[120px] w-full"> </textarea>
 					</div>
 
-					<div class="flex gap-4">
+					<div class="flex justify-between gap-4">
 						<label>Meno:</label>
 						<input v-model="menoRef" type="text" class="bg-white rounded-md border border-blue-500 pl-1"> </input>
 					</div>
 
-					<div class="flex gap-4">
+					<div class="flex justify-between ">
+						<label>Pozícia:</label>
+						<input v-model="poziciaRef" type="text" class="bg-white rounded-md border border-blue-500 pl-1"> </input>
+					</div>
+
+					<div class="flex justify-between">
 						<label>Email:</label>
 						<input v-model="emailRef" type="email" class="bg-white rounded-md border border-blue-500 pl-1"> </input>
 					</div>
 
-					<div class="flex gap-4">
+					<div class="flex  justify-between ">
 						<label>Tel. č.:</label>
 						<input v-model="telRef" type="text" class="bg-white rounded-md border border-blue-500 pl-1"> </input>
 					</div>
