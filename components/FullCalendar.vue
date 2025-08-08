@@ -786,26 +786,59 @@ async function fetchMicrosoftEvents(month, year) {
 
 const eventType = ref("regular");
 
+// const loginWithMicrosoft = () => {
+// 	const config = useRuntimeConfig();
+
+// 	// Get values from environment
+// 	const clientId = config.public.AZURE_CLIENT_ID;
+// 	const redirectUriRaw = config.public.AZURE_REDIRECT_URI;
+// 	const scope = config.public.AZURE_SCOPE;
+
+// 	console.log("Azure config:", {
+// 		clientId,
+// 		redirectUriRaw,
+// 		scope,
+// 	});
+
+// 	// Encode the redirect URI just like in the original working version
+// 	const redirectUri = encodeURIComponent(redirectUriRaw);
+
+// 	const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${encodeURIComponent(
+// 		scope
+// 	)}&response_mode=query`;
+// 	window.location.href = authUrl;
+// };
+
 const loginWithMicrosoft = () => {
 	const config = useRuntimeConfig();
+	const authStore = useAuthStore(); // or however you access current user
 
 	// Get values from environment
 	const clientId = config.public.AZURE_CLIENT_ID;
 	const redirectUriRaw = config.public.AZURE_REDIRECT_URI;
 	const scope = config.public.AZURE_SCOPE;
 
-	console.log("Azure config:", {
-		clientId,
-		redirectUriRaw,
-		scope,
+	// Get current user ID (assuming you have this in your auth store)
+	const userId = userStore.user.id;
+
+	if (!userId) {
+		console.error("No user logged in");
+		return;
+	}
+
+	// Create state object with user ID
+	const state = JSON.stringify({
+		userId: userId,
+		// Optional: add a CSRF token if you want extra security
+		csrf: authStore.csrfToken,
 	});
 
-	// Encode the redirect URI just like in the original working version
-	const redirectUri = encodeURIComponent(redirectUriRaw);
-
-	const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${encodeURIComponent(
+	const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(
+		redirectUriRaw
+	)}&scope=${encodeURIComponent(
 		scope
-	)}&response_mode=query`;
+	)}&response_mode=query&state=${encodeURIComponent(state)}`;
+
 	window.location.href = authUrl;
 };
 

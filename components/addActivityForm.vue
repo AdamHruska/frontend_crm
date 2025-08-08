@@ -42,7 +42,10 @@ watch(aktivita, (newValue) => {
 	ineBool.value = newValue === "ine";
 
 	// If aktivita is "Telefonát klient", set koniec to datum_cas + 5 minutes
-	if (newValue === "Telefonát klient" && datum_cas.value) {
+	if (
+		(newValue === "Telefonát klient" || newValue === "Telefonát nábor") &&
+		datum_cas.value
+	) {
 		const newEndTime = add(parseISO(datum_cas.value), { minutes: 5 });
 		koniec.value = format(newEndTime, "yyyy-MM-dd'T'HH:mm");
 	}

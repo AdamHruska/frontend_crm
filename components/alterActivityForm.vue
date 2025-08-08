@@ -136,7 +136,7 @@ const updateActivity = async () => {
 				poznamka: poznamka.value,
 				volane: volane.value,
 				dovolane: dovolane.value,
-				dohodnute: dohodnute.value,
+				dohodnute: dohodnute.value ? 1 : 0,
 				miesto_stretnutia: miesto_stretnutia.value,
 				online_meeting: onlineMeeting.value,
 			},

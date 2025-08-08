@@ -187,6 +187,7 @@ export const useCalendarstore = defineStore("calendar", {
 		// },
 
 		async fetchMicrosoftEvents(month, year) {
+			const userStore = useUserStore();
 			// Create a cache key using month and year
 			const cacheKey = `${year}-${month}`;
 			//console.log("Cache:", this.microsoftEventCache);
@@ -203,7 +204,7 @@ export const useCalendarstore = defineStore("calendar", {
 			try {
 				const config = useRuntimeConfig();
 				const response = await axios.get(`${config.public.apiUrl}get-events`, {
-					params: { month, year },
+					params: { month, year, user_id: userStore.user.id },
 				});
 
 				// Transform Microsoft events to match calendar format
