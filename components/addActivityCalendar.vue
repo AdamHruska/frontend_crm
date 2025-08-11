@@ -7,7 +7,8 @@ const config = useRuntimeConfig();
 
 import { useCalendarstore } from "#imports";
 const calendarStore = useCalendarstore();
-
+import { useUserStore } from "#imports";
+const userStore = useUserStore();
 import { useAuthStore } from "@/stores/authStore";
 const authStore = useAuthStore();
 authStore.loadToken();
@@ -338,7 +339,10 @@ const addActivity = async () => {
 			try {
 				const teamsResponse = await axios.post(
 					`${config.public.apiUrl}create-teams-meeting`,
-					{ activityId: activityResponse.data.activity.id },
+					{
+						activityId: activityResponse.data.activity.id,
+						user_id: userStore.user.id,
+					},
 					{ headers: { Authorization: `Bearer ${authStore.token}` } }
 				);
 
