@@ -174,6 +174,21 @@ const addPeople = async () => {
 						},
 					}
 				);
+
+				if (response.data.message.includes("ako duplikát")) {
+					toast.warning(
+						`${person.meno} ${person.priezvisko} bol pridaný ako duplikát (existuje v inej databáze)`,
+						{
+							position: "top-center",
+							timeout: 8000,
+							closeOnClick: true,
+							pauseOnHover: true,
+							draggable: true,
+							icon: "⚠️",
+						}
+					);
+				}
+
 				peopleFromResposne.value.push(response.data.contact);
 				console.log("Person added:", response);
 			} catch (error) {
@@ -229,13 +244,13 @@ const addPeople = async () => {
 
 		if (duplicates.value.length > 0) {
 			// Show toast or alert summary of skipped contacts
-			toast.warning(
-				`Bolo pridaných ${peopleFromResposne.value.length} kontaktov, ale ${duplicates.value.length} bolo preskočených kvôli duplicitám.`,
-				{
-					position: "top-center",
-					timeout: 5000,
-				}
-			);
+			// toast.warning(
+			// 	`Bolo pridaných ${peopleFromResposne.value.length} kontaktov, ale ${duplicates.value.length} bolo preskočených kvôli duplicitám.`,
+			// 	{
+			// 		position: "top-center",
+			// 		timeout: 5000,
+			// 	}
+			// );
 			// Do NOT emit or reset the form — user can edit remaining fields
 		} else {
 			emit("addPeople", peopleFromResposne.value);

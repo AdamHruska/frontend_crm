@@ -17,6 +17,9 @@ authStore.loadToken();
 import { useCalendarstore } from "#imports";
 const calendarStore = useCalendarstore();
 
+import { useUserStore } from "@/stores/userStore";
+const userStore = useUserStore();
+
 import { useToast } from "vue-toastification";
 const toast = useToast();
 
@@ -154,8 +157,8 @@ const addActivity = async () => {
 			aktivita.value === "Telefonát nábor"
 		) {
 			volane.value = true;
-			dovolane.value = true;
-			dohodnute.value = true;
+			//dovolane.value = true;
+			//dohodnute.value = true;
 		}
 
 		const response = await axios.post(
@@ -211,7 +214,7 @@ const addActivity = async () => {
 			try {
 				const teamsResponse = await axios.post(
 					`${config.public.apiUrl}create-teams-meeting`,
-					{ activityId: response.data.activity.id },
+					{ activityId: response.data.activity.id, user_id: userStore.user.id },
 					{ headers: { Authorization: `Bearer ${authStore.token}` } }
 				);
 

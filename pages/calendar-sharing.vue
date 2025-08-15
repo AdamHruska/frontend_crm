@@ -165,7 +165,7 @@ const updateVizitka = async () => {
 				
 			</div>
 			<div class="w-[67%]"><RequestsHistoryTable v-if="showHistory" /></div>
-			<span class="float-right">14.7.2025 aktuálna verzia</span>
+			<span class="float-right">15.8.2025 aktuálna verzia</span>
 		</div>
 	</div>
 </template>
