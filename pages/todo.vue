@@ -462,11 +462,23 @@ const changeConfirmEventModal = () => {
 	showConfirmEvent.value = !showConfirmEvent.value;
 };
 
+const currentActivity = ref(null);
+
+const showDiscardActivityModal = ref(false);
+
+const changeDiscardActivityModal = () => {
+	showDiscardActivityModal.value = !showDiscardActivityModal.value;
+};
+
 const changeActivityStatus = async (item, status) => {
 	if (item.aktivita === "Prvé stretnutie" && status === "check") {
 		changeConfirmEventModal();
-
 		pendingFirstMeetingRow.value = item;
+	}
+
+	if (status === "discarded") {
+		currentActivity.value = item;
+		changeDiscardActivityModal();
 	}
 
 	try {
@@ -493,6 +505,53 @@ const changeActivityStatus = async (item, status) => {
 	}
 };
 
+// async function addFinancialAnalysisActivity(contactId, dateTimeStart) {
+// 	try {
+// 		// Convert the start time string to a Date object
+// 		const startTime = new Date(dateTimeStart);
+
+// 		// Add one hour to create the end time
+// 		const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+
+// 		// Format the end time back to the same string format
+// 		const dateTimeEnd = endTime
+// 			.toISOString()
+// 			.replace("T", " ")
+// 			.substring(0, 19);
+
+// 		const response = await axios.post(
+// 			`${config.public.apiUrl}add-activity`,
+// 			{
+// 				contact_id: contactId,
+// 				aktivita: "Analýza osobných financí",
+// 				datumCas: dateTimeStart,
+// 				koniec: dateTimeEnd,
+// 				volane: null,
+// 				dovozene: null,
+// 				dohodnute: null,
+// 				online_meeting: false,
+// 			},
+// 			{
+// 				headers: {
+// 					Authorization: `Bearer ${authStore.token}`,
+// 				},
+// 			}
+// 		);
+
+// 		// Add the new activity to the local state
+// 		yesterDayUncompletedActivities.value.push(response.data.activity);
+
+// 		console.log("Activity created:", response.data);
+// 		return response.data;
+// 	} catch (error) {
+// 		console.error(
+// 			"Error creating activity:",
+// 			error.response?.data || error.message
+// 		);
+// 		throw error;
+// 	}
+// }
+
 async function addFinancialAnalysisActivity(contactId, dateTimeStart) {
 	try {
 		// Convert the start time string to a Date object
@@ -515,7 +574,7 @@ async function addFinancialAnalysisActivity(contactId, dateTimeStart) {
 				datumCas: dateTimeStart,
 				koniec: dateTimeEnd,
 				volane: null,
-				dovozene: null,
+				dovozne: null,
 				dohodnute: null,
 				online_meeting: false,
 			},
@@ -526,8 +585,20 @@ async function addFinancialAnalysisActivity(contactId, dateTimeStart) {
 			}
 		);
 
-		// Add the new activity to the local state
-		yesterDayUncompletedActivities.value.push(response.data.activity);
+		// Find the contact information to add to the activity
+		const contact = contactsStore.allContacts.find(
+			(contact) => contact.id === contactId
+		);
+
+		// Create the activity object with contact information
+		const newActivity = {
+			...response.data.activity,
+			meno: contact?.meno || "",
+			priezvisko: contact?.priezvisko || "",
+		};
+
+		// Add the new activity to the local state with contact info
+		yesterDayUncompletedActivities.value.push(newActivity);
 
 		console.log("Activity created:", response.data);
 		return response.data;
@@ -612,6 +683,13 @@ const showFutureUncompletedTodos = async () => {
 </script>
 
 <template>
+	<DiscardActivityModal
+		v-if="showDiscardActivityModal"
+		:activityData="currentActivity"
+		@closeDiscardActivity="changeDiscardActivityModal"
+		@confirmDiscardActivity="changeDiscardActivityModal"
+	/>
+
 	<ConfirmEventModal
 		v-if="showConfirmEvent"
 		@close="changeConfirmEventModal"

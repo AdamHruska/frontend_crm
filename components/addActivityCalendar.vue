@@ -18,6 +18,9 @@ const props = defineProps({
 	end_date: String,
 });
 
+const emailCount = ref(0);
+const emails = ref([]);
+
 const contacts = ref([]);
 const contact = ref([]);
 const kontakt = ref("");
@@ -85,6 +88,7 @@ watch(datum_cas, (newValue) => {
 });
 
 onMounted(async () => {
+	emails.value = [""];
 	console.log(email.value);
 	// Set initial datum_cas to props.end_date
 	datum_cas.value = formatDateToISO(props.end_date);
@@ -250,25 +254,22 @@ const addActivity = async () => {
 	changeLoadingState();
 	event.preventDefault();
 
-	// Validate email only if online meeting is checked and contact doesn't have an email
-	if (onlineMeeting.value && !emailBool.value && !email.value) {
-		toast.error("Pre online stretnutie je potrebné zadať email kontaktu", {
+	// Validate emails - filter out empty strings
+	const validEmails = emails.value.filter(
+		(email) => email && email.trim() !== ""
+	);
+
+	// Check if online meeting is selected and no valid emails provided
+	if (onlineMeeting.value && validEmails.length === 0) {
+		toast.error("Pre online stretnutie je potrebné zadať aspoň jeden email", {
 			position: "top-right",
 			timeout: 5000,
-			closeOnClick: true,
-			pauseOnHover: true,
-			draggable: true,
-			draggablePercent: 60,
-			showCloseButtonOnHover: false,
-			hideProgressBar: false,
 		});
-		//alert("Pre online stretnutie je potrebné zadať email kontaktu");
 		changeLoadingState();
 		return;
 	}
 
 	try {
-		// Store the first response in a separate variable
 		const activityResponse = await axios.post(
 			`${config.public.apiUrl}add-activity`,
 			{
@@ -295,36 +296,16 @@ const addActivity = async () => {
 			toast.success("Aktivita bola úspešne pridaná", {
 				position: "top-right",
 				timeout: 5000,
-				closeOnClick: true,
-				pauseOnHover: true,
-				draggable: true,
-				draggablePercent: 60,
-				showCloseButtonOnHover: false,
-				hideProgressBar: false,
-			});
-		} else {
-			toast.error("Chyba pri pridávaní aktivity", {
-				position: "top-right",
-				timeout: 5000,
-				closeOnClick: true,
-				pauseOnHover: true,
-				draggable: true,
-				draggablePercent: 60,
-				showCloseButtonOnHover: false,
-				hideProgressBar: false,
 			});
 		}
 
-		// Update email ONLY if:
-		// 1. Online meeting is checked
-		// 2. Contact doesn't have an email (emailBool is false)
-		// 3. A new email value has been provided
-		if (onlineMeeting.value && !emailBool.value && email.value) {
-			console.log("Adding email to contact:", email.value);
+		// Update email for contact if primary email is provided and online meeting
+		if (onlineMeeting.value && !emailBool.value && emails.value[0]) {
+			console.log("Adding email to contact:", emails.value[0]);
 			await axios.patch(
 				`${config.public.apiUrl}contact/${id.value}/email`,
 				{
-					email: email.value,
+					email: emails.value[0],
 				},
 				{
 					headers: {
@@ -342,13 +323,13 @@ const addActivity = async () => {
 					{
 						activityId: activityResponse.data.activity.id,
 						user_id: userStore.user.id,
+						additionalEmails: validEmails.slice(1), // Send all emails except the first one (primary)
 					},
 					{ headers: { Authorization: `Bearer ${authStore.token}` } }
 				);
 
 				console.log("Teams meeting created:", teamsResponse.data);
 
-				// Update the activity with the meeting URL if needed
 				if (teamsResponse.data.joinUrl) {
 					activityResponse.data.activity.miesto_stretnutia =
 						teamsResponse.data.joinUrl;
@@ -359,14 +340,10 @@ const addActivity = async () => {
 					error.response?.data || error.message
 				);
 				toast.error("Je potrebné prihlásiť sa do Microsoft účtu");
-				// Consider showing an error message to the user here
 			}
 		}
 
-		// Update the calendar store
 		calendarStore.activities.push(activityResponse.data.activity);
-
-		// Emit events
 		emit("activityAdded", activityResponse.data.activity);
 		emit("addNewEvent", activityResponse.data.activity);
 		emit("cancelAddActivity");
@@ -406,7 +383,39 @@ watch(dohodnute, (newValue) => {
 	}
 });
 
-const emailCount = ref(0);
+watch(emailCount, (newCount, oldCount) => {
+	if (newCount > oldCount) {
+		// Add new empty email
+		emails.value.push("");
+	} else if (newCount < oldCount && newCount > 0) {
+		// Remove last email
+		emails.value.pop();
+	} else if (newCount === 0) {
+		// Reset to one empty email
+		emails.value = [""];
+	}
+});
+
+// Add this watcher to sync the single email input with the emails array
+watch(onlineMeeting, (newValue) => {
+	if (newValue) {
+		// When online meeting is enabled, set the first email in array to the single email value
+		emails.value[0] = email.value;
+	}
+});
+
+const activeDropdown = ref(null);
+
+const filteredContacts = (index) => {
+	const searchText = emails.value[index] || ""; // fallback if null/undefined
+	if (!searchText) return [];
+
+	return contacts.value.filter((contact) =>
+		[contact.meno, contact.priezvisko, contact.email].some((field) =>
+			(field || "").toLowerCase().includes(searchText.toLowerCase())
+		)
+	);
+};
 </script>
 
 <template>
@@ -440,6 +449,7 @@ const emailCount = ref(0);
 			<EventSearch
 				:contactsProp="contacts"
 				@selectedContact="handleSelectedContact"
+				class="z-30"
 			/>
 
 			<div v-if="onlineMeeting">
@@ -519,7 +529,7 @@ const emailCount = ref(0);
 				<div
 					@click="emailCount++"
 					class="cursor-pointer transition-all duration-200 hover:scale-110"
-					title="Add another email"
+					title="Pridať ďalší email"
 				>
 					<Icon
 						icon="solar:add-circle-linear"
@@ -546,18 +556,36 @@ const emailCount = ref(0);
 			</div>
 
 			<div
-				class="relative z-0 w-full mb-2 group"
-				v-for="i in emailCount"
-				:key="i"
-				v-if="emailCount > 0"
+				class="relative z-20 w-full mb-2 group"
+				v-for="(email, index) in emails"
+				:key="index"
 			>
 				<input
-					v-model="email"
+					v-model="emails[index]"
 					type="email"
-					class="w-full p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500 !text-black"
-					placeholder="Zadajte email ..."
+					:placeholder="
+						index === 0 ? 'Primárny email kontaktu...' : 'Ďalší email...'
+					"
+					class="w-full p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500 !text-black z-10"
 					required
+					@focus="activeDropdown = index"
 				/>
+				<div
+					class="w-full bg-gray-200 rounded-lg !text-black flex flex-col p-2 mt-1 max-h-[400px] overflow-y-auto absolute"
+					v-if="activeDropdown === index"
+				>
+					<div
+						v-for="contact in filteredContacts(index)"
+						:key="contact.id"
+						class="my-1 px-2 hover:bg-gray-300 cursor-pointer"
+						@click="
+							emails[index] = contact.email;
+							activeDropdown = null;
+						"
+					>
+						{{ contact.meno }} {{ contact.priezvisko }}
+					</div>
+				</div>
 			</div>
 
 			<div class="relative z-0 w-full mb-5 mt-5 group">

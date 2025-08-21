@@ -93,22 +93,34 @@ const detailView = (id) => {
 	<UTable
 		:rows="people"
 		:columns="columns"
-		class="mx-6 table-container shadow-md rounded-md"
+		class="mx-6 table-container shadow-md rounded-md pb-[70px]"
 		:row-class="(row) => row.class"
 	>
 		<template #actions-data="{ row }">
-			<UButton
-				@click="detailView(row.id)"
-				class="bg-blue-500 text-white shadow-xl"
-				label="Show Details"
-			/>
+			<div class="flex justify-between">
+				<div class="flex space-x-4">
+					<UButton
+						@click="detailView(row.id)"
+						class="bg-blue-500 text-white shadow-xl"
+						label="Show Details"
+					/>
+				</div>
+			</div>
+		</template>
 
-			<tr v-if="row.poznamka" class="absolute left-0 w-full">
-				<td colspan="7" class="px-4 py-2 text-sm text-gray-600 bg-gray-50">
-					<span class="font-semibold">Poznámka:</span>
+		<template #poznamka-data="{ row }">
+			<div v-if="row.poznamka" class="group relative">
+				<div class="truncate max-w-[200px]">
 					{{ row.poznamka }}
-				</td>
-			</tr>
+				</div>
+				<div
+					class="absolute hidden group-hover:block z-10001 w-[300px] p-2 bg-white border border-gray-200 rounded shadow-lg"
+				>
+					<div class="text-sm text-gray-700 whitespace-normal">
+						{{ row.poznamka }}
+					</div>
+				</div>
+			</div>
 		</template>
 	</UTable>
 </template>

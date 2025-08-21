@@ -1,6 +1,6 @@
 <script setup>
 import { Icon } from "@iconify/vue";
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useCalendarstore } from "#imports";
 import { useUserStore } from "#imports";
 import { useAuthStore } from "@/stores/authStore";
@@ -33,6 +33,20 @@ const props = defineProps({
 	},
 });
 
+// Watch for date changes and update calendar
+watch(
+	() => props.date,
+	(newDate) => {
+		if (newDate) {
+			calendarOptions.value.initialDate = newDate;
+
+			// Also fetch Microsoft events for the new date
+			const dateObj = new Date(newDate);
+			fetchMicrosoftEvents(dateObj.getMonth() + 1, dateObj.getFullYear());
+		}
+	}
+);
+
 const calendarOptions = ref({
 	plugins: [timeGridPlugin, interactionPlugin],
 	headerToolbar: {
@@ -46,8 +60,8 @@ const calendarOptions = ref({
 	slotMaxTime: "23:00:00",
 	scrollTime: "08:00:00",
 	initialEvents: [],
-	events: events,
-	editable: true,
+	events: [],
+	editable: false, // Disable editing for mini calendar
 	selectable: true,
 	selectMirror: true,
 	dayMaxEvents: true,
@@ -55,9 +69,8 @@ const calendarOptions = ref({
 	eventClick: handleEventClick,
 	slotDuration: "00:30:00",
 	allDaySlot: true,
-	allDayText: "Celý deň", // Slovak for "All Day"
+	allDayText: "Celý deň",
 	nowIndicator: true,
-	// Time format settings
 	eventTimeFormat: {
 		hour: "2-digit",
 		minute: "2-digit",
@@ -68,66 +81,73 @@ const calendarOptions = ref({
 		minute: "2-digit",
 		hour12: false,
 	},
-	locale: "sk", // Slovak locale for European format
-	firstDay: 1, // Monday as first day of week
-	// Add event mount handler for all-day events
+	locale: "sk",
+	firstDay: 1,
 	datesSet: (dateInfo) => {
-		// Extract the current view's start date
 		const currentDate = dateInfo.view.currentStart;
-
-		// Get the month (0-11) and year
 		const month = currentDate.getMonth() + 1;
 		const year = currentDate.getFullYear();
 
-		// Check if this is a new month or year
 		if (
 			month !== currentLoadedMonth.value + 2 ||
 			year !== currentLoadedYear.value
 		) {
-			// Call fetchMicrosoftEvents function with current month and year
 			fetchMicrosoftEvents(month, year);
-
-			// Update the current loaded month and year
 			currentLoadedMonth.value = month;
 			currentLoadedYear.value = year;
 		}
 	},
-	// Add this event render function to verify all-day events are being processed correctly
 	eventDidMount: (info) => {
-		// Log event details for debugging
-		console.log(`Event: ${info.event.title}`);
-		console.log(`Is all-day: ${info.event.allDay}`);
-
-		// You could also visually mark all-day events differently if needed
 		if (info.event.allDay) {
 			info.el.style.fontWeight = "bold";
+		}
+
+		// Style Microsoft events differently
+		if (info.event.extendedProps.source === "microsoft") {
+			info.el.style.opacity = "0.8";
+			info.el.style.borderLeft = "3px solid #6b46c1";
 		}
 	},
 });
 
-console.log("date ", props.date);
-
 const fetchMicrosoftEvents = async (month, year) => {
-	const startDate = new Date(year, month - 1, 1).toISOString();
-	const endDate = new Date(year, month, 0, 23, 59, 59).toISOString(); // Last day of month
-
-	await calendarStore.fetchMicrosoftEvents(startDate, endDate);
-	updateEventsWithMicrosoft();
+	try {
+		const microsoftEventsData = await calendarStore.fetchMicrosoftEvents(
+			month,
+			year
+		);
+		microsoftEvents.value = microsoftEventsData;
+		updateCalendarEvents();
+	} catch (error) {
+		console.error("Error fetching Microsoft events:", error);
+	}
 };
 
-// const updateEventsWithMicrosoft = () => {
-// 	const allEvents = [...events.value, ...calendarStore.microsoftEventCache];
-// 	calendarOptions.value = {
-// 		...calendarOptions.value,
-// 		events: allEvents,
-// 	};
-// };
+const transformData = (data) => {
+	return data.map((item) => {
+		const farba =
+			item.created_id == userStore.user.id ? "rgb(37 99 235)" : "red";
 
-const updateEventsWithMicrosoft = () => {
-	// Combine all events
+		return {
+			id: item.id,
+			title: item.aktivita,
+			start: item.datumCas.replace(" ", "T"),
+			end: item.koniec,
+			backgroundColor: farba,
+			borderColor: farba,
+			user_id: item.created_id,
+			extendedProps: {
+				isMicrosoftEvent: false,
+				source: "local",
+			},
+		};
+	});
+};
+
+const updateCalendarEvents = () => {
+	// Combine local events and Microsoft events
 	const allEvents = [...events.value, ...microsoftEvents.value];
 
-	// Update the calendar options with the combined events
 	calendarOptions.value = {
 		...calendarOptions.value,
 		events: allEvents,
@@ -153,27 +173,8 @@ onMounted(async () => {
 		selectedDate.getFullYear()
 	);
 
-	updateEventsWithMicrosoft();
-
-	// Optional: handle auth code (you can keep this logic if needed)
+	updateCalendarEvents();
 });
-
-const transformData = (data) => {
-	return data.map((item) => {
-		const farba =
-			item.created_id == userStore.user.id ? "rgb(37 99 235)" : "red";
-
-		return {
-			id: item.id,
-			title: item.aktivita,
-			start: item.datumCas.replace(" ", "T"),
-			end: item.koniec,
-			backgroundColor: farba,
-			borderColor: farba,
-			user_id: item.created_id,
-		};
-	});
-};
 
 const toggleAddActivity = () => {
 	addActivity.value = !addActivity.value;
@@ -191,16 +192,14 @@ function handleDateSelect(selectInfo) {
 }
 
 function handleEventClick(clickInfo) {
-	// Check if it's a Microsoft event
-	if (clickInfo.event.extendedProps.isMicrosoftEvent) {
-		// You might want to handle Microsoft events differently
-		// For example, show details but don't allow editing
+	if (clickInfo.event.extendedProps.source === "microsoft") {
+		// Handle Microsoft event click - maybe show a tooltip or details
 		console.log("Microsoft event clicked:", clickInfo.event);
-		// You could show a different modal or details view for Microsoft events
+		// You could emit an event to the parent component
+		emit("microsoftEventClick", clickInfo.event);
 		return;
 	}
 
-	// Handle regular events
 	toggleUpdateActivity();
 	activityID.value = clickInfo.event._def.publicId;
 }
@@ -222,13 +221,14 @@ const addNewEvent = (newEvent) => {
 		borderColor:
 			newEvent.created_id === userStore.user.id ? "rgb(37 99 235)" : "red",
 		user_id: newEvent.created_id,
+		extendedProps: {
+			isMicrosoftEvent: false,
+			source: "local",
+		},
 	};
 
 	events.value = [...events.value, transformedEvent];
-
-	// Update the calendar with all events
-	updateEventsWithMicrosoft();
-
+	updateCalendarEvents();
 	addActivity.value = false;
 };
 
@@ -259,15 +259,17 @@ const alterEvents = (updatedEvent) => {
 							? "rgb(37 99 235)"
 							: "red",
 					user_id: updatedEvent.created_id,
+					extendedProps: {
+						isMicrosoftEvent: false,
+						source: "local",
+					},
 				};
 			}
 			return event;
 		});
 	}
 
-	// Update the calendar with all events
-	updateEventsWithMicrosoft();
-
+	updateCalendarEvents();
 	updateActivity.value = false;
 	activityID.value = "";
 };
@@ -302,15 +304,22 @@ const alterEvents = (updatedEvent) => {
 					>
 						<template v-slot:eventContent="arg">
 							<div class="flex items-center">
-								<!-- Add Microsoft icon for Microsoft events -->
+								<!-- Microsoft icon for Microsoft events -->
 								<Icon
-									v-if="arg.event.extendedProps.isMicrosoftEvent"
+									v-if="arg.event.extendedProps.source === 'microsoft'"
 									icon="mdi:microsoft"
 									class="mr-1 text-white"
-									:width="16"
+									:width="12"
+								/>
+								<!-- Different icon for local events -->
+								<Icon
+									v-else
+									icon="mdi:calendar"
+									class="mr-1 text-white"
+									:width="12"
 								/>
 								<b>{{ arg.timeText }}</b>
-								<i class="ml-1">{{ arg.event.title }}</i>
+								<i class="ml-1 text-xs">{{ arg.event.title }}</i>
 							</div>
 						</template>
 					</FullCalendar>
@@ -323,11 +332,16 @@ const alterEvents = (updatedEvent) => {
 <style scoped>
 .demo-app-main {
 	flex-grow: 1;
-	padding: 3em;
+	padding: 1em;
 }
 
-/* Styling for Microsoft events */
-:deep(.fc-event-main) {
-	padding: 2px 4px;
+/* Custom styles for Microsoft events */
+:deep(.fc-event[data-source="microsoft"]) {
+	background-color: #6b46c1 !important;
+	border-color: #553c9a !important;
+}
+
+:deep(.fc-event[data-source="local"]) {
+	/* Your existing local event styles */
 }
 </style>

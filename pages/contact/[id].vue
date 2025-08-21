@@ -441,6 +441,8 @@ const changeCallListBool = () => {
 
 const pendingFirstMeetingRow = ref(null);
 
+const currentActivity = ref(null);
+
 const changeActivityStatus = async (row, status) => {
 	try {
 		if (row.aktivita === "Prvé stretnutie" && status === "check") {
@@ -449,6 +451,11 @@ const changeActivityStatus = async (row, status) => {
 			// Store the row data for later use
 			pendingFirstMeetingRow.value = row;
 			return;
+		}
+
+		if (status === "discarded") {
+			currentActivity.value = row;
+			changeDiscardActivityModal();
 		}
 
 		// Update local state immediately for better UX
@@ -565,15 +572,27 @@ const showConfirmEvent = ref(false);
 const changeConfirmEventModal = () => {
 	showConfirmEvent.value = !showConfirmEvent.value;
 };
+
+const showDiscardActivityModal = ref(false);
+
+const changeDiscardActivityModal = () => {
+	showDiscardActivityModal.value = !showDiscardActivityModal.value;
+};
+
+// const handleConfirmDiscardActivity = (discardMessage) => {
+// 	changeDiscardActivityModal();
+// 	console.log(discardMessage);
+// };
 </script>
 
 <template>
-	<!-- <AlterPersonForm
-		v-if="showAlterPesonForm"
-		@cancelAlter="alterPerson()"
-		@alterPerson="updatePerson"
-		:single_contact="single_contact"
-	/> -->
+	<DiscardActivityModal
+		v-if="showDiscardActivityModal"
+		:activityData="currentActivity"
+		@closeDiscardActivity="changeDiscardActivityModal"
+		@confirmDiscardActivity="changeDiscardActivityModal"
+	/>
+
 	<ConfirmEventModal
 		v-if="showConfirmEvent"
 		@close="changeConfirmEventModal"

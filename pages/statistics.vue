@@ -251,7 +251,7 @@
 		</div>
 
 		<!-- Pohovory Statistika -->
-		<h1 class="text-2xl font-bold mb-4 mt-16">Štatistika pre Pohovory</h1>
+		<h1 class="text-2xl font-bold mb-4 mt-16">Štatistika pre Nábory</h1>
 
 		<div
 			class="container"
