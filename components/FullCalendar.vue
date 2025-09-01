@@ -947,8 +947,8 @@ const checkAuth = async () => {
 
 <template>
 	<div class="h-screen">
-		<loadigcomponent v-if="calendarStore.loadingState" />
-		<loadigcomponent v-if="loadingStateCalendar" />
+		<!-- <loadigcomponent v-if="calendarStore.loadingState" />
+		<loadigcomponent v-if="loadingStateCalendar" /> -->
 		<AddActivityCalendar
 			v-if="addActivity"
 			@cancelAddActivity="toggleAddActivity"
@@ -1002,7 +1002,7 @@ const checkAuth = async () => {
 								:checked="calendarOptions.weekends"
 								@change="handleWeekendsToggle"
 							/>
-							toggle weekends
+							Zobraziť víkendy
 						</label>
 					</div>
 					<div class="demo-app-sidebar-section text-black rounded-b-[30px]">
@@ -1028,7 +1028,7 @@ const checkAuth = async () => {
 					/>
 				</div>
 				<div class="flex flex-col items-center py-6 shadow-lg rounded-b-lg">
-					<div
+					<!-- <div
 						@click="fetchMicrosoftEvents"
 						class="flex items-center gap-2 mt-4 bg-purple-600 rounded-md hover:bg-purple-700 cursor-pointer w-[240px] px-2 py-1 shadow"
 					>
@@ -1040,7 +1040,7 @@ const checkAuth = async () => {
 							}}
 							<img src="/public/icons8-microsoft-48.png" alt="" />
 						</div>
-					</div>
+					</div> -->
 					<button
 						v-if="!isLoggedInWithMicrosoft"
 						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
@@ -1056,13 +1056,13 @@ const checkAuth = async () => {
 						<span>Odhlásiť sa z Microsoft účtu</span>
 						<img src="/public/icons8-microsoft-48.png" alt="logo" />
 					</button>
-					<button
+					<!-- <button
 						class="bg-red-800 px-4 rounded-md shadow hover:bg-red-700 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
 						@click="toggleCreateMicrosoftEvent"
 					>
 						<span class="text-white">Vytvoriť outlook event</span>
 						<img src="/public/icons8-microsoft-48.png" alt="logo" />
-					</button>
+					</button> -->
 				</div>
 			</div>
 			<div class="demo-app-main bg-white text-black">

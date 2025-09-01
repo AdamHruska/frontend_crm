@@ -195,7 +195,38 @@ onMounted(async () => {
 });
 
 const handleSearchResults = (results) => {
-	people.value = results; // Update `people` with search results
+	// If results is an array (search results), update people
+	if (Array.isArray(results)) {
+		people.value = results.map((person) => {
+			let cssClass = "";
+			if (person.first_event === 0) {
+				cssClass += "bg-green-200 ";
+			}
+			if (person.only_called_never_answered === 1) {
+				cssClass += "bg-orange-200 ";
+			}
+			return {
+				...person,
+				class: cssClass.trim(),
+			};
+		});
+	}
+	// If results is paginated data (from store), use the data property
+	else if (results && results.data) {
+		people.value = results.data.map((person) => {
+			let cssClass = "";
+			if (person.first_event === 0) {
+				cssClass += "bg-green-200 ";
+			}
+			if (person.only_called_never_answered === 1) {
+				cssClass += "bg-orange-200 ";
+			}
+			return {
+				...person,
+				class: cssClass.trim(),
+			};
+		});
+	}
 };
 
 const detailView = (id) => {

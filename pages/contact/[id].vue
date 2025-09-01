@@ -583,6 +583,19 @@ const changeDiscardActivityModal = () => {
 // 	changeDiscardActivityModal();
 // 	console.log(discardMessage);
 // };
+
+const handleActivityUpdate = (updatedActivity) => {
+	// Nájdeme a aktualizujeme aktivitu v zozname
+	const index = activities.value.findIndex((a) => a.id === updatedActivity.id);
+	if (index !== -1) {
+		activities.value[index] = {
+			...activities.value[index],
+			...updatedActivity,
+		};
+	}
+	showDiscardActivityModal.value = !showDiscardActivityModal.value;
+	//changeDiscardActivityModal();
+};
 </script>
 
 <template>
@@ -590,7 +603,7 @@ const changeDiscardActivityModal = () => {
 		v-if="showDiscardActivityModal"
 		:activityData="currentActivity"
 		@closeDiscardActivity="changeDiscardActivityModal"
-		@confirmDiscardActivity="changeDiscardActivityModal"
+		@activityUpdated="handleActivityUpdate"
 	/>
 
 	<ConfirmEventModal

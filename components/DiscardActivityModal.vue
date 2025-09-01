@@ -22,9 +22,20 @@ onMounted(() => {
 	console.log("aktivita", props.activityData.aktivita);
 });
 
-const emit = defineEmits(["closeDiscardActivity"]);
+const emit = defineEmits(["closeDiscardActivity", "activityUpdated"]);
 
 const updateEvent = async () => {
+	const now = new Date();
+	const formattedDate = now.toLocaleDateString("sk-SK");
+
+	// ak je poznamka null, použije sa prázdny string
+	const oldNote = props.activityData.poznamka ?? "";
+
+	const newNote =
+		oldNote +
+		(oldNote ? "\n" : "") + // ak bola stará poznámka, dá oddeľovač
+		`[${formattedDate}] ${discardMessage.value} `;
+
 	const response = await axios.put(
 		`${config.public.apiUrl}update-activities/${props.activityData.id}`,
 		{
@@ -32,7 +43,7 @@ const updateEvent = async () => {
 			aktivita: props.activityData.aktivita,
 			datumCas: props.activityData.datumCas,
 			koniec: props.activityData.koniec,
-			poznamka: props.activityData.poznamka + " " + discardMessage.value,
+			poznamka: newNote,
 			volane: props.activityData.volane,
 			dovolane: props.activityData.dovolane,
 			dohodnute: props.activityData.dohodnute ? 1 : 0,
@@ -46,7 +57,13 @@ const updateEvent = async () => {
 		}
 	);
 
-	emit("closeDiscardActivity");
+	emit("activityUpdated", {
+		...props.activityData,
+		poznamka: newNote,
+		activity_status: "discarded",
+	});
+
+	//emit("closeDiscardActivity");
 };
 </script>
 ;

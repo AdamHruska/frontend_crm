@@ -21,6 +21,9 @@ const props = defineProps({
 const emailCount = ref(0);
 const emails = ref([]);
 
+// show volane dovolane dohodnute
+const showVDD = ref(false);
+
 const contacts = ref([]);
 const contact = ref([]);
 const kontakt = ref("");
@@ -52,9 +55,15 @@ watch(aktivita, (newValue) => {
 	ineBool.value = newValue === "ine";
 
 	// If aktivita is "Telefonát klient", set koniec to datum_cas + 5 minutes
-	if (newValue === "Telefonát klient" && datum_cas.value) {
+	if (
+		(newValue === "Telefonát klient" || newValue === "Telefonát nábor") &&
+		datum_cas.value
+	) {
+		showVDD.value = true;
 		const newEndTime = add(parseISO(datum_cas.value), { minutes: 5 });
 		koniec.value = format(newEndTime, "yyyy-MM-dd'T'HH:mm");
+	} else {
+		showVDD.value = false;
 	}
 });
 
@@ -491,6 +500,7 @@ const filteredContacts = (index) => {
 					<option value="basic 2">Basic 2</option>
 					<option value="basic 3">Basic 3</option>
 					<option value="basic 4">Basic 4</option>
+					<option value="Post info">Post info</option>
 					<option value="konfirmačný servis">konfirmačný servis</option>
 					<option value="servis">servis</option>
 					<option value="bringer bonus">bringer bonus</option>
@@ -555,35 +565,37 @@ const filteredContacts = (index) => {
 				</div>
 			</div>
 
-			<div
-				class="relative z-20 w-full mb-2 group"
-				v-for="(email, index) in emails"
-				:key="index"
-			>
-				<input
-					v-model="emails[index]"
-					type="email"
-					:placeholder="
-						index === 0 ? 'Primárny email kontaktu...' : 'Ďalší email...'
-					"
-					class="w-full p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500 !text-black z-10"
-					required
-					@focus="activeDropdown = index"
-				/>
+			<div class="max-h-[150px] overflow-y-auto">
 				<div
-					class="w-full bg-gray-200 rounded-lg !text-black flex flex-col p-2 mt-1 max-h-[400px] overflow-y-auto absolute"
-					v-if="activeDropdown === index"
+					class="relative z-20 w-full mb-2 group"
+					v-for="(email, index) in emails"
+					:key="index"
 				>
-					<div
-						v-for="contact in filteredContacts(index)"
-						:key="contact.id"
-						class="my-1 px-2 hover:bg-gray-300 cursor-pointer"
-						@click="
-							emails[index] = contact.email;
-							activeDropdown = null;
+					<input
+						v-model="emails[index]"
+						type="email"
+						:placeholder="
+							index === 0 ? 'Primárny email kontaktu...' : 'Ďalší email...'
 						"
+						class="w-full p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500 !text-black z-10"
+						required
+						@focus="activeDropdown = index"
+					/>
+					<div
+						class="w-full bg-gray-200 rounded-lg !text-black flex flex-col p-2 mt-1 max-h-[400px] overflow-y-auto absolute"
+						v-if="activeDropdown === index"
 					>
-						{{ contact.meno }} {{ contact.priezvisko }}
+						<div
+							v-for="contact in filteredContacts(index)"
+							:key="contact.id"
+							class="my-1 px-2 hover:bg-gray-300 cursor-pointer"
+							@click="
+								emails[index] = contact.email;
+								activeDropdown = null;
+							"
+						>
+							{{ contact.meno }} {{ contact.priezvisko }}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -651,7 +663,7 @@ const filteredContacts = (index) => {
 				/>
 			</div>
 
-			<div class="flex justify-between px-12 pb-4">
+			<div class="flex justify-between px-12 pb-4" v-if="showVDD">
 				<!-- VOLANE -->
 				<label class="cursor-pointer flex flex-col items-center gap-4">
 					<span

@@ -42,6 +42,32 @@
 				</div>
 			</div>
 
+			<select
+				v-model="selectedActivityType"
+				class="border rounded p-2 bg-white shadow-md"
+				@change="fetchData"
+			>
+				<option value="Telefonát klient">Telefonát klient</option>
+			</select>
+
+			<!-- Statistics Cards -->
+			<div
+				class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 shadow-sm bg-white p-4"
+			>
+				<div class="bg-blue-100 p-4 rounded">
+					<h3 class="font-bold">Volané</h3>
+					<p class="text-2xl">{{ statistics.called }}</p>
+				</div>
+				<div class="bg-green-100 p-4 rounded">
+					<h3 class="font-bold">Dovolané</h3>
+					<p class="text-2xl">{{ statistics.reached }}</p>
+				</div>
+				<div class="bg-purple-100 p-4 rounded">
+					<h3 class="font-bold">Dohodnuté</h3>
+					<p class="text-2xl">{{ statistics.scheduled }}</p>
+				</div>
+			</div>
+
 			<div
 				class="container"
 				v-if="statistics && responseData && responseData.detailed_statistics"
@@ -64,24 +90,6 @@
 
 				<div class="item">
 					<div class="item-left">
-						<p>Poradenstvá:</p>
-					</div>
-					<div class="item-right">
-						<div class="right-count">
-							Pocet vsetkych:
-							{{ responseData.detailed_statistics.poradenstva.total }}
-						</div>
-						<div class="right-count green">
-							Pocet zrealizovanych:
-							{{
-								responseData.detailed_statistics.poradenstva.with_check_status
-							}}
-						</div>
-					</div>
-				</div>
-
-				<div class="item">
-					<div class="item-left">
 						<p>Prvé stretnutia:</p>
 					</div>
 					<div class="item-right">
@@ -94,24 +102,6 @@
 							{{
 								responseData.detailed_statistics.prve_stretnutie
 									.with_check_status
-							}}
-						</div>
-					</div>
-				</div>
-
-				<div class="item">
-					<div class="item-left">
-						<p>Realizácie:</p>
-					</div>
-					<div class="item-right">
-						<div class="right-count">
-							Pocet vsetkych:
-							{{ responseData.detailed_statistics.realizacie.total }}
-						</div>
-						<div class="right-count green">
-							Pocet zrealizovanych:
-							{{
-								responseData.detailed_statistics.realizacie.with_check_status
 							}}
 						</div>
 					</div>
@@ -138,6 +128,42 @@
 
 				<div class="item">
 					<div class="item-left">
+						<p>Poradenstvá:</p>
+					</div>
+					<div class="item-right">
+						<div class="right-count">
+							Pocet vsetkych:
+							{{ responseData.detailed_statistics.poradenstva.total }}
+						</div>
+						<div class="right-count green">
+							Pocet zrealizovanych:
+							{{
+								responseData.detailed_statistics.poradenstva.with_check_status
+							}}
+						</div>
+					</div>
+				</div>
+
+				<div class="item">
+					<div class="item-left">
+						<p>Realizácie:</p>
+					</div>
+					<div class="item-right">
+						<div class="right-count">
+							Pocet vsetkych:
+							{{ responseData.detailed_statistics.realizacie.total }}
+						</div>
+						<div class="right-count green">
+							Pocet zrealizovanych:
+							{{
+								responseData.detailed_statistics.realizacie.with_check_status
+							}}
+						</div>
+					</div>
+				</div>
+
+				<div class="item">
+					<div class="item-left">
 						<p>Servisná analýza:</p>
 					</div>
 					<div class="item-right">
@@ -154,36 +180,16 @@
 						</div>
 					</div>
 				</div>
-			</div>
 
-			<select
-				v-model="selectedActivityType"
-				class="border rounded p-2 bg-white shadow-md"
-				@change="fetchData"
-			>
-				<option value="all">Všetky aktivity</option>
-				<option value="Telefonát klient">Telefonát klient</option>
-				<option value="Prvé stretnutie">Prvé stretnutie</option>
-				<option value="Analýza osobných financí">AOF</option>
-				<option value="poradenstvo">Poradenstvo</option>
-				<option value="realizácia">Realizácia</option>
-			</select>
-
-			<!-- Statistics Cards -->
-			<div
-				class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 shadow-sm bg-white p-4"
-			>
-				<div class="bg-blue-100 p-4 rounded">
-					<h3 class="font-bold">Volané</h3>
-					<p class="text-2xl">{{ statistics.called }}</p>
-				</div>
-				<div class="bg-green-100 p-4 rounded">
-					<h3 class="font-bold">Dovolané</h3>
-					<p class="text-2xl">{{ statistics.reached }}</p>
-				</div>
-				<div class="bg-purple-100 p-4 rounded">
-					<h3 class="font-bold">Dohodnuté</h3>
-					<p class="text-2xl">{{ statistics.scheduled }}</p>
+				<div class="item">
+					<div class="item-left">
+						<p>Počet pridaných kontaktov:</p>
+					</div>
+					<div class="item-right">
+						<div class="right-count green">
+							Pocet nových kontaktov: {{ responseData.new_contacts }}
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -253,11 +259,17 @@
 		<!-- Pohovory Statistika -->
 		<h1 class="text-2xl font-bold mb-4 mt-16">Štatistika pre Nábory</h1>
 
+		<div class="p-2 bg-white font-semibold text-lg">Pohovory</div>
+
+		<div class="bg-white p-4 rounded shadow mb-6">
+			<BarChart :data="chartDataPohovory" />
+		</div>
+
 		<div
 			class="container"
 			v-if="dataPohovory && dataPohovory.pohovory_statistics"
 		>
-			<div class="item">
+			<!-- <div class="item">
 				<div class="item-left">
 					<p>Telefonát nábor:</p>
 				</div>
@@ -271,7 +283,7 @@
 						{{ dataPohovory.pohovory_statistics.telefonat_nabor.dohodnute }}
 					</div>
 				</div>
-			</div>
+			</div> -->
 
 			<div class="item">
 				<div class="item-left">
@@ -372,12 +384,22 @@
 					</div>
 				</div>
 			</div>
-		</div>
 
-		<div class="p-2 bg-white font-semibold text-lg">Pohovory</div>
-
-		<div class="bg-white p-4 rounded shadow mb-6">
-			<BarChart :data="chartDataPohovory" />
+			<div class="item">
+				<div class="item-left">
+					<p>Post info:</p>
+				</div>
+				<div class="item-right">
+					<div class="right-count">
+						Všetky:
+						{{ dataPohovory.pohovory_statistics.post_info.total }}
+					</div>
+					<div class="right-count green">
+						Zrealizované:
+						{{ dataPohovory.pohovory_statistics.post_info.with_check_status }}
+					</div>
+				</div>
+			</div>
 		</div>
 
 		<!-- Zoznam zaujatych po pohovore -->
@@ -432,7 +454,7 @@ const toggleUpdateActivity = (id) => {
 const zaujatiKandidati = ref([]);
 const dateRange = ref({ from: "", to: "" });
 const selectedPeriod = ref("month");
-const selectedActivityType = ref("all");
+const selectedActivityType = ref("Telefonát klient");
 const statistics = ref({ called: 0, reached: 0, scheduled: 0 });
 const activities = ref([]);
 const loadingStateCalendar = ref(false);

@@ -158,6 +158,30 @@ const uncheckAll = () => {
 	});
 };
 
+function decoratePeople(contacts) {
+	return contacts.map((person) => {
+		let cssClass = "";
+		if (person.first_event === 0) {
+			cssClass += "bg-green-200 ";
+		}
+
+		if (person.last_activity && callListStore.singleCallList.created_at) {
+			const lastActivityDate = new Date(person.last_activity);
+			const callListCreatedDate = new Date(
+				callListStore.singleCallList.created_at
+			);
+
+			if (lastActivityDate < callListCreatedDate) {
+				cssClass += "bg-yellow-200 ";
+			} else if (lastActivityDate > callListCreatedDate) {
+				cssClass += "bg-red-200 ";
+			}
+		}
+
+		return { ...person, class: cssClass.trim() };
+	});
+}
+
 onMounted(async () => {
 	if (callListStore.callLists.length === 0) {
 		await callListStore.fetchCallLists();
@@ -169,7 +193,8 @@ onMounted(async () => {
 });
 
 if (callListStore.selectedCallListPeople.length > 0) {
-	people.value = callListStore.selectedCallListPeople;
+	//people.value = callListStore.selectedCallListPeople;
+	people.value = decoratePeople(callListStore.selectedCallListPeople);
 }
 
 const ids_from_call_list = ref([]);
@@ -202,6 +227,35 @@ const getCallList = async (id) => {
 
 		if (callListResponse.data.contacts) {
 			people.value = [...callListResponse.data.contacts];
+
+			people.value = people.value.map((person) => {
+				console.log("person.first_event", person.last_activity);
+				let cssClass = "";
+				console.log("person.first_event", person.last_activity);
+				if (person.first_event === 0) {
+					cssClass += "bg-green-200 ";
+				}
+
+				if (person.last_activity && callListStore.singleCallList.created_at) {
+					const lastActivityDate = new Date(person.last_activity);
+					const callListCreatedDate = new Date(
+						callListStore.singleCallList.created_at
+					);
+
+					if (lastActivityDate < callListCreatedDate) {
+						// Žltá - staršia aktivita ako vytvorenie call listu
+						cssClass += "bg-yellow-200 ";
+					} else if (lastActivityDate > callListCreatedDate) {
+						// Červená - novšia aktivita ako vytvorenie call listu
+						cssClass += "bg-red-200 ";
+					}
+				}
+
+				return {
+					...person,
+					class: cssClass.trim(),
+				};
+			});
 			callListStore.selectedCallListPeople = callListResponse.data.contacts;
 			console.log("Received contacts:", callListStore.selectedCallListPeople);
 		}

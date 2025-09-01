@@ -23,6 +23,9 @@ const userStore = useUserStore();
 import { useToast } from "vue-toastification";
 const toast = useToast();
 
+// show volane dovolane dohodnute
+const showVDD = ref(false);
+
 const contact = ref([]);
 
 const aktivita = ref("");
@@ -39,6 +42,7 @@ const onlineMeeting = ref(false);
 
 const emailBool = ref(false);
 const email = ref("");
+const contacts = ref([]);
 
 watch(aktivita, (newValue) => {
 	// Show/hide extra field
@@ -49,8 +53,11 @@ watch(aktivita, (newValue) => {
 		(newValue === "Telefonát klient" || newValue === "Telefonát nábor") &&
 		datum_cas.value
 	) {
+		showVDD.value = true;
 		const newEndTime = add(parseISO(datum_cas.value), { minutes: 5 });
 		koniec.value = format(newEndTime, "yyyy-MM-dd'T'HH:mm");
+	} else {
+		showVDD.value = false;
 	}
 });
 
@@ -97,6 +104,13 @@ onBeforeMount(async () => {
 
 	const startPlusHour = add(datum_cas.value, { hours: 1 });
 	koniec.value = format(startPlusHour, "yyyy-MM-dd'T'HH:mm");
+
+	const response2 = await axios.get(`${config.public.apiUrl}all-contacts`, {
+		headers: {
+			Authorization: `Bearer ${authStore.token}`,
+		},
+	});
+	contacts.value = await response2.data.contacts;
 });
 
 const findPerson = async (id) => {
@@ -119,6 +133,9 @@ const emit = defineEmits(["cancelAddActivity", "activityAdded"]);
 const cancelActivity = () => {
 	emit("cancelAddActivity");
 };
+
+const emailCount = ref(0);
+const emails = ref([""]);
 
 const addActivity = async () => {
 	event.preventDefault();
@@ -210,6 +227,21 @@ const addActivity = async () => {
 			);
 		}
 
+		if (onlineMeeting.value && !emailBool.value && emails.value[0]) {
+			console.log("Adding email to contact:", emails.value[0]);
+			await axios.patch(
+				`${config.public.apiUrl}contact/${id.value}/email`,
+				{
+					email: emails.value[0],
+				},
+				{
+					headers: {
+						Authorization: `Bearer ${authStore.token}`,
+					},
+				}
+			);
+		}
+
 		if (onlineMeeting.value) {
 			try {
 				const teamsResponse = await axios.post(
@@ -267,6 +299,40 @@ watch(dohodnute, (newValue) => {
 		dovolane.value = true;
 	}
 });
+
+watch(emailCount, (newCount, oldCount) => {
+	if (newCount > oldCount) {
+		// Add new empty email
+		emails.value.push("");
+	} else if (newCount < oldCount && newCount > 0) {
+		// Remove last email
+		emails.value.pop();
+	} else if (newCount === 0) {
+		// Reset to one empty email
+		emails.value = [""];
+	}
+});
+
+// Add this watcher to sync the single email input with the emails array
+watch(onlineMeeting, (newValue) => {
+	if (newValue) {
+		// When online meeting is enabled, set the first email in array to the single email value
+		emails.value[0] = email.value;
+	}
+});
+
+const activeDropdown = ref(null);
+
+const filteredContacts = (index) => {
+	const searchText = emails.value[index] || ""; // fallback if null/undefined
+	if (!searchText) return [];
+
+	return contacts.value.filter((contact) =>
+		[contact.meno, contact.priezvisko, contact.email].some((field) =>
+			(field || "").toLowerCase().includes(searchText.toLowerCase())
+		)
+	);
+};
 </script>
 
 <template>
@@ -320,6 +386,7 @@ watch(dohodnute, (newValue) => {
 					<option value="basic 2">Basic 2</option>
 					<option value="basic 3">Basic 3</option>
 					<option value="basic 4">Basic 4</option>
+					<option value="Post info">Post info</option>
 					<option value="konfirmačný servis">konfirmačný servis</option>
 					<option value="servis">servis</option>
 					<option value="bringer bonus">bringer bonus</option>
@@ -339,7 +406,7 @@ watch(dohodnute, (newValue) => {
 				/>
 			</div>
 
-			<div class="relative z-0 w-full mb-6 group">
+			<div class="relative z-0 w-full mb-2 group">
 				<input
 					v-model="onlineMeeting"
 					type="checkbox"
@@ -352,7 +419,73 @@ watch(dohodnute, (newValue) => {
 				>
 			</div>
 
-			<div class="relative z-0 w-full mb-5 group">
+			<div class="flex gap-3 mb-6 items-center">
+				<!-- Add Email Button -->
+				<div
+					@click="emailCount++"
+					class="cursor-pointer transition-all duration-200 hover:scale-110"
+					title="Pridať ďalší email"
+				>
+					<Icon
+						icon="solar:add-circle-linear"
+						class="text-green-500 hover:text-green-600"
+						width="24"
+						height="24"
+					/>
+				</div>
+
+				<!-- Remove Email Button (only shows when emailCount > 1) -->
+				<div
+					@click="emailCount--"
+					class="cursor-pointer transition-all duration-200 hover:scale-110"
+					v-if="emailCount > 1"
+					title="Remove last email"
+				>
+					<Icon
+						icon="solar:minus-circle-linear"
+						class="text-red-500 hover:text-red-600"
+						width="24"
+						height="24"
+					/>
+				</div>
+			</div>
+
+			<div class="max-h-[150px] overflow-y-auto">
+				<div
+					class="relative w-full mb-2 group"
+					v-for="(email, index) in emails"
+					:key="index"
+				>
+					<input
+						v-model="emails[index]"
+						type="email"
+						:placeholder="
+							index === 0 ? 'Primárny email kontaktu...' : 'Ďalší email...'
+						"
+						class="w-full p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500 !text-black z-20"
+						required
+						@focus="activeDropdown = index"
+					/>
+					<div
+						class="w-full bg-gray-200 rounded-lg !text-black flex flex-col p-2 mt-1 max-h-[400px] overflow-y-auto absolute z-[100] overflow-visible"
+						v-if="activeDropdown === index"
+					>
+						<div
+							v-for="contact in filteredContacts(index)"
+							:key="contact.id"
+							class="my-1 px-2 hover:bg-gray-300 cursor-pointer"
+							@click="
+								emails[index] = contact.email;
+								activeDropdown = null;
+							"
+						>
+							{{ contact.meno }} {{ contact.priezvisko }}
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="relative z-0 w-full mb-5 mt-6 group">
 				<input
 					v-model="datum_cas"
 					type="datetime-local"
@@ -415,7 +548,7 @@ watch(dohodnute, (newValue) => {
 				/>
 			</div>
 
-			<div class="flex justify-between px-12 pb-4">
+			<div class="flex justify-between px-12 pb-4" v-if="showVDD">
 				<label class="cursor-pointer flex flex-col items-center gap-4">
 					<span class="ms-3 text-sm font-medium text-gray-800">Volané</span>
 					<input
