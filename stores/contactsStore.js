@@ -10,6 +10,8 @@ export const useContactsStore = defineStore("contacts", {
 		contacts: [],
 		allContacts: [],
 		delegatedContacts: [],
+		selectedContacts: [],
+		searchQuery: null,
 		page: null,
 		prev_page_url: null,
 		next_page_url: null,

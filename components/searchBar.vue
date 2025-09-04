@@ -4,10 +4,11 @@ const config = useRuntimeConfig();
 import { ref, watch } from "vue";
 import { useAuthStore } from "@/stores/authStore";
 import axios from "axios";
-
+import { useContactsStore } from "@/stores/contactsStore";
 const authStore = useAuthStore();
 authStore.loadToken();
 
+const contactsStore = useContactsStore();
 const searchInput = ref("");
 const searchResults = ref([]);
 const error = ref("");
@@ -39,6 +40,7 @@ const handleSearch = async () => {
 		// Check if response.data contains contacts
 		if (response.data && response.data.contacts) {
 			searchResults.value = response.data.contacts;
+			contactsStore.searchQuery = searchInput.value;
 			emit("updateResults", searchResults.value);
 		} else {
 			console.error("Unexpected response structure:", response.data);
@@ -53,6 +55,13 @@ const handleSearch = async () => {
 
 // Watch for changes in the searchInput and trigger a debounced search
 watch(searchInput, debounceSearch(handleSearch, 200));
+
+onMounted(() => {
+	if (contactsStore.searchQuery) {
+		searchInput.value = contactsStore.searchQuery;
+		//handleSearch();
+	}
+});
 </script>
 
 <template>

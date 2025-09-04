@@ -23,7 +23,7 @@ import { useToast } from "vue-toastification";
 const toast = useToast();
 
 const contact = ref([]);
-
+const contacts = ref([]);
 const kontakt = ref("");
 const aktivita = ref("");
 const ina_aktivita = ref("");
@@ -41,6 +41,30 @@ const activity_creator = ref("");
 const emailBool = ref(false);
 const email = ref("");
 
+const emailCount = ref(0);
+const emails = ref([]);
+const activeDropdown = ref(null);
+
+watch(emailCount, (newCount, oldCount) => {
+	if (newCount > oldCount) {
+		// Add new empty email
+		emails.value.push("");
+	} else if (newCount < oldCount && newCount > 0) {
+		// Remove last email
+		emails.value.pop();
+	} else if (newCount === 0) {
+		// Reset to one empty email
+		emails.value = [""];
+	}
+});
+
+watch(onlineMeeting, (newValue) => {
+	if (newValue) {
+		// When online meeting is enabled, set the first email in array to the single email value
+		emails.value[0] = email.value;
+	}
+});
+
 const showAlterButtons = ref(false);
 const originalOnlineMeetingValue = ref(false);
 
@@ -52,7 +76,19 @@ watch(aktivita, (newValue) => {
 	}
 });
 
+const validEmails = emails.value.filter(
+	(email) => email && email.trim() !== ""
+);
+
 onMounted(async () => {
+	const response2 = await axios.get(`${config.public.apiUrl}all-contacts`, {
+		headers: {
+			Authorization: `Bearer ${authStore.token}`,
+		},
+	});
+	contacts.value = await response2.data.contacts;
+
+	emails.value = [""];
 	const response = await axios.get(
 		`${config.public.apiUrl}activities/${props.activityID}`,
 		{
@@ -134,8 +170,8 @@ const updateActivity = async () => {
 				koniec: koniec.value,
 				poznamka: poznamka.value,
 				volane: volane.value,
-				dovolane: dovolane.value,
-				dohodnute: dohodnute.value,
+				dovolane: dovolane.value ? 1 : 0,
+				dohodnute: dohodnute.value ? 1 : 0,
 				miesto_stretnutia: miesto_stretnutia.value,
 				online_meeting: onlineMeeting.value,
 			},
@@ -147,12 +183,12 @@ const updateActivity = async () => {
 		);
 
 		// Update email if necessary - only if onlineMeeting is checked and there's a new email to add
-		if (onlineMeeting.value && !emailBool.value && email.value) {
-			console.log("Adding email to contact:", email.value);
+		if (onlineMeeting.value && !emailBool.value && emails.value[0]) {
+			console.log("Adding email to contact:", emails.value[0]);
 			await axios.patch(
 				`${config.public.apiUrl}contact/${contact.value.id}/email`,
 				{
-					email: email.value,
+					email: emails.value[0],
 				},
 				{
 					headers: {
@@ -162,22 +198,40 @@ const updateActivity = async () => {
 			);
 		}
 
-		// Handle Teams meeting creation/update
-		if (onlineMeeting.value && !originalOnlineMeetingValue.value) {
-			// Only create a new Teams meeting if it wasn't an online meeting before
+		if (onlineMeeting.value) {
 			try {
-				const teamsResponse = await axios.post(
-					`${config.public.apiUrl}create-teams-meeting`,
-					{ activityId: props.activityID },
-					{ headers: { Authorization: `Bearer ${authStore.token}` } }
-				);
+				let teamsResponse;
 
-				console.log("Teams meeting created:", teamsResponse.data);
+				if (!originalOnlineMeetingValue.value) {
+					// Create new Teams meeting
+					teamsResponse = await axios.post(
+						`${config.public.apiUrl}create-teams-meeting`,
+						{
+							activityId: props.activityID,
+							user_id: userStore.user.id,
+							additionalEmails: validEmails, // send all emails
+						},
+						{ headers: { Authorization: `Bearer ${authStore.token}` } }
+					);
+
+					console.log("Teams meeting created:", teamsResponse.data);
+				} else {
+					// Update existing Teams meeting participants
+					teamsResponse = await axios.post(
+						`${config.public.apiUrl}update-teams-meeting`,
+						{
+							activityId: props.activityID,
+							additionalEmails: validEmails, // send all emails here too
+						},
+						{ headers: { Authorization: `Bearer ${authStore.token}` } }
+					);
+
+					console.log("Teams meeting updated:", teamsResponse.data);
+				}
 
 				// Update the activity with the meeting URL if needed
 				if (teamsResponse.data.joinUrl) {
 					response.data.activity.miesto_stretnutia = teamsResponse.data.joinUrl;
-					// Update the activity again with the meeting URL
 					await axios.put(
 						`${config.public.apiUrl}update-activities/${props.activityID}`,
 						{
@@ -192,31 +246,39 @@ const updateActivity = async () => {
 					);
 				}
 
-				toast.success("Online stretnutie bolo úspešne vytvorené", {
-					position: "top-right",
-					timeout: 5000,
-					closeOnClick: true,
-					pauseOnHover: true,
-					draggable: true,
-					draggablePercent: 60,
-					showCloseButtonOnHover: false,
-					hideProgressBar: false,
-				});
+				toast.success(
+					!originalOnlineMeetingValue.value
+						? "Online stretnutie bolo úspešne vytvorené"
+						: "Online stretnutie bolo úspešne aktualizované",
+					{
+						position: "top-right",
+						timeout: 5000,
+						closeOnClick: true,
+						pauseOnHover: true,
+						draggable: true,
+						draggablePercent: 60,
+						showCloseButtonOnHover: false,
+						hideProgressBar: false,
+					}
+				);
 			} catch (error) {
 				console.error(
-					"Error creating Teams meeting:",
+					"Error creating/updating Teams meeting:",
 					error.response?.data || error.message
 				);
-				toast.error("Chyba pri vytváraní online stretnutia", {
-					position: "top-right",
-					timeout: 5000,
-					closeOnClick: true,
-					pauseOnHover: true,
-					draggable: true,
-					draggablePercent: 60,
-					showCloseButtonOnHover: false,
-					hideProgressBar: false,
-				});
+				toast.error(
+					"Chyba pri vytváraní alebo aktualizovaní online stretnutia",
+					{
+						position: "top-right",
+						timeout: 5000,
+						closeOnClick: true,
+						pauseOnHover: true,
+						draggable: true,
+						draggablePercent: 60,
+						showCloseButtonOnHover: false,
+						hideProgressBar: false,
+					}
+				);
 			}
 		}
 
@@ -268,13 +330,13 @@ const updateActivity = async () => {
 	}
 };
 
-// const deleteActivity = async () => {
-// 	event.preventDefault();
+const deleteActivity = async () => {
+	event.preventDefault();
 
-// 	await calendarStore.deleteActivity(props.activityID);
-// 	emit("cancelAddActivity");
-// 	emit("alterEvents", null);
-// };
+	await calendarStore.deleteActivity(props.activityID);
+	emit("cancelAddActivity");
+	emit("alterEvents", null);
+};
 
 function extractMicrosoftEventId(teamsLink) {
 	if (!teamsLink) return null;
@@ -320,12 +382,21 @@ watch(dohodnute, (newValue) => {
 const isValidUrl = (url) => {
 	try {
 		new URL(url);
-		console.log("true");
 		return true;
 	} catch (_) {
-		console.log("false");
 		return false;
 	}
+};
+
+const filteredContacts = (index) => {
+	const searchText = emails.value[index] || ""; // fallback if null/undefined
+	if (!searchText) return [];
+
+	return contacts.value.filter((contact) =>
+		[contact.meno, contact.priezvisko, contact.email].some((field) =>
+			(field || "").toLowerCase().includes(searchText.toLowerCase())
+		)
+	);
 };
 </script>
 
@@ -407,7 +478,7 @@ const isValidUrl = (url) => {
 				/>
 			</div>
 
-			<div class="relative z-0 w-full mb-6 group">
+			<div class="relative z-0 w-full mb-2 group">
 				<input
 					v-model="onlineMeeting"
 					type="checkbox"
@@ -418,6 +489,70 @@ const isValidUrl = (url) => {
 					class="!text-black text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
 					>Online Meeting</label
 				>
+			</div>
+
+			<div class="flex gap-3 mb-6 items-center">
+				<!-- Add Email Button -->
+				<div
+					@click="emailCount++"
+					class="cursor-pointer transition-all duration-200 hover:scale-110"
+					title="Pridať ďalší email"
+				>
+					<Icon
+						icon="solar:add-circle-linear"
+						class="text-green-500 hover:text-green-600"
+						width="24"
+						height="24"
+					/>
+				</div>
+
+				<!-- Remove Email Button (only shows when emailCount > 1) -->
+				<div
+					@click="emailCount--"
+					class="cursor-pointer transition-all duration-200 hover:scale-110"
+					v-if="emailCount > 1"
+					title="Remove last email"
+				>
+					<Icon
+						icon="solar:minus-circle-linear"
+						class="text-red-500 hover:text-red-600"
+						width="24"
+						height="24"
+					/>
+				</div>
+			</div>
+
+			<div class="max-h-[150px] overflow-y-auto mb-6">
+				<div
+					class="relative z-20 w-full mb-2 group"
+					v-for="(email, index) in emails.slice(1)"
+					:key="index"
+				>
+					<input
+						v-model="emails[index + 1]"
+						type="email"
+						placeholder="Zadajte email ..."
+						class="w-full p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500 !text-black z-10"
+						required
+						@focus="activeDropdown = index + 1"
+					/>
+					<div
+						class="w-full bg-gray-200 rounded-lg !text-black flex flex-col p-2 mt-1 max-h-[400px] overflow-y-auto absolute"
+						v-if="activeDropdown === index + 1"
+					>
+						<div
+							v-for="contact in filteredContacts(index + 1)"
+							:key="contact.id"
+							class="my-1 px-2 hover:bg-gray-300 cursor-pointer"
+							@click="
+								emails[index + 1] = contact.email;
+								activeDropdown = null;
+							"
+						>
+							{{ contact.meno }} {{ contact.priezvisko }}
+						</div>
+					</div>
+				</div>
 			</div>
 
 			<div class="relative z-0 w-full mb-5 group">

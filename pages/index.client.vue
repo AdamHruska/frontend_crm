@@ -46,27 +46,23 @@ const toggleCheckbox = (id) => {
 	if (person) {
 		const index = selected.value.findIndex((p) => p.id === id);
 		if (index === -1) {
+			//Adding checked contacts
 			selected.value.push(person);
+			contactsStore.selectedContacts.push(person);
+			console.log("added contacts in store:", contactsStore.selectedContacts);
 		} else {
+			//Deleting checked contacts
 			selected.value.splice(index, 1);
+			contactsStore.selectedContacts.splice(index, 1);
+			console.log("Deleted contacts in store:", contactsStore.selectedContacts);
 		}
 	}
 	console.log("Selected", selected.value);
 };
 
-// function addPerson(addedPeople) {
-// 	showAddPersonForm.value = !showAddPersonForm.value;
-// 	// If addedPeople is passed, handle the addition
-// 	// if (addedPeople) {
-// 	// 	if (addedPeople.length > 0) {
-// 	// 		// Push the added people to the people array
-// 	// 		people.value.unshift(...addedPeople);
-// 	// 		alert("Kontakt bol pridaný");
-// 	// 	}
-// 	// }
-// 	//showAddPersonForm.value = !showAddPersonForm.value;
-
-// }
+const isSelected = (id) => {
+	return contactsStore.selectedContacts.some((person) => person.id === id);
+};
 
 function addPerson(addedPeople) {
 	showAddPersonForm.value = !showAddPersonForm.value;
@@ -197,6 +193,11 @@ onMounted(async () => {
 const handleSearchResults = (results) => {
 	// If results is an array (search results), update people
 	if (Array.isArray(results)) {
+		contactsStore.contacts = {
+			...contactsStore.contacts,
+			data: results,
+		};
+
 		people.value = results.map((person) => {
 			let cssClass = "";
 			if (person.first_event === 0) {
@@ -231,6 +232,18 @@ const handleSearchResults = (results) => {
 
 const detailView = (id) => {
 	router.push(`/contact/${id}`);
+};
+
+const detailViewNewTab = (id) => {
+	window.open(`/contact/${id}`, "_blank");
+};
+
+const onAuxClick = (event, id) => {
+	if (event.button === 1) {
+		// middle mouse button
+		event.preventDefault();
+		detailViewNewTab(id);
+	}
 };
 
 const columns = [
@@ -432,8 +445,6 @@ const updatePerson = async (updatedContact) => {
 	}
 };
 
-const hasSelectedItems = computed(() => selected.value.length > 0);
-
 const uncheckAll = () => {
 	// Clear the selected array
 	selected.value = [];
@@ -443,6 +454,7 @@ const uncheckAll = () => {
 	checkboxes.forEach((checkbox) => {
 		checkbox.checked = false;
 	});
+	contactsStore.selectedContacts = [];
 };
 
 const showCallListForm = ref(false);
@@ -520,34 +532,61 @@ const pageNumbers = computed(() => {
 
 	return range;
 });
+
+const showSelectedContactsBool = ref(false);
+
+const showSelectedContacts = () => {
+	showSelectedContactsBool.value = !showSelectedContactsBool.value;
+};
+
+const handleMouseDown = (event) => {
+	if (event.button === 1) {
+		event.preventDefault();
+	}
+};
 </script>
 
 <template>
 	<div class="">
+		<SelectedContactsComponent
+			v-if="showSelectedContactsBool"
+			@showSelectedContacts="showSelectedContacts"
+		/>
+
 		<loadigcomponent v-if="contactsStore.loadingState" />
 		<div class="flex justify-between">
 			<div class="max-w-sm ml-8 mt-8 mb-2 w-[400px]">
 				<searchBar @updateResults="handleSearchResults" />
 			</div>
 
-			<button
-				@click="addPerson()"
-				class="bg-blue-700 rounded-lg hover:bg-blue-500 hover:text-black h-14 w-14 flex justify-center pt-3 mr-8 mt-8 shadow-xl"
-			>
-				<Icon icon="fa6-solid:plus" style="font-size: 30px" class="" />
-			</button>
+			<div class="flex items-center mb-2">
+				<button
+					@click="addPerson()"
+					class="bg-blue-700 rounded-lg hover:bg-blue-500 hover:text-black h-11 w-11 flex justify-center pt-[7px] mr-4 mt-8 shadow-xl"
+				>
+					<Icon icon="fa6-solid:plus" style="font-size: 30px" class="" />
+				</button>
+
+				<button
+					@click="showSelectedContacts"
+					class="bg-green-400 hover:bg-green-500 rounded-lg h-11 mt-8 mr-8 shadow-md px-2 w-auto"
+				>
+					Zobraziť zaklinuté kontakty
+				</button>
+			</div>
 		</div>
+
 		<div class="flex justify-end mr-8 h-11 mb-5">
 			<!-- Added fixed height h-12 -->
 			<button
-				v-if="hasSelectedItems"
+				v-if="contactsStore.selectedContacts.length > 0"
 				@click="uncheckAll"
 				class="px-3 py-1 bg-red-500 hover:bg-red-700 rounded-lg text-white shadow-xl"
 			>
-				Unselect all {{ selected.length }}
+				Unselect all {{ contactsStore.selectedContacts.length }}
 			</button>
 			<button
-				v-if="hasSelectedItems"
+				v-if="contactsStore.selectedContacts.length > 0"
 				@click="toggleCallList"
 				class="px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded-lg text-white ml-4 shadow-xl"
 			>
@@ -566,10 +605,13 @@ const pageNumbers = computed(() => {
 			<div class="flex justify-between">
 				<div class="flex space-x-4">
 					<UButton
-						@click="detailView(row.id)"
+						@click.left="detailView(row.id)"
+						@auxclick.prevent="onAuxClick($event, row.id)"
+						@mousedown="handleMouseDown"
 						class="bg-blue-500 text-white shadow-xl"
 						label="Show Details"
 					/>
+
 					<UButton
 						@click="findPerson(row.id)"
 						icon="i-heroicons-pencil-square-20-solid"
@@ -589,7 +631,11 @@ const pageNumbers = computed(() => {
 						class="shadow-xl text-red-500 hover:bg-gray-300"
 					/>
 				</div>
-				<input type="checkbox" @change="toggleCheckbox(row.id)" />
+				<input
+					type="checkbox"
+					@change="toggleCheckbox(row.id)"
+					:checked="isSelected(row.id)"
+				/>
 			</div>
 		</template>
 
@@ -609,7 +655,11 @@ const pageNumbers = computed(() => {
 		</template>
 	</UTable>
 
-	<div class="flex justify-center items-center gap-2 mt-[30px] mb-[50px]">
+	<!-- Pagination -->
+	<div
+		class="flex justify-center items-center gap-2 mt-[30px] mb-[50px]"
+		v-if="!contactsStore.searchQuery"
+	>
 		<div
 			class="cursor-pointer"
 			@click="prevPage()"

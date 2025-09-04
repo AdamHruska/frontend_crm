@@ -1171,31 +1171,30 @@ b {
 
 .special-component {
 	background: linear-gradient(135deg, #ffdee9, #b5fffc);
-	color: #1a202c; /* Navy or dark gray */
+	color: #1a202c;
 	padding: 1rem;
 	border-radius: 8px;
 	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .fc-button {
-	background-color: #909090 !important; /* Blue background */
-	color: black !important; /* Black text */
-	border: none !important; /* Remove border if desired */
+	background-color: #909090 !important;
+	color: black !important;
+	border: none !important;
 	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }
 
 .fc-button:hover {
-	background-color: #505050 !important; /* Slightly darker blue on hover */
+	background-color: #505050 !important;
 	color: black !important;
 }
 
 .fc-button-active {
-	background-color: rgb(
-		37 99 235
-	) !important; /* Lighter blue for active state */
+	background-color: rgb(37 99 235) !important;
 	color: black !important;
 }
 
+/*
 .event-content-wrapper {
 	overflow: hidden;
 	display: flex;
@@ -1228,12 +1227,13 @@ b {
 	margin-top: 2px;
 }
 
-/* Make the event boxes larger to fit more content */
+
 .fc-timegrid-event-harness {
 	margin-right: 1px;
 }
 
 .fc-timegrid-event {
-	min-height: 60px !important;
+	min-height: 100% !important;
 }
+*/
 </style>

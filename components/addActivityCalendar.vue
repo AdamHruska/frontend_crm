@@ -568,29 +568,27 @@ const filteredContacts = (index) => {
 			<div class="max-h-[150px] overflow-y-auto">
 				<div
 					class="relative z-20 w-full mb-2 group"
-					v-for="(email, index) in emails"
+					v-for="(email, index) in emails.slice(1)"
 					:key="index"
 				>
 					<input
-						v-model="emails[index]"
+						v-model="emails[index + 1]"
 						type="email"
-						:placeholder="
-							index === 0 ? 'Primárny email kontaktu...' : 'Ďalší email...'
-						"
+						placeholder="Zadajte email ..."
 						class="w-full p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500 !text-black z-10"
 						required
-						@focus="activeDropdown = index"
+						@focus="activeDropdown = index + 1"
 					/>
 					<div
-						class="w-full bg-gray-200 rounded-lg !text-black flex flex-col p-2 mt-1 max-h-[400px] overflow-y-auto absolute"
-						v-if="activeDropdown === index"
+						class="w-full bg-gray-200 rounded-lg !text-black flex flex-col p-2 mt-1 max-h-[400px] overflow-y-auto"
+						v-if="activeDropdown === index + 1"
 					>
 						<div
-							v-for="contact in filteredContacts(index)"
+							v-for="contact in filteredContacts(index + 1)"
 							:key="contact.id"
 							class="my-1 px-2 hover:bg-gray-300 cursor-pointer"
 							@click="
-								emails[index] = contact.email;
+								emails[index + 1] = contact.email;
 								activeDropdown = null;
 							"
 						>

@@ -159,6 +159,27 @@
 						/>
 					</NuxtLink>
 				</UTooltip>
+
+				<UTooltip
+					text="Kancelárie"
+					:ui="{ background: '', color: '' }"
+					class=""
+				>
+					<NuxtLink
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
+						:class="{
+							'bg-blue-700 text-gray-200': activeTab === 'kancelarie',
+						}"
+						to="/office"
+						@click="setActiveTab('kancelarie')"
+					>
+						<Icon
+							icon="pepicons-pencil:share-android"
+							style="font-size: 36px"
+							class="text-white"
+						/>
+					</NuxtLink>
+				</UTooltip>
 			</div>
 
 			<!-- Bottom Navigation Item -->
