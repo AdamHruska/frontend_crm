@@ -27,21 +27,6 @@
 				/>
 			</div>
 			<div class="mb-4">
-				<label for="district" class="block text-sm font-medium text-gray-700">
-					Okres
-				</label>
-				<select
-					id="district"
-					v-model="district"
-					class="mt-1 block border border-gray-300 rounded-md shadow-sm p-2 bg-white"
-				>
-					<option disabled value="">-- Vyberte okres --</option>
-					<option v-for="okres in okresy" :key="okres" :value="okres">
-						{{ okres }}
-					</option>
-				</select>
-			</div>
-			<div class="mb-4">
 				<label for="phone" class="block text-sm font-medium text-gray-700">
 					Telefónne číslo
 				</label>
@@ -75,89 +60,10 @@ const props = defineProps({
 	},
 });
 
-const okresy = [
-	"Bratislava I",
-	"Bratislava II",
-	"Bratislava III",
-	"Bratislava IV",
-	"Bratislava V",
-	"Malacky",
-	"Pezinok",
-	"Senec",
-	"Dunajská Streda",
-	"Galanta",
-	"Hlohovec",
-	"Piešťany",
-	"Senica",
-	"Skalica",
-	"Trnava",
-	"Bánovce nad Bebravou",
-	"Ilava",
-	"Myjava",
-	"Nové Mesto nad Váhom",
-	"Partizánske",
-	"Považská Bystrica",
-	"Prievidza",
-	"Trenčín",
-	"Komárno",
-	"Levice",
-	"Nitra",
-	"Nové Zámky",
-	"Šaľa",
-	"Topoľčany",
-	"Zlaté Moravce",
-	"Bytča",
-	"Čadca",
-	"Kysucké Nové Mesto",
-	"Martin",
-	"Námestovo",
-	"Ružomberok",
-	"Turčianske Teplice",
-	"Tvrdošín",
-	"Žilina",
-	"Banská Bystrica",
-	"Brezno",
-	"Detva",
-	"Krupina",
-	"Lučenec",
-	"Poltár",
-	"Revúca",
-	"Rimavská Sobota",
-	"Veľký Krtíš",
-	"Zvolen",
-	"Žarnovica",
-	"Žiar nad Hronom",
-	"Banská Štiavnica",
-	"Bardejov",
-	"Humenné",
-	"Kežmarok",
-	"Levoča",
-	"Medzilaborce",
-	"Poprad",
-	"Prešov",
-	"Sabinov",
-	"Snina",
-	"Stará Ľubovňa",
-	"Stropkov",
-	"Svidník",
-	"Vranov nad Topľou",
-	"Gelnica",
-	"Košice I",
-	"Košice II",
-	"Košice III",
-	"Košice IV",
-	"Košice-okolie",
-	"Michalovce",
-	"Rožňava",
-	"Sobrance",
-	"Trebišov",
-];
-
 const emit = defineEmits(["officeSaved", "officeEdited"]);
 
 const name = ref("");
 const location = ref("");
-const district = ref("");
 const phone_number = ref("");
 
 // Watch for changes in officeToEdit prop and update form fields
@@ -167,13 +73,11 @@ watch(
 		if (newOffice) {
 			name.value = newOffice.name || "";
 			location.value = newOffice.location || "";
-			district.value = newOffice.district || "";
 			phone_number.value = newOffice.phone_number || "";
 		} else {
 			// Reset form when creating new office
 			name.value = "";
 			location.value = "";
-			district.value = "";
 			phone_number.value = "";
 		}
 	},
@@ -184,7 +88,6 @@ const saveOffice = async () => {
 	const officeData = {
 		name: name.value,
 		location: location.value,
-		district: district.value,
 		phone_number: phone_number.value,
 	};
 

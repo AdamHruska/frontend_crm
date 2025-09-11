@@ -6,34 +6,32 @@
 		@officeEdited="handleOfficeEdited"
 	/>
 
+	<OfficeSharingForm
+		v-if="showSharingForm"
+		@openSharingForm="openSharingForm"
+	/>
+
 	<button
 		class="mt-4 ml-8 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
 		@click="openNewOfficeForm"
-		v-if="!showOfficeForm"
+		v-if="!showSharingForm"
 	>
 		Pridať kanceláriu
 	</button>
 
-	<div class="ml-8 mt-8">
-		<div v-if="officeStore.offices.length" class="overflow-x-auto">
-			<div class="mb-4 flex items-center gap-4">
-				<label for="districtFilter" class="font-medium"
-					>Filtrovať podľa okresu:</label
-				>
-				<select
-					id="districtFilter"
-					v-model="selectedDistrict"
-					class="border border-gray-300 rounded-md p-2 bg-white"
-				>
-					<option value="">-- Všetky okresy --</option>
-					<option v-for="okres in okresy" :key="okres" :value="okres">
-						{{ okres }}
-					</option>
-				</select>
-			</div>
+	<button
+		class="mt-4 ml-8 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+		@click="openSharingForm"
+		v-if="!showSharingForm"
+	>
+		Zdielať moje kancelárie
+	</button>
 
+	<div class="ml-8 mt-8 mb-10">
+		<h1 class="text-xl font-semibold mb-4">Moje kancelárie</h1>
+		<div v-if="officeStore.offices.length" class="overflow-x-auto">
 			<table
-				class="min-w-full border border-gray-300 rounded-lg overflow-hidden"
+				class="min-w-full border border-gray-300 rounded-lg overflow-hidden mb-6"
 			>
 				<thead class="bg-gray-100">
 					<tr>
@@ -47,7 +45,7 @@
 				</thead>
 				<tbody>
 					<tr
-						v-for="(office, index) in filteredOffices"
+						v-for="(office, index) in officeStore.offices"
 						:key="office.id"
 						class="hover:bg-gray-50"
 					>
@@ -69,6 +67,12 @@
 							>
 								Odstrániť
 							</button>
+							<button
+								@click="showOfficeActivities(office.id)"
+								class="bg-green-600 text-white py-1 px-2 rounded-md hover:bg-green-700"
+							>
+								Zobraziť aktivity
+							</button>
 						</td>
 					</tr>
 				</tbody>
@@ -79,6 +83,72 @@
 			Žiadne kancelárie zatiaľ neexistujú.
 		</div>
 	</div>
+
+	<div class="w-full h-[2px] bg-black"></div>
+
+	<div class="ml-8 mt-10">
+		<h1 class="text-xl font-semibold mb-4">Zdielané kancelárie</h1>
+		<div class="overflow-x-auto">
+			<table
+				class="min-w-full border border-gray-300 rounded-lg overflow-hidden mb-6"
+			>
+				<thead class="bg-gray-100">
+					<tr>
+						<th class="px-4 py-2 border-b text-left">#</th>
+						<th class="px-4 py-2 border-b text-left">Názov</th>
+						<th class="px-4 py-2 border-b text-left">Poloha</th>
+						<th class="px-4 py-2 border-b text-left">Okres</th>
+						<th class="px-4 py-2 border-b text-left">Telefón</th>
+						<th class="px-4 py-2 border-b text-left">Akcie</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr
+						v-for="(office, index) in officeStore.officesSharedWithMe"
+						:key="office.id"
+						class="hover:bg-gray-50"
+					>
+						<td class="px-4 py-2 border-b">{{ index + 1 }}</td>
+						<td class="px-4 py-2 border-b">{{ office.name }}</td>
+						<td class="px-4 py-2 border-b">{{ office.location }}</td>
+						<td class="px-4 py-2 border-b">{{ office.district }}</td>
+						<td class="px-4 py-2 border-b">{{ office.phone_number }}</td>
+						<td class="px-4 py-2 border-b flex gap-2">
+							<button
+								@click="showOfficeActivities(office.id)"
+								class="bg-green-600 text-white py-1 px-2 rounded-md hover:bg-green-700"
+							>
+								Zobraziť aktivity
+							</button>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+
+	<div class="w-full h-[2px] bg-black"></div>
+
+	<div class="mt-8 mx-8 max-h-fit">
+		<OfficeCalendar />
+	</div>
+
+	<div class="ml-8 mt-10 mb-10">
+		<h2 class="text-lg font-semibold">
+			Ľudia, ktorí majú prístup k mojim kanceláriám
+		</h2>
+		<ul class="px-0 max-h-[400px] overflow-y-auto w-fit">
+			<li v-for="user in officeStore.sharedUsers" :key="user.id" class="px-0">
+				{{ user.first_name }} {{ user.last_name }} - email: ({{ user.email }})
+				<button
+					@click="officeStore.revokeAccess(user.id)"
+					class="bg-red-600 hover:bg-red-800 text-white font-bold py-1 px-2 rounded ml-4"
+				>
+					Zrušiť prístup
+				</button>
+			</li>
+		</ul>
+	</div>
 </template>
 
 <script setup>
@@ -87,101 +157,20 @@ const officeStore = useOfficeStore();
 
 onMounted(() => {
 	officeStore.fetchOffices();
-});
-
-const selectedDistrict = ref("");
-
-const okresy = [
-	"Bratislava I",
-	"Bratislava II",
-	"Bratislava III",
-	"Bratislava IV",
-	"Bratislava V",
-	"Malacky",
-	"Pezinok",
-	"Senec",
-	"Dunajská Streda",
-	"Galanta",
-	"Hlohovec",
-	"Piešťany",
-	"Senica",
-	"Skalica",
-	"Trnava",
-	"Bánovce nad Bebravou",
-	"Ilava",
-	"Myjava",
-	"Nové Mesto nad Váhom",
-	"Partizánske",
-	"Považská Bystrica",
-	"Prievidza",
-	"Trenčín",
-	"Komárno",
-	"Levice",
-	"Nitra",
-	"Nové Zámky",
-	"Šaľa",
-	"Topoľčany",
-	"Zlaté Moravce",
-	"Bytča",
-	"Čadca",
-	"Kysucké Nové Mesto",
-	"Martin",
-	"Námestovo",
-	"Ružomberok",
-	"Turčianske Teplice",
-	"Tvrdošín",
-	"Žilina",
-	"Banská Bystrica",
-	"Brezno",
-	"Detva",
-	"Krupina",
-	"Lučenec",
-	"Poltár",
-	"Revúca",
-	"Rimavská Sobota",
-	"Veľký Krtíš",
-	"Zvolen",
-	"Žarnovica",
-	"Žiar nad Hronom",
-	"Banská Štiavnica",
-	"Bardejov",
-	"Humenné",
-	"Kežmarok",
-	"Levoča",
-	"Medzilaborce",
-	"Poprad",
-	"Prešov",
-	"Sabinov",
-	"Snina",
-	"Stará Ľubovňa",
-	"Stropkov",
-	"Svidník",
-	"Vranov nad Topľou",
-	"Gelnica",
-	"Košice I",
-	"Košice II",
-	"Košice III",
-	"Košice IV",
-	"Košice-okolie",
-	"Michalovce",
-	"Rožňava",
-	"Sobrance",
-	"Trebišov",
-];
-
-const filteredOffices = computed(() => {
-	if (!selectedDistrict.value) return officeStore.offices;
-	return officeStore.offices.filter(
-		(office) => office.district === selectedDistrict.value
-	);
+	officeStore.fetchOfficesSharedWithMe();
 });
 
 const showOfficeForm = ref(false);
+const showSharingForm = ref(false);
 const selectedOffice = ref(null);
 
 const openNewOfficeForm = () => {
 	selectedOffice.value = null;
 	showOfficeForm.value = true;
+};
+
+const openSharingForm = () => {
+	showSharingForm.value = showSharingForm.value ? false : true;
 };
 
 const editOffice = (office) => {
@@ -204,5 +193,12 @@ const handleOfficeEdited = () => {
 	// Remove the manual store update - let the store handle it
 	showOfficeForm.value = false;
 	selectedOffice.value = null;
+};
+
+const showOfficeActivities = async (officeId) => {
+	//setOfficeID.value = officeId;
+	officeStore.setOfficeID = officeId;
+	//console.log("Selected Office ID:", officeStore.setOfficeID);
+	officeStore.getOfficeActivities(officeId);
 };
 </script>
