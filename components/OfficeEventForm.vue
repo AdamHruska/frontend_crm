@@ -29,6 +29,7 @@ const props = defineProps({
 const aktivita = ref("Telefonát klient");
 const datum_cas = ref(null);
 const koniec = ref(null);
+const vytvorene = ref(null);
 const poznamka = ref("");
 const ina_aktivita = ref("");
 const ineBool = computed(() => aktivita.value === "ine");
@@ -50,6 +51,7 @@ onMounted(() => {
 		aktivita.value = props.eventData.title || "Telefonát klient";
 		datum_cas.value = formatForDateTimeLocal(props.eventData.start);
 		koniec.value = formatForDateTimeLocal(props.eventData.end);
+		vytvorene.value = formatForDateTimeLocal(props.eventData.created_at);
 		poznamka.value = props.eventData.poznamka || "";
 	}
 });
@@ -199,6 +201,17 @@ const delteActivity = async () => {
 					class="!text-black block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
 				/>
 				<label class="text-sm text-gray-500">Dátum a čas ukončenia</label>
+			</div>
+
+			<!-- Dátum vytvorenia eventu -->
+			<div class="relative z-0 w-full mb-5 group" v-if="isEdit">
+				<input
+					v-model="vytvorene"
+					type="datetime-local"
+					step="900"
+					class="!text-black block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+				/>
+				<label class="text-sm text-gray-500">Vytvorené</label>
 			</div>
 
 			<!-- Poznámka -->

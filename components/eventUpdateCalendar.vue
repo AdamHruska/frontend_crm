@@ -11,6 +11,9 @@ const props = defineProps({
 import { useUserStore } from "#imports";
 const userStore = useUserStore();
 
+import { useOfficeStore } from "#imports";
+const officeStore = useOfficeStore();
+
 import { useCalendarstore } from "#imports";
 const calendarStore = useCalendarstore();
 
@@ -80,7 +83,15 @@ const validEmails = emails.value.filter(
 	(email) => email && email.trim() !== ""
 );
 
+const officeActivityId = ref(null);
+
 onMounted(async () => {
+	officeStore.fetchOffices();
+	officeStore.fetchOfficesSharedWithMe();
+	userStore.fetchUser();
+
+	console.log("Office Activity ID:", officeActivityId.value);
+
 	const response2 = await axios.get(`${config.public.apiUrl}all-contacts`, {
 		headers: {
 			Authorization: `Bearer ${authStore.token}`,
@@ -133,6 +144,14 @@ onMounted(async () => {
 		email.value = contact.value.email;
 		emailBool.value = true;
 	}
+
+	officeActivityId.value = await officeStore.findActivityId({
+		datum_cas: datum_cas.value,
+		koniec: koniec.value,
+		owner_id: userStore.user.id,
+	});
+
+	console.log("Office Activity ID fetched:", officeActivityId.value);
 
 	console.log("skuska id:", extractMicrosoftEventId(miesto_stretnutia.value));
 });
@@ -246,6 +265,25 @@ const updateActivity = async () => {
 					);
 				}
 
+				//tu spravit office aktivitu
+				const datumCasDate = new Date(datum_cas.value);
+				datumCasDate.setHours(datumCasDate.getHours() + 2);
+
+				const koniecDate = new Date(koniec.value);
+				koniecDate.setHours(koniecDate.getHours() + 2);
+
+				const newActivity = {
+					aktivita:
+						aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
+					datum_cas: datumCasDate.toISOString(),
+					koniec: koniecDate.toISOString(),
+					poznamka: poznamka.value,
+					office_id: officeStore.setOfficeID,
+					owner_number: userStore.user.vizitka_phone_num,
+				};
+
+				await officeStore.updateActivity(newActivity);
+
 				toast.success(
 					!originalOnlineMeetingValue.value
 						? "Online stretnutie bolo úspešne vytvorené"
@@ -281,6 +319,20 @@ const updateActivity = async () => {
 				);
 			}
 		}
+
+		// if (selectOffice.value !== "Kancelárie") {
+		// 	//tu spravit office aktivitu
+
+		// 	const updatedActivity = {
+		// 		id: props.eventData.id,
+		// 		aktivita:
+		// 			aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
+		// 		datum_cas: new Date(datum_cas.value).toISOString(),
+		// 		koniec: new Date(koniec.value).toISOString(),
+		// 		poznamka: poznamka.value,
+		// 	};
+		// 	await officeStore.updateActivity(updatedActivity);
+		// }
 
 		// Display success message
 		toast.success("Aktivita bola úspešne aktualizovaná", {
@@ -332,6 +384,8 @@ const updateActivity = async () => {
 
 const deleteActivity = async () => {
 	event.preventDefault();
+
+	await officeStore.deleteActivity(officeActivityId.value);
 
 	await calendarStore.deleteActivity(props.activityID);
 	emit("cancelAddActivity");
@@ -397,6 +451,19 @@ const filteredContacts = (index) => {
 			(field || "").toLowerCase().includes(searchText.toLowerCase())
 		)
 	);
+};
+
+const showOffices = ref(false);
+const selectedOffice = ref({ id: null, name: "Kancelárie" }); // default text
+
+const toggleOffices = () => {
+	showOffices.value = !showOffices.value;
+};
+
+const selectOffice = (office) => {
+	officeStore.setOfficeID = office.id;
+	selectedOffice.value = office;
+	showOffices.value = false; // close dropdown after selection
 };
 </script>
 
@@ -638,6 +705,48 @@ const filteredContacts = (index) => {
 					class="!text-black w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500"
 					placeholder="Zadajte miesto stretnutia ..."
 				/>
+			</div>
+
+			<div class="relative z-0 w-full mb-5 group">
+				<!-- Dropdown button -->
+				<div
+					@click="toggleOffices"
+					class="flex justify-between w-full cursor-pointer p-2 bg-gray-200 rounded-lg text-black"
+				>
+					<div>{{ selectedOffice.name }}</div>
+					<svg
+						class="-mr-1 h-5 w-5 text-gray-400"
+						xmlns="http://www.w3.org/2000/svg"
+						fill="currentColor"
+						viewBox="0 0 20 20"
+						aria-hidden="true"
+					>
+						<path
+							fill-rule="evenodd"
+							clip-rule="evenodd"
+							d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+						/>
+					</svg>
+				</div>
+
+				<div
+					v-if="showOffices"
+					class="w-full bg-gray-200 rounded-lg !text-black flex flex-col mt-1 max-h-[150px] overflow-y-auto"
+				>
+					<ul class="m-0 p-0 list-none">
+						<li
+							v-for="office in [
+								...officeStore.offices,
+								...officeStore.officesSharedWithMe,
+							]"
+							:key="office"
+							@click="selectOffice(office)"
+							class="hover:bg-gray-300 my-0 p-2 rounded-sm"
+						>
+							{{ office.name }}
+						</li>
+					</ul>
+				</div>
 			</div>
 
 			<div class="flex justify-between px-12 pb-4">

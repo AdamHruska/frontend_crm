@@ -77,6 +77,7 @@ const calendarEvents = computed(() =>
 		title: activity.aktivita,
 		start: activity.datum_cas,
 		end: activity.koniec,
+		created_at: activity.created_at,
 		extendedProps: {
 			poznamka: activity.poznamka,
 			office_id: activity.office_id,
@@ -90,7 +91,7 @@ const mergedOptions = computed(() => {
 	return {
 		...defaultOptions,
 		...props.options,
-		events: calendarEvents.value,
+		events: [...calendarEvents.value],
 	};
 });
 

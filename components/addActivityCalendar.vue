@@ -95,8 +95,14 @@ watch(datum_cas, (newValue) => {
 
 	koniec.value = format(newEndTime, "yyyy-MM-dd'T'HH:mm");
 });
+import { useOfficeStore } from "#imports";
+const officeStore = useOfficeStore();
 
 onMounted(async () => {
+	officeStore.fetchOffices();
+	officeStore.fetchOfficesSharedWithMe();
+	userStore.fetchUser();
+
 	emails.value = [""];
 	console.log(email.value);
 	// Set initial datum_cas to props.end_date
@@ -352,6 +358,28 @@ const addActivity = async () => {
 			}
 		}
 
+		if (selectOffice.value !== "Kancelárie") {
+			//tu spravit office aktivitu
+
+			const datumCasDate = new Date(datum_cas.value);
+			datumCasDate.setHours(datumCasDate.getHours() + 2);
+
+			const koniecDate = new Date(koniec.value);
+			koniecDate.setHours(koniecDate.getHours() + 2);
+
+			const newActivity = {
+				aktivita:
+					aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
+				datum_cas: datumCasDate.toISOString(),
+				koniec: koniecDate.toISOString(),
+				poznamka: poznamka.value,
+				office_id: officeStore.setOfficeID,
+				owner_number: userStore.user.vizitka_phone_num,
+			};
+
+			await officeStore.storeActivity(newActivity);
+		}
+
 		calendarStore.activities.push(activityResponse.data.activity);
 		emit("activityAdded", activityResponse.data.activity);
 		emit("addNewEvent", activityResponse.data.activity);
@@ -424,6 +452,19 @@ const filteredContacts = (index) => {
 			(field || "").toLowerCase().includes(searchText.toLowerCase())
 		)
 	);
+};
+
+const showOffices = ref(false);
+const selectedOffice = ref({ id: null, name: "Kancelárie" }); // default text
+
+const toggleOffices = () => {
+	showOffices.value = !showOffices.value;
+};
+
+const selectOffice = (office) => {
+	officeStore.setOfficeID = office.id;
+	selectedOffice.value = office;
+	showOffices.value = false; // close dropdown after selection
 };
 </script>
 
@@ -659,6 +700,48 @@ const filteredContacts = (index) => {
 					class="!text-black w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500"
 					placeholder="Zadajte miesto stretnutia ..."
 				/>
+			</div>
+
+			<div class="relative z-0 w-full mb-5 group">
+				<!-- Dropdown button -->
+				<div
+					@click="toggleOffices"
+					class="flex justify-between w-full cursor-pointer p-2 bg-gray-200 rounded-lg text-black"
+				>
+					<div>{{ selectedOffice.name }}</div>
+					<svg
+						class="-mr-1 h-5 w-5 text-gray-400"
+						xmlns="http://www.w3.org/2000/svg"
+						fill="currentColor"
+						viewBox="0 0 20 20"
+						aria-hidden="true"
+					>
+						<path
+							fill-rule="evenodd"
+							clip-rule="evenodd"
+							d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+						/>
+					</svg>
+				</div>
+
+				<div
+					v-if="showOffices"
+					class="w-full bg-gray-200 rounded-lg !text-black flex flex-col mt-1 max-h-[150px] overflow-y-auto"
+				>
+					<ul class="m-0 p-0 list-none">
+						<li
+							v-for="office in [
+								...officeStore.offices,
+								...officeStore.officesSharedWithMe,
+							]"
+							:key="office"
+							@click="selectOffice(office)"
+							class="hover:bg-gray-300 my-0 p-2 rounded-sm"
+						>
+							{{ office.name }}
+						</li>
+					</ul>
+				</div>
 			</div>
 
 			<div class="flex justify-between px-12 pb-4" v-if="showVDD">

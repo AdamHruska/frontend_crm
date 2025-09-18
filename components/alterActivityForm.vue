@@ -19,6 +19,9 @@ import AlterPersonForm from "./alterPersonForm.vue";
 const authStore = useAuthStore();
 authStore.loadToken();
 
+import { useOfficeStore } from "#imports";
+const officeStore = useOfficeStore();
+
 import { useToast } from "vue-toastification";
 const toast = useToast();
 
@@ -52,7 +55,13 @@ watch(aktivita, (newValue) => {
 	}
 });
 
+const officeActivityId = ref(null);
+
 onMounted(async () => {
+	officeStore.fetchOffices();
+	officeStore.fetchOfficesSharedWithMe();
+	userStore.fetchUser();
+
 	console.log("Mounted AlterActivityForm with activityID:", props.activityID);
 	const response = await axios.get(
 		`${config.public.apiUrl}activities/${props.activityID}`,
@@ -98,6 +107,12 @@ onMounted(async () => {
 		email.value = contact.value.email;
 		emailBool.value = true;
 	}
+
+	officeActivityId.value = await officeStore.findActivityId({
+		datum_cas: datum_cas.value,
+		koniec: koniec.value,
+		owner_id: userStore.user.id,
+	});
 
 	console.log("skuska id:", extractMicrosoftEventId(miesto_stretnutia.value));
 });
@@ -193,6 +208,18 @@ const updateActivity = async () => {
 					);
 				}
 
+				const newActivity = {
+					aktivita:
+						aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
+					datum_cas: datumCasDate.toISOString(),
+					koniec: koniecDate.toISOString(),
+					poznamka: poznamka.value,
+					office_id: officeStore.setOfficeID,
+					owner_number: userStore.user.vizitka_phone_num,
+				};
+
+				await officeStore.updateActivity(newActivity);
+
 				toast.success("Online stretnutie bolo úspešne vytvorené", {
 					position: "top-right",
 					timeout: 5000,
@@ -268,13 +295,14 @@ const updateActivity = async () => {
 	}
 };
 
-// const deleteActivity = async () => {
-// 	event.preventDefault();
+const deleteActivity = async () => {
+	event.preventDefault();
+	await officeStore.deleteActivity(officeActivityId.value);
 
-// 	await calendarStore.deleteActivity(props.activityID);
-// 	emit("cancelAddActivity");
-// 	emit("alterEvents", null);
-// };
+	await calendarStore.deleteActivity(props.activityID);
+	emit("cancelAddActivity");
+	emit("alterEvents", null);
+};
 
 function extractMicrosoftEventId(teamsLink) {
 	if (!teamsLink) return null;
@@ -326,6 +354,19 @@ const isValidUrl = (url) => {
 		console.log("false");
 		return false;
 	}
+};
+
+const showOffices = ref(false);
+const selectedOffice = ref("Kancelárie"); // default text
+
+const toggleOffices = () => {
+	showOffices.value = !showOffices.value;
+};
+
+const selectOffice = (office) => {
+	officeStore.setOfficeID = office.id;
+	selectedOffice.value = office;
+	showOffices.value = false; // close dropdown after selection
 };
 </script>
 
@@ -503,6 +544,48 @@ const isValidUrl = (url) => {
 					class="!text-black w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500"
 					placeholder="Zadajte miesto stretnutia ..."
 				/>
+			</div>
+
+			<div class="relative z-0 w-full mb-5 group">
+				<!-- Dropdown button -->
+				<div
+					@click="toggleOffices"
+					class="flex justify-between w-full cursor-pointer p-2 bg-gray-200 rounded-lg text-black"
+				>
+					<div>{{ selectedOffice.name }}</div>
+					<svg
+						class="-mr-1 h-5 w-5 text-gray-400"
+						xmlns="http://www.w3.org/2000/svg"
+						fill="currentColor"
+						viewBox="0 0 20 20"
+						aria-hidden="true"
+					>
+						<path
+							fill-rule="evenodd"
+							clip-rule="evenodd"
+							d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+						/>
+					</svg>
+				</div>
+
+				<div
+					v-if="showOffices"
+					class="w-full bg-gray-200 rounded-lg !text-black flex flex-col mt-1 max-h-[150px] overflow-y-auto"
+				>
+					<ul class="m-0 p-0 list-none">
+						<li
+							v-for="office in [
+								...officeStore.offices,
+								...officeStore.officesSharedWithMe,
+							]"
+							:key="office"
+							@click="selectOffice(office)"
+							class="hover:bg-gray-300 my-0 p-2 rounded-sm"
+						>
+							{{ office.name }}
+						</li>
+					</ul>
+				</div>
 			</div>
 
 			<div class="flex justify-between px-12 pb-4">

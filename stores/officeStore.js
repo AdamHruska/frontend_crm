@@ -219,8 +219,10 @@ export const useOfficeStore = defineStore("office", {
 
 			try {
 				const payload = { ...activityData, user_id: userStore.user.id };
+
 				console.log("Updating activity with payload:", payload);
-				const response = await axios.put(
+
+				await axios.put(
 					`${config.public.apiUrl}update-office-activity/${activityData.id}`,
 					payload,
 					{
@@ -231,16 +233,19 @@ export const useOfficeStore = defineStore("office", {
 				);
 
 				const index = this.officeActivities.findIndex(
-					(a) => a.id === activityData.id
+					(a) => Number(a.id) === Number(activityData.id)
 				);
+
 				if (index !== -1) {
-					this.officeActivities[index] = response.data;
+					// replace the whole object to trigger reactivity
+					this.officeActivities[index] = { ...activityData };
+				} else {
+					console.warn("Activity not found in store to update");
 				}
 			} catch (error) {
 				console.error("Error updating office activity:", error);
 			}
 		},
-
 		async deleteActivity(id) {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
@@ -254,6 +259,8 @@ export const useOfficeStore = defineStore("office", {
 						},
 					}
 				);
+
+				// odstrániť aktivitu zo store
 				this.officeActivities = this.officeActivities.filter(
 					(a) => a.id !== id
 				);
@@ -279,6 +286,30 @@ export const useOfficeStore = defineStore("office", {
 				console.log("Fetched office activities:", this.officeActivities);
 			} catch (error) {
 				console.error("Error fetching office activities:", error);
+			}
+		},
+
+		// inside actions of useOfficeStore
+		async findActivityId({ datum_cas, koniec, owner_id }) {
+			const config = useRuntimeConfig();
+			const authStore = useAuthStore();
+			console.log("Finding activity ID with:", { datum_cas, koniec, owner_id });
+			try {
+				const response = await axios.post(
+					`${config.public.apiUrl}find-activity-id`,
+					{ datum_cas, koniec, owner_id },
+					{
+						headers: {
+							Authorization: `Bearer ${authStore.token}`,
+						},
+					}
+				);
+
+				//console.log("Found activity ID:", response.data.activity_id);
+				return response.data.activity_id;
+			} catch (error) {
+				console.error("Error finding activity ID:", error);
+				return null;
 			}
 		},
 	},

@@ -174,7 +174,7 @@
 						@click="setActiveTab('kancelarie')"
 					>
 						<Icon
-							icon="pepicons-pencil:share-android"
+							icon="hugeicons:office"
 							style="font-size: 36px"
 							class="text-white"
 						/>

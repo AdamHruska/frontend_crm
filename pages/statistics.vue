@@ -94,15 +94,11 @@
 					</div>
 					<div class="item-right">
 						<div class="right-count">
-							Pocet vsetkych:
-							{{ responseData.detailed_statistics.prve_stretnutie.total }}
+							Pocet vsetkych: {{ otherActivies["Prvé stretnutie"].total }}
 						</div>
 						<div class="right-count green">
 							Pocet zrealizovanych:
-							{{
-								responseData.detailed_statistics.prve_stretnutie
-									.with_check_status
-							}}
+							{{ otherActivies["Prvé stretnutie"].checked }}
 						</div>
 					</div>
 				</div>
@@ -114,14 +110,11 @@
 					<div class="item-right">
 						<div class="right-count">
 							Pocet vsetkych:
-							{{ responseData.detailed_statistics.unikatne_analyzy.total }}
+							{{ otherActivies["Analýza osobných financií"].total }}
 						</div>
 						<div class="right-count green">
 							Pocet zrealizovanych:
-							{{
-								responseData.detailed_statistics.unikatne_analyzy
-									.with_check_status
-							}}
+							{{ otherActivies["Analýza osobných financií"].checked }}
 						</div>
 					</div>
 				</div>
@@ -133,13 +126,11 @@
 					<div class="item-right">
 						<div class="right-count">
 							Pocet vsetkych:
-							{{ responseData.detailed_statistics.poradenstva.total }}
+							{{ otherActivies["poradenstvo"].total }}
 						</div>
 						<div class="right-count green">
 							Pocet zrealizovanych:
-							{{
-								responseData.detailed_statistics.poradenstva.with_check_status
-							}}
+							{{ otherActivies["poradenstvo"].checked }}
 						</div>
 					</div>
 				</div>
@@ -151,13 +142,11 @@
 					<div class="item-right">
 						<div class="right-count">
 							Pocet vsetkych:
-							{{ responseData.detailed_statistics.realizacie.total }}
+							{{ otherActivies["realizácia"].total }}
 						</div>
 						<div class="right-count green">
 							Pocet zrealizovanych:
-							{{
-								responseData.detailed_statistics.realizacie.with_check_status
-							}}
+							{{ otherActivies["realizácia"].checked }}
 						</div>
 					</div>
 				</div>
@@ -169,14 +158,11 @@
 					<div class="item-right">
 						<div class="right-count">
 							Pocet vsetkych:
-							{{ responseData.detailed_statistics.servisna_analyza.total }}
+							{{ otherActivies["Servisná analýza"].total }}
 						</div>
 						<div class="right-count green">
 							Pocet zrealizovanych:
-							{{
-								responseData.detailed_statistics.servisna_analyza
-									.with_check_status
-							}}
+							{{ otherActivies["Servisná analýza"].checked }}
 						</div>
 					</div>
 				</div>
@@ -187,7 +173,7 @@
 					</div>
 					<div class="item-right">
 						<div class="right-count green">
-							Pocet nových kontaktov: {{ responseData.new_contacts }}
+							Pocet nových kontaktov: {{ response.data.new_contacts }}
 						</div>
 					</div>
 				</div>
@@ -218,7 +204,7 @@
 			</div>
 
 			<!-- Results Table -->
-			<div class="bg-white rounded shadow">
+			<!-- <div class="bg-white rounded shadow">
 				<div class="max-h-[400px] overflow-y-auto">
 					<table class="w-full">
 						<thead>
@@ -253,7 +239,7 @@
 						</tbody>
 					</table>
 				</div>
-			</div>
+			</div> -->
 		</div>
 
 		<!-- Pohovory Statistika -->
@@ -285,7 +271,7 @@
 				</div>
 			</div> -->
 
-			<div class="item">
+			<!-- <div class="item">
 				<div class="item-left">
 					<p>Pohovor:</p>
 				</div>
@@ -301,7 +287,7 @@
 						{{ dataPohovory.pohovory_statistics.pohovor.with_check_status }}
 					</div>
 				</div>
-			</div>
+			</div> -->
 
 			<div class="item">
 				<div class="item-left">
@@ -310,13 +296,11 @@
 				<div class="item-right">
 					<div class="right-count">
 						Všetky:
-						{{ dataPohovory.pohovory_statistics.welcome_seminar.total }}
+						{{ seminarActivitesStatistics["welcome seminár"].total }}
 					</div>
 					<div class="right-count green">
 						Zrealizované:
-						{{
-							dataPohovory.pohovory_statistics.welcome_seminar.with_check_status
-						}}
+						{{ seminarActivitesStatistics["welcome seminár"].checked }}
 					</div>
 				</div>
 			</div>
@@ -328,11 +312,11 @@
 				<div class="item-right">
 					<div class="right-count">
 						Všetky:
-						{{ dataPohovory.pohovory_statistics.basic_1.total }}
+						{{ seminarActivitesStatistics["basic 1"].total }}
 					</div>
 					<div class="right-count green">
 						Zrealizované:
-						{{ dataPohovory.pohovory_statistics.basic_1.with_check_status }}
+						{{ seminarActivitesStatistics["basic 1"].checked }}
 					</div>
 				</div>
 			</div>
@@ -344,11 +328,11 @@
 				<div class="item-right">
 					<div class="right-count">
 						Všetky:
-						{{ dataPohovory.pohovory_statistics.basic_2.total }}
+						{{ seminarActivitesStatistics["basic 2"].total }}
 					</div>
 					<div class="right-count green">
 						Zrealizované:
-						{{ dataPohovory.pohovory_statistics.basic_2.with_check_status }}
+						{{ seminarActivitesStatistics["basic 2"].checked }}
 					</div>
 				</div>
 			</div>
@@ -360,11 +344,11 @@
 				<div class="item-right">
 					<div class="right-count">
 						Všetky:
-						{{ dataPohovory.pohovory_statistics.basic_3.total }}
+						{{ seminarActivitesStatistics["basic 3"].total }}
 					</div>
 					<div class="right-count green">
 						Zrealizované:
-						{{ dataPohovory.pohovory_statistics.basic_3.with_check_status }}
+						{{ seminarActivitesStatistics["basic 3"].checked }}
 					</div>
 				</div>
 			</div>
@@ -376,11 +360,11 @@
 				<div class="item-right">
 					<div class="right-count">
 						Všetky:
-						{{ dataPohovory.pohovory_statistics.basic_4.total }}
+						{{ seminarActivitesStatistics["basic 4"].total }}
 					</div>
 					<div class="right-count green">
 						Zrealizované:
-						{{ dataPohovory.pohovory_statistics.basic_4.with_check_status }}
+						{{ seminarActivitesStatistics["basic 4"].checked }}
 					</div>
 				</div>
 			</div>
@@ -392,11 +376,11 @@
 				<div class="item-right">
 					<div class="right-count">
 						Všetky:
-						{{ dataPohovory.pohovory_statistics.post_info.total }}
+						{{ seminarActivitesStatistics["Post info"].total }}
 					</div>
 					<div class="right-count green">
 						Zrealizované:
-						{{ dataPohovory.pohovory_statistics.post_info.with_check_status }}
+						{{ seminarActivitesStatistics["Post info"].checked }}
 					</div>
 				</div>
 			</div>
@@ -481,35 +465,23 @@ const chartData = computed(() => ({
 }));
 
 const chartDataPohovory = computed(() => {
-	// Guard clause to prevent errors when data isn't loaded yet
-	if (!dataPohovory.value?.pohovory_statistics?.pohovor) {
+	if (!dataPohovory.value) {
 		return {
-			labels: ["Volané", "Dovolané", "Dohodnuté", "Zaujatý", "Nezaujatý"],
-			datasets: [
-				{
-					data: [0, 0, 0, 0, 0], // Default values
-					backgroundColor: [
-						"#93C5FD",
-						"#86EFAC",
-						"#C084FC",
-						"#FBBF24",
-						"#F87171",
-					],
-				},
-			],
+			labels: ["Volané", "Dovolané", "Dohodnuté", "Zaujatí", "Nezaujatí"],
+			datasets: [{ data: [0, 0, 0, 0, 0] }],
 		};
 	}
 
 	return {
-		labels: ["Volané", "Dovolané", "Dohodnuté", "Zaujatý", "Nezaujatý"],
+		labels: ["Volané", "Dovolané", "Dohodnuté", "Zaujatí", "Nezaujatí"],
 		datasets: [
 			{
 				data: [
-					dataPohovory.value.pohovory_statistics.pohovor.volane,
-					dataPohovory.value.pohovory_statistics.pohovor.dovolane,
-					dataPohovory.value.pohovory_statistics.pohovor.dohodnute,
-					dataPohovory.value.pohovory_statistics.pohovor.zaujaty,
-					dataPohovory.value.pohovory_statistics.pohovor.nezaujaty,
+					dataPohovory.value.called,
+					dataPohovory.value.reached,
+					dataPohovory.value.scheduled,
+					dataPohovory.value.accepted,
+					dataPohovory.value.rejected,
 				],
 				backgroundColor: [
 					"#93C5FD",
@@ -537,60 +509,115 @@ const formatCardTitle = (key) => {
 	}
 };
 
+const otherActivies = ref();
+const seminarActivitesStatistics = ref();
 // Methods
 const fetchData = async () => {
 	loadingStateCalendar.value = true;
 	const fromDate = new Date(dateRange.value.from);
 	const toDate = new Date(dateRange.value.to);
 	toDate.setHours(23, 59, 59, 999); // Set to the end of the day
-
+	console.log("fromDate", fromDate);
+	console.log("toDate", toDate);
+	console.log("aktivity", selectedActivityType.value);
 	try {
-		const response = await axios.post(
-			`${config.public.apiUrl}activity-statistics`,
+		const response = await axios.get(
+			`${config.public.apiUrl}telefonat-klient-statistics`,
 			{
-				from_date: fromDate.toISOString().split("T")[0],
-				to_date: toDate.toISOString(),
-				activity_type: selectedActivityType.value,
-			},
-			{
+				params: {
+					from_date: fromDate.toISOString().split("T")[0], // e.g. "2025-08-18"
+					to_date: toDate.toISOString().split("T")[0], // e.g. "2025-09-18"
+					activity_type: selectedActivityType.value, // optional
+				},
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
 				},
 			}
 		);
-
+		console.log("response", response.data);
 		responseData.value = response.data;
 		statistics.value = response.data.statistics;
 		activities.value = response.data.activities;
 
-		const responsePohovory = await axios.post(
-			`${config.public.apiUrl}statistics-pohovory`,
+		const responsePohovory = await axios.get(
+			`${config.public.apiUrl}pohovory-statistics`,
 			{
-				from_date: fromDate.toISOString().split("T")[0],
-				to_date: toDate.toISOString(),
-				activity_type: selectedActivityType.value,
-			},
-			{
+				params: {
+					from_date: fromDate.toISOString().split("T")[0], // e.g. "2025-08-18"
+					to_date: toDate.toISOString().split("T")[0], // e.g. "2025-09-18"
+					activity_type: selectedActivityType.value, // optional
+				},
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
 				},
 			}
 		);
-		dataPohovory.value = responsePohovory.data;
+		console.log("responsePohovory", responsePohovory.data.statistics);
+		dataPohovory.value = responsePohovory.data.statistics;
 
-		console.log("dataPohovory", dataPohovory.value.activities);
+		const otherActivitiesData = await axios.get(
+			`${config.public.apiUrl}other-activities-statistics`,
+			{
+				params: {
+					from_date: fromDate.toISOString().split("T")[0], // e.g. "2025-08-18"
+					to_date: toDate.toISOString().split("T")[0], // e.g. "2025-09-18"
+					activity_type: selectedActivityType.value, // optional
+				},
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+				},
+			}
+		);
+		console.log("otherActivitiesData", otherActivitiesData.data);
+		otherActivies.value = otherActivitiesData.data.statistics;
 
-		zaujatiKandidati.value = dataPohovory.value.activities
-			.filter(
-				(activity) =>
-					activity.type === "Pohovor" && activity.status == "zaujatý"
-			)
-			.map((activity) => ({
-				id: activity.contact_id,
-				meno: activity.meno,
-				priezvisko: activity.priezvisko,
-				date: activity.date,
-			}));
+		const seminarActivitesStatisticsResponse = await axios.get(
+			`${config.public.apiUrl}seminar-activities-statistics`,
+			{
+				params: {
+					from_date: fromDate.toISOString().split("T")[0], // e.g. "2025-08-18"
+					to_date: toDate.toISOString().split("T")[0], // e.g. "2025-09-18"
+					activity_type: selectedActivityType.value, // optional
+				},
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+				},
+			}
+		);
+		console.log(
+			"seminarActivitesStatistics",
+			seminarActivitesStatisticsResponse.data
+		);
+		seminarActivitesStatistics.value =
+			seminarActivitesStatisticsResponse.data.statistics;
+		// 	const responsePohovory = await axios.post(
+		// 		`${config.public.apiUrl}statistics-pohovory`,
+		// 		{
+		// 			from_date: fromDate.toISOString().split("T")[0],
+		// 			to_date: toDate.toISOString(),
+		// 			activity_type: selectedActivityType.value,
+		// 		},
+		// 		{
+		// 			headers: {
+		// 				Authorization: `Bearer ${authStore.token}`,
+		// 			},
+		// 		}
+		// 	);
+		// 	dataPohovory.value = responsePohovory.data;
+
+		// 	console.log("dataPohovory", dataPohovory.value.activities);
+
+		// 	zaujatiKandidati.value = dataPohovory.value.activities
+		// 		.filter(
+		// 			(activity) =>
+		// 				activity.type === "Pohovor" && activity.status == "zaujatý"
+		// 		)
+		// 		.map((activity) => ({
+		// 			id: activity.contact_id,
+		// 			meno: activity.meno,
+		// 			priezvisko: activity.priezvisko,
+		// 			date: activity.date,
+		// 		}));
 	} catch (error) {
 		console.error(
 			"Error fetching statistics:",
@@ -651,6 +678,8 @@ onMounted(() => {
 .item {
 	display: flex;
 	gap: 24px;
+	height: 150px;
+	width: 150px;
 }
 
 .right-count {
