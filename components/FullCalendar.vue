@@ -337,13 +337,22 @@ async function updateMicrosoftEvent(eventId, newStart, newEnd, title) {
 }
 
 onMounted(async () => {
-	if (calendarStore.activities.length === 0) {
-		await calendarStore.fetchActivities();
-	}
+	// if (calendarStore.activities.length === 0) {
+	// 	await calendarStore.fetchActivities();
+	// }
 
-	if (contactsStore.contacts.data.length === 0) {
-		await contactsStore.fetchContacts();
-	}
+	// if (contactsStore.contacts.data.length === 0) {
+	// 	await contactsStore.fetchContacts();
+	// }
+
+	await Promise.all([
+		calendarStore.activities.length === 0
+			? calendarStore.fetchActivities()
+			: null,
+		contactsStore.contacts.data.length === 0
+			? contactsStore.fetchContacts()
+			: null,
+	]);
 
 	// Set up event listener for deleteSharedEvents
 	eventBus.on("deleteSharedEvents", ({ userId }) => {
@@ -358,14 +367,32 @@ onMounted(async () => {
 	});
 
 	// Rest of your mounting logic...
+	// rawData.value = calendarStore.activities;
+	// events.value = transformData(rawData.value);
+	// const sharedACT = transformData(
+	// 	flattenActivities(calendarStore.shared_activities)
+	// );
+	// events.value = [...events.value, ...sharedACT];
+
+	// calendarOptions.value.events = events.value;
+
+	// Fetch user activities first (fast)
+	await calendarStore.fetchUserActivities();
 	rawData.value = calendarStore.activities;
 	events.value = transformData(rawData.value);
-	const sharedACT = transformData(
-		flattenActivities(calendarStore.shared_activities)
-	);
-	events.value = [...events.value, ...sharedACT];
-
 	calendarOptions.value.events = events.value;
+
+	// Fire shared activities in background (don’t block initial render)
+	calendarStore.fetchSharedActivities().then(() => {
+		const sharedACT = transformData(
+			flattenActivities(calendarStore.shared_activities)
+		);
+		events.value = [...events.value, ...sharedACT];
+		calendarOptions.value = {
+			...calendarOptions.value,
+			events: events.value,
+		};
+	});
 
 	const urlParams = new URLSearchParams(window.location.search);
 	const code = urlParams.get("code");
@@ -437,8 +464,13 @@ onUnmounted(() => {
 
 const transformData = (data) => {
 	return data.map((item) => {
-		const farba =
-			item.created_id == userStore.user.id ? "rgb(37 99 235)" : "red";
+		console.log("Transforming item:", item); // Debug log
+		var farba = item.created_id == userStore.user.id ? "rgb(37 99 235)" : "red";
+
+		if (item.activity_status === "discarded") {
+			farba = "gray";
+		}
+
 		const formattedStart = item.datumCas.replace(" ", "T");
 
 		//Get contact info - use optional chaining for safety
@@ -947,8 +979,9 @@ const checkAuth = async () => {
 
 <template>
 	<div class="h-screen">
-		<!-- <loadigcomponent v-if="calendarStore.loadingState" />
-		<loadigcomponent v-if="loadingStateCalendar" /> -->
+		<loadigcomponent v-if="calendarStore.loadingState" />
+
+		<!-- <loadigcomponent v-if="loadingStateCalendar" /> -->
 		<AddActivityCalendar
 			v-if="addActivity"
 			@cancelAddActivity="toggleAddActivity"
@@ -1065,6 +1098,26 @@ const checkAuth = async () => {
 					</button> -->
 				</div>
 			</div>
+			<div
+				class="absolute top-5 left-1/2 z-50"
+				v-if="calendarStore.microsoftLoadingState"
+			>
+				<div class="relative flex items-center gap-4">
+					<div class="spinner -translate-x-10">
+						<div></div>
+						<div></div>
+						<div></div>
+						<div></div>
+						<div></div>
+						<div></div>
+						<div></div>
+						<div></div>
+						<div></div>
+						<div></div>
+					</div>
+					<div class="">Načítava si microsoft kalendár...</div>
+				</div>
+			</div>
 			<div class="demo-app-main bg-white text-black">
 				<!-- <CalendarSharing class="absolute left-5" /> -->
 				<!-- <FullCalendar class="demo-app-calendar" :options="calendarOptions">
@@ -1073,6 +1126,7 @@ const checkAuth = async () => {
 						<i>{{ arg.event.title }}</i>
 					</template>
 				</FullCalendar> -->
+
 				<FullCalendar class="demo-app-calendar" :options="calendarOptions">
 					<template v-slot:eventContent="arg">
 						<div class="event-content-wrapper">
@@ -1236,4 +1290,101 @@ b {
 	min-height: 100% !important;
 }
 */
+
+.spinner {
+	position: absolute;
+	width: 9px;
+	height: 9px;
+}
+
+.spinner div {
+	position: absolute;
+	width: 50%;
+	height: 150%;
+	background: #000000;
+	transform: rotate(calc(var(--rotation) * 1deg))
+		translate(0, calc(var(--translation) * 1%));
+	animation: spinner-fzua35 1s calc(var(--delay) * 1s) infinite ease;
+}
+
+.spinner div:nth-child(1) {
+	--delay: 0.1;
+	--rotation: 36;
+	--translation: 150;
+}
+
+.spinner div:nth-child(2) {
+	--delay: 0.2;
+	--rotation: 72;
+	--translation: 150;
+}
+
+.spinner div:nth-child(3) {
+	--delay: 0.3;
+	--rotation: 108;
+	--translation: 150;
+}
+
+.spinner div:nth-child(4) {
+	--delay: 0.4;
+	--rotation: 144;
+	--translation: 150;
+}
+
+.spinner div:nth-child(5) {
+	--delay: 0.5;
+	--rotation: 180;
+	--translation: 150;
+}
+
+.spinner div:nth-child(6) {
+	--delay: 0.6;
+	--rotation: 216;
+	--translation: 150;
+}
+
+.spinner div:nth-child(7) {
+	--delay: 0.7;
+	--rotation: 252;
+	--translation: 150;
+}
+
+.spinner div:nth-child(8) {
+	--delay: 0.8;
+	--rotation: 288;
+	--translation: 150;
+}
+
+.spinner div:nth-child(9) {
+	--delay: 0.9;
+	--rotation: 324;
+	--translation: 150;
+}
+
+.spinner div:nth-child(10) {
+	--delay: 1;
+	--rotation: 360;
+	--translation: 150;
+}
+
+@keyframes spinner-fzua35 {
+	0%,
+	10%,
+	20%,
+	30%,
+	50%,
+	60%,
+	70%,
+	80%,
+	90%,
+	100% {
+		transform: rotate(calc(var(--rotation) * 1deg))
+			translate(0, calc(var(--translation) * 1%));
+	}
+
+	50% {
+		transform: rotate(calc(var(--rotation) * 1deg))
+			translate(0, calc(var(--translation) * 1.5%));
+	}
+}
 </style>

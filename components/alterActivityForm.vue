@@ -114,7 +114,13 @@ onMounted(async () => {
 		owner_id: userStore.user.id,
 	});
 
-	console.log("skuska id:", extractMicrosoftEventId(miesto_stretnutia.value));
+	//miesto_stretnutia.value = officeActivityId.office.value;
+	console.log("Office activity ID:", officeActivityId.value.office.name);
+	if (officeActivityId.value.office.name) {
+		miesto_stretnutia.value = officeActivityId.value.office.name;
+		selectedOffice.value = officeActivityId.value.office;
+	}
+	//console.log("skuska id:", extractMicrosoftEventId(miesto_stretnutia.value));
 });
 
 const emit = defineEmits(["cancelAddActivity", "activityAdded", "alterEvents"]);
@@ -357,7 +363,7 @@ const isValidUrl = (url) => {
 };
 
 const showOffices = ref(false);
-const selectedOffice = ref("Kancelárie"); // default text
+const selectedOffice = ref({ id: null, name: "Kancelárie" }); // default text
 
 const toggleOffices = () => {
 	showOffices.value = !showOffices.value;

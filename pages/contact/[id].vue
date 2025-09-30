@@ -520,6 +520,37 @@ const handleConfirmEvent = async () => {
 	}
 };
 
+const handleCloseConfirmEvent = async () => {
+	try {
+		if (pendingFirstMeetingRow.value) {
+			// Update local state immediately for better UX
+			pendingFirstMeetingRow.value.activity_status = "check";
+
+			await axios.patch(
+				`${config.public.apiUrl}activities/${pendingFirstMeetingRow.value.id}/status`,
+				{
+					activity_status: "check",
+				},
+				{
+					headers: {
+						Authorization: `Bearer ${authStore.token}`,
+					},
+				}
+			);
+
+			// Refresh activities to show the new one
+			await findActivities(id);
+		}
+	} catch (error) {
+		console.error("Error handling confirmation:", error);
+		// Optionally show error message to user
+	} finally {
+		// Close the modal and clear the pending row
+		changeConfirmEventModal();
+		pendingFirstMeetingRow.value = null;
+	}
+};
+
 async function addFinancialAnalysisActivity(contactId, dateTimeStart) {
 	try {
 		// Convert the start time string to a Date object
@@ -593,7 +624,9 @@ const handleActivityUpdate = (updatedActivity) => {
 			...updatedActivity,
 		};
 	}
+
 	showDiscardActivityModal.value = !showDiscardActivityModal.value;
+
 	//changeDiscardActivityModal();
 };
 </script>
@@ -610,6 +643,7 @@ const handleActivityUpdate = (updatedActivity) => {
 		v-if="showConfirmEvent"
 		@close="changeConfirmEventModal"
 		@confirm="handleConfirmEvent"
+		@closeConfirm="handleCloseConfirmEvent"
 	/>
 	<Loadigcomponent v-if="todoStore.loadingState" />
 

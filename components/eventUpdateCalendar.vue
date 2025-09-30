@@ -151,9 +151,7 @@ onMounted(async () => {
 		owner_id: userStore.user.id,
 	});
 
-	console.log("Office Activity ID fetched:", officeActivityId.value);
-
-	console.log("skuska id:", extractMicrosoftEventId(miesto_stretnutia.value));
+	//console.log("skuska id:", extractMicrosoftEventId(miesto_stretnutia.value));
 });
 
 const emit = defineEmits(["cancelAddActivity", "activityAdded", "alterEvents"]);

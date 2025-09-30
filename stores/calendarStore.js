@@ -10,6 +10,7 @@ export const useCalendarstore = defineStore("calendar", {
 		activities: [],
 		shared_activities: [],
 		loadingState: false,
+		microsoftLoadingState: false,
 		checkedUsers: [],
 		microsoftEventCache: {}, // Format: {"2025-4": [...events]}
 	}),
@@ -200,7 +201,7 @@ export const useCalendarstore = defineStore("calendar", {
 			}
 
 			// If not in cache, fetch from API
-			this.loadingState = true;
+			this.microsoftLoadingState = true;
 			try {
 				const config = useRuntimeConfig();
 				const response = await axios.get(`${config.public.apiUrl}get-events`, {
@@ -253,11 +254,11 @@ export const useCalendarstore = defineStore("calendar", {
 				// Store in cache
 				this.microsoftEventCache[cacheKey] = microsoftEvents;
 
-				this.loadingState = false;
+				this.microsoftLoadingState = false;
 				return microsoftEvents;
 			} catch (error) {
 				console.error("Error fetching Microsoft events:", error);
-				this.loadingState = false;
+				this.microsoftLoadingState = false;
 				return [];
 			}
 		},

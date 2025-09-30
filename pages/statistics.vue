@@ -68,112 +68,89 @@
 				</div>
 			</div>
 
-			<div
-				class="container"
-				v-if="statistics && responseData && responseData.detailed_statistics"
-			>
-				<!-- <div class="item">
-					<div class="item-left">
-						<p>Pohovory:</p>
-					</div>
-					<div class="item-right">
-						<div class="right-count">
-							Pocet vsetkych:
-							{{ responseData.detailed_statistics.pohovory.total }}
-						</div>
-						<div class="right-count green">
-							Pocet zrealizovanych:
-							{{ responseData.detailed_statistics.pohovory.with_check_status }}
-						</div>
-					</div>
-				</div> -->
-
-				<div class="item">
+			<div class="container" v-if="otherActivies">
+				<div class="item" v-if="otherActivies['Prvé stretnutie']">
 					<div class="item-left">
 						<p>Prvé stretnutia:</p>
 					</div>
 					<div class="item-right">
 						<div class="right-count">
-							Pocet vsetkych: {{ otherActivies["Prvé stretnutie"].total }}
+							Pocet vsetkych: {{ otherActivies["Prvé stretnutie"]?.total || 0 }}
 						</div>
 						<div class="right-count green">
 							Pocet zrealizovanych:
-							{{ otherActivies["Prvé stretnutie"].checked }}
+							{{ otherActivies["Prvé stretnutie"]?.checked || 0 }}
 						</div>
 					</div>
 				</div>
 
-				<div class="item">
+				<div class="item" v-if="otherActivies['Analýza osobných financií']">
 					<div class="item-left">
 						<p>unikátne analýzy:</p>
 					</div>
 					<div class="item-right">
 						<div class="right-count">
 							Pocet vsetkych:
-							{{ otherActivies["Analýza osobných financií"].total }}
+							{{ otherActivies["Analýza osobných financií"]?.total || 0 }}
 						</div>
 						<div class="right-count green">
 							Pocet zrealizovanych:
-							{{ otherActivies["Analýza osobných financií"].checked }}
+							{{ otherActivies["Analýza osobných financií"]?.checked || 0 }}
 						</div>
 					</div>
 				</div>
 
-				<div class="item">
+				<div class="item" v-if="otherActivies['poradenstvo']">
 					<div class="item-left">
 						<p>Poradenstvá:</p>
 					</div>
 					<div class="item-right">
 						<div class="right-count">
-							Pocet vsetkych:
-							{{ otherActivies["poradenstvo"].total }}
+							Pocet vsetkych: {{ otherActivies["poradenstvo"]?.total || 0 }}
 						</div>
 						<div class="right-count green">
 							Pocet zrealizovanych:
-							{{ otherActivies["poradenstvo"].checked }}
+							{{ otherActivies["poradenstvo"]?.checked || 0 }}
 						</div>
 					</div>
 				</div>
 
-				<div class="item">
+				<div class="item" v-if="otherActivies['realizácia']">
 					<div class="item-left">
 						<p>Realizácie:</p>
 					</div>
 					<div class="item-right">
 						<div class="right-count">
-							Pocet vsetkych:
-							{{ otherActivies["realizácia"].total }}
+							Pocet vsetkych: {{ otherActivies["realizácia"]?.total || 0 }}
 						</div>
 						<div class="right-count green">
 							Pocet zrealizovanych:
-							{{ otherActivies["realizácia"].checked }}
+							{{ otherActivies["realizácia"]?.checked || 0 }}
 						</div>
 					</div>
 				</div>
 
-				<div class="item">
+				<div class="item" v-if="otherActivies['Servisná analýza']">
 					<div class="item-left">
 						<p>Servisná analýza:</p>
 					</div>
 					<div class="item-right">
 						<div class="right-count">
 							Pocet vsetkych:
-							{{ otherActivies["Servisná analýza"].total }}
+							{{ otherActivies["Servisná analýza"]?.total || 0 }}
 						</div>
 						<div class="right-count green">
 							Pocet zrealizovanych:
-							{{ otherActivies["Servisná analýza"].checked }}
+							{{ otherActivies["Servisná analýza"]?.checked || 0 }}
 						</div>
 					</div>
 				</div>
 
 				<div class="item">
-					<div class="item-left">
-						<p>Počet pridaných kontaktov:</p>
-					</div>
+					<div class="item-left"></div>
 					<div class="item-right">
 						<div class="right-count green">
-							Pocet nových kontaktov: {{ response.data.new_contacts }}
+							Pocet nových kontaktov: {{ responseData?.new_contacts || 0 }}
 						</div>
 					</div>
 				</div>
@@ -251,44 +228,7 @@
 			<BarChart :data="chartDataPohovory" />
 		</div>
 
-		<div
-			class="container"
-			v-if="dataPohovory && dataPohovory.pohovory_statistics"
-		>
-			<!-- <div class="item">
-				<div class="item-left">
-					<p>Telefonát nábor:</p>
-				</div>
-				<div class="item-right">
-					<div class="right-count">
-						Všetky:
-						{{ dataPohovory.pohovory_statistics.telefonat_nabor.total }}
-					</div>
-					<div class="right-count green">
-						Dohodnuté:
-						{{ dataPohovory.pohovory_statistics.telefonat_nabor.dohodnute }}
-					</div>
-				</div>
-			</div> -->
-
-			<!-- <div class="item">
-				<div class="item-left">
-					<p>Pohovor:</p>
-				</div>
-				<div class="item-right">
-					<div class="right-count">
-						Zaujatý: {{ dataPohovory.pohovory_statistics.pohovor.zaujaty }}
-					</div>
-					<div class="right-count green">
-						Nezaujatý: {{ dataPohovory.pohovory_statistics.pohovor.nezaujaty }}
-					</div>
-					<div class="right-count dark-green">
-						Zrelizované:
-						{{ dataPohovory.pohovory_statistics.pohovor.with_check_status }}
-					</div>
-				</div>
-			</div> -->
-
+		<div class="container" v-if="seminarActivitesStatistics">
 			<div class="item">
 				<div class="item-left">
 					<p>Welcome Seminár:</p>
@@ -296,11 +236,11 @@
 				<div class="item-right">
 					<div class="right-count">
 						Všetky:
-						{{ seminarActivitesStatistics["welcome seminár"].total }}
+						{{ seminarActivitesStatistics["welcome seminár"]?.total || 0 }}
 					</div>
 					<div class="right-count green">
 						Zrealizované:
-						{{ seminarActivitesStatistics["welcome seminár"].checked }}
+						{{ seminarActivitesStatistics["welcome seminár"]?.checked || 0 }}
 					</div>
 				</div>
 			</div>
@@ -312,11 +252,11 @@
 				<div class="item-right">
 					<div class="right-count">
 						Všetky:
-						{{ seminarActivitesStatistics["basic 1"].total }}
+						{{ seminarActivitesStatistics["basic 1"]?.total || 0 }}
 					</div>
 					<div class="right-count green">
 						Zrealizované:
-						{{ seminarActivitesStatistics["basic 1"].checked }}
+						{{ seminarActivitesStatistics["basic 1"]?.checked || 0 }}
 					</div>
 				</div>
 			</div>
@@ -328,11 +268,11 @@
 				<div class="item-right">
 					<div class="right-count">
 						Všetky:
-						{{ seminarActivitesStatistics["basic 2"].total }}
+						{{ seminarActivitesStatistics["basic 2"]?.total || 0 }}
 					</div>
 					<div class="right-count green">
 						Zrealizované:
-						{{ seminarActivitesStatistics["basic 2"].checked }}
+						{{ seminarActivitesStatistics["basic 2"]?.checked || 0 }}
 					</div>
 				</div>
 			</div>
@@ -344,11 +284,11 @@
 				<div class="item-right">
 					<div class="right-count">
 						Všetky:
-						{{ seminarActivitesStatistics["basic 3"].total }}
+						{{ seminarActivitesStatistics["basic 3"]?.total || 0 }}
 					</div>
 					<div class="right-count green">
 						Zrealizované:
-						{{ seminarActivitesStatistics["basic 3"].checked }}
+						{{ seminarActivitesStatistics["basic 3"]?.checked || 0 }}
 					</div>
 				</div>
 			</div>
@@ -360,11 +300,11 @@
 				<div class="item-right">
 					<div class="right-count">
 						Všetky:
-						{{ seminarActivitesStatistics["basic 4"].total }}
+						{{ seminarActivitesStatistics["basic 4"]?.total || 0 }}
 					</div>
 					<div class="right-count green">
 						Zrealizované:
-						{{ seminarActivitesStatistics["basic 4"].checked }}
+						{{ seminarActivitesStatistics["basic 4"]?.checked || 0 }}
 					</div>
 				</div>
 			</div>
@@ -376,11 +316,11 @@
 				<div class="item-right">
 					<div class="right-count">
 						Všetky:
-						{{ seminarActivitesStatistics["Post info"].total }}
+						{{ seminarActivitesStatistics["Post info"]?.total || 0 }}
 					</div>
 					<div class="right-count green">
 						Zrealizované:
-						{{ seminarActivitesStatistics["Post info"].checked }}
+						{{ seminarActivitesStatistics["Post info"]?.checked || 0 }}
 					</div>
 				</div>
 			</div>
@@ -425,7 +365,7 @@ const router = useRouter();
 
 const updateActivity = ref(false);
 const activityID = ref(null);
-const responseData = ref(null);
+const responseData = ref({});
 const toggleUpdateActivity = (id) => {
 	activityID.value = id;
 	if (updateActivity.value === true) {
@@ -509,13 +449,14 @@ const formatCardTitle = (key) => {
 	}
 };
 
-const otherActivies = ref();
-const seminarActivitesStatistics = ref();
+const otherActivies = ref({});
+const seminarActivitesStatistics = ref({});
 // Methods
 const fetchData = async () => {
 	loadingStateCalendar.value = true;
 	const fromDate = new Date(dateRange.value.from);
 	const toDate = new Date(dateRange.value.to);
+	toDate.setDate(toDate.getDate() + 1); // Include the entire 'to' date
 	toDate.setHours(23, 59, 59, 999); // Set to the end of the day
 	console.log("fromDate", fromDate);
 	console.log("toDate", toDate);
@@ -534,8 +475,9 @@ const fetchData = async () => {
 				},
 			}
 		);
-		console.log("response", response.data);
+
 		responseData.value = response.data;
+		console.log("skuska", responseData.value.new_contacts);
 		statistics.value = response.data.statistics;
 		activities.value = response.data.activities;
 
@@ -570,6 +512,7 @@ const fetchData = async () => {
 		);
 		console.log("otherActivitiesData", otherActivitiesData.data);
 		otherActivies.value = otherActivitiesData.data.statistics;
+		console.log("otherActivies", otherActivies.value);
 
 		const seminarActivitesStatisticsResponse = await axios.get(
 			`${config.public.apiUrl}seminar-activities-statistics`,
@@ -672,7 +615,7 @@ onMounted(() => {
 	padding: 50px 0;
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(0, max-content));
-	gap: 3rem;
+	gap: 8rem;
 }
 
 .item {

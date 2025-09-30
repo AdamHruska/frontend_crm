@@ -293,7 +293,7 @@ export const useOfficeStore = defineStore("office", {
 		async findActivityId({ datum_cas, koniec, owner_id }) {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
-			console.log("Finding activity ID with:", { datum_cas, koniec, owner_id });
+			//console.log("Finding activity ID with:", { datum_cas, koniec, owner_id });
 			try {
 				const response = await axios.post(
 					`${config.public.apiUrl}find-activity-id`,
@@ -306,7 +306,7 @@ export const useOfficeStore = defineStore("office", {
 				);
 
 				//console.log("Found activity ID:", response.data.activity_id);
-				return response.data.activity_id;
+				return response.data;
 			} catch (error) {
 				console.error("Error finding activity ID:", error);
 				return null;

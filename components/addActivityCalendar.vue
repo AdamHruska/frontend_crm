@@ -285,6 +285,10 @@ const addActivity = async () => {
 	}
 
 	try {
+		if (selectOffice.value !== "Kancelárie") {
+			selectOffice.value = miesto_stretnutia.value;
+		}
+
 		const activityResponse = await axios.post(
 			`${config.public.apiUrl}add-activity`,
 			{

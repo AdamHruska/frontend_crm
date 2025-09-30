@@ -15,7 +15,9 @@ import { Icon } from "@iconify/vue";
 		<h1 class="heading">Chcete vytvoriť Analýzu osobných financií?</h1>
 		<div class="btn-container">
 			<button class="btn btn-primary" @click="$emit('confirm')">Áno</button>
-			<button class="btn btn-secondary" @click="$emit('close')">Nie</button>
+			<button class="btn btn-secondary" @click="$emit('closeConfirm')">
+				Nie
+			</button>
 		</div>
 	</div>
 </template>

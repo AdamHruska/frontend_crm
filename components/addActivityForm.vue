@@ -47,23 +47,19 @@ const emailBool = ref(false);
 const email = ref("");
 const contacts = ref([]);
 
-watch(aktivita, (newValue) => {
-	// Show/hide extra field
-	ineBool.value = newValue === "ine";
+watch([aktivita, datum_cas], ([newAktivita, newDatumCas]) => {
+	ineBool.value = newAktivita === "ine";
 
-	// If aktivita is "Telefonát klient", set koniec to datum_cas + 5 minutes
-	if (
-		(newValue === "Telefonát klient" || newValue === "Telefonát nábor") &&
-		datum_cas.value
-	) {
+	const val = (newAktivita || "").toLowerCase().trim();
+
+	if (val.startsWith("telefonát") && newDatumCas) {
 		showVDD.value = true;
-		const newEndTime = add(parseISO(datum_cas.value), { minutes: 5 });
+		const newEndTime = add(parseISO(newDatumCas), { minutes: 5 });
 		koniec.value = format(newEndTime, "yyyy-MM-dd'T'HH:mm");
 	} else {
 		showVDD.value = false;
 	}
 });
-
 const manualChangeCount = ref(0);
 const showCalendar = ref(false);
 const dateOnly = ref("");
@@ -185,6 +181,10 @@ const addActivity = async () => {
 			//dohodnute.value = true;
 		}
 
+		if (selectedOffice.value.name !== "Kancelárie") {
+			miesto_stretnutia.value = selectedOffice.value.name;
+		}
+
 		const response = await axios.post(
 			`${config.public.apiUrl}add-activity`,
 			{
@@ -275,7 +275,7 @@ const addActivity = async () => {
 			}
 		}
 
-		if (selectOffice.value !== "Kancelárie") {
+		if (selectedOffice.value.name !== "Kancelárie") {
 			//tu spravit office aktivitu
 
 			const datumCasDate = new Date(datum_cas.value);
