@@ -22,6 +22,7 @@
 
 			<!-- Main Navigation Items -->
 			<div
+				v-if="!isAdmin"
 				class="flex flex-col items-center mt-3 border-t border-black border-t-1 flex-grow"
 			>
 				<UTooltip text="kontakty" :ui="{ background: '', color: '' }" class="">
@@ -182,6 +183,75 @@
 				</UTooltip>
 			</div>
 
+			<!-- Admin Navigation Items -->
+			<div
+				v-else
+				class="flex flex-col items-center mt-3 border-t border-black border-t-1 flex-grow"
+			>
+				<UTooltip
+					text="Všetci zamestnanci"
+					:ui="{ background: '', color: '' }"
+					class=""
+				>
+					<NuxtLink
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
+						:class="{
+							'bg-blue-700 text-gray-200': activeTab === 'employees',
+						}"
+						to="/users"
+						@click="setActiveTab('employees')"
+					>
+						<Icon
+							icon="pepicons-pencil:people"
+							style="font-size: 36px"
+							class="text-white"
+						/>
+					</NuxtLink>
+				</UTooltip>
+
+				<UTooltip
+					text="Všetky kontakty"
+					:ui="{ background: '', color: '' }"
+					class=""
+				>
+					<NuxtLink
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
+						:class="{
+							'bg-blue-700 text-gray-200': activeTab === 'contacts-all',
+						}"
+						to="/contacts-all"
+						@click="setActiveTab('contacts-all')"
+					>
+						<Icon
+							icon="streamline:bullet-list"
+							style="font-size: 36px"
+							class="text-white"
+						/>
+					</NuxtLink>
+				</UTooltip>
+
+				<UTooltip
+					text="Všetky kancelárie"
+					:ui="{ background: '', color: '' }"
+					class=""
+				>
+					<NuxtLink
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
+						:class="{
+							'bg-blue-700 text-gray-200': activeTab === 'kancelarie',
+						}"
+						to="/offices-all"
+						@click="setActiveTab('kancelarie')"
+					>
+						<Icon
+							icon="hugeicons:office"
+							style="font-size: 36px"
+							class="text-white"
+						/>
+					</NuxtLink>
+				</UTooltip>
+			</div>
+
 			<!-- Bottom Navigation Item -->
 			<div
 				class="flex items-center justify-center w-16 h-16 mt-auto hover:bg-blue-600 hover:text-gray-300 mb-2 cursor-pointer"
@@ -210,20 +280,18 @@
 <script setup>
 import { useAuthStore } from "@/stores/authStore";
 import { Icon } from "@iconify/vue";
-import { set } from "date-fns";
-import { useContactsStore } from "#imports";
+import { useContactsStore, useUserStore } from "#imports";
+
 const contactsStore = useContactsStore();
+const userStore = useUserStore();
 
 const authStore = useAuthStore();
 authStore.loadLoginState();
 
 const isAuthenticated = computed(() => authStore.isAuthenticated);
 
-defineProps(["user"]);
-
 const showSignOutFormBool = ref(false);
-
-const activeTab = ref(""); // Default active tab
+const activeTab = ref("");
 
 function setActiveTab(tab) {
 	activeTab.value = tab;
@@ -231,7 +299,6 @@ function setActiveTab(tab) {
 
 function showSignOutForm() {
 	showSignOutFormBool.value = !showSignOutFormBool.value;
-	console.log(showSignOutFormBool);
 }
 
 function signOut() {
@@ -240,6 +307,21 @@ function signOut() {
 
 onMounted(() => {
 	setActiveTab("home");
+});
+
+// Načítať usera pred renderom
+onBeforeMount(async () => {
+	await userStore.fetchUser();
+});
+
+const isAdmin = computed(() => {
+	const user = userStore.user;
+	if (!user) return false;
+	return (
+		user.first_name === "admin" &&
+		user.last_name === "admin" &&
+		user.email === "admin@admin.com"
+	);
 });
 </script>
 

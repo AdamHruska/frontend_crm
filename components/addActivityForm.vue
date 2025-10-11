@@ -375,6 +375,12 @@ const selectOffice = (office) => {
 	selectedOffice.value = office;
 	showOffices.value = false; // close dropdown after selection
 };
+
+const handleMiniCalendarDateChange = (newDate) => {
+	// Format date to match your input field (yyyy-MM-ddTHH:mm)
+	const formatted = format(new Date(newDate), "yyyy-MM-dd'T'HH:mm");
+	datum_cas.value = formatted;
+};
 </script>
 
 <template>
@@ -685,7 +691,11 @@ const selectOffice = (office) => {
 				</button>
 			</div>
 		</form>
-		<AddActivityDay v-if="showCalendar" :date="dateOnly" />
+		<AddActivityDay
+			v-if="showCalendar"
+			:date="dateOnly"
+			@updateDate="handleMiniCalendarDateChange"
+		/>
 	</div>
 </template>
 

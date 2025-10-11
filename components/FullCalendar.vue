@@ -336,6 +336,8 @@ async function updateMicrosoftEvent(eventId, newStart, newEnd, title) {
 	}
 }
 
+const calendarList = ref([]);
+
 onMounted(async () => {
 	// if (calendarStore.activities.length === 0) {
 	// 	await calendarStore.fetchActivities();
@@ -345,14 +347,38 @@ onMounted(async () => {
 	// 	await contactsStore.fetchContacts();
 	// }
 
+	// if (!calendarStore.activities.length) {
+	// 	await calendarStore.fetchActivities();
+	// }
+
+	try {
+		// Fetch tokens from the backend
+		const response = await axios.get(
+			`${config.public.apiUrl}microsoft/calendars`,
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+				},
+			}
+		);
+		calendarList.value = response.data.calendars;
+		console.log("skuska list name", response.data.calendars);
+	} catch (error) {
+		console.error("Error during Microsoft login callback:", error);
+	}
+
 	await Promise.all([
 		calendarStore.activities.length === 0
 			? calendarStore.fetchActivities()
-			: null,
+			: Promise.resolve(),
 		contactsStore.contacts.data.length === 0
 			? contactsStore.fetchContacts()
-			: null,
+			: Promise.resolve(),
 	]);
+
+	rawData.value = calendarStore.activities;
+	events.value = transformData(rawData.value);
+	calendarOptions.value.events = events.value;
 
 	// Set up event listener for deleteSharedEvents
 	eventBus.on("deleteSharedEvents", ({ userId }) => {
@@ -377,22 +403,33 @@ onMounted(async () => {
 	// calendarOptions.value.events = events.value;
 
 	// Fetch user activities first (fast)
-	await calendarStore.fetchUserActivities();
+	//await userStore.fetchUser();
+	//await calendarStore.fetchUserActivities();
 	rawData.value = calendarStore.activities;
 	events.value = transformData(rawData.value);
 	calendarOptions.value.events = events.value;
 
 	// Fire shared activities in background (don’t block initial render)
-	calendarStore.fetchSharedActivities().then(() => {
-		const sharedACT = transformData(
-			flattenActivities(calendarStore.shared_activities)
-		);
-		events.value = [...events.value, ...sharedACT];
-		calendarOptions.value = {
-			...calendarOptions.value,
-			events: events.value,
-		};
-	});
+	if (calendarStore.shared_activities.length === 0) {
+		await calendarStore.fetchSharedActivities();
+	}
+
+	const sharedACT = transformData(
+		flattenActivities(calendarStore.shared_activities)
+	);
+	events.value = [...events.value, ...sharedACT];
+	calendarOptions.value.events = events.value;
+
+	// calendarStore.fetchSharedActivities().then(() => {
+	// 	const sharedACT = transformData(
+	// 		flattenActivities(calendarStore.shared_activities)
+	// 	);
+	// 	events.value = [...events.value, ...sharedACT];
+	// 	calendarOptions.value = {
+	// 		...calendarOptions.value,
+	// 		events: events.value,
+	// 	};
+	// });
 
 	const urlParams = new URLSearchParams(window.location.search);
 	const code = urlParams.get("code");
@@ -557,7 +594,11 @@ const deleteSharedEventsId = (userId) => {
 	console.log("test delete eventov sa vykonal");
 	events.value = events.value.filter((event) => event.user_id !== userId);
 	// Update the calendar options to reflect the changes
-	calendarOptions.value = { ...calendarOptions.value, events: events.value };
+	// calendarOptions.value = { ...calendarOptions.value, events: events.value };
+	calendarOptions.value = {
+		...calendarOptions.value,
+		events: [...events.value],
+	};
 };
 
 const addSharedEventsId = async (userId) => {
@@ -666,9 +707,14 @@ const alterEvents = (updatedEvent) => {
 		);
 
 		// Update calendar options to refresh the view
+		// calendarOptions.value = {
+		// 	...calendarOptions.value,
+		// 	events: events.value,
+		// };
+
 		calendarOptions.value = {
 			...calendarOptions.value,
-			events: events.value,
+			events: [...events.value],
 		};
 
 		// Close the update activity modal
@@ -702,9 +748,14 @@ const alterEvents = (updatedEvent) => {
 		});
 
 		// Update calendar options to refresh the view
+		// calendarOptions.value = {
+		// 	...calendarOptions.value,
+		// 	events: events.value,
+		// };
+
 		calendarOptions.value = {
 			...calendarOptions.value,
-			events: events.value,
+			events: [...events.value],
 		};
 
 		// Close the update activity modal
@@ -736,9 +787,14 @@ const addNewEvent = (newEvent) => {
 	events.value = [...events.value, transformedEvent];
 
 	// Update calendar options to refresh the view
+	// calendarOptions.value = {
+	// 	...calendarOptions.value,
+	// 	events: events.value,
+	// };
+
 	calendarOptions.value = {
 		...calendarOptions.value,
-		events: events.value,
+		events: [...events.value],
 	};
 
 	// Close the add form after successful addition
@@ -767,28 +823,6 @@ const loadingStateCalendar = ref(false);
 
 const areMicrosofEventsShown = ref(false);
 
-// const fetchMicrosoftEvents = async (month, year) => {
-// 	loadingStateCalendar.value = true;
-
-// 	// Use the store to get events
-// 	const newEvents = await calendarStore.fetchMicrosoftEvents(month, year);
-
-// 	// Process events to prevent duplicates
-// 	const existingEventIds = new Set(events.value.map((event) => event.id));
-// 	const uniqueNewEvents = newEvents.filter(
-// 		(event) => !existingEventIds.has(event.id)
-// 	);
-
-// 	// Add new events to the calendar
-// 	events.value = [...events.value, ...uniqueNewEvents];
-
-// 	// Update calendar options
-// 	calendarOptions.value = { ...calendarOptions.value, events: events.value };
-
-// 	loadingStateCalendar.value = false;
-// 	return uniqueNewEvents;
-// };
-
 async function fetchMicrosoftEvents(month, year) {
 	loadingStateCalendar.value = true;
 
@@ -811,7 +845,13 @@ async function fetchMicrosoftEvents(month, year) {
 	// Merge events while preserving existing ones
 	events.value = [...events.value, ...uniqueNewEvents];
 
-	calendarOptions.value = { ...calendarOptions.value, events: events.value };
+	// calendarOptions.value = { ...calendarOptions.value, events: events.value };
+
+	calendarOptions.value = {
+		...calendarOptions.value,
+		events: [...events.value],
+	};
+
 	loadingStateCalendar.value = false;
 	return uniqueNewEvents;
 }
@@ -938,9 +978,14 @@ const deleteMicrosoftEvent = async (eventId) => {
 			events.value = events.value.filter((event) => event.id !== eventId);
 
 			// Update calendar options to refresh the view
+			// calendarOptions.value = {
+			// 	...calendarOptions.value,
+			// 	events: events.value,
+			// };
+
 			calendarOptions.value = {
 				...calendarOptions.value,
-				events: events.value,
+				events: [...events.value],
 			};
 
 			// Close the Microsoft event detail modal if open
@@ -1089,6 +1134,17 @@ const checkAuth = async () => {
 						<span>Odhlásiť sa z Microsoft účtu</span>
 						<img src="/public/icons8-microsoft-48.png" alt="logo" />
 					</button>
+					<div
+						class="bg-[#D1D5DB] px-2 py-2 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3 flex flex-col text-center"
+					>
+						<h3 class="font-semibold">Microsoft Kalendáre</h3>
+						<div
+							v-for="calendar in calendarList"
+							class="bg-slate-400 hover:bg-slate-300 w-full rounded-md py-1"
+						>
+							{{ calendar.name }}
+						</div>
+					</div>
 					<!-- <button
 						class="bg-red-800 px-4 rounded-md shadow hover:bg-red-700 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
 						@click="toggleCreateMicrosoftEvent"

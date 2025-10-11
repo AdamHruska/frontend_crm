@@ -1,10 +1,11 @@
 // stores/auth.js
 import { defineStore } from "pinia";
-
+import axios from "axios";
 export const useAuthStore = defineStore("auth", {
 	state: () => ({
 		token: null, // Store the session token here
 		isLoggedIn: false,
+		searchQueryAdmin: "",
 		selectedNavbarItem: "",
 	}),
 

@@ -15,7 +15,11 @@ const token = ref("");
 const searchQuery = ref("");
 const loadingState = ref(false);
 
-const emits = defineEmits(["cancleCallListForm", "uncheckAll"]);
+const emits = defineEmits([
+	"cancleCallListForm",
+	"uncheckAll",
+	"refreshCallLists",
+]);
 
 const props = defineProps({
 	callListNames: {
@@ -105,6 +109,7 @@ const createCallList = async () => {
 		);
 
 		callListStore.callLists.push(response.data);
+		emits("refreshCallLists");
 		emits("cancleCallListForm", response.status);
 	} catch (error) {
 		console.error("Error creating call list:", error);
@@ -158,6 +163,7 @@ const addToCallList = async (callList) => {
 		);
 
 		callListStore.selectedCallListPeople = callListResponse.data.contacts;
+		emits("refreshCallLists");
 		emits("cancleCallListForm", 200); // Success status
 	} catch (error) {
 		console.error("Error updating call list:", error);

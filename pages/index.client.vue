@@ -151,13 +151,18 @@ onMounted(async () => {
 
 		people.value = contactsStore.contacts.data.map((person) => {
 			let cssClass = "";
+			console.log("person value", person);
 
 			if (person.first_event === 0) {
 				cssClass += "bg-green-200 ";
 			}
 
 			if (person.only_called_never_answered === 1) {
-				cssClass += "bg-orange-200 ";
+				cssClass += "bg-blue-200 ";
+			}
+
+			if (person.first_event === 0) {
+				cssClass += "bg-green-200 ";
 			}
 
 			return {
@@ -544,6 +549,19 @@ const handleMouseDown = (event) => {
 		event.preventDefault();
 	}
 };
+
+const fetchCallLists = async () => {
+	try {
+		const response = await axios.get(`${config.public.apiUrl}call-lists`, {
+			headers: {
+				Authorization: `Bearer ${authStore.token}`,
+			},
+		});
+		callListNames.value = response.data;
+	} catch (error) {
+		console.error("Error fetching call lists:", error);
+	}
+};
 </script>
 
 <template>
@@ -723,6 +741,7 @@ const handleMouseDown = (event) => {
 		:user_id="user_id"
 		@cancleCallListForm="cancleCallListForm"
 		@uncheckAll="uncheckAll"
+		@refreshCallLists="fetchCallLists"
 	/>
 </template>
 

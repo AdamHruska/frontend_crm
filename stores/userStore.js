@@ -9,6 +9,7 @@ export const useUserStore = defineStore("user", {
 	state: () => ({
 		user: null,
 		allUsers: [],
+		allUsersAdmin: [],
 		sharedUsers: [],
 		shareIdArray: [],
 		loadingState: false,
@@ -287,6 +288,62 @@ export const useUserStore = defineStore("user", {
 		// 		this.loadingState = false;
 		// 	}
 		// },
+
+		async fetchAllUsersAdmin() {
+			const config = useRuntimeConfig();
+			const authStore = useAuthStore();
+			const token = authStore.token;
+
+			try {
+				const response = await axios.get(
+					`${config.public.apiUrl}all-users-admin`,
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					}
+				);
+
+				//console.log("API response:", response.data);
+
+				// Ensure `users` is an array
+				if (Array.isArray(response.data.users)) {
+					this.allUsersAdmin = response.data.users;
+				} else {
+					console.error("Invalid users data format in response");
+					this.allUsersAdmin = [];
+				}
+			} catch (error) {
+				console.error("Error fetching users:", error);
+				this.error = error.message;
+				this.allUsersAdmin = [];
+				throw error; // Re-throw to allow component to handle
+			}
+		},
+
+		async deleteUserAdmin(id) {
+			const config = useRuntimeConfig();
+			const authStore = useAuthStore();
+			const token = authStore.token;
+
+			try {
+				const response = await axios.delete(
+					`${config.public.apiUrl}delete-user/${id}`,
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					}
+				);
+				this.allUsersAdmin = this.allUsersAdmin.filter(
+					(user) => user.id !== id
+				);
+			} catch (error) {
+				console.error("Error deteleting user:", error);
+				this.error = error.message;
+				throw error;
+			}
+		},
 	},
 
 	getters: {

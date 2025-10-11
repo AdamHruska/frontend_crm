@@ -250,7 +250,16 @@ export const useCalendarstore = defineStore("calendar", {
 					};
 				});
 
-				console.log("Fetched Microsoft events:", microsoftEvents);
+				const treningEvents = microsoftEvents.filter(
+					(e) => e.title === "Tréning"
+				);
+				if (treningEvents.length > 0) {
+					console.log("🟣 Found 'Tréning' event(s):", treningEvents);
+				} else {
+					console.log("⚪ No 'Tréning' events found in this batch.");
+				}
+
+				//console.log("Fetched Microsoft events:", microsoftEvents);
 				// Store in cache
 				this.microsoftEventCache[cacheKey] = microsoftEvents;
 

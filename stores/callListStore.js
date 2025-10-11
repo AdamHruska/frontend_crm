@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import { useAuthStore } from "@/stores/authStore";
 import { set } from "date-fns";
+import { useToast } from "vue-toastification";
 
 const config = useRuntimeConfig();
 
@@ -44,6 +45,7 @@ export const useCallListStore = defineStore("callList", {
 			this.loadingState = false;
 		},
 		async deleteCallList(id) {
+			const toast = useToast();
 			this.loadingState = true;
 			const authStore = useAuthStore(); // Access authStore
 			const token = authStore.token;
@@ -63,7 +65,7 @@ export const useCallListStore = defineStore("callList", {
 
 				// Notify user if the call was successful
 				if (response.status === 200) {
-					alert("Call list deleted successfully");
+					toast.success("Call list deleted successfully");
 				}
 			} catch (error) {
 				// Handle errors
@@ -71,7 +73,7 @@ export const useCallListStore = defineStore("callList", {
 					"Error deleting call list:",
 					error.response?.data || error.message
 				);
-				alert("Error deleting call list");
+				toast.error("Failed to delete call list");
 			}
 			this.loadingState = false;
 		},

@@ -513,7 +513,7 @@ const selectOffice = (office) => {
 					Pridať email ku kontaktu:
 				</label>
 				<input
-					v-model="email"
+					v-model="emails[0]"
 					type="email"
 					class="w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500 !text-black"
 					placeholder="Zadajte email ..."

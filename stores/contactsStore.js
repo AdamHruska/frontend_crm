@@ -9,9 +9,11 @@ export const useContactsStore = defineStore("contacts", {
 	state: () => ({
 		contacts: [],
 		allContacts: [],
+		allContactsAdmin: [],
 		delegatedContacts: [],
 		selectedContacts: [],
 		searchQuery: null,
+		searchQueryAdmin: null,
 		page: null,
 		prev_page_url: null,
 		next_page_url: null,
@@ -345,6 +347,55 @@ export const useContactsStore = defineStore("contacts", {
 			}
 
 			return null;
+		},
+
+		async fetchAllContactsAdmin() {
+			this.loadingState = true;
+			const authStore = useAuthStore();
+			const token = authStore.token;
+
+			if (!token) {
+				console.error("Token not found. Please log in.");
+				return;
+			}
+
+			try {
+				const response = await axios.get(`${config.public.apiUrl}all-users`, {
+					headers: {
+						Authorization: `Bearer ${authStore.token}`,
+					},
+				});
+				this.allContactsAdmin = response.data.contacts.flat();
+			} catch (error) {
+				console.error("Error fetching all contacts:", error.response || error);
+				const toast = useToast();
+				toast.error("Nepodarilo sa načítať všetky kontakty");
+			}
+			this.loadingState = false;
+		},
+
+		async deleteContactAdmin(id) {
+			const config = useRuntimeConfig();
+			const authStore = useAuthStore();
+			const token = authStore.token;
+
+			try {
+				const response = await axios.delete(
+					`${config.public.apiUrl}delete-delete-contact/${id}`,
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					}
+				);
+				this.allContactsAdmin = this.allContactsAdmin.filter(
+					(user) => user.id !== id
+				);
+			} catch (error) {
+				console.error("Error deteleting user:", error);
+				this.error = error.message;
+				throw error;
+			}
 		},
 
 		// Clear contacts from the store

@@ -47,6 +47,8 @@ watch(
 	}
 );
 
+const emit = defineEmits(["updateDate"]);
+
 const calendarOptions = ref({
 	plugins: [timeGridPlugin, interactionPlugin],
 	headerToolbar: {
@@ -87,6 +89,9 @@ const calendarOptions = ref({
 		const currentDate = dateInfo.view.currentStart;
 		const month = currentDate.getMonth() + 1;
 		const year = currentDate.getFullYear();
+
+		// 👇 Emit date to parent when user navigates
+		emit("updateDate", currentDate);
 
 		if (
 			month !== currentLoadedMonth.value + 2 ||

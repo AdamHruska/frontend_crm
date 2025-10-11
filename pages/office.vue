@@ -73,6 +73,11 @@
 							>
 								Zobraziť aktivity
 							</button>
+							<input
+								type="checkbox"
+								:checked="selectedOfficeId === office.id"
+								@click="handleOfficeCheckbox(office.id)"
+							/>
 						</td>
 					</tr>
 				</tbody>
@@ -155,10 +160,40 @@
 import { useOfficeStore } from "~/stores/officeStore";
 const officeStore = useOfficeStore();
 
-onMounted(() => {
-	officeStore.fetchOffices();
+onMounted(async () => {
+	await officeStore.fetchOffices().then(() => {
+		const storedId = localStorage.getItem("selectedOfficeId");
+		selectedOfficeId.value = storedId ? Number(storedId) : null;
+	});
+
+	const storedOfficeId = localStorage.getItem("selectedOfficeId");
+	if (storedOfficeId) {
+		await officeStore.getOfficeActivities(Number(storedOfficeId)); // ✅ correct function
+	}
+
 	officeStore.fetchOfficesSharedWithMe();
 });
+const selectedOfficeId = ref(
+	Number(localStorage.getItem("selectedOfficeId")) || null
+);
+
+watch(selectedOfficeId, (newVal) => {
+	if (newVal === null) {
+		localStorage.removeItem("selectedOfficeId");
+	} else {
+		localStorage.setItem("selectedOfficeId", newVal.toString());
+	}
+});
+
+const handleOfficeCheckbox = (officeId) => {
+	if (selectedOfficeId.value === officeId) {
+		selectedOfficeId.value = null;
+		localStorage.removeItem("selectedOfficeId");
+	} else {
+		selectedOfficeId.value = officeId;
+		localStorage.setItem("selectedOfficeId", officeId.toString());
+	}
+};
 
 const showOfficeForm = ref(false);
 const showSharingForm = ref(false);

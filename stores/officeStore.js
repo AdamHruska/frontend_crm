@@ -9,6 +9,7 @@ export const useOfficeStore = defineStore("office", {
 	state: () => ({
 		offices: [],
 		officesSharedWithMe: [],
+		officesAdmin: [],
 		usersSharedWithIDs: [],
 		sharedUsers: [],
 		loadingState: false,
@@ -310,6 +311,31 @@ export const useOfficeStore = defineStore("office", {
 			} catch (error) {
 				console.error("Error finding activity ID:", error);
 				return null;
+			}
+		},
+
+		async fetchOfficesAdmin() {
+			this.loadingState = true;
+			const config = useRuntimeConfig();
+			const authStore = useAuthStore();
+
+			try {
+				const response = await axios.get(
+					`${config.public.apiUrl}get-offices-admin`,
+					{
+						headers: {
+							Authorization: `Bearer ${authStore.token}`,
+						},
+					}
+				);
+				console.log("Fetched offices admin:", response.data);
+				this.officesAdmin = Array.isArray(response.data)
+					? response.data
+					: response.data.offices;
+			} catch (error) {
+				console.error("Error fetching offices admin:", error);
+			} finally {
+				this.loadingState = false;
 			}
 		},
 	},
