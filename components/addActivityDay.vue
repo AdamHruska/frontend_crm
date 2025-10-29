@@ -47,28 +47,29 @@ watch(
 	}
 );
 
-const emit = defineEmits(["updateDate"]);
+const emit = defineEmits(["updateDate", "timeClicked"]);
 
 const calendarOptions = ref({
 	plugins: [timeGridPlugin, interactionPlugin],
 	headerToolbar: {
 		left: "prev,next today",
 		center: "title",
-		right: "", // Remove view switching options
+		right: "",
 	},
-	initialView: "timeGridDay", // Set to day view
+	initialView: "timeGridDay",
 	initialDate: props.date,
 	slotMinTime: "06:00:00",
 	slotMaxTime: "23:00:00",
 	scrollTime: "08:00:00",
 	initialEvents: [],
 	events: [],
-	editable: false, // Disable editing for mini calendar
+	editable: false,
 	selectable: true,
 	selectMirror: true,
 	dayMaxEvents: true,
 	select: handleDateSelect,
 	eventClick: handleEventClick,
+	dateClick: handleTimeClick,
 	slotDuration: "00:30:00",
 	allDaySlot: true,
 	allDayText: "Celý deň",
@@ -278,6 +279,14 @@ const alterEvents = (updatedEvent) => {
 	updateActivity.value = false;
 	activityID.value = "";
 };
+
+function handleTimeClick(info) {
+	// Only emit the time, don't open any form
+	emit("timeClicked", info.dateStr);
+	// Prevent the default calendar behavior
+	info.jsEvent.preventDefault();
+	info.jsEvent.stopPropagation();
+}
 </script>
 
 <template>
@@ -286,20 +295,19 @@ const alterEvents = (updatedEvent) => {
 	>
 		<div class="h-[625px] rounded-lg">
 			<loadigcomponent v-if="calendarStore.loadingState" />
-
-			<AddActivityCalendar
+			<!-- <AddActivityCalendar
 				v-if="addActivity"
 				@cancelAddActivity="toggleAddActivity"
 				@addNewEvent="addNewEvent"
 				:end_date="end_date"
-			/>
+			/> -->
 
-			<EventUpdateCalendar
+			<!-- <EventUpdateCalendar
 				:activityID="activityID"
 				v-if="updateActivity"
 				@cancelAddActivity="toggleUpdateActivity"
 				@alterEvents="alterEvents"
-			/>
+			/> -->
 
 			<div class="demo-app bg-white rounded-lg">
 				<div class="demo-app-main bg-white text-black rounded-lg">

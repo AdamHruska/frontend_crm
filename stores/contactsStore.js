@@ -349,6 +349,51 @@ export const useContactsStore = defineStore("contacts", {
 			return null;
 		},
 
+		async findContactByIdAdmin(id) {
+			// First try to find in local contacts data
+			if (this.contacts?.data) {
+				const localContact = this.contacts.data.find(
+					(contact) => contact.id === id
+				);
+				if (localContact) {
+					return localContact;
+				}
+			}
+
+			// If not found locally, try to fetch from API
+			this.loadingState = true;
+			const authStore = useAuthStore();
+			const token = authStore.token;
+
+			if (!token) {
+				console.error("Token not found. Please log in.");
+				return null;
+			}
+
+			try {
+				const response = await axios.get(
+					`${config.public.apiUrl}contact/${id}/admin`,
+					{
+						headers: {
+							Authorization: `Bearer ${authStore.token}`,
+						},
+					}
+				);
+
+				if (response.data.contact) {
+					return response.data.contact;
+				}
+			} catch (error) {
+				console.error("Error fetching contact by ID:", error.response || error);
+				const toast = useToast();
+				toast.error("Nepodarilo sa nájsť kontakt");
+			} finally {
+				this.loadingState = false;
+			}
+
+			return null;
+		},
+
 		async fetchAllContactsAdmin() {
 			this.loadingState = true;
 			const authStore = useAuthStore();
@@ -394,6 +439,39 @@ export const useContactsStore = defineStore("contacts", {
 			} catch (error) {
 				console.error("Error deteleting user:", error);
 				this.error = error.message;
+				throw error;
+			}
+		},
+
+		async restoreContactAdmin(id) {
+			const config = useRuntimeConfig();
+			const authStore = useAuthStore();
+			const token = authStore.token;
+			const toast = useToast();
+
+			try {
+				const response = await axios.post(
+					`${config.public.apiUrl}restore-contact/${id}`,
+					{}, // Empty body - headers go in the next parameter
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					}
+				);
+
+				this.allContactsAdmin = this.allContactsAdmin.map((user) => {
+					if (user.id === id) {
+						return { ...user, hidden: 0 };
+					}
+					return user; // Don't forget to return unchanged users!
+				});
+
+				toast.success("Kontakt bol úspešne obnovený");
+			} catch (error) {
+				console.error("Error restoring user:", error);
+				this.error = error.message;
+				toast.error("Nepodarilo sa obnoviť kontakt");
 				throw error;
 			}
 		},

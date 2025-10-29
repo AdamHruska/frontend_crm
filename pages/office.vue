@@ -164,6 +164,8 @@ onMounted(async () => {
 	await officeStore.fetchOffices().then(() => {
 		const storedId = localStorage.getItem("selectedOfficeId");
 		selectedOfficeId.value = storedId ? Number(storedId) : null;
+		officeStore.setOfficeID = selectedOfficeId.value;
+		console.log("Selected Office ID on mount:", officeStore.setOfficeID);
 	});
 
 	const storedOfficeId = localStorage.getItem("selectedOfficeId");

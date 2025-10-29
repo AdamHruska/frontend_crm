@@ -68,7 +68,7 @@
 				</div>
 			</div>
 
-			<div class="container" v-if="otherActivies">
+			<div class="container mb-6" v-if="otherActivies">
 				<div class="item" v-if="otherActivies['Prvé stretnutie']">
 					<div class="item-left">
 						<p>Prvé stretnutia:</p>
@@ -84,18 +84,18 @@
 					</div>
 				</div>
 
-				<div class="item" v-if="otherActivies['Analýza osobných financií']">
+				<div class="item">
 					<div class="item-left">
-						<p>unikátne analýzy:</p>
+						<p>Analýza osobných financií:</p>
 					</div>
 					<div class="item-right">
 						<div class="right-count">
 							Pocet vsetkych:
-							{{ otherActivies["Analýza osobných financií"]?.total || 0 }}
+							{{ otherActivies["Analýza osobných financí"]?.total || 0 }}
 						</div>
 						<div class="right-count green">
 							Pocet zrealizovanych:
-							{{ otherActivies["Analýza osobných financií"]?.checked || 0 }}
+							{{ otherActivies["Analýza osobných financí"]?.checked || 0 }}
 						</div>
 					</div>
 				</div>
@@ -333,7 +333,7 @@
 				<thead>
 					<tr class="bg-gray-50">
 						<th class="p-3 text-left">Meno a Priezvisko</th>
-						<th class="p-3 text-left">Dátum Pohovoru</th>
+						<!-- <th class="p-3 text-left">Dátum Pohovoru</th> -->
 					</tr>
 				</thead>
 
@@ -344,7 +344,7 @@
 						@click="goToContact(kanditat.id)"
 					>
 						<td class="p-3">{{ kanditat.meno }} {{ kanditat.priezvisko }}</td>
-						<td class="p-3">{{ formatDate(kanditat.date) }}</td>
+						<!-- <td class="p-3">{{ formatDate(kanditat.date) }}</td> -->
 					</tr>
 				</tbody>
 			</table>
@@ -561,6 +561,22 @@ const fetchData = async () => {
 		// 			priezvisko: activity.priezvisko,
 		// 			date: activity.date,
 		// 		}));
+
+		const interviewCandidatesResponse = await axios.get(
+			`${config.public.apiUrl}interview-candidates`,
+			{
+				params: {
+					from_date: fromDate.toISOString().split("T")[0], // e.g. "2025-08-18"
+					to_date: toDate.toISOString().split("T")[0], // e.g. "2025-09-18"
+					activity_type: selectedActivityType.value, // optional
+				},
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+				},
+			}
+		);
+		zaujatiKandidati.value = interviewCandidatesResponse.data.candidates;
+		console.log("zaujatiKandidati", zaujatiKandidati.value);
 	} catch (error) {
 		console.error(
 			"Error fetching statistics:",

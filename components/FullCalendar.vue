@@ -41,6 +41,8 @@ const updateActivity = ref(false);
 const activityID = ref("");
 const showMicrosoftEvents = ref(false);
 
+const calendarRef = ref(null);
+
 const toggleUpdateActivity = () => {
 	if (updateActivity.value === true) {
 		//location.reload();
@@ -337,6 +339,7 @@ async function updateMicrosoftEvent(eventId, newStart, newEnd, title) {
 }
 
 const calendarList = ref([]);
+const calendarListLoading = ref(false);
 
 onMounted(async () => {
 	// if (calendarStore.activities.length === 0) {
@@ -350,8 +353,9 @@ onMounted(async () => {
 	// if (!calendarStore.activities.length) {
 	// 	await calendarStore.fetchActivities();
 	// }
-
+	await userStore.userGetCalendarNames();
 	try {
+		calendarListLoading.value = true;
 		// Fetch tokens from the backend
 		const response = await axios.get(
 			`${config.public.apiUrl}microsoft/calendars`,
@@ -365,6 +369,8 @@ onMounted(async () => {
 		console.log("skuska list name", response.data.calendars);
 	} catch (error) {
 		console.error("Error during Microsoft login callback:", error);
+	} finally {
+		calendarListLoading.value = false;
 	}
 
 	await Promise.all([
@@ -501,7 +507,7 @@ onUnmounted(() => {
 
 const transformData = (data) => {
 	return data.map((item) => {
-		console.log("Transforming item:", item); // Debug log
+		//console.log("Transforming item:", item); // Debug log
 		var farba = item.created_id == userStore.user.id ? "rgb(37 99 235)" : "red";
 
 		if (item.activity_status === "discarded") {
@@ -1135,14 +1141,33 @@ const checkAuth = async () => {
 						<img src="/public/icons8-microsoft-48.png" alt="logo" />
 					</button>
 					<div
-						class="bg-[#D1D5DB] px-2 py-2 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3 flex flex-col text-center"
+						class="bg-[#D1D5DB] px-2 py-2 rounded-md shadow flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3 flex flex-col text-center"
 					>
 						<h3 class="font-semibold">Microsoft Kalendáre</h3>
 						<div
+							v-if="!calendarListLoading"
 							v-for="calendar in calendarList"
-							class="bg-slate-400 hover:bg-slate-300 w-full rounded-md py-1"
+							:key="calendar.id"
+							@click="
+								userStore.userAddCalendarName(
+									calendar.name,
+									currentLoadedMonth,
+									currentLoadedYear
+								)
+							"
+							class="w-full rounded-md py-1 cursor-pointer transition-colors"
+							:class="[
+								'p-2 rounded cursor-pointer',
+								Array.isArray(userStore.selected_calendar_names) &&
+								userStore.selected_calendar_names.includes(calendar.name)
+									? 'bg-green-500 text-white hover:bg-green-400'
+									: 'bg-gray-200 hover:bg-slate-100',
+							]"
 						>
 							{{ calendar.name }}
+						</div>
+						<div v-if="calendarListLoading" class="mt-3 font-bold text-base">
+							Načitavanie kalendárov...
 						</div>
 					</div>
 					<!-- <button
@@ -1183,7 +1208,11 @@ const checkAuth = async () => {
 					</template>
 				</FullCalendar> -->
 
-				<FullCalendar class="demo-app-calendar" :options="calendarOptions">
+				<FullCalendar
+					ref="calendarRef"
+					class="demo-app-calendar"
+					:options="calendarOptions"
+				>
 					<template v-slot:eventContent="arg">
 						<div class="event-content-wrapper">
 							<div class="event-time">

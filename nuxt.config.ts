@@ -18,6 +18,12 @@ export default defineNuxtConfig({
 
 	modules: ["@nuxt/ui", "@pinia/nuxt"],
 
+	app: {
+		head: {
+			link: [{ rel: "icon", type: "image/png", href: "/favicon.png" }],
+		},
+	},
+
 	runtimeConfig: {
 		public: {
 			//apiUrl: "https://crm-be-main.vercel.app/",

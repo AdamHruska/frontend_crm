@@ -6,10 +6,40 @@
 			<SearchBarContactsAll @updateResults="handleSearchResults" />
 		</div>
 
+		<button
+			@click="toggleDeletedContacts"
+			class="px-4 py-2 bg-blue-500 rounded-md absolute right-6 hover:bg-blue-400 text-white cursor-pointer hover:scale-105 transition-transform"
+		>
+			{{ showDeletedOnly ? "Všetky kontakty" : "Vymazané kontakty" }}
+		</button>
+
+		<div class="float-right relative">
+			<Icon
+				icon="material-symbols:chat-info-outline"
+				class="absolute top-[-40px] right-12 scale-[2] hover:scale-[2.5] cursor-pointer transition-transform"
+				@mouseenter="showDisclaimer = true"
+				@mouseleave="showDisclaimer = false"
+			/>
+			<div
+				class="bg-white rounded-md shadow-md w-[300px] h-[250px] absolute right-8 top-[-10px] z-[50] py-3 px-4"
+				id="disclaimer"
+				v-if="showDisclaimer"
+			>
+				<!-- Colour -->
+				<div class="flex items-center space-x-2 mb-2">
+					<div class="w-[32px] h-[32px] bg-gray-300"></div>
+					<div>- Kontakt bol odstránený</div>
+				</div>
+				<div class="flex items-center space-x-2 mb-2">
+					<div class="w-[32px] h-[32px] bg-red-400"></div>
+					<div>- Random Text</div>
+				</div>
+			</div>
+		</div>
 		<UTable
 			:rows="people"
 			:columns="columns"
-			class="mx-6 table-container shadow-md rounded-md"
+			class="mx-6 table-container shadow-md rounded-md mt-8"
 			:row-class="(row) => row.class"
 		>
 			<template #actions-data="{ row }">
@@ -19,22 +49,52 @@
 							@click.left="detailView(row.id)"
 							@auxclick.prevent="onAuxClick($event, row.id)"
 							@mousedown="handleMouseDown"
-							class="bg-blue-500 text-white shadow-xl"
+							class="bg-blue-500 text-white shadow-xl hover:scale-110 transition-transform"
 							label="Show Details"
 						/>
+						<UTooltip
+							text="Editovať kontakt"
+							:ui="{ background: '!bg-white', color: '' }"
+							class=""
+						>
+							<UButton
+								@click="findPerson(row.id)"
+								icon="i-heroicons-pencil-square-20-solid"
+								variant="ghost"
+								class="shadow-xl hover:bg-gray-100 hover:scale-110 transition-transform"
+							/>
+						</UTooltip>
 
-						<UButton
-							@click="findPerson(row.id)"
-							icon="i-heroicons-pencil-square-20-solid"
-							variant="ghost"
-							class="shadow-xl hover:bg-gray-300"
-						/>
-						<UButton
-							@click="deletePerson(row.id)"
-							icon="i-heroicons-trash-20-solid"
-							color="ffffff"
-							class="shadow-xl text-red-500 hover:bg-gray-300"
-						/>
+						<UTooltip
+							text="Vymazať kontakt"
+							:ui="{ background: '!bg-white', color: '' }"
+							class=""
+						>
+							<UButton
+								@click="deletePerson(row.id)"
+								icon="i-heroicons-trash-20-solid"
+								color="ffffff"
+								class="shadow-xl text-red-500 hover:bg-gray-100 hover:scale-110 transition-transform"
+							/>
+						</UTooltip>
+
+						<UTooltip
+							text="Obnoviť používateľa"
+							:ui="{
+								base: '!bg-white !text-gray-900',
+								background: '!bg-white',
+
+								shadow: 'shadow-lg',
+							}"
+							v-if="row.hidden === 1"
+						>
+							<UButton
+								@click="restoreContact(row.id)"
+								icon="typcn:media-play-reverse-outline"
+								color="ffffff"
+								class="shadow-xl hover:bg-gray-100 hover:scale-110 transition-transform"
+							/>
+						</UTooltip>
 					</div>
 					<!-- <input
 						type="checkbox"
@@ -83,7 +143,17 @@ const contactsStore = useContactsStore();
 import { useRouter } from "vue-router";
 const router = useRouter();
 
-const people = computed(() => contactsStore.allContactsAdmin ?? []);
+const showDisclaimer = ref(false);
+
+const people = computed(() => {
+	const contacts = contactsStore.allContactsAdmin ?? [];
+	return contacts
+		.filter((contact) => !showDeletedOnly.value || contact.hidden === 1)
+		.map((contact) => ({
+			...contact,
+			class: contact.hidden === 1 ? "bg-gray-300" : "",
+		}));
+});
 
 const showAlterPesonForm = ref(false);
 
@@ -168,36 +238,6 @@ const handleSearchResults = (results) => {
 	// If results is an array (search results), update people
 	if (Array.isArray(results)) {
 		contactsStore.allContactsAdmin = results;
-
-		// 	people.value = results.map((person) => {
-		// 		let cssClass = "";
-		// 		if (person.first_event === 0) {
-		// 			cssClass += "bg-green-200 ";
-		// 		}
-		// 		if (person.only_called_never_answered === 1) {
-		// 			cssClass += "bg-orange-200 ";
-		// 		}
-		// 		return {
-		// 			...person,
-		// 			class: cssClass.trim(),
-		// 		};
-		// 	});
-		// }
-		// // If results is paginated data (from store), use the data property
-		// else if (results && results.data) {
-		// 	people.value = results.data.map((person) => {
-		// 		let cssClass = "";
-		// 		if (person.first_event === 0) {
-		// 			cssClass += "bg-green-200 ";
-		// 		}
-		// 		if (person.only_called_never_answered === 1) {
-		// 			cssClass += "bg-orange-200 ";
-		// 		}
-		// 		return {
-		// 			...person,
-		// 			class: cssClass.trim(),
-		// 		};
-		// 	});
 	}
 };
 
@@ -233,5 +273,14 @@ const findPerson = async (id) => {
 
 const deletePerson = async (id) => {
 	await contactsStore.deleteContactAdmin(id);
+};
+
+const showDeletedOnly = ref(false);
+const toggleDeletedContacts = () => {
+	showDeletedOnly.value = !showDeletedOnly.value;
+};
+
+const restoreContact = async (id) => {
+	await contactsStore.restoreContactAdmin(id);
 };
 </script>

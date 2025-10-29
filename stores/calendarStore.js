@@ -105,20 +105,20 @@ export const useCalendarstore = defineStore("calendar", {
 				}
 
 				// Fetch shared activities
-				const response_shared_activities = await axios.post(
-					`${config.public.apiUrl}get-activities`,
-					{
-						user_ids: Array.isArray(sharedIDs) ? sharedIDs : [sharedIDs],
-					},
-					{
-						headers: {
-							Authorization: `Bearer ${authStore.token}`,
-							"Content-Type": "application/json",
-						},
-					}
-				);
+				// const response_shared_activities = await axios.post(
+				// 	`${config.public.apiUrl}get-activities`,
+				// 	{
+				// 		user_ids: Array.isArray(sharedIDs) ? sharedIDs : [sharedIDs],
+				// 	},
+				// 	{
+				// 		headers: {
+				// 			Authorization: `Bearer ${authStore.token}`,
+				// 			"Content-Type": "application/json",
+				// 		},
+				// 	}
+				// );
 
-				this.shared_activities = response_shared_activities.data.activities;
+				//this.shared_activities = response_shared_activities.data.activities;
 			} catch (error) {
 				console.error("Error fetching activities or shared activities:", error);
 				this.shared_activities = [];
@@ -187,8 +187,20 @@ export const useCalendarstore = defineStore("calendar", {
 		// 	}
 		// },
 
+		htmlToText(html) {
+			if (!html) return "";
+			const tmp = document.createElement("div");
+			tmp.innerHTML = html;
+			return tmp.textContent || tmp.innerText || "";
+		},
+
 		async fetchMicrosoftEvents(month, year) {
 			const userStore = useUserStore();
+			await userStore.userGetCalendarNames();
+			console.log(
+				"Selected calendar names:",
+				userStore.selected_calendar_names
+			);
 			// Create a cache key using month and year
 			const cacheKey = `${year}-${month}`;
 			//console.log("Cache:", this.microsoftEventCache);
@@ -205,9 +217,14 @@ export const useCalendarstore = defineStore("calendar", {
 			try {
 				const config = useRuntimeConfig();
 				const response = await axios.get(`${config.public.apiUrl}get-events`, {
-					params: { month, year, user_id: userStore.user.id },
+					params: {
+						month,
+						year,
+						user_id: userStore.user.id,
+						calendar_names: userStore.selected_calendar_names,
+					},
 				});
-
+				console.log("Raw Microsoft API response:", response.data);
 				// Transform Microsoft events to match calendar format
 				const microsoftEvents = response.data.value.map((event) => {
 					// Check if the event starts at midnight (potential all-day event)
@@ -246,24 +263,19 @@ export const useCalendarstore = defineStore("calendar", {
 								})) || [],
 							location: event.location?.displayName || "No location",
 							link: event.onlineMeeting?.joinUrl || "",
+							note:
+								this.htmlToText(event.body?.content) || event.bodyPreview || "",
 						},
 					};
 				});
 
-				const treningEvents = microsoftEvents.filter(
-					(e) => e.title === "Tréning"
-				);
-				if (treningEvents.length > 0) {
-					console.log("🟣 Found 'Tréning' event(s):", treningEvents);
-				} else {
-					console.log("⚪ No 'Tréning' events found in this batch.");
-				}
-
 				//console.log("Fetched Microsoft events:", microsoftEvents);
 				// Store in cache
 				this.microsoftEventCache[cacheKey] = microsoftEvents;
-
 				this.microsoftLoadingState = false;
+
+				//console.log("microsoft events:", microsoftEvents);
+				console.log("Transformed Microsoft events:", microsoftEvents);
 				return microsoftEvents;
 			} catch (error) {
 				console.error("Error fetching Microsoft events:", error);

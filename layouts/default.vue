@@ -25,10 +25,14 @@
 				v-if="!isAdmin"
 				class="flex flex-col items-center mt-3 border-t border-black border-t-1 flex-grow"
 			>
-				<UTooltip text="kontakty" :ui="{ background: '', color: '' }" class="">
+				<UTooltip
+					text="kontakty"
+					:ui="{ background: '!bg-white', color: '' }"
+					class=""
+				>
 					<NuxtLink
 						to="/"
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded hover:scale-[105%] transition-transform"
 						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'home' }"
 						@click="setActiveTab('home')"
 					>
@@ -36,10 +40,14 @@
 					</NuxtLink>
 				</UTooltip>
 
-				<UTooltip text="Kalendár" :ui="{ background: '', color: '' }" class="">
+				<UTooltip
+					text="Kalendár"
+					:ui="{ background: '!bg-white', color: '' }"
+					class=""
+				>
 					<NuxtLink
 						to="/calendar"
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
 						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'calendar' }"
 						@click="setActiveTab('calendar')"
 					>
@@ -49,11 +57,11 @@
 
 				<UTooltip
 					text="Zdielanie Kalendára"
-					:ui="{ background: '', color: '' }"
+					:ui="{ background: '!bg-white', color: '' }"
 					class=""
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
 						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'test' }"
 						to="/calendar-sharing"
 						@click="setActiveTab('test')"
@@ -68,11 +76,11 @@
 
 				<UTooltip
 					text="Call Lists"
-					:ui="{ background: '', color: '' }"
+					:ui="{ background: '!bg-white', color: '' }"
 					class=""
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded border-t border-black"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded border-t border-black hover:scale-[105%] transition-transform"
 						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'calls' }"
 						to="/calls"
 						@click="setActiveTab('calls')"
@@ -87,11 +95,11 @@
 
 				<UTooltip
 					text="Štatistika"
-					:ui="{ background: '', color: '' }"
+					:ui="{ background: '!bg-white', color: '' }"
 					class=""
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded border-t border-black"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded border-t border-black hover:scale-[105%] transition-transform"
 						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'stats' }"
 						to="/statistics"
 						@click="setActiveTab('stats')"
@@ -107,12 +115,12 @@
 				<UTooltip
 					v-if="contactsStore.lastShowenDetails"
 					text="Posledný zobrazený kontakt"
-					:ui="{ background: '', color: '' }"
+					:ui="{ background: '!bg-white', color: '' }"
 					class=""
 				>
 					<NuxtLink
 						v-if="contactsStore.lastShowenDetails"
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded border-t border-black"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded border-t border-black hover:scale-[105%] transition-transform"
 						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'detail' }"
 						:to="`/contact/${contactsStore.lastShowenDetails}`"
 						@click="setActiveTab('detail')"
@@ -125,9 +133,13 @@
 					</NuxtLink>
 				</UTooltip>
 
-				<UTooltip text="ToDo List" :ui="{ background: '', color: '' }" class="">
+				<UTooltip
+					text="ToDo List"
+					:ui="{ background: '!bg-white', color: '' }"
+					class=""
+				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
 						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'todo' }"
 						to="/todo"
 						@click="setActiveTab('todo')"
@@ -142,11 +154,11 @@
 
 				<UTooltip
 					text="Delegované kontaky"
-					:ui="{ background: '', color: '' }"
+					:ui="{ background: '!bg-white', color: '' }"
 					class=""
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
 						:class="{
 							'bg-blue-700 text-gray-200': activeTab === 'delegovane_kontakty',
 						}"
@@ -163,11 +175,11 @@
 
 				<UTooltip
 					text="Kancelárie"
-					:ui="{ background: '', color: '' }"
+					:ui="{ background: '!bg-white', color: '' }"
 					class=""
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
 						:class="{
 							'bg-blue-700 text-gray-200': activeTab === 'kancelarie',
 						}"
@@ -190,11 +202,11 @@
 			>
 				<UTooltip
 					text="Všetci zamestnanci"
-					:ui="{ background: '', color: '' }"
+					:ui="{ background: '!bg-white', color: '' }"
 					class=""
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded hover:scale-[105%] transition-transform"
 						:class="{
 							'bg-blue-700 text-gray-200': activeTab === 'employees',
 						}"
@@ -211,11 +223,11 @@
 
 				<UTooltip
 					text="Všetky kontakty"
-					:ui="{ background: '', color: '' }"
+					:ui="{ background: '!bg-white', color: '' }"
 					class=""
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
 						:class="{
 							'bg-blue-700 text-gray-200': activeTab === 'contacts-all',
 						}"
@@ -232,11 +244,11 @@
 
 				<UTooltip
 					text="Všetky kancelárie"
-					:ui="{ background: '', color: '' }"
+					:ui="{ background: '!bg-white', color: '' }"
 					class=""
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
 						:class="{
 							'bg-blue-700 text-gray-200': activeTab === 'kancelarie',
 						}"
@@ -253,12 +265,22 @@
 			</div>
 
 			<!-- Bottom Navigation Item -->
-			<div
-				class="flex items-center justify-center w-16 h-16 mt-auto hover:bg-blue-600 hover:text-gray-300 mb-2 cursor-pointer"
-				@click="showSignOutForm()"
+			<UTooltip
+				text="Odhlasiť sa"
+				:ui="{ background: '!bg-white', color: '' }"
+				class=""
 			>
-				<Icon icon="fa6-solid:circle-arrow-right" style="font-size: 22px" />
-			</div>
+				<div
+					class="flex items-center justify-center w-16 h-16 mt-auto hover:bg-blue-600 hover:text-gray-300 mb-2 cursor-pointer hover:scale-[105%] transition-transform"
+					@click="showSignOutForm()"
+				>
+					<Icon
+						icon="fa6-solid:circle-arrow-right"
+						class="rotate-180"
+						style="font-size: 22px"
+					/>
+				</div>
+			</UTooltip>
 		</div>
 
 		<!-- Main Content -->

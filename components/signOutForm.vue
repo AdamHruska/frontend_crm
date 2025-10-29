@@ -6,6 +6,8 @@ const router = useRouter();
 import { resetAllStores } from "@/stores/resetStores";
 import { useAuthStore } from "@/stores/authStore";
 const authStore = useAuthStore();
+const { useUserStore } = await import("@/stores/userStore");
+const userStore = useUserStore();
 
 function cancelSignOut() {
 	emit("cancelSignOut");
@@ -58,24 +60,28 @@ const logout = async () => {
 		<div
 			class="fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center z-10"
 		>
-			<div class="bg-white p-4 w-[300px] h-[150px] rounded-lg shadow-lg">
+			<div class="bg-white p-4 px-10 py-6 rounded-lg shadow-lg">
 				<p class="text-lg font-semibold mb-4 text-black text-center mt-1">
-					Do you want to sign out?
+					Chcete sa naozaj odhlásiť?
 				</p>
-				<div class="flex justify-center mt-18">
+				<div class="flex justify-center gap-4 mt-18">
 					<button
 						@click="confirmSignOut"
 						class="bg-blue-500 text-white px-4 py-2 rounded mr-2 hover:bg-blue-400 shadow-md"
 					>
-						Yes
+						Áno
 					</button>
 					<button
 						@click="cancelSignOut"
 						class="bg-gray-300 text-white px-4 py-2 rounded hover:bg-gray-800 shadow-md"
 					>
-						No
+						Nie
 					</button>
 				</div>
+				<p class="text-lg mb-2 mt-4 text-black text-center mt-1">
+					Aktuálny používateľ:
+					<span class="font-semibold">{{ userStore.user.username }}</span>
+				</p>
 			</div>
 		</div>
 	</Transition>

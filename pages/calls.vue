@@ -362,11 +362,12 @@ const deleteCallList = async (id) => {
 							<UButton
 								@click="detailView(row.id)"
 								class="bg-blue-500 text-white"
-								label="Show Details"
+								label="Zobraziť detail"
 							/>
+
 							<UTooltip
 								text="Upraviť kontakt"
-								:ui="{ background: '', color: '' }"
+								:ui="{ background: '!bg-white', color: '' }"
 								class=""
 							>
 								<UButton
@@ -379,7 +380,7 @@ const deleteCallList = async (id) => {
 							<div class="">
 								<UTooltip
 									text="Vymazať kontakt z call listu"
-									:ui="{ background: '', color: '' }"
+									:ui="{ background: '!bg-white', color: '' }"
 									class=""
 								>
 									<UButton
@@ -397,7 +398,7 @@ const deleteCallList = async (id) => {
 						<input
 							type="checkbox"
 							@change="toggleCheckbox(row.id)"
-							class="bg-white"
+							class="bg-white cursor-pointer"
 						/>
 					</div>
 				</template>

@@ -394,7 +394,7 @@ const selectOffice = (office) => {
 					v-if="contact.meno || contact.priezvisko"
 					@click="redirectToContact"
 				>
-					<div>Kontakt:</div>
+					<div>Kontakttttt:</div>
 					<div>{{ contact.meno }}</div>
 					<div>{{ contact.priezvisko }}</div>
 				</div>

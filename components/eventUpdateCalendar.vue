@@ -17,6 +17,9 @@ const officeStore = useOfficeStore();
 import { useCalendarstore } from "#imports";
 const calendarStore = useCalendarstore();
 
+import { useContactsStore } from "#imports";
+const contactsStore = useContactsStore();
+
 import { useAuthStore } from "@/stores/authStore";
 import AlterPersonForm from "./alterPersonForm.vue";
 const authStore = useAuthStore();
@@ -84,11 +87,14 @@ const validEmails = emails.value.filter(
 );
 
 const officeActivityId = ref(null);
+const doesOfficeActivityExist = ref(false);
 
 onMounted(async () => {
 	officeStore.fetchOffices();
 	officeStore.fetchOfficesSharedWithMe();
 	userStore.fetchUser();
+	await contactsStore.fetchContacts();
+	console.log("kontakty", contactsStore.contacts);
 
 	console.log("Office Activity ID:", officeActivityId.value);
 
@@ -108,7 +114,10 @@ onMounted(async () => {
 			},
 		}
 	);
-	console.log("Response:", response.data.activity);
+
+	// console.log("Activity Contact ID:", response.data.activity);
+	// console.log("New Contact from Store:", newContact);
+
 	activity_creator.value = response.data.activity.created_id;
 	aktivita.value = response.data.activity.aktivita;
 	ina_aktivita.value = response.data.activity.aktivita;
@@ -129,7 +138,7 @@ onMounted(async () => {
 	originalOnlineMeetingValue.value = response.data.activity.onlineMeeting;
 
 	const responseContact = await axios.get(
-		`${config.public.apiUrl}contact/${response.data.activity.contact_id}`,
+		`${config.public.apiUrl}contact/${response.data.activity.contact_id}/admin`,
 		{
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,
@@ -137,6 +146,7 @@ onMounted(async () => {
 		}
 	);
 	contact.value = responseContact.data.contact;
+	console.log("Contact v evente:", contact.value);
 
 	if (contact.value.email === null) {
 		emailBool.value = false;
@@ -151,6 +161,12 @@ onMounted(async () => {
 		owner_id: userStore.user.id,
 	});
 
+	if (officeActivityId.value) {
+		doesOfficeActivityExist.value = true;
+	} else {
+		doesOfficeActivityExist.value = false;
+	}
+	console.log("Ci existuje office event", doesOfficeActivityExist.value);
 	//console.log("skuska id:", extractMicrosoftEventId(miesto_stretnutia.value));
 });
 
@@ -263,7 +279,15 @@ const updateActivity = async () => {
 					);
 				}
 
-				//tu spravit office aktivitu
+				//tu upravit office aktivitu
+				// const owner_id = userStore.user.id;
+				// const officeActivity = officeStore.findActivityId({
+				// 	datum_cas,
+				// 	koniec,
+				// 	owner_id,
+				// });
+				// console.log("Office Activity ID pred upravou:", officeActivity)
+
 				const datumCasDate = new Date(datum_cas.value);
 				datumCasDate.setHours(datumCasDate.getHours() + 2);
 
@@ -281,6 +305,8 @@ const updateActivity = async () => {
 				};
 
 				await officeStore.updateActivity(newActivity);
+
+				//zmena kancelarie
 
 				toast.success(
 					!originalOnlineMeetingValue.value
@@ -461,6 +487,7 @@ const toggleOffices = () => {
 const selectOffice = (office) => {
 	officeStore.setOfficeID = office.id;
 	selectedOffice.value = office;
+	console.log("Selected Office ID:", selectedOffice.value);
 	showOffices.value = false; // close dropdown after selection
 };
 </script>

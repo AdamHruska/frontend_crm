@@ -381,6 +381,26 @@ const handleMiniCalendarDateChange = (newDate) => {
 	const formatted = format(new Date(newDate), "yyyy-MM-dd'T'HH:mm");
 	datum_cas.value = formatted;
 };
+
+const updateTime = (time) => {
+	// 🧠 Convert to proper datetime-local format
+	const parsed = parseISO(time);
+	const formatted = format(parsed, "yyyy-MM-dd'T'HH:mm");
+
+	datum_cas.value = formatted;
+
+	// 🕒 Optional: auto-set koniec to +30 minutes
+	const endDate = new Date(parsed.getTime() + 30 * 60000);
+	if (
+		aktivita.value === "Telefonát klient" ||
+		aktivita.value === "Telefonát nábor"
+	) {
+		endDate.setMinutes(endDate.getMinutes() + 5);
+	}
+	koniec.value = format(endDate, "yyyy-MM-dd'T'HH:mm");
+};
+
+defineExpose({ updateTime });
 </script>
 
 <template>
@@ -695,6 +715,7 @@ const handleMiniCalendarDateChange = (newDate) => {
 			v-if="showCalendar"
 			:date="dateOnly"
 			@updateDate="handleMiniCalendarDateChange"
+			@timeClicked="updateTime"
 		/>
 	</div>
 </template>

@@ -8,6 +8,11 @@ const officeStore = useOfficeStore();
 
 const emit = defineEmits(["closeForm"]);
 
+import axios from "axios";
+const config = useRuntimeConfig();
+import { useAuthStore } from "@/stores/authStore";
+const authStore = useAuthStore();
+
 const closeForm = () => {
 	emit("closeForm");
 };
@@ -72,6 +77,23 @@ const addActivity = async () => {
 	} catch (error) {
 		console.error("Error adding activity:", error);
 	}
+
+	// tu sa bude pridavat aktivita pre hlavny kalendar
+	const activityResponse = await axios.post(
+		`${config.public.apiUrl}add-activity`,
+		{
+			contact_id: 611,
+			aktivita: aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
+			datumCas: datum_cas.value,
+			koniec: koniec.value,
+		},
+		{
+			headers: {
+				Authorization: `Bearer ${authStore.token}`,
+			},
+		}
+	);
+	console.log("Activity Response:", activityResponse.data);
 };
 
 // UPDATE

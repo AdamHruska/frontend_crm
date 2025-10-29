@@ -2,14 +2,18 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import { useAuthStore } from "@/stores/authStore";
 
-import { useCalendarstore } from "#imports";
+import { useCalendarstore } from "@/stores/calendarStore";
+
+import { useToast } from "vue-toastification";
 
 export const useUserStore = defineStore("user", {
 	// Note the change from "auth" to "user"
 	state: () => ({
 		user: null,
+		selected_calendar_names: [],
 		allUsers: [],
 		allUsersAdmin: [],
+		allUsersAdminALL: [],
 		sharedUsers: [],
 		shareIdArray: [],
 		loadingState: false,
@@ -48,6 +52,7 @@ export const useUserStore = defineStore("user", {
 				// Ensure data exists before setting
 				if (response.data && response.data.user) {
 					this.user = response.data.user;
+					console.log("Fetched user:", this.user);
 					try {
 						// Convert to string if it isn't already
 						const rawValue = this.user.confirmed_share_user_id;
@@ -309,6 +314,7 @@ export const useUserStore = defineStore("user", {
 				// Ensure `users` is an array
 				if (Array.isArray(response.data.users)) {
 					this.allUsersAdmin = response.data.users;
+					this.allUsersAdminALL = response.data.users;
 				} else {
 					console.error("Invalid users data format in response");
 					this.allUsersAdmin = [];
@@ -317,6 +323,7 @@ export const useUserStore = defineStore("user", {
 				console.error("Error fetching users:", error);
 				this.error = error.message;
 				this.allUsersAdmin = [];
+				this.allUsersAdminALL = [];
 				throw error; // Re-throw to allow component to handle
 			}
 		},
@@ -338,10 +345,167 @@ export const useUserStore = defineStore("user", {
 				this.allUsersAdmin = this.allUsersAdmin.filter(
 					(user) => user.id !== id
 				);
+				this.allUsersAdminALL = this.allUsersAdminALL.filter(
+					(user) => user.id !== id
+				);
 			} catch (error) {
-				console.error("Error deteleting user:", error);
+				console.error("Error deleting user:", error);
 				this.error = error.message;
 				throw error;
+			}
+		},
+
+		async userAddCalendarName(name, month, year) {
+			const config = useRuntimeConfig();
+			const authStore = useAuthStore();
+			const token = authStore.token;
+			const calendarStore = useCalendarstore();
+			const router = useRouter();
+
+			if (!Array.isArray(this.selected_calendar_names)) {
+				try {
+					this.selected_calendar_names = JSON.parse(
+						this.selected_calendar_names
+					);
+				} catch {
+					this.selected_calendar_names = [];
+				}
+			}
+
+			const index = this.selected_calendar_names.indexOf(name);
+
+			if (index === -1) {
+				this.selected_calendar_names.push(name);
+				console.log("✅ Added calendar name:", this.selected_calendar_names);
+			} else {
+				this.selected_calendar_names.splice(index, 1);
+				console.log("🗑️ Removed calendar name:", this.selected_calendar_names);
+			}
+
+			try {
+				await axios.post(
+					`${config.public.apiUrl}calendar-settings/save`,
+					{
+						calendar_names: this.selected_calendar_names,
+					},
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					}
+				);
+
+				calendarStore.microsoftEventCache = {};
+				await calendarStore.fetchMicrosoftEvents(month, year);
+				//router.go(0);
+			} catch (error) {
+				console.error("❌ Error saving calendar names:", error);
+				this.error = error.message;
+
+				throw error;
+			}
+		},
+
+		async userGetCalendarNames() {
+			const config = useRuntimeConfig();
+			const authStore = useAuthStore();
+			const token = authStore.token;
+
+			try {
+				const response = await axios.get(
+					`${config.public.apiUrl}calendar-settings/get`,
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					}
+				);
+
+				let data = response.data.selected_calendar_names;
+
+				// ✅ Parse if it's a string
+				if (typeof data === "string") {
+					try {
+						data = JSON.parse(data);
+					} catch (e) {
+						console.warn("Failed to parse calendar names, resetting to []");
+						data = [];
+					}
+				}
+
+				// ✅ Ensure it's an array
+				this.selected_calendar_names = Array.isArray(data) ? data : [];
+				console.log("✅ Fetched calendar names:", this.selected_calendar_names);
+			} catch (error) {
+				console.error("❌ Error fetching calendar names:", error);
+				this.error = error.message;
+				throw error;
+			}
+		},
+
+		async delegateUserContactsAdmin(oldUserId, newUserId) {
+			const toast = useToast();
+			const config = useRuntimeConfig();
+			const authStore = useAuthStore();
+			const token = authStore.token;
+
+			try {
+				const response = await axios.post(
+					`${config.public.apiUrl}delegate-contacts-admin/${oldUserId}-${newUserId}`,
+					{}, // ← empty body, since you’re sending data in the URL
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					}
+				);
+				console.log(response);
+				toast.success("Kontakty úspešne delegované", {
+					position: "top-right",
+					timeout: 5000,
+					closeOnClick: true,
+					pauseOnHover: true,
+					draggable: true,
+					draggablePercent: 60,
+					showCloseButtonOnHover: false,
+					hideProgressBar: false,
+				});
+			} catch (error) {
+				console.error("Error delegating user contacts:", error);
+				toast.error("Kontakty sa nepodarilo delegovať", {
+					position: "top-right",
+					timeout: 5000,
+					closeOnClick: true,
+					pauseOnHover: true,
+					draggable: true,
+					draggablePercent: 60,
+					showCloseButtonOnHover: false,
+					hideProgressBar: false,
+				});
+			}
+		},
+
+		async restoreUserAdmin(id) {
+			const toast = useToast();
+			const config = useRuntimeConfig();
+			const authStore = useAuthStore();
+			const token = authStore.token;
+
+			try {
+				const response = await axios.post(
+					`${config.public.apiUrl}restore-user/${id}`,
+					{},
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					}
+				);
+				console.log(response);
+				toast.success("Kontakt bol úspešne obnovený");
+			} catch (error) {
+				console.error("Error restoring user:", error);
+				toast.error("Kontakty sa nepodarilo obnoviť");
 			}
 		},
 	},

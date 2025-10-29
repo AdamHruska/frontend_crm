@@ -578,12 +578,18 @@ const fetchCallLists = async () => {
 			</div>
 
 			<div class="flex items-center mb-2">
-				<button
-					@click="addPerson()"
-					class="bg-blue-700 rounded-lg hover:bg-blue-500 hover:text-black h-11 w-11 flex justify-center pt-[7px] mr-4 mt-8 shadow-xl"
+				<UTooltip
+					text="Pridať kontakt"
+					:ui="{ background: '!bg-white', color: '' }"
+					class=""
 				>
-					<Icon icon="fa6-solid:plus" style="font-size: 30px" class="" />
-				</button>
+					<button
+						@click="addPerson()"
+						class="bg-blue-700 rounded-lg hover:bg-blue-500 hover:text-black h-11 w-11 flex justify-center pt-[7px] mr-4 mt-8 shadow-xl"
+					>
+						<Icon icon="fa6-solid:plus" style="font-size: 30px" class="" />
+					</button>
+				</UTooltip>
 
 				<button
 					@click="showSelectedContacts"
@@ -626,28 +632,40 @@ const fetchCallLists = async () => {
 						@click.left="detailView(row.id)"
 						@auxclick.prevent="onAuxClick($event, row.id)"
 						@mousedown="handleMouseDown"
-						class="bg-blue-500 text-white shadow-xl"
-						label="Show Details"
+						class="bg-blue-500 text-white shadow-xl hover:scale-110 transition-transform"
+						label="Zobraziť detail"
 					/>
+					<UTooltip
+						text="Upraviť kontakt"
+						:ui="{ background: '!bg-white', color: '' }"
+						class=""
+					>
+						<UButton
+							@click="findPerson(row.id)"
+							icon="i-heroicons-pencil-square-20-solid"
+							variant="ghost"
+							class="shadow-xl hover:bg-gray-300 hover:scale-110 transition-transform"
+						/>
+					</UTooltip>
 
-					<UButton
-						@click="findPerson(row.id)"
-						icon="i-heroicons-pencil-square-20-solid"
-						variant="ghost"
-						class="shadow-xl hover:bg-gray-300"
-					/>
-					<UButton
-						@click="
-							deletePerson(row.id).then(() => {
-								people.value = people.value.filter(
-									(person) => person.id !== row.id
-								);
-							})
-						"
-						icon="i-heroicons-trash-20-solid"
-						color="ffffff"
-						class="shadow-xl text-red-500 hover:bg-gray-300"
-					/>
+					<UTooltip
+						text="Vymazať kontakt"
+						:ui="{ background: '!bg-white', color: '' }"
+						class=""
+					>
+						<UButton
+							@click="
+								deletePerson(row.id).then(() => {
+									people.value = people.value.filter(
+										(person) => person.id !== row.id
+									);
+								})
+							"
+							icon="i-heroicons-trash-20-solid"
+							color="ffffff"
+							class="shadow-xl text-red-500 hover:bg-gray-300 hover:scale-110 transition-transform"
+						/>
+					</UTooltip>
 				</div>
 				<input
 					type="checkbox"

@@ -109,59 +109,81 @@ const emit = defineEmits(["deleteSharedEventsId", "addSharedEventsId"]);
 authStore.loadToken();
 
 const handleSearch = async () => {
-	console.log("Starting handleSearch");
 	loading.value = true;
 	error.value = "";
 
 	try {
-		console.log("Fetching current user...");
-		const current_user = await axios.get(`${config.public.apiUrl}get-user`, {
-			headers: {
-				Authorization: `Bearer ${authStore.token}`,
-			},
-		});
-		console.log("Current user data:", current_user.data);
-
-		let numbers = [];
-		const shareIDs = current_user.data.user.share_user_id;
-		console.log("ShareIDs:", shareIDs);
-
-		if (shareIDs) {
-			try {
-				numbers = Array.isArray(shareIDs)
-					? shareIDs.map(Number)
-					: JSON.parse(shareIDs).map(Number);
-				console.log("Parsed numbers:", numbers);
-			} catch (parseError) {
-				console.error("Error parsing share_user_id:", parseError);
-			}
-		}
-
-		console.log("Fetching all users...");
+		// Fetch all users
 		const response = await axios.get(`${config.public.apiUrl}get-users`, {
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,
 			},
 		});
-		console.log("All users response:", response.data);
 
+		// All users start as UNCHECKED
 		users.value = (response.data.users || []).map((user) => ({
 			...user,
-			checked: numbers.includes(user.id),
+			checked: false, // ← This is the key change
 		}));
-		console.log("Updated users:", users.value);
 
+		// Update store (will be empty array initially)
 		const checkedUsers = users.value.filter((user) => user.checked);
 		calendarStore.setCheckedUsers(checkedUsers);
-		console.log("Updated checked users in store:", checkedUsers);
 	} catch (err) {
 		console.error("Error in handleSearch:", err);
 		error.value = err.message || "Error fetching users";
 	} finally {
 		loading.value = false;
-		console.log("HandleSearch completed. Users:", users.value);
 	}
 };
+
+// const handleSearch = async () => {
+// 	loading.value = true;
+// 	error.value = "";
+
+// 	try {
+// 		const current_user = await axios.get(`${config.public.apiUrl}get-user`, {
+// 			headers: {
+// 				Authorization: `Bearer ${authStore.token}`,
+// 			},
+// 		});
+
+// 		let numbers = [];
+// 		const shareIDs = current_user.data.user.share_user_id;
+
+// 		if (shareIDs) {
+// 			try {
+// 				numbers = Array.isArray(shareIDs)
+// 					? shareIDs.map(Number)
+// 					: JSON.parse(shareIDs).map(Number);
+// 				console.log("Parsed numbers:", numbers);
+// 			} catch (parseError) {
+// 				console.error("Error parsing share_user_id:", parseError);
+// 			}
+// 		}
+
+// 		const response = await axios.get(`${config.public.apiUrl}get-users`, {
+// 			headers: {
+// 				Authorization: `Bearer ${authStore.token}`,
+// 			},
+// 		});
+
+// 		users.value = (response.data.users || []).map((user) => ({
+// 			...user,
+// 			checked: numbers.includes(user.id),
+// 		}));
+
+// 		const checkedUsers = users.value.filter((user) => user.checked);
+// 		calendarStore.setCheckedUsers(checkedUsers);
+// 		console.log("Updated checked users in store:", checkedUsers);
+// 	} catch (err) {
+// 		console.error("Error in handleSearch:", err);
+// 		error.value = err.message || "Error fetching users";
+// 	} finally {
+// 		loading.value = false;
+// 		console.log("HandleSearch completed. Users:", users.value);
+// 	}
+// };
 
 // const filteredUsers = computed(() => {
 // 	const confirmedIds = Object.values(
@@ -203,7 +225,6 @@ const filteredUsers = computed(() => {
 });
 
 onMounted(async () => {
-	console.log("Component mounted");
 	try {
 		await handleSearch();
 		console.log("Initial search completed");
