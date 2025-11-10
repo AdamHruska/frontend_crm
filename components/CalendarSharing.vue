@@ -58,12 +58,26 @@
 		</ul>
 		<div
 			v-if="!isDropdownOpen"
-			class="text-black mt-3 flex flex-col justify-center items-center gap-2 text-base font-medium"
+			class="text-black mt-3 flex flex-col items-center gap-2 text-base font-medium"
 		>
+			<div class="flex gap-3 items-center">
+				<input
+					v-model="myCalendar"
+					type="checkbox"
+					@change="handleMyCalendarChange"
+					class="peer w-5 h-5 cursor-pointer checkbox-custom"
+				/>
+				<div class="">Adam Hruška</div>
+
+				<div
+					class="h-5 w-5 rounded"
+					style="background-color: rgb(37 99 235)"
+				></div>
+			</div>
 			<div
 				v-for="(user, index) in checkedUsers"
 				:key="user.id"
-				class="flex gap-3 items-center content-center"
+				class="flex gap-3 items-center justify-between w-full"
 			>
 				<input
 					v-model="user.checked"
@@ -74,11 +88,12 @@
 				/>
 				<div>{{ user.first_name }} {{ user.last_name }}</div>
 
-				<input
-					type="color"
-					value="#FF0000"
-					class="appearance-none w-[25px] h-[28px] bg-transparent border-0 cursor-pointer [&::-webkit-color-swatch]:rounded-[5px] [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-[5px] [&::-moz-color-swatch]:border-0"
-				/>
+				<div
+					class="h-5 w-5 rounded"
+					:style="{
+						backgroundColor: calendarStore.userColors[user.id] || '#ff0000',
+					}"
+				></div>
 			</div>
 		</div>
 	</div>
@@ -96,6 +111,7 @@ const userStore = useUserStore();
 const config = useRuntimeConfig();
 const authStore = useAuthStore();
 
+const myCalendar = ref(true);
 const users = ref([]);
 const searchInput = ref("");
 const error = ref("");
@@ -103,17 +119,30 @@ const isDropdownOpen = ref(false);
 const dropdownContainer = ref(null);
 const loading = ref(false);
 
-const emit = defineEmits(["deleteSharedEventsId", "addSharedEventsId"]);
+const emit = defineEmits([
+	"deleteSharedEventsId",
+	"addSharedEventsId",
+	"toggleMyActivities",
+]);
+
+const updateUserColor = (userId, color) => {
+	calendarStore.userColors[userId] = color;
+};
 
 // Initialize auth store
 authStore.loadToken();
+
+const handleMyCalendarChange = () => {
+	console.log("My calendar checkbox changed:", myCalendar.value);
+	//calendarStore.toggleMyActivities();
+	emit("toggleMyActivities", myCalendar.value);
+};
 
 const handleSearch = async () => {
 	loading.value = true;
 	error.value = "";
 
 	try {
-		// Fetch all users
 		const response = await axios.get(`${config.public.apiUrl}get-users`, {
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,
@@ -123,7 +152,7 @@ const handleSearch = async () => {
 		// All users start as UNCHECKED
 		users.value = (response.data.users || []).map((user) => ({
 			...user,
-			checked: false, // ← This is the key change
+			checked: false,
 		}));
 
 		// Update store (will be empty array initially)
@@ -263,7 +292,10 @@ const handleCheckboxChange = async (userId, isChecked) => {
 		}
 
 		// Refresh users after change
-		await handleSearch();
+		//await handleSearch();
+
+		const user = users.value.find((u) => u.id === userId);
+		if (user) user.checked = isChecked;
 	} catch (error) {
 		console.error("Error updating share ID:", error);
 	} finally {

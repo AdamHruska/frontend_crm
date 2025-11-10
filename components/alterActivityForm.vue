@@ -30,6 +30,7 @@ const contact = ref([]);
 const kontakt = ref("");
 const aktivita = ref("");
 const ina_aktivita = ref("");
+const importance = ref("normal");
 const datum_cas = ref("");
 const koniec = ref("");
 const poznamka = ref("");
@@ -46,6 +47,8 @@ const email = ref("");
 
 const showAlterButtons = ref(false);
 const originalOnlineMeetingValue = ref(false);
+
+const officeActivity = ref(null);
 
 watch(aktivita, (newValue) => {
 	if (newValue === "ine") {
@@ -113,9 +116,10 @@ onMounted(async () => {
 		koniec: koniec.value,
 		owner_id: userStore.user.id,
 	});
-
+	officeActivity.value = officeActivityId.value.activity;
 	//miesto_stretnutia.value = officeActivityId.office.value;
 	console.log("Office activity ID:", officeActivityId.value.office.name);
+	console.log("Office activity:", officeActivity.value);
 	if (officeActivityId.value.office.name) {
 		miesto_stretnutia.value = officeActivityId.value.office.name;
 		selectedOffice.value = officeActivityId.value.office;
@@ -190,7 +194,11 @@ const updateActivity = async () => {
 			try {
 				const teamsResponse = await axios.post(
 					`${config.public.apiUrl}create-teams-meeting`,
-					{ activityId: props.activityID },
+					{
+						activityId: props.activityID,
+						importance: importance.value,
+						user_id: userStore.user.id,
+					},
 					{ headers: { Authorization: `Bearer ${authStore.token}` } }
 				);
 
@@ -252,6 +260,20 @@ const updateActivity = async () => {
 					hideProgressBar: false,
 				});
 			}
+		}
+
+		if (updateOfficeActivity) {
+			await axios.put(
+				`${config.public.apiUrl}update-office-activity/${officeActivity.value.id}`,
+				{
+					aktivita: aktivita.value,
+					datum_cas: datum_cas.value,
+					koniec: koniec.value,
+					poznamka: poznamka.value,
+					office_id: selectedOffice.value.id,
+				},
+				{ headers: { Authorization: `Bearer ${authStore.token}` } }
+			);
 		}
 
 		// Display success message
@@ -363,7 +385,8 @@ const isValidUrl = (url) => {
 };
 
 const showOffices = ref(false);
-const selectedOffice = ref({ id: null, name: "Kancelárie" }); // default text
+const selectedOffice = ref({ id: null, name: "Kancelárie" });
+const updateOfficeActivity = ref(false);
 
 const toggleOffices = () => {
 	showOffices.value = !showOffices.value;
@@ -372,7 +395,8 @@ const toggleOffices = () => {
 const selectOffice = (office) => {
 	officeStore.setOfficeID = office.id;
 	selectedOffice.value = office;
-	showOffices.value = false; // close dropdown after selection
+	showOffices.value = false;
+	updateOfficeActivity.value = true;
 };
 </script>
 
@@ -450,6 +474,32 @@ const selectOffice = (office) => {
 					type="text"
 					v-if="ineBool"
 					class="w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500 !text-black"
+					placeholder="Zadajte aktivitu ..."
+				/>
+			</div>
+
+			<div
+				class="relative z-0 w-full mb-5 mt-2 group"
+				v-if="onlineMeeting == true"
+			>
+				<label
+					class="text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+					>Dôležitosť</label
+				>
+				<select
+					v-model="importance"
+					id="floating_aktivita"
+					class="w-full bg-gray-200 text-white rounded-lg p-1 py-2 mt-1 !text-black"
+				>
+					<option value="low">Nízka</option>
+					<option value="normal">Normálna</option>
+					<option value="high">Vysoká</option>
+				</select>
+				<input
+					v-model="ina_aktivita"
+					type="text"
+					v-if="ineBool"
+					class="w-full mt-3 p-1 bg-slate-700 rounded-lg text-white pl-2 focus:outline-blue-500"
 					placeholder="Zadajte aktivitu ..."
 				/>
 			</div>

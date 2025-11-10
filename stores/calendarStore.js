@@ -9,10 +9,14 @@ export const useCalendarstore = defineStore("calendar", {
 	state: () => ({
 		activities: [],
 		shared_activities: [],
+		my_activities: [],
+		showOnlyMine: false,
+		originalActivities: [],
 		loadingState: false,
 		microsoftLoadingState: false,
 		checkedUsers: [],
 		microsoftEventCache: {}, // Format: {"2025-4": [...events]}
+		userColors: {},
 	}),
 	actions: {
 		// async fetchActivities() {
@@ -251,8 +255,10 @@ export const useCalendarstore = defineStore("calendar", {
 						extendedProps: {
 							source: "microsoft",
 							organizer: {
-								name: event.organizer?.emailAddress?.name || "Unknown",
-								email: event.organizer?.emailAddress?.address || "No email",
+								name:
+									event.organizer?.emailAddress?.name || "Neznámy organizátor",
+								email: event.organizer?.emailAddress?.address || "Bez emailu",
+								note: this.htmlToText(event.bodyPreview) || "Žiadna poznámka",
 							},
 							attendees:
 								event.attendees?.map((attendee) => ({
@@ -265,6 +271,7 @@ export const useCalendarstore = defineStore("calendar", {
 							link: event.onlineMeeting?.joinUrl || "",
 							note:
 								this.htmlToText(event.body?.content) || event.bodyPreview || "",
+							importance: event.importance,
 						},
 					};
 				});
@@ -276,6 +283,11 @@ export const useCalendarstore = defineStore("calendar", {
 
 				//console.log("microsoft events:", microsoftEvents);
 				console.log("Transformed Microsoft events:", microsoftEvents);
+				const hehe = microsoftEvents.filter(
+					(event) =>
+						event.title === "Pozvánka na stretnutie - 09.11.2025 o 09:00"
+				);
+				console.log("Filtered events for debugging:", hehe);
 				return microsoftEvents;
 			} catch (error) {
 				console.error("Error fetching Microsoft events:", error);
@@ -503,6 +515,34 @@ export const useCalendarstore = defineStore("calendar", {
 				console.error("Failed to update activity:", error);
 			}
 		},
+
+		// toggleMyActivities() {
+		// 	const userId = useUserStore().user.id;
+
+		// 	if (!this.showOnlyMine) {
+		// 		// First execution: filter only my activities
+		// 		this.my_activities = this.activities.filter(
+		// 			(activity) => activity.created_id === userId
+		// 		);
+
+		// 		// Store original activities for later restoration
+		// 		this.originalActivities = [...this.activities];
+
+		// 		// Filter out my activities from the main list
+		// 		this.activities = this.activities.filter(
+		// 			(activity) => activity.created_id !== userId
+		// 		);
+		// 		console.log("activities:", this.activities);
+		// 		console.log("my activities:", this.my_activities);
+
+		// 		this.showOnlyMine = true; // next execution will restore
+		// 	} else {
+		// 		// Second execution: restore original activities
+		// 		this.activities = [...this.originalActivities];
+		// 		this.my_activities = [];
+		// 		this.showOnlyMine = false; // next execution will filter again
+		// 	}
+		// },
 	},
 	getters: {
 		// Getter to return all contacts

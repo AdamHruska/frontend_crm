@@ -1,4 +1,50 @@
 <template>
+	<!-- The follower div -->
+
+	<div
+		v-if="showFollower"
+		class="fixed bg-white p-4 shadow-xl rounded-xl w-[250px] max-h-[365px] z-50"
+		:style="{
+			left: `${mouseX + 15}px`,
+			top: `${mouseY + 15}px`,
+		}"
+	>
+		<p class="font-semibold">Zoznam ľudí</p>
+		<div class="my-4 overflow-y-auto max-h-[280px]">
+			<!--Checked people-->
+			<p
+				class="font-semibold"
+				v-if="
+					dataInFollower.filter((p) => p.activity_status === 'check').length !==
+					0
+				"
+			>
+				Zrealizované
+			</p>
+			<div
+				v-for="person in dataInFollower.filter(
+					(p) => p.activity_status === 'check'
+				)"
+				:key="person.contact_id"
+				class="py-1 cursor-pointer hover:bg-gray-100 px-2 rounded"
+				@click="goToContact(person.contact_id)"
+			>
+				{{ person.meno }} {{ person.priezvisko }}
+			</div>
+			<!--Not checked people-->
+			<p class="font-semibold">Ostatné</p>
+			<div
+				v-for="person in dataInFollower.filter(
+					(p) => p.activity_status !== 'check'
+				)"
+				:key="person.contact_id"
+				class="py-1 cursor-pointer hover:bg-gray-100 px-2 rounded"
+				@click="goToContact(person.contact_id)"
+			>
+				{{ person.meno }} {{ person.priezvisko }}
+			</div>
+		</div>
+	</div>
 	<loadigcomponent v-if="loadingStateCalendar" />
 	<div class="p-6">
 		<div class="mb-6">
@@ -54,22 +100,52 @@
 			<div
 				class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 shadow-sm bg-white p-4"
 			>
-				<div class="bg-blue-100 p-4 rounded">
+				<div
+					class="bg-blue-100 p-4 rounded"
+					@mouseenter="
+						() =>
+							responseData?.grouped_activities?.volane &&
+							showVolaneFollower(responseData.grouped_activities.volane)
+					"
+					@mouseleave="hideFollower"
+				>
 					<h3 class="font-bold">Volané</h3>
 					<p class="text-2xl">{{ statistics.called }}</p>
 				</div>
-				<div class="bg-green-100 p-4 rounded">
+				<div
+					class="bg-green-100 p-4 rounded"
+					@mouseenter="
+						() =>
+							responseData?.grouped_activities?.dovolane &&
+							showVolaneFollower(responseData.grouped_activities.dovolane)
+					"
+					@mouseleave="hideFollower"
+				>
 					<h3 class="font-bold">Dovolané</h3>
 					<p class="text-2xl">{{ statistics.reached }}</p>
 				</div>
-				<div class="bg-purple-100 p-4 rounded">
+				<div
+					class="bg-purple-100 p-4 rounded"
+					@mouseenter="
+						() =>
+							responseData?.grouped_activities?.dohodnute &&
+							showVolaneFollower(responseData.grouped_activities.dohodnute)
+					"
+					@mouseleave="hideFollower"
+				>
 					<h3 class="font-bold">Dohodnuté</h3>
 					<p class="text-2xl">{{ statistics.scheduled }}</p>
 				</div>
 			</div>
 
 			<div class="container mb-6" v-if="otherActivies">
-				<div class="item" v-if="otherActivies['Prvé stretnutie']">
+				<div
+					class="item"
+					@mouseenter="
+						() => showVolaneFollower(otherActiviesNames['Prvé stretnutie'])
+					"
+					@mouseleave="hideFollower"
+				>
 					<div class="item-left">
 						<p>Prvé stretnutia:</p>
 					</div>
@@ -83,8 +159,16 @@
 						</div>
 					</div>
 				</div>
-
-				<div class="item">
+				<div
+					class="item"
+					@mouseenter="
+						() =>
+							showVolaneFollower(
+								otherActiviesNames['Analýza osobných financií']
+							)
+					"
+					@mouseleave="hideFollower"
+				>
 					<div class="item-left">
 						<p>Analýza osobných financií:</p>
 					</div>
@@ -100,7 +184,13 @@
 					</div>
 				</div>
 
-				<div class="item" v-if="otherActivies['poradenstvo']">
+				<div
+					class="item"
+					@mouseenter="
+						() => showVolaneFollower(otherActiviesNames['poradenstvo'])
+					"
+					@mouseleave="hideFollower"
+				>
 					<div class="item-left">
 						<p>Poradenstvá:</p>
 					</div>
@@ -115,7 +205,13 @@
 					</div>
 				</div>
 
-				<div class="item" v-if="otherActivies['realizácia']">
+				<div
+					class="item"
+					@mouseenter="
+						() => showVolaneFollower(otherActiviesNames['realizácia'])
+					"
+					@mouseleave="hideFollower"
+				>
 					<div class="item-left">
 						<p>Realizácie:</p>
 					</div>
@@ -130,7 +226,13 @@
 					</div>
 				</div>
 
-				<div class="item" v-if="otherActivies['Servisná analýza']">
+				<div
+					class="item"
+					@mouseenter="
+						() => showVolaneFollower(otherActiviesNames['Servisná analýza'])
+					"
+					@mouseleave="hideFollower"
+				>
 					<div class="item-left">
 						<p>Servisná analýza:</p>
 					</div>
@@ -146,11 +248,16 @@
 					</div>
 				</div>
 
-				<div class="item">
+				<div
+					class="item"
+					@mouseenter="() => showVolaneFollower(responseData.new_contacts)"
+					@mouseleave="hideFollower"
+				>
 					<div class="item-left"></div>
 					<div class="item-right">
 						<div class="right-count green">
-							Pocet nových kontaktov: {{ responseData?.new_contacts || 0 }}
+							Počet nových kontaktov:
+							{{ responseData?.new_contacts?.length || 0 }}
 						</div>
 					</div>
 				</div>
@@ -229,7 +336,13 @@
 		</div>
 
 		<div class="container" v-if="seminarActivitesStatistics">
-			<div class="item">
+			<div
+				class="item"
+				@mouseenter="
+					() => showVolaneFollower(seminarActivitesNames['welcome seminár'])
+				"
+				@mouseleave="hideFollower"
+			>
 				<div class="item-left">
 					<p>Welcome Seminár:</p>
 				</div>
@@ -245,7 +358,11 @@
 				</div>
 			</div>
 
-			<div class="item">
+			<div
+				class="item"
+				@mouseenter="() => showVolaneFollower(seminarActivitesNames['basic 1'])"
+				@mouseleave="hideFollower"
+			>
 				<div class="item-left">
 					<p>Basic 1:</p>
 				</div>
@@ -261,7 +378,11 @@
 				</div>
 			</div>
 
-			<div class="item">
+			<div
+				class="item"
+				@mouseenter="() => showVolaneFollower(seminarActivitesNames['basic 2'])"
+				@mouseleave="hideFollower"
+			>
 				<div class="item-left">
 					<p>Basic 2:</p>
 				</div>
@@ -277,7 +398,11 @@
 				</div>
 			</div>
 
-			<div class="item">
+			<div
+				class="item"
+				@mouseenter="() => showVolaneFollower(seminarActivitesNames['basic 3'])"
+				@mouseleave="hideFollower"
+			>
 				<div class="item-left">
 					<p>Basic 3:</p>
 				</div>
@@ -293,7 +418,11 @@
 				</div>
 			</div>
 
-			<div class="item">
+			<div
+				class="item"
+				@mouseenter="() => showVolaneFollower(seminarActivitesNames['basic 4'])"
+				@mouseleave="hideFollower"
+			>
 				<div class="item-left">
 					<p>Basic 4:</p>
 				</div>
@@ -309,7 +438,13 @@
 				</div>
 			</div>
 
-			<div class="item">
+			<div
+				class="item"
+				@mouseenter="
+					() => showVolaneFollower(seminarActivitesNames['Post info'])
+				"
+				@mouseleave="hideFollower"
+			>
 				<div class="item-left">
 					<p>Post info:</p>
 				</div>
@@ -384,7 +519,30 @@ const activities = ref([]);
 const loadingStateCalendar = ref(false);
 const dataPohovory = ref();
 
-// Chart data computed property
+const mouseX = ref(0);
+const mouseY = ref(0);
+const showFollower = ref(false);
+
+const dataInFollower = ref([]);
+
+const showVolaneFollower = (data) => {
+	console.log("showVolaneFollower triggered with:", data);
+	dataInFollower.value = Array.isArray(data) ? data : [];
+	if (dataInFollower.value.length === 0) {
+		dataInFollower.value = [{ meno: "Žiadni ľudia", priezvisko: "" }];
+	}
+	showFollower.value = true;
+};
+
+const hideFollower = () => {
+	showFollower.value = false;
+	dataInFollower.value = [];
+};
+
+function handleMouseMove(e) {
+	mouseX.value = e.clientX;
+	mouseY.value = e.clientY;
+}
 
 const goToContact = (id) => {
 	router.push(`/contact/${id}`);
@@ -407,21 +565,21 @@ const chartData = computed(() => ({
 const chartDataPohovory = computed(() => {
 	if (!dataPohovory.value) {
 		return {
-			labels: ["Volané", "Dovolané", "Dohodnuté", "Zaujatí", "Nezaujatí"],
+			labels: ["Volané", "Dovolané", "Dohodnuté", "Zrealizované", "Zaujatí"],
 			datasets: [{ data: [0, 0, 0, 0, 0] }],
 		};
 	}
 
 	return {
-		labels: ["Volané", "Dovolané", "Dohodnuté", "Zaujatí", "Nezaujatí"],
+		labels: ["Volané", "Dovolané", "Dohodnuté", "Zrealizované", "Zaujatí"],
 		datasets: [
 			{
 				data: [
 					dataPohovory.value.called,
 					dataPohovory.value.reached,
 					dataPohovory.value.scheduled,
+					dataPohovory.value.realized,
 					dataPohovory.value.accepted,
-					dataPohovory.value.rejected,
 				],
 				backgroundColor: [
 					"#93C5FD",
@@ -450,7 +608,9 @@ const formatCardTitle = (key) => {
 };
 
 const otherActivies = ref({});
+const otherActiviesNames = ref([]);
 const seminarActivitesStatistics = ref({});
+const seminarActivitesNames = ref([]);
 // Methods
 const fetchData = async () => {
 	loadingStateCalendar.value = true;
@@ -477,7 +637,7 @@ const fetchData = async () => {
 		);
 
 		responseData.value = response.data;
-		console.log("skuska", responseData.value.new_contacts);
+		console.log("skuska", responseData.value);
 		statistics.value = response.data.statistics;
 		activities.value = response.data.activities;
 
@@ -510,10 +670,14 @@ const fetchData = async () => {
 				},
 			}
 		);
-		console.log("otherActivitiesData", otherActivitiesData.data);
-		otherActivies.value = otherActivitiesData.data.statistics;
-		console.log("otherActivies", otherActivies.value);
 
+		otherActivies.value = otherActivitiesData.data.statistics;
+		otherActiviesNames.value = otherActivitiesData.data.activities_by_type;
+
+		console.log(
+			"otherActiviesNames",
+			otherActiviesNames.value["Analýza osobných financií"]
+		);
 		const seminarActivitesStatisticsResponse = await axios.get(
 			`${config.public.apiUrl}seminar-activities-statistics`,
 			{
@@ -527,12 +691,13 @@ const fetchData = async () => {
 				},
 			}
 		);
-		console.log(
-			"seminarActivitesStatistics",
-			seminarActivitesStatisticsResponse.data
-		);
+
 		seminarActivitesStatistics.value =
 			seminarActivitesStatisticsResponse.data.statistics;
+
+		seminarActivitesNames.value =
+			seminarActivitesStatisticsResponse.data.activities_by_type;
+		console.log("seminarActivitesNames", seminarActivitesNames.value);
 		// 	const responsePohovory = await axios.post(
 		// 		`${config.public.apiUrl}statistics-pohovory`,
 		// 		{
@@ -620,9 +785,36 @@ const formatDate = (date) => {
 	return new Date(date).toLocaleDateString("sk-SK");
 };
 
+function handleMouseEnter() {
+	showFollower.value = true;
+}
+
+function handleMouseLeave() {
+	showFollower.value = false;
+}
+
 // Lifecycle
 onMounted(() => {
 	updateDateRange();
+	window.addEventListener("mousemove", handleMouseMove);
+
+	// REMOVE THIS SECTION - it's causing the conflict
+	// const items = document.querySelectorAll(".item");
+	// items.forEach((item) => {
+	// 	item.addEventListener("mouseenter", handleMouseEnter);
+	// 	item.addEventListener("mouseleave", handleMouseLeave);
+	// });
+});
+
+onBeforeUnmount(() => {
+	window.removeEventListener("mousemove", handleMouseMove);
+
+	// REMOVE THIS SECTION TOO
+	// const items = document.querySelectorAll(".item");
+	// items.forEach((item) => {
+	// 	item.removeEventListener("mouseenter", handleMouseEnter);
+	// 	item.removeEventListener("mouseleave", handleMouseLeave);
+	// });
 });
 </script>
 

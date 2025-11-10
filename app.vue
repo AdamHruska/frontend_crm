@@ -39,7 +39,10 @@ onMounted(async () => {
 	await checkAuth();
 	await userStore.fetchUser();
 
-	await userStore.fetchUsers();
+	if (userStore.allUsers.length === 0) {
+		await userStore.fetchUsers();
+	}
+
 	await userStore.getSharedUsers();
 });
 

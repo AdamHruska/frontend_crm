@@ -27,6 +27,7 @@ const login = async (email, password, rememberMe) => {
 					},
 				}
 			);
+			console.log("Login response:", response.data.message);
 			const token = response.data.authorization.token;
 			authStore.setToken(token);
 
@@ -37,18 +38,19 @@ const login = async (email, password, rememberMe) => {
 				sessionStorage.setItem("auth_token", token);
 			}
 
-			router.push("/");
+			if (email == "admin@admin.com") {
+				router.push("/users");
+			} else {
+				router.push("/");
+			}
 		} catch (error) {
-			toast.error("Prihlásenie zlyhalo. Skontrolujte svoje poverenia.", {
-				position: "top-center",
-				timeout: 5000,
-				closeOnClick: true,
-				pauseOnHover: true,
-				draggable: true,
-				draggablePercent: 60,
-				showCloseButtonOnHover: false,
-				hideProgressBar: false,
-			});
+			if (error.response?.status === 403) {
+				toast.error("Váš účet nie je aktívny. Kontaktujte administrátora.");
+				loading.value = false;
+				return;
+			} else {
+				toast.error("Nesprávny email alebo heslo");
+			}
 		}
 	} else {
 		toast.error("Vyplňte všetky polia", {

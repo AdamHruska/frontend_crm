@@ -11,21 +11,28 @@
 		@openSharingForm="openSharingForm"
 	/>
 
-	<button
-		class="mt-4 ml-8 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
-		@click="openNewOfficeForm"
-		v-if="!showSharingForm"
-	>
-		Pridať kanceláriu
-	</button>
+	<div class="flex items-center gap-8">
+		<button
+			class="mt-4 ml-8 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+			@click="openNewOfficeForm"
+			v-if="!showSharingForm"
+		>
+			Pridať kanceláriu
+		</button>
 
-	<button
-		class="mt-4 ml-8 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
-		@click="openSharingForm"
-		v-if="!showSharingForm"
-	>
-		Zdielať moje kancelárie
-	</button>
+		<button
+			class="mt-4 ml-8 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+			@click="openSharingForm"
+			v-if="!showSharingForm"
+		>
+			Zdielať moje kancelárie
+		</button>
+
+		<div class="mt-4 flex items-center gap-4">
+			<span class="font-semibold">Aktuálna kancelária:</span>
+			<span class="font-semibold underline">Velke Lovce</span>
+		</div>
+	</div>
 
 	<div class="ml-8 mt-8 mb-10">
 		<h1 class="text-xl font-semibold mb-4">Moje kancelárie</h1>

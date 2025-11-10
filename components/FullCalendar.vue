@@ -353,6 +353,7 @@ onMounted(async () => {
 	// if (!calendarStore.activities.length) {
 	// 	await calendarStore.fetchActivities();
 	// }
+
 	await userStore.userGetCalendarNames();
 	try {
 		calendarListLoading.value = true;
@@ -505,18 +506,36 @@ onUnmounted(() => {
 // 	});
 // };
 
+//const userColors = ref({});
+
+const generateRandomColor = () => {
+	// Generate pleasant, readable colors
+	const hue = Math.floor(Math.random() * 360);
+	return `hsl(${hue}, 70%, 60%)`;
+};
+
 const transformData = (data) => {
 	return data.map((item) => {
-		//console.log("Transforming item:", item); // Debug log
-		var farba = item.created_id == userStore.user.id ? "rgb(37 99 235)" : "red";
+		let farba;
 
+		// If activity discarded, always gray
 		if (item.activity_status === "discarded") {
 			farba = "gray";
+		}
+		// If it's the logged-in user
+		else if (item.created_id === userStore.user.id) {
+			farba = "rgb(37 99 235)";
+		}
+		// Other users — assign consistent color
+		else {
+			if (!calendarStore.userColors[item.created_id]) {
+				calendarStore.userColors[item.created_id] = generateRandomColor();
+			}
+			farba = calendarStore.userColors[item.created_id];
 		}
 
 		const formattedStart = item.datumCas.replace(" ", "T");
 
-		//Get contact info - use optional chaining for safety
 		const contact = item.contact_id
 			? contactsStore.contacts.data?.find((c) => c.id === item.contact_id)
 			: null;
@@ -537,7 +556,6 @@ const transformData = (data) => {
 		};
 	});
 };
-
 let eventGuid = 0;
 
 const currentEvents = ref([]);
@@ -574,6 +592,9 @@ function handleEventClick(clickInfo) {
 			link: clickInfo.event.extendedProps.link || "",
 			organizer: clickInfo.event.extendedProps.organizer,
 			attendees: clickInfo.event.extendedProps.attendees,
+			allDay: clickInfo.event.allDay,
+			note: clickInfo.event.extendedProps.note || "Žiadna poznámka",
+			importance: clickInfo.event.extendedProps.importance || "normal",
 		};
 		console.log(selectedMicrosoftEvent.value);
 		toggleMicrosoftEvents();
@@ -588,7 +609,10 @@ const toggleMicrosoftEvents = () => {
 
 function handleEvents(events) {
 	currentEvents.value = events;
-	console.log("Current events:", currentEvents.value);
+	// console.log(
+	// 	"Current events:",
+	// 	events.map((event) => event.extendedProps.user_id)
+	// );
 }
 
 const flattenActivities = (activitiesObject) => {
@@ -1026,6 +1050,45 @@ const checkAuth = async () => {
 		this.loginWithMicrosoft();
 	}
 };
+
+//toggling my acitvities in calendar
+const toggleMyActivities = () => {
+	const userId = useUserStore().user.id;
+
+	if (!calendarStore.showOnlyMine) {
+		// Store original events for restoration
+		calendarStore.originalEvents = [...events.value];
+
+		//console.log("events user id:", calendarStore.originalEvents[0].user_id);
+		console.log(
+			"events user id pred:",
+			calendarStore.originalEvents.map((ev) => ev.user_id)
+		);
+
+		events.value = calendarStore.originalEvents.filter(
+			(event) => event.user_id !== userId
+		);
+		toast.success("Boli skryté vaše aktivity.");
+		console.log(
+			"events user id po:",
+			calendarStore.originalEvents.map((ev) => ev.user_id)
+		);
+		// Remove ALL events (empty the calendar)
+		//events.value = [];
+		calendarStore.showOnlyMine = true;
+	} else {
+		// Restore original events
+		events.value = [...calendarStore.originalEvents];
+		toast.success("Boli obnovené vaše aktivity.");
+		calendarStore.showOnlyMine = false;
+	}
+
+	// Update calendar display
+	calendarOptions.value = {
+		...calendarOptions.value,
+		events: [...events.value],
+	};
+};
 </script>
 
 <template>
@@ -1109,6 +1172,7 @@ const checkAuth = async () => {
 						class="mt-4"
 						@deleteSharedEventsId="deleteSharedEventsId"
 						@addSharedEventsId="addSharedEventsId"
+						@toggleMyActivities="toggleMyActivities"
 					/>
 				</div>
 				<div class="flex flex-col items-center py-6 shadow-lg rounded-b-lg">

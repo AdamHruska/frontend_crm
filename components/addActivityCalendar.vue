@@ -29,6 +29,7 @@ const contact = ref([]);
 const kontakt = ref("");
 const aktivita = ref("");
 const ina_aktivita = ref("");
+const importance = ref("normal");
 const datum_cas = ref("");
 const koniec = ref("");
 const poznamka = ref("");
@@ -342,7 +343,8 @@ const addActivity = async () => {
 					{
 						activityId: activityResponse.data.activity.id,
 						user_id: userStore.user.id,
-						additionalEmails: validEmails.slice(1), // Send all emails except the first one (primary)
+						additionalEmails: validEmails.slice(1),
+						importance: importance.value,
 					},
 					{ headers: { Authorization: `Bearer ${authStore.token}` } }
 				);
@@ -366,14 +368,15 @@ const addActivity = async () => {
 			//tu spravit office aktivitu
 
 			const datumCasDate = new Date(datum_cas.value);
-			datumCasDate.setHours(datumCasDate.getHours() + 2);
+			datumCasDate.setHours(datumCasDate.getHours());
 
 			const koniecDate = new Date(koniec.value);
-			koniecDate.setHours(koniecDate.getHours() + 2);
+			koniecDate.setHours(koniecDate.getHours());
 
 			const newActivity = {
 				aktivita:
 					aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
+				importance: importance.value,
 				datum_cas: datumCasDate.toISOString(),
 				koniec: koniecDate.toISOString(),
 				poznamka: poznamka.value,
@@ -556,6 +559,32 @@ const selectOffice = (office) => {
 					<option value="súkromné">súkromné</option>
 					<option value="lekár">lekár</option>
 					<option value="ine">Iné vypíšem sám</option>
+				</select>
+				<input
+					v-model="ina_aktivita"
+					type="text"
+					v-if="ineBool"
+					class="w-full mt-3 p-1 bg-slate-700 rounded-lg text-white pl-2 focus:outline-blue-500"
+					placeholder="Zadajte aktivitu ..."
+				/>
+			</div>
+
+			<div
+				class="relative z-0 w-full mb-5 mt-2 group"
+				v-if="onlineMeeting == true"
+			>
+				<label
+					class="text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+					>Dôležitosť</label
+				>
+				<select
+					v-model="importance"
+					id="floating_aktivita"
+					class="w-full bg-gray-200 text-white rounded-lg p-1 py-2 mt-1 !text-black"
+				>
+					<option value="low">Nízka</option>
+					<option value="normal">Normálna</option>
+					<option value="high">Vysoká</option>
 				</select>
 				<input
 					v-model="ina_aktivita"
