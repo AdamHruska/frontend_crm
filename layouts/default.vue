@@ -56,25 +56,6 @@
 				</UTooltip>
 
 				<UTooltip
-					text="Zdielanie Kalendára"
-					:ui="{ background: '!bg-white', color: '' }"
-					class=""
-				>
-					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
-						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'test' }"
-						to="/calendar-sharing"
-						@click="setActiveTab('test')"
-					>
-						<Icon
-							icon="pepicons-pencil:people"
-							style="font-size: 36px"
-							class="text-white"
-						/>
-					</NuxtLink>
-				</UTooltip>
-
-				<UTooltip
 					text="Call Lists"
 					:ui="{ background: '!bg-white', color: '' }"
 					class=""
@@ -283,12 +264,31 @@
 
 			<!-- Bottom Navigation Item -->
 			<UTooltip
+				text="Zdielanie Kalendára"
+				:ui="{ background: '!bg-white', color: '' }"
+				class=""
+			>
+				<NuxtLink
+					class="flex items-center justify-center w-16 h-16 mt-auto hover:bg-blue-600 hover:text-gray-300 mb-2 cursor-pointer hover:scale-[105%] transition-transform"
+					:class="{ 'bg-blue-700 text-gray-200': activeTab === 'test' }"
+					to="/calendar-sharing"
+					@click="setActiveTab('test')"
+				>
+					<Icon
+						icon="material-symbols-light:settings-outline"
+						style="font-size: 36px"
+						class="text-white"
+					/>
+				</NuxtLink>
+			</UTooltip>
+
+			<UTooltip
 				text="Odhlasiť sa"
 				:ui="{ background: '!bg-white', color: '' }"
 				class=""
 			>
 				<div
-					class="flex items-center justify-center w-16 h-16 mt-auto hover:bg-blue-600 hover:text-gray-300 mb-2 cursor-pointer hover:scale-[105%] transition-transform"
+					class="flex items-center justify-center w-16 h-16 mt-auto hover:bg-blue-600 hover:text-gray-300 mb-2 cursor-pointer hover:scale-[105%] transition-transform border-t border-black"
 					@click="showSignOutForm()"
 				>
 					<Icon

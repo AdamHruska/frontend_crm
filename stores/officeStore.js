@@ -3,7 +3,7 @@ import { defineStore } from "pinia";
 import { useAuthStore } from "@/stores/authStore";
 import { useUserStore } from "@/stores/userStore";
 
-import axios from "axios";
+import axios, { all } from "axios";
 
 export const useOfficeStore = defineStore("office", {
 	state: () => ({
@@ -15,6 +15,7 @@ export const useOfficeStore = defineStore("office", {
 		loadingState: false,
 		officeActivities: [],
 		setOfficeID: null,
+		allOfficeActivities: [],
 	}),
 
 	actions: {
@@ -336,6 +337,27 @@ export const useOfficeStore = defineStore("office", {
 				console.error("Error fetching offices admin:", error);
 			} finally {
 				this.loadingState = false;
+			}
+		},
+
+		async getallOfficeActivites() {
+			const config = useRuntimeConfig();
+			const authStore = useAuthStore();
+			const userStore = useUserStore();
+
+			try {
+				const response = await axios.get(
+					`${config.public.apiUrl}get-all-activities`,
+					{
+						headers: {
+							Authorization: `Bearer ${authStore.token}`,
+						},
+					}
+				);
+				this.allOfficeActivities = response.data.activities;
+				console.log("Fetched all office activities:", response.data.activities);
+			} catch (error) {
+				console.error("Error adding user to office share:", error);
 			}
 		},
 	},

@@ -45,6 +45,73 @@ const miesto_stretnutia = ref("");
 const onlineMeeting = ref(false);
 const activity_creator = ref("");
 
+const officeAvailability = ref({});
+
+const allOffices = computed(() => [
+	...officeStore.offices,
+	...officeStore.officesSharedWithMe,
+]);
+
+const checkOfficeAvailability = (officeId, newDatum, newKoniec) => {
+	if (!newDatum || !newKoniec)
+		return { isFree: true, overlappingActivity: null };
+
+	const newStart = new Date(newDatum);
+	const newEnd = new Date(newKoniec);
+
+	const overlappingActivity = officeStore.allOfficeActivities.find(
+		(activity) => {
+			// Only check activities for this specific office
+			if (activity.office_id !== officeId) return false;
+
+			const activityStart = new Date(activity.datum_cas);
+			const activityEnd = new Date(activity.koniec);
+
+			// Check if time ranges overlap
+			return newStart < activityEnd && activityStart < newEnd;
+		}
+	);
+
+	if (overlappingActivity) {
+		return {
+			isFree: false,
+			overlappingActivity: overlappingActivity,
+		};
+	} else {
+		return {
+			isFree: true,
+			overlappingActivity: null,
+		};
+	}
+};
+
+watch(
+	() => [datum_cas.value, koniec.value, officeStore.allOfficeActivities],
+	([newDatum, newKoniec]) => {
+		if (!newDatum || !newKoniec) {
+			officeAvailability.value = {};
+			return;
+		}
+
+		console.log("New datum_cas:", newDatum);
+		console.log("New koniec:", newKoniec);
+
+		// Check availability for all offices
+		const availability = {};
+		allOffices.value.forEach((office) => {
+			availability[office.id] = checkOfficeAvailability(
+				office.id,
+				newDatum,
+				newKoniec
+			);
+		});
+
+		officeAvailability.value = availability;
+		console.log("Office availability:", availability);
+	},
+	{ deep: true }
+);
+
 const emailBool = ref(false);
 const email = ref("");
 
@@ -93,10 +160,15 @@ const officeActivityId = ref(null);
 const doesOfficeActivityExist = ref(false);
 const officeActivity = ref(null);
 
+const active = ref([]);
+
 onMounted(async () => {
 	officeStore.fetchOffices();
 	officeStore.fetchOfficesSharedWithMe();
 	userStore.fetchUser();
+
+	officeStore.getallOfficeActivites();
+
 	await contactsStore.fetchContacts();
 	console.log("kontakty", contactsStore.contacts);
 
@@ -119,8 +191,16 @@ onMounted(async () => {
 		}
 	);
 
-	// console.log("Activity Contact ID:", response.data.activity);
-	// console.log("New Contact from Store:", newContact);
+	if (response.data.activity.send_notification_15) {
+		active.value.push(15);
+	}
+	if (response.data.activity.send_notification_30) {
+		active.value.push(30);
+	}
+	if (response.data.activity.send_notification_60) {
+		active.value.push(60);
+	}
+	console.log("New Contact from Store:", active.value);
 
 	activity_creator.value = response.data.activity.created_id;
 	aktivita.value = response.data.activity.aktivita;
@@ -216,6 +296,9 @@ const updateActivity = async () => {
 				dohodnute: dohodnute.value ? 1 : 0,
 				miesto_stretnutia: miesto_stretnutia.value,
 				online_meeting: onlineMeeting.value,
+				send_notification_15: active.value?.includes(15) || false,
+				send_notification_30: active.value?.includes(30) || false,
+				send_notification_60: active.value?.includes(60) || false,
 			},
 			{
 				headers: {
@@ -515,6 +598,16 @@ const selectOffice = (office) => {
 	showOffices.value = false; // close dropdown after selection
 	updateOfficeActivity.value = true;
 };
+
+const setActive = (n) => {
+	if (active.value.includes(n)) {
+		active.value = active.value.filter((item) => item !== n);
+	} else {
+		active.value.push(n);
+	}
+
+	console.log(active.value);
+};
 </script>
 
 <template>
@@ -811,15 +904,29 @@ const selectOffice = (office) => {
 				>
 					<ul class="m-0 p-0 list-none">
 						<li
-							v-for="office in [
-								...officeStore.offices,
-								...officeStore.officesSharedWithMe,
-							]"
-							:key="office"
+							v-for="office in allOffices"
+							:key="office.id"
 							@click="selectOffice(office)"
-							class="hover:bg-gray-300 my-0 p-2 rounded-sm"
+							:class="[
+								'hover:bg-gray-300 my-0 p-2 rounded-sm',
+								officeAvailability[office.id] &&
+								!officeAvailability[office.id].isFree
+									? 'border-2 border-red-500 bg-red-50'
+									: '',
+							]"
 						>
-							{{ office.name }}
+							<div class="flex justify-between items-center">
+								<span>{{ office.name }}</span>
+								<span
+									v-if="
+										officeAvailability[office.id] &&
+										!officeAvailability[office.id].isFree
+									"
+									class="text-xs text-red-600 ml-2"
+								>
+									(Obsadená)
+								</span>
+							</div>
 						</li>
 					</ul>
 				</div>
@@ -881,6 +988,21 @@ const selectOffice = (office) => {
 					</label>
 				</div>
 			</div>
+
+			<div class="relative z-0 w-full mb-2 group flex items-center">
+				<label class="text-sm text-gray-500">Vytvoriť notifikáciu</label>
+				<div class="flex justify-center items-center gap-4 ml-9">
+					<span
+						v-for="n in [15, 30, 60]"
+						:key="n"
+						@click="setActive(n)"
+						class="bg-slate-200 px-2 py-1.5 rounded-lg border-2 cursor-pointer transition"
+						:class="active.includes(n) ? 'border-blue-500 bg-blue-100' : ''"
+						>{{ n }}</span
+					>
+				</div>
+			</div>
+
 			<div
 				v-if="userStore.user.id == activity_creator"
 				class="flex justify-center items-center mt-3 gap-6"

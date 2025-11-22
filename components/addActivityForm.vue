@@ -44,6 +44,73 @@ const ineBool = ref(false);
 const miesto_stretnutia = ref("");
 const onlineMeeting = ref(false);
 
+const officeAvailability = ref({});
+
+const allOffices = computed(() => [
+	...officeStore.offices,
+	...officeStore.officesSharedWithMe,
+]);
+
+const checkOfficeAvailability = (officeId, newDatum, newKoniec) => {
+	if (!newDatum || !newKoniec)
+		return { isFree: true, overlappingActivity: null };
+
+	const newStart = new Date(newDatum);
+	const newEnd = new Date(newKoniec);
+
+	const overlappingActivity = officeStore.allOfficeActivities.find(
+		(activity) => {
+			// Only check activities for this specific office
+			if (activity.office_id !== officeId) return false;
+
+			const activityStart = new Date(activity.datum_cas);
+			const activityEnd = new Date(activity.koniec);
+
+			// Check if time ranges overlap
+			return newStart < activityEnd && activityStart < newEnd;
+		}
+	);
+
+	if (overlappingActivity) {
+		return {
+			isFree: false,
+			overlappingActivity: overlappingActivity,
+		};
+	} else {
+		return {
+			isFree: true,
+			overlappingActivity: null,
+		};
+	}
+};
+
+watch(
+	() => [datum_cas.value, koniec.value, officeStore.allOfficeActivities],
+	([newDatum, newKoniec]) => {
+		if (!newDatum || !newKoniec) {
+			officeAvailability.value = {};
+			return;
+		}
+
+		console.log("New datum_cas:", newDatum);
+		console.log("New koniec:", newKoniec);
+
+		// Check availability for all offices
+		const availability = {};
+		allOffices.value.forEach((office) => {
+			availability[office.id] = checkOfficeAvailability(
+				office.id,
+				newDatum,
+				newKoniec
+			);
+		});
+
+		officeAvailability.value = availability;
+		console.log("Office availability:", availability);
+	},
+	{ deep: true }
+);
+
 const emailBool = ref(false);
 const email = ref("");
 const contacts = ref([]);
@@ -87,10 +154,51 @@ watch(datum_cas, (newValue) => {
 	manualChangeCount.value = 10;
 });
 
+// const officeAvailability = ref({ isFree: true, overlappingActivity: null });
+
+// watch(
+// 	() => [datum_cas.value, koniec.value],
+// 	([newDatum, newKoniec]) => {
+// 		if (!newDatum || !newKoniec) return;
+
+// 		console.log("New datum_cas:", newDatum);
+// 		console.log("New koniec:", newKoniec);
+
+// 		const newStart = new Date(newDatum);
+// 		const newEnd = new Date(newKoniec);
+
+// 		const overlappingActivity = officeStore.allOfficeActivities.find(
+// 			(activity) => {
+// 				const activityStart = new Date(activity.datum_cas);
+// 				const activityEnd = new Date(activity.koniec);
+
+// 				// Check if time ranges overlap
+// 				return newStart < activityEnd && activityStart < newEnd;
+// 			}
+// 		);
+
+// 		if (overlappingActivity) {
+// 			officeAvailability.value = {
+// 				isFree: false,
+// 				overlappingActivity: overlappingActivity,
+// 			};
+// 			console.log("Office is occupied:", overlappingActivity);
+// 		} else {
+// 			officeAvailability.value = {
+// 				isFree: true,
+// 				overlappingActivity: null,
+// 			};
+// 			console.log("Office is free");
+// 		}
+// 	}
+// );
+
 onBeforeMount(async () => {
 	officeStore.fetchOffices();
 	officeStore.fetchOfficesSharedWithMe();
 	userStore.fetchUser();
+
+	officeStore.getallOfficeActivites();
 
 	const response = await findPerson(props.contact_id);
 	if (contact.value[0]?.email) {
@@ -199,6 +307,9 @@ const addActivity = async () => {
 				dohodnute: dohodnute.value,
 				online_meeting: onlineMeeting.value,
 				miesto_stretnutia: miesto_stretnutia.value,
+				send_notification_15: active.value?.includes(15) || false,
+				send_notification_30: active.value?.includes(30) || false,
+				send_notification_60: active.value?.includes(60) || false,
 			},
 			{
 				headers: {
@@ -406,6 +517,18 @@ const updateTime = (time) => {
 };
 
 defineExpose({ updateTime });
+
+const active = ref([]);
+
+const setActive = (n) => {
+	if (active.value.includes(n)) {
+		active.value = active.value.filter((item) => item !== n);
+	} else {
+		active.value.push(n);
+	}
+
+	console.log(active.value);
+};
 </script>
 
 <template>
@@ -645,8 +768,9 @@ defineExpose({ updateTime });
 				/>
 			</div>
 
+			<!--
 			<div class="relative z-0 w-full mb-5 group">
-				<!-- Dropdown button -->
+			
 				<div
 					@click="toggleOffices"
 					class="flex justify-between w-full cursor-pointer p-2 bg-gray-200 rounded-lg text-black"
@@ -682,6 +806,63 @@ defineExpose({ updateTime });
 							class="hover:bg-gray-300 my-0 p-2 rounded-sm"
 						>
 							{{ office.name }}
+						</li>
+					</ul>
+				</div>
+			</div>
+-->
+
+			<div class="relative z-0 w-full mb-5 group">
+				<!-- Dropdown button -->
+				<div
+					@click="toggleOffices"
+					class="flex justify-between w-full cursor-pointer p-2 bg-gray-200 rounded-lg text-black"
+				>
+					<div>{{ selectedOffice.name }}</div>
+					<svg
+						class="-mr-1 h-5 w-5 text-gray-400"
+						xmlns="http://www.w3.org/2000/svg"
+						fill="currentColor"
+						viewBox="0 0 20 20"
+						aria-hidden="true"
+					>
+						<path
+							fill-rule="evenodd"
+							clip-rule="evenodd"
+							d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+						/>
+					</svg>
+				</div>
+
+				<div
+					v-if="showOffices"
+					class="w-full bg-gray-200 rounded-lg !text-black flex flex-col mt-1 max-h-[150px] overflow-y-auto"
+				>
+					<ul class="m-0 p-0 list-none">
+						<li
+							v-for="office in allOffices"
+							:key="office.id"
+							@click="selectOffice(office)"
+							:class="[
+								'hover:bg-gray-300 my-0 p-2 rounded-sm',
+								officeAvailability[office.id] &&
+								!officeAvailability[office.id].isFree
+									? 'border-2 border-red-500 bg-red-50'
+									: '',
+							]"
+						>
+							<div class="flex justify-between items-center">
+								<span>{{ office.name }}</span>
+								<span
+									v-if="
+										officeAvailability[office.id] &&
+										!officeAvailability[office.id].isFree
+									"
+									class="text-xs text-red-600 ml-2"
+								>
+									(Obsadená)
+								</span>
+							</div>
 						</li>
 					</ul>
 				</div>
@@ -733,6 +914,21 @@ defineExpose({ updateTime });
 					</label>
 				</div>
 			</div>
+
+			<div class="relative z-0 w-full mb-2 group flex items-center">
+				<label class="text-sm text-gray-500">Vytvoriť notifikáciu</label>
+				<div class="flex justify-center items-center gap-4 ml-9">
+					<span
+						v-for="n in [15, 30, 60]"
+						:key="n"
+						@click="setActive(n)"
+						class="bg-slate-200 px-2 py-1.5 rounded-lg border-2 cursor-pointer transition"
+						:class="active.includes(n) ? 'border-blue-500 bg-blue-100' : ''"
+						>{{ n }}</span
+					>
+				</div>
+			</div>
+
 			<div class="flex justify-center items-center mt-3">
 				<button
 					@click="addActivity()"

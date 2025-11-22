@@ -79,7 +79,7 @@ function addPerson(addedPeople) {
 			}
 
 			if (person.only_called_never_answered === 1) {
-				cssClass += "bg-orange-200 ";
+				cssClass += "bg-blue-200 ";
 			}
 
 			return {
@@ -209,7 +209,7 @@ const handleSearchResults = (results) => {
 				cssClass += "bg-green-200 ";
 			}
 			if (person.only_called_never_answered === 1) {
-				cssClass += "bg-orange-200 ";
+				cssClass += "bg-blue-200 ";
 			}
 			return {
 				...person,
@@ -225,7 +225,7 @@ const handleSearchResults = (results) => {
 				cssClass += "bg-green-200 ";
 			}
 			if (person.only_called_never_answered === 1) {
-				cssClass += "bg-orange-200 ";
+				cssClass += "bg-blue-200 ";
 			}
 			return {
 				...person,
@@ -337,7 +337,7 @@ const nextPage = async () => {
 		}
 
 		if (person.only_called_never_answered === 1) {
-			cssClass += "bg-orange-200 ";
+			cssClass += "bg-blue-200 ";
 		}
 
 		return {
@@ -360,7 +360,7 @@ const prevPage = async () => {
 		}
 
 		if (person.only_called_never_answered === 1) {
-			cssClass += "bg-orange-200 ";
+			cssClass += "bg-blue-200 ";
 		}
 
 		return {
@@ -487,7 +487,7 @@ const goToPage = async (pageNum) => {
 		}
 
 		if (person.only_called_never_answered === 1) {
-			cssClass += "bg-orange-200 ";
+			cssClass += "bg-blue-200 ";
 		}
 
 		return {

@@ -67,7 +67,10 @@
 					@change="handleMyCalendarChange"
 					class="peer w-5 h-5 cursor-pointer checkbox-custom"
 				/>
-				<div class="">Adam Hruška</div>
+				<div class="">
+					{{ userStore.user?.first_name || "meno" }}
+					{{ userStore.user?.last_name || "priezvisko" }}
+				</div>
 
 				<div
 					class="h-5 w-5 rounded"

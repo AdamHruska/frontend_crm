@@ -1,6 +1,10 @@
 <template>
 	<!--Month select-->
-	<AlterActivityForm v-if="showActivityForm" />
+	<AlterActivityForm
+		v-if="showActivityForm"
+		:activityID="selectedActivityID"
+		@cancelAddActivity="changeshowActivityForm(null)"
+	/>
 	<div class="px-8 pt-6 pb-4">
 		<select
 			@change="fetchData"
@@ -32,7 +36,7 @@
 		<div
 			v-for="event in declinedEvents"
 			class="p-6 bg-white rounded-lg shadow-lg max-w-[450px]"
-			v-if="!loading"
+			v-if="!loading && declinedEvents.length > 0"
 		>
 			<div class="font-semibold mb-3">{{ event.subject }}</div>
 			<div class="flex flex-col gap-2 mb-3">
@@ -105,10 +109,70 @@
 			</div>
 			<div
 				class="bg-blue-500 px-2 py-1 w-fit rounded-md mt-4 hover:bg-blue-300 hover:scale-105 cursor-pointer float-right"
-				@click="showActivityForm = !showActivityForm"
+				@click="changeshowActivityForm(event.id)"
 			>
 				Obnoviť aktivitu
 			</div>
+		</div>
+
+		<div>
+			<p v-if="!loading && declinedEvents.length === 0" class="text-gray-500">
+				Žiadne odmietnuté udalosti za vybraný mesiac.
+			</p>
+		</div>
+	</div>
+
+	<h1 class="font-semibold ml-10">Aktivity z databázy</h1>
+	<div
+		class="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-6 md:gap-y-12 max-w-screen px-8 pb-12 pt-6"
+	>
+		<!--Card-->
+		<div
+			v-for="event in dbActivities"
+			class="p-6 bg-white rounded-lg shadow-lg max-w-[450px]"
+			v-if="!loading && dbActivities.length > 0"
+		>
+			<div class="font-semibold mb-4 text-lg">{{ event.aktivita }}</div>
+			<div class="flex flex-col gap-2 mb-3">
+				<div>
+					<span class=""
+						><span class="font-semibold">Začiatok:</span>&nbsp;
+						{{ formatDate(event.datumCas) }}</span
+					>
+				</div>
+
+				<div>
+					<span class=""
+						><span class="font-semibold">Koniec:</span>&nbsp;
+						{{ formatDate(event.koniec) }}</span
+					>
+				</div>
+			</div>
+			<div
+				class="max-h-[200px] overflow-y-auto border-y-2 py-4 hover:bg-slate-100 cursor-pointer"
+				@click="goToContact(event.contact_id)"
+			>
+				<span class="font-semibold">Meno klienta: </span> {{ event.meno }}
+				{{ event.priezvisko }}
+			</div>
+
+			<div>
+				<span class="font-semibold">Poznámka: </span
+				>{{ event.poznamka || "Poznámka nie je vyplnená" }}
+			</div>
+
+			<div
+				class="bg-blue-500 px-2 py-1 w-fit rounded-md mt-4 hover:bg-blue-300 hover:scale-105 cursor-pointer float-right"
+				@click="changeshowActivityForm(event.id)"
+			>
+				Obnoviť aktivitu
+			</div>
+		</div>
+
+		<div>
+			<p v-if="!loading && dbActivities.length === 0" class="text-gray-500">
+				Žiadne aktivity v databáze za vybraný mesiac.
+			</p>
 		</div>
 	</div>
 </template>
@@ -121,22 +185,54 @@ const authStore = useAuthStore();
 import { useUserStore } from "#imports";
 const userStore = useUserStore();
 import { Icon } from "@iconify/vue";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 const declinedEvents = ref([]);
 const loading = ref(false);
 const selectedMonth = ref(new Date().getMonth() + 1);
 
+const dbActivities = ref([]);
+
 const showActivityForm = ref(false);
+
+const selectedActivityID = ref(null);
+
+function goToContact(contactId) {
+	router.push("/contact/" + contactId);
+}
 
 const formatMonthForAPI = (month) => {
 	const year = new Date().getFullYear();
 	const formattedMonth = String(month).padStart(2, "0"); // 👈 ensures 01–12
 	return `${year}-${formattedMonth}`;
 };
+
+const changeshowActivityForm = (activityID) => {
+	console.log("Activity ID to edit:", activityID);
+	selectedActivityID.value = activityID;
+	showActivityForm.value = !showActivityForm.value;
+};
+
 onMounted(async () => {
 	await userStore.fetchUser();
 	try {
 		loading.value = true;
+
+		const responseMyActivities = await axios.get(
+			`${config.public.apiUrl}get-uncompleted-activities`,
+			{
+				headers: { Authorization: `Bearer ${authStore.token}` },
+				params: { month: formatMonthForAPI(selectedMonth.value) },
+			}
+		);
+		console.log(
+			"My Activities Response on Mounted:",
+			responseMyActivities.data.activities
+		);
+		dbActivities.value = responseMyActivities.data.activities;
+
 		const response = await axios.post(
 			`${config.public.apiUrl}microsoft/declined-events/${userStore.user.id}`,
 			{
@@ -169,6 +265,20 @@ const fetchData = async () => {
 	console.log("Selected Month:", selectedMonth.value);
 	try {
 		loading.value = true;
+
+		const responseMyActivities = await axios.get(
+			`${config.public.apiUrl}get-uncompleted-activities`,
+			{
+				headers: { Authorization: `Bearer ${authStore.token}` },
+				params: { month: selectedMonth.value },
+			}
+		);
+		console.log(
+			"My Activities Response on Mounted:",
+			responseMyActivities.data.activities
+		);
+		dbActivities.value = responseMyActivities.data.activities;
+
 		const response = await axios.post(
 			`${config.public.apiUrl}microsoft/declined-events/${userStore.user.id}`,
 			{
