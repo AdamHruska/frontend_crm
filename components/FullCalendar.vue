@@ -99,22 +99,25 @@ const calendarOptions = ref({
 	},
 	locale: "sk",
 	firstDay: 1,
-	datesSet: async (dateInfo) => {
+	datesSet: (dateInfo) => {
+		// Extract the current view's start date
 		const currentDate = dateInfo.view.currentStart;
+
+		// Get the month (0-11) and year
 		const month = currentDate.getMonth() + 1;
 		const year = currentDate.getFullYear();
 
-		// Only fetch if this is a new month/year
+		// Check if this is a new month or year
 		if (
-			month !== currentLoadedMonth.value ||
+			month !== currentLoadedMonth.value + 2 ||
 			year !== currentLoadedYear.value
 		) {
-			// Update the tracking variables FIRST
+			// Call fetchMicrosoftEvents function with current month and year
+			fetchMicrosoftEvents(month, year);
+
+			// Update the current loaded month and year
 			currentLoadedMonth.value = month;
 			currentLoadedYear.value = year;
-
-			// Fetch and merge Microsoft events
-			await fetchMicrosoftEvents(month, year);
 		}
 	},
 	// Add this event render function to verify all-day events are being processed correctly
@@ -350,7 +353,6 @@ onMounted(async () => {
 
 	try {
 		calendarListLoading.value = true;
-		// Fetch tokens from the backend
 		const response = await axios.get(
 			`${config.public.apiUrl}microsoft/calendars`,
 			{
@@ -360,7 +362,6 @@ onMounted(async () => {
 			}
 		);
 		calendarList.value = response.data.calendars;
-		console.log("skuska list name", response.data.calendars);
 	} catch (error) {
 		console.error("Error during Microsoft login callback:", error);
 	} finally {
@@ -378,7 +379,7 @@ onMounted(async () => {
 	]);
 
 	// Set up local activities first
-	rawData.value = calendarStore.activities;
+	rawData.value = [...calendarStore.activities]; // Use spread to ensure reactivity
 	events.value = transformData(rawData.value);
 
 	// Fetch shared activities if needed
@@ -392,16 +393,18 @@ onMounted(async () => {
 	);
 	events.value = [...events.value, ...sharedACT];
 
-	// DON'T fetch Microsoft events here - let datesSet handle it
-	// Just update calendar options with current events
-	calendarOptions.value.events = [...events.value];
+	// Update calendar options with current events
+	calendarOptions.value = {
+		...calendarOptions.value,
+		events: [...events.value],
+	};
 
 	// Set up event listener for deleteSharedEvents
 	eventBus.on("deleteSharedEvents", ({ userId }) => {
 		events.value = events.value.filter((event) => event.user_id !== userId);
 		calendarOptions.value = {
 			...calendarOptions.value,
-			events: events.value,
+			events: [...events.value],
 		};
 	});
 
@@ -412,12 +415,10 @@ onMounted(async () => {
 		try {
 			const response = await axios.post(
 				`${config.public.apiUrl}auth/callback`,
-				{
-					code,
-				}
+				{ code }
 			);
 
-			const { access_token, refresh_token, expires_in } = response.data;
+			const { access_token, refresh_token } = response.data;
 			const rememberMe = sessionStorage.getItem("rememberMe") === "true";
 
 			if (rememberMe) {
@@ -435,6 +436,141 @@ onMounted(async () => {
 		}
 	}
 });
+
+// onMounted(async () => {
+// 	// if (calendarStore.activities.length === 0) {
+// 	// 	await calendarStore.fetchActivities();
+// 	// }
+
+// 	// if (contactsStore.contacts.data.length === 0) {
+// 	// 	await contactsStore.fetchContacts();
+// 	// }
+
+// 	// if (!calendarStore.activities.length) {
+// 	// 	await calendarStore.fetchActivities();
+// 	// }
+
+// 	await userStore.userGetCalendarNames();
+// 	try {
+// 		calendarListLoading.value = true;
+// 		// Fetch tokens from the backend
+// 		const response = await axios.get(
+// 			`${config.public.apiUrl}microsoft/calendars`,
+// 			{
+// 				headers: {
+// 					Authorization: `Bearer ${authStore.token}`,
+// 				},
+// 			}
+// 		);
+// 		calendarList.value = response.data.calendars;
+// 		console.log("skuska list name", response.data.calendars);
+// 	} catch (error) {
+// 		console.error("Error during Microsoft login callback:", error);
+// 	} finally {
+// 		calendarListLoading.value = false;
+// 	}
+
+// 	await Promise.all([
+// 		calendarStore.activities.length === 0
+// 			? calendarStore.fetchActivities()
+// 			: Promise.resolve(),
+// 		contactsStore.contacts.data.length === 0
+// 			? contactsStore.fetchContacts()
+// 			: Promise.resolve(),
+// 	]);
+
+// 	rawData.value = calendarStore.activities;
+// 	events.value = transformData(rawData.value);
+// 	calendarOptions.value.events = events.value;
+
+// 	// Set up event listener for deleteSharedEvents
+// 	eventBus.on("deleteSharedEvents", ({ userId }) => {
+// 		// Filter out events from the deleted user
+// 		events.value = events.value.filter((event) => event.user_id !== userId);
+
+// 		// Update calendar options to refresh the view
+// 		calendarOptions.value = {
+// 			...calendarOptions.value,
+// 			events: events.value,
+// 		};
+// 	});
+
+// 	// Rest of your mounting logic...
+// 	// rawData.value = calendarStore.activities;
+// 	// events.value = transformData(rawData.value);
+// 	// const sharedACT = transformData(
+// 	// 	flattenActivities(calendarStore.shared_activities)
+// 	// );
+// 	// events.value = [...events.value, ...sharedACT];
+
+// 	// calendarOptions.value.events = events.value;
+
+// 	// Fetch user activities first (fast)
+// 	//await userStore.fetchUser();
+// 	//await calendarStore.fetchUserActivities();
+// 	rawData.value = calendarStore.activities;
+// 	events.value = transformData(rawData.value);
+// 	calendarOptions.value.events = events.value;
+
+// 	// Fire shared activities in background (don’t block initial render)
+// 	if (calendarStore.shared_activities.length === 0) {
+// 		await calendarStore.fetchSharedActivities();
+// 	}
+
+// 	const sharedACT = transformData(
+// 		flattenActivities(calendarStore.shared_activities)
+// 	);
+// 	events.value = [...events.value, ...sharedACT];
+// 	calendarOptions.value.events = events.value;
+
+// 	// calendarStore.fetchSharedActivities().then(() => {
+// 	// 	const sharedACT = transformData(
+// 	// 		flattenActivities(calendarStore.shared_activities)
+// 	// 	);
+// 	// 	events.value = [...events.value, ...sharedACT];
+// 	// 	calendarOptions.value = {
+// 	// 		...calendarOptions.value,
+// 	// 		events: events.value,
+// 	// 	};
+// 	// });
+
+// 	const urlParams = new URLSearchParams(window.location.search);
+// 	const code = urlParams.get("code");
+
+// 	if (code) {
+// 		try {
+// 			// Fetch tokens from the backend
+// 			const response = await axios.post(
+// 				`${config.public.apiUrl}auth/callback`,
+// 				{
+// 					code,
+// 				}
+// 			);
+
+// 			const { access_token, refresh_token, expires_in } = response.data;
+
+// 			// Check if "rememberMe" was enabled
+// 			const rememberMe = sessionStorage.getItem("rememberMe") === "true";
+
+// 			if (rememberMe) {
+// 				// Store tokens in localStorage for persistent storage
+// 				localStorage.setItem("microsoft_access_token", access_token);
+// 				localStorage.setItem("microsoft_refresh_token", refresh_token); // Optional
+// 			} else {
+// 				// Store tokens in sessionStorage for session-only storage
+// 				sessionStorage.setItem("microsoft_access_token", access_token);
+// 				sessionStorage.setItem("microsoft_refresh_token", refresh_token); // Optional
+// 			}
+
+// 			// Clear the temporary "rememberMe" flag
+// 			sessionStorage.removeItem("rememberMe");
+
+// 			window.location.href = "/calendar";
+// 		} catch (error) {
+// 			console.error("Error during Microsoft login callback:", error);
+// 		}
+// 	}
+// });
 
 // Don't forget to clean up the event listener
 onUnmounted(() => {
@@ -813,19 +949,65 @@ const loadingStateCalendar = ref(false);
 
 const areMicrosofEventsShown = ref(false);
 
+// async function fetchMicrosoftEvents(month, year) {
+// 	loadingStateCalendar.value = true;
+
+// 	// First ensure local events are loaded
+// 	if (calendarStore.activities.length === 0) {
+// 		await calendarStore.fetchActivities();
+// 		rawData.value = calendarStore.activities;
+// 		events.value = transformData(rawData.value);
+// 	}
+
+// 	// Store current non-Microsoft events before fetching new Microsoft events
+// 	const nonMicrosoftEvents = events.value.filter(
+// 		(event) => event.extendedProps.source !== "microsoft"
+// 	);
+
+// 	// Then get Microsoft events
+// 	const newMicrosoftEvents = await calendarStore.fetchMicrosoftEvents(
+// 		month,
+// 		year
+// 	);
+
+// 	// Merge: keep all non-Microsoft events and add new Microsoft events
+// 	events.value = [...nonMicrosoftEvents, ...newMicrosoftEvents];
+
+// 	calendarOptions.value = {
+// 		...calendarOptions.value,
+// 		events: [...events.value],
+// 	};
+
+// 	loadingStateCalendar.value = false;
+// 	return newMicrosoftEvents;
+// }
+
 async function fetchMicrosoftEvents(month, year) {
 	loadingStateCalendar.value = true;
 
-	// First ensure local events are loaded
-	if (calendarStore.activities.length === 0) {
-		await calendarStore.fetchActivities();
+	// ALWAYS ensure local events are present, even if store has them
+	if (
+		events.value.length === 0 ||
+		!events.value.some((e) => !e.extendedProps?.source)
+	) {
+		// Refetch if events are empty OR if we only have Microsoft events
+		if (calendarStore.activities.length === 0) {
+			await calendarStore.fetchActivities();
+		}
+
 		rawData.value = calendarStore.activities;
-		events.value = transformData(rawData.value);
+
+		// Add shared activities
+		const sharedACT = transformData(
+			flattenActivities(calendarStore.shared_activities)
+		);
+
+		events.value = [...transformData(rawData.value), ...sharedACT];
 	}
 
 	// Store current non-Microsoft events before fetching new Microsoft events
 	const nonMicrosoftEvents = events.value.filter(
-		(event) => event.extendedProps.source !== "microsoft"
+		(event) => event.extendedProps?.source !== "microsoft"
 	);
 
 	// Then get Microsoft events
