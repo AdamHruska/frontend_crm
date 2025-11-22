@@ -99,25 +99,22 @@ const calendarOptions = ref({
 	},
 	locale: "sk",
 	firstDay: 1,
-	datesSet: (dateInfo) => {
-		// Extract the current view's start date
+	datesSet: async (dateInfo) => {
 		const currentDate = dateInfo.view.currentStart;
-
-		// Get the month (0-11) and year
 		const month = currentDate.getMonth() + 1;
 		const year = currentDate.getFullYear();
 
-		// Check if this is a new month or year
+		// Only fetch if this is a new month/year
 		if (
-			month !== currentLoadedMonth.value + 2 ||
+			month !== currentLoadedMonth.value ||
 			year !== currentLoadedYear.value
 		) {
-			// Call fetchMicrosoftEvents function with current month and year
-			fetchMicrosoftEvents(month, year);
-
-			// Update the current loaded month and year
+			// Update the tracking variables FIRST
 			currentLoadedMonth.value = month;
 			currentLoadedYear.value = year;
+
+			// Fetch and merge Microsoft events
+			await fetchMicrosoftEvents(month, year);
 		}
 	},
 	// Add this event render function to verify all-day events are being processed correctly
@@ -349,19 +346,8 @@ const calendarList = ref([]);
 const calendarListLoading = ref(false);
 
 onMounted(async () => {
-	// if (calendarStore.activities.length === 0) {
-	// 	await calendarStore.fetchActivities();
-	// }
-
-	// if (contactsStore.contacts.data.length === 0) {
-	// 	await contactsStore.fetchContacts();
-	// }
-
-	// if (!calendarStore.activities.length) {
-	// 	await calendarStore.fetchActivities();
-	// }
-
 	await userStore.userGetCalendarNames();
+
 	try {
 		calendarListLoading.value = true;
 		// Fetch tokens from the backend
@@ -381,6 +367,7 @@ onMounted(async () => {
 		calendarListLoading.value = false;
 	}
 
+	// Fetch activities and contacts in parallel
 	await Promise.all([
 		calendarStore.activities.length === 0
 			? calendarStore.fetchActivities()
@@ -390,67 +377,39 @@ onMounted(async () => {
 			: Promise.resolve(),
 	]);
 
+	// Set up local activities first
 	rawData.value = calendarStore.activities;
 	events.value = transformData(rawData.value);
-	calendarOptions.value.events = events.value;
+
+	// Fetch shared activities if needed
+	if (calendarStore.shared_activities.length === 0) {
+		await calendarStore.fetchSharedActivities();
+	}
+
+	// Add shared activities to events
+	const sharedACT = transformData(
+		flattenActivities(calendarStore.shared_activities)
+	);
+	events.value = [...events.value, ...sharedACT];
+
+	// DON'T fetch Microsoft events here - let datesSet handle it
+	// Just update calendar options with current events
+	calendarOptions.value.events = [...events.value];
 
 	// Set up event listener for deleteSharedEvents
 	eventBus.on("deleteSharedEvents", ({ userId }) => {
-		// Filter out events from the deleted user
 		events.value = events.value.filter((event) => event.user_id !== userId);
-
-		// Update calendar options to refresh the view
 		calendarOptions.value = {
 			...calendarOptions.value,
 			events: events.value,
 		};
 	});
 
-	// Rest of your mounting logic...
-	// rawData.value = calendarStore.activities;
-	// events.value = transformData(rawData.value);
-	// const sharedACT = transformData(
-	// 	flattenActivities(calendarStore.shared_activities)
-	// );
-	// events.value = [...events.value, ...sharedACT];
-
-	// calendarOptions.value.events = events.value;
-
-	// Fetch user activities first (fast)
-	//await userStore.fetchUser();
-	//await calendarStore.fetchUserActivities();
-	rawData.value = calendarStore.activities;
-	events.value = transformData(rawData.value);
-	calendarOptions.value.events = events.value;
-
-	// Fire shared activities in background (don’t block initial render)
-	if (calendarStore.shared_activities.length === 0) {
-		await calendarStore.fetchSharedActivities();
-	}
-
-	const sharedACT = transformData(
-		flattenActivities(calendarStore.shared_activities)
-	);
-	events.value = [...events.value, ...sharedACT];
-	calendarOptions.value.events = events.value;
-
-	// calendarStore.fetchSharedActivities().then(() => {
-	// 	const sharedACT = transformData(
-	// 		flattenActivities(calendarStore.shared_activities)
-	// 	);
-	// 	events.value = [...events.value, ...sharedACT];
-	// 	calendarOptions.value = {
-	// 		...calendarOptions.value,
-	// 		events: events.value,
-	// 	};
-	// });
-
 	const urlParams = new URLSearchParams(window.location.search);
 	const code = urlParams.get("code");
 
 	if (code) {
 		try {
-			// Fetch tokens from the backend
 			const response = await axios.post(
 				`${config.public.apiUrl}auth/callback`,
 				{
@@ -459,23 +418,17 @@ onMounted(async () => {
 			);
 
 			const { access_token, refresh_token, expires_in } = response.data;
-
-			// Check if "rememberMe" was enabled
 			const rememberMe = sessionStorage.getItem("rememberMe") === "true";
 
 			if (rememberMe) {
-				// Store tokens in localStorage for persistent storage
 				localStorage.setItem("microsoft_access_token", access_token);
-				localStorage.setItem("microsoft_refresh_token", refresh_token); // Optional
+				localStorage.setItem("microsoft_refresh_token", refresh_token);
 			} else {
-				// Store tokens in sessionStorage for session-only storage
 				sessionStorage.setItem("microsoft_access_token", access_token);
-				sessionStorage.setItem("microsoft_refresh_token", refresh_token); // Optional
+				sessionStorage.setItem("microsoft_refresh_token", refresh_token);
 			}
 
-			// Clear the temporary "rememberMe" flag
 			sessionStorage.removeItem("rememberMe");
-
 			window.location.href = "/calendar";
 		} catch (error) {
 			console.error("Error during Microsoft login callback:", error);
