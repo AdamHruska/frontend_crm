@@ -629,6 +629,19 @@ const handleActivityUpdate = (updatedActivity) => {
 
 	//changeDiscardActivityModal();
 };
+
+// In your component
+const requestNotificationPermission = async () => {
+	if (window.OneSignalReady) {
+		try {
+			const permission =
+				await window.OneSignal.Notifications.requestPermission();
+			console.log("Permission result:", permission);
+		} catch (error) {
+			console.error("Permission error:", error);
+		}
+	}
+};
 </script>
 
 <template>
@@ -677,6 +690,7 @@ const handleActivityUpdate = (updatedActivity) => {
 
 	<div class="flex justify-between items-center bg-gray-200 p-4">
 		<h1 class="text-2xl font-semibold ml-10 mt-4">Detail</h1>
+		<button @click="requestNotificationPermission">notif</button>
 		<button
 			class="bg-green-500 hover:bg-green-400 px-4 py-2 rounded-lg font-semibold shadow-md mr-10"
 			@click="changeCallListBool"
