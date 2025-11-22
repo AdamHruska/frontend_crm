@@ -870,19 +870,19 @@ async function fetchMicrosoftEvents(month, year) {
 		events.value = transformData(rawData.value);
 	}
 
-	// Then get Microsoft events
-	const newEvents = await calendarStore.fetchMicrosoftEvents(month, year);
-
-	// Process events to prevent duplicates
-	const existingEventIds = new Set(events.value.map((event) => event.id));
-	const uniqueNewEvents = newEvents.filter(
-		(event) => !existingEventIds.has(event.id)
+	// Store current non-Microsoft events before fetching new Microsoft events
+	const nonMicrosoftEvents = events.value.filter(
+		(event) => event.extendedProps.source !== "microsoft"
 	);
 
-	// Merge events while preserving existing ones
-	events.value = [...events.value, ...uniqueNewEvents];
+	// Then get Microsoft events
+	const newMicrosoftEvents = await calendarStore.fetchMicrosoftEvents(
+		month,
+		year
+	);
 
-	// calendarOptions.value = { ...calendarOptions.value, events: events.value };
+	// Merge: keep all non-Microsoft events and add new Microsoft events
+	events.value = [...nonMicrosoftEvents, ...newMicrosoftEvents];
 
 	calendarOptions.value = {
 		...calendarOptions.value,
@@ -890,7 +890,7 @@ async function fetchMicrosoftEvents(month, year) {
 	};
 
 	loadingStateCalendar.value = false;
-	return uniqueNewEvents;
+	return newMicrosoftEvents;
 }
 
 const eventType = ref("regular");
