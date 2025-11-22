@@ -280,15 +280,22 @@ async function updateEventEndInBackend(eventId, newEnd) {
 				event.id == eventId ? updatedEvent : event
 			);
 
-			// No need to update events.value as FullCalendar already updated the UI
+			// Update in Pinia store
+			calendarStore.activities = calendarStore.activities.map((event) =>
+				event.id == eventId ? updatedEvent : event
+			);
+
+			toast.success("Event end time updated successfully");
 		} else {
 			// If there was an error, revert the change
-			alert("Failed to update event: " + response.data.message);
+			toast.error("Failed to update event: " + response.data.message);
 			calendarOptions.value.events = [...events.value]; // Force refresh
 		}
 	} catch (error) {
 		console.error("Error updating event:", error);
-		alert("An error occurred while updating the event. Please try again.");
+		toast.error(
+			"An error occurred while updating the event. Please try again."
+		);
 		calendarOptions.value.events = [...events.value]; // Force refresh
 	} finally {
 		loadingStateCalendar.value = false;
