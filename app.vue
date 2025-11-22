@@ -148,7 +148,7 @@ const savePlayerIdToBackend = async (playerId) => {
 
 		console.log("📤 Saving OneSignal player ID to backend:", playerId);
 
-		await $fetch(`${config.public.apiBase}/api/save-onesignal-id`, {
+		await $fetch(`${config.public.apiUrl}save-onesignal-id`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
