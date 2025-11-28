@@ -1,8 +1,17 @@
 <template>
 	<div class="p-8">
-		<h1 class="font-semibold text-xl mb-8">
-			{{ officeToEdit ? "Upravte kanceláriu" : "Vyplnte údaje kancelárie" }}
-		</h1>
+		<div class="flex">
+			<h1 class="font-semibold text-xl mb-8">
+				{{ officeToEdit ? "Upravte kanceláriu" : "Vyplnte údaje kancelárie" }}
+			</h1>
+			<div
+				class="cursor-pointer ml-20 mt-1 hover:scale-105 transition-transform"
+				@click="emit('cancel')"
+			>
+				<Icon icon="fa6-solid:xmark" class="" />
+			</div>
+		</div>
+
 		<form>
 			<div class="mb-4">
 				<label for="name" class="block text-sm font-medium text-gray-700">
@@ -53,6 +62,8 @@
 import { useOfficeStore } from "~/stores/officeStore";
 const officeStore = useOfficeStore();
 
+import { Icon } from "@iconify/vue";
+
 const props = defineProps({
 	officeToEdit: {
 		type: Object,
@@ -60,7 +71,7 @@ const props = defineProps({
 	},
 });
 
-const emit = defineEmits(["officeSaved", "officeEdited"]);
+const emit = defineEmits(["officeSaved", "officeEdited", "cancel"]);
 
 const name = ref("");
 const location = ref("");

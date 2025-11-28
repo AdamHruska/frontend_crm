@@ -76,7 +76,11 @@ const declineInvite = async (id) => {
 				</tr>
 			</thead>
 			<tbody>
-				<tr v-for="invite in receivedInvites" :key="invite.id">
+				<tr
+					v-for="invite in receivedInvites"
+					:key="invite.id"
+					class="bg-red-300"
+				>
 					<td class="border px-4 py-2">{{ invite.requester_name }}</td>
 					<td class="border px-4 py-2 flex justify-center">
 						<button

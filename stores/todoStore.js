@@ -378,7 +378,7 @@ export const useTodosStore = defineStore("todos", {
 				if (response.success) {
 					// You might want to store these separately or merge with existing todos
 					// For now, I'll assume you want to replace the current todos
-					todos.value = response.data;
+					this.todos = response.data;
 					return response.data;
 				} else {
 					throw new Error(
@@ -410,7 +410,7 @@ export const useTodosStore = defineStore("todos", {
 				);
 
 				if (response.data.success) {
-					todos.value.unshift(response.data.data);
+					this.todos.unshift(response.data.data);
 					return response.data.data;
 				} else {
 					throw new Error(response.data.message || "Failed to create todo");

@@ -93,9 +93,7 @@
 
 				<div
 					class="h-5 w-5 rounded"
-					:style="{
-						backgroundColor: calendarStore.userColors[user.id] || '#ff0000',
-					}"
+					:style="{ backgroundColor: getUserColor(user.id, index) }"
 				></div>
 			</div>
 		</div>
@@ -121,6 +119,25 @@ const error = ref("");
 const isDropdownOpen = ref(false);
 const dropdownContainer = ref(null);
 const loading = ref(false);
+
+const pastelColors = [
+	"#FFD9C0",
+	"#FFE7A0",
+	"#C8F0C5",
+	"#FFCCE5",
+
+	"#F9E2AE",
+	"#CFF5E7",
+	"#E5D9F2",
+];
+
+const getUserColor = (userId, index) => {
+	if (!calendarStore.userColors[userId]) {
+		calendarStore.userColors[userId] =
+			pastelColors[index % pastelColors.length];
+	}
+	return calendarStore.userColors[userId];
+};
 
 const emit = defineEmits([
 	"deleteSharedEventsId",

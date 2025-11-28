@@ -93,7 +93,7 @@ const updateVizitka = async () => {
 </script>
 
 <template>
-	<div class="pl-2">
+	
 		<div>
 			<div
 				class="ml-4 mt-16 mb-2 w-[1150px] flex gap-[50px] items-start flex-col"
@@ -133,7 +133,8 @@ const updateVizitka = async () => {
 				
 			</div>
 		</div>
-		<div class="flex w-full mt-6">
+<div class="mt-16  pt-10 pb-10 bg-white">
+			<div class="flex w-full ">
 			<MyCalendarShareTable1 :user="userStore.user" class="" />
 			<SharingTable6 />
 		</div>
@@ -165,9 +166,41 @@ const updateVizitka = async () => {
 				
 			</div>
 			<div class="w-[67%]"><RequestsHistoryTable v-if="showHistory" /></div>
-			<span class="float-right">30.9.2025 aktuálna verzia</span>
+			
 		</div>
-	</div>
+</div>
+
+
+		<!-- Devices table -->
+		 
+		<div class="w-full ">
+			  <h1 class="text-xl mt-12 mb-6 ml-4 font-semibold">
+            Notifikácie zariadení
+        </h1>
+   
+   
+        <table class="w-[400px] text-md bg-white shadow-md rounded mb-4 ml-4 shadow">
+            <tbody>
+                <tr class="border-b bg-gray-300 ">
+                    <th class="text-left p-3 px-5">Zariadenie</th>
+                    
+                    <th></th>
+                </tr>
+                <tr class="border-b ">
+                    <td class="p-3 px-5">Samsung S24 FE</td>
+                    <td class="p-3 px-5 flex justify-end"><button type="button" class="text-sm bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded focus:outline-none focus:shadow-outline">Vymazať notifikácie</button></td>
+                </tr>
+                <tr class="border-b ">
+                    <td class="p-3 px-5">Lenovo Legion 5</td>
+                    <td class="p-3 px-5 flex justify-end"><button type="button" class="text-sm bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded focus:outline-none focus:shadow-outline">Vymazať notifikácie</button></td>
+                </tr>
+                
+
+            </tbody>
+        </table>
+
+				<span class="float-right">30.9.2025 aktuálna verzia</span>
+		</div>
 </template>
 
 <style></style>

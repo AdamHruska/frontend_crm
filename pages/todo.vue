@@ -373,7 +373,16 @@ const addTodoWithoutContact = async () => {
 		};
 
 		try {
-			await todoStore.createTodoWithoutContact(todoData);
+			const createdTodo = await todoStore.createTodoWithoutContact(todoData);
+
+			todoItems.value.unshift({
+				id: createdTodo.id,
+				activity: createdTodo.activity_name,
+				dueDate: createdTodo.due_date,
+				assignedTo: null,
+				completed: createdTodo.is_completed ?? false,
+				updated_at: createdTodo.updated_at ?? null,
+			});
 			// Reset form
 			newTodo.value = {
 				activity: "",
@@ -382,13 +391,13 @@ const addTodoWithoutContact = async () => {
 				completed: false,
 			};
 			// Refresh the todo list
-			if (showingAllTodos.value) {
-				await showAllTodos();
-			} else if (showingTodosWithoutContact.value) {
-				await showTodosWithoutContact();
-			} else {
-				await loadTodosForCurrentDate();
-			}
+			// if (showingAllTodos.value) {
+			// 	await showAllTodos();
+			// } else if (showingTodosWithoutContact.value) {
+			// 	await showTodosWithoutContact();
+			// } else {
+			// 	await loadTodosForCurrentDate();
+			// }
 		} catch (error) {
 			console.error("Error creating todo without contact:", error);
 		}
@@ -767,8 +776,8 @@ const showFutureUncompletedTodos = async () => {
 		<div class="todo-container">
 			<!-- Add new todo form -->
 			<div class="left">
-				<div class="date-picker">
-					<div>Vyberte dátum a čas:</div>
+				<div class="date-picker flex flex-col mb-6 !justify-start !items-start">
+					<div class="mb-2">Vyberte dátum a čas:</div>
 					<input
 						type="text"
 						id="datepicker"
@@ -1040,13 +1049,12 @@ input {
 }
 
 .reset-button {
-	position: absolute;
-	top: 0;
-	right: 0;
+	margin-top: 6px;
+	margin-left: auto;
+	margin-right: 35px;
 }
 
 .datepicker-input {
-	margin: 0 10px;
 	padding: 8px;
 	border: 1px solid #ddd;
 	border-radius: 4px;
@@ -1078,11 +1086,6 @@ input {
 	border-radius: 8px;
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	margin-bottom: 20px;
-}
-
-.add-form.without-contact {
-	background-color: #e8f4fd;
-	border: 2px solid #007bff;
 }
 
 .form-title {

@@ -9,7 +9,7 @@
 				</tr>
 			</thead>
 			<tbody>
-				<tr v-for="request in requests" :key="request.id">
+				<tr v-for="request in requests" :key="request.id" class="bg-red-300">
 					<td class="border px-4 py-2">{{ request.requester_name }}</td>
 					<td class="border px-4 py-2 flex justify-center">
 						<button

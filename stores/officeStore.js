@@ -16,6 +16,7 @@ export const useOfficeStore = defineStore("office", {
 		officeActivities: [],
 		setOfficeID: null,
 		allOfficeActivities: [],
+		defaultOfficeId: null,
 	}),
 
 	actions: {
@@ -47,7 +48,7 @@ export const useOfficeStore = defineStore("office", {
 			}
 		},
 
-		async revokeAccess(userId) {
+		async revokeAccess(userId, officeId) {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
 			const userStore = useUserStore();
@@ -55,7 +56,7 @@ export const useOfficeStore = defineStore("office", {
 			try {
 				await axios.post(
 					`${config.public.apiUrl}offices/${userId}/remove-shared-with`,
-					{ user_ids: [userId] },
+					{ user_ids: [userId], office_id: officeId },
 					{ headers: { Authorization: `Bearer ${authStore.token}` } }
 				);
 				this.usersSharedWithIDs = this.usersSharedWithIDs.filter(
@@ -96,15 +97,16 @@ export const useOfficeStore = defineStore("office", {
 			}
 		},
 
-		async addUserToOfficeShare(userId) {
+		async addUserToOfficeShare(userId, officeId) {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
 			const userStore = useUserStore();
+			console.log("Adding user to office share:", userId);
 
 			try {
 				await axios.post(
 					`${config.public.apiUrl}offices/${userId}/shared-with`,
-					{ user_ids: [userId] },
+					{ user_ids: [userId], office_id: officeId },
 					{
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
@@ -358,6 +360,24 @@ export const useOfficeStore = defineStore("office", {
 				console.log("Fetched all office activities:", response.data.activities);
 			} catch (error) {
 				console.error("Error adding user to office share:", error);
+			}
+		},
+
+		async setDefaultOfficeId(id) {
+			const config = useRuntimeConfig();
+			const authStore = useAuthStore();
+
+			try {
+				await axios.post(
+					`${config.public.apiUrl}default-office/${id}`,
+					{},
+					{
+						headers: { Authorization: `Bearer ${authStore.token}` },
+					}
+				);
+				this.defaultOfficeId = id;
+			} catch (error) {
+				console.error("Error revoking access:", error);
 			}
 		},
 	},

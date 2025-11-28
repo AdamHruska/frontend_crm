@@ -4,6 +4,7 @@
 		:officeToEdit="selectedOffice"
 		@officeSaved="handleOfficeSaved"
 		@officeEdited="handleOfficeEdited"
+		@cancel="showOfficeForm = false"
 	/>
 
 	<OfficeSharingForm
@@ -30,7 +31,9 @@
 
 		<div class="mt-4 flex items-center gap-4">
 			<span class="font-semibold">Aktuálna kancelária:</span>
-			<span class="font-semibold underline">Velke Lovce</span>
+			<span class="font-semibold underline">
+				{{ selectedOfficeName }}
+			</span>
 		</div>
 	</div>
 
@@ -82,7 +85,7 @@
 							</button>
 							<input
 								type="checkbox"
-								:checked="selectedOfficeId === office.id"
+								:checked="officeStore.defaultOfficeId === office.id"
 								@click="handleOfficeCheckbox(office.id)"
 							/>
 						</td>
@@ -132,6 +135,12 @@
 							>
 								Zobraziť aktivity
 							</button>
+
+							<input
+								type="checkbox"
+								:checked="officeStore.defaultOfficeId === office.id"
+								@click="handleOfficeCheckbox(office.id)"
+							/>
 						</td>
 					</tr>
 				</tbody>
@@ -149,38 +158,64 @@
 		<h2 class="text-lg font-semibold">
 			Ľudia, ktorí majú prístup k mojim kanceláriám
 		</h2>
-		<ul class="px-0 max-h-[400px] overflow-y-auto w-fit">
-			<li v-for="user in officeStore.sharedUsers" :key="user.id" class="px-0">
-				{{ user.first_name }} {{ user.last_name }} - email: ({{ user.email }})
-				<button
-					@click="officeStore.revokeAccess(user.id)"
-					class="bg-red-600 hover:bg-red-800 text-white font-bold py-1 px-2 rounded ml-4"
+
+		<div v-for="office in allOffices" :key="office.id">
+			<h3 class="font-semibold mt-4 mb-2">{{ office.name }}</h3>
+			<ul>
+				<li
+					class="flex justify-between items-center max-w-[600px]"
+					v-for="person in sharedWithUsers.filter((user) =>
+						office.shared_with.includes(user.id)
+					)"
+					:key="person.id"
 				>
-					Zrušiť prístup
-				</button>
-			</li>
-		</ul>
+					{{ person.first_name }} {{ person.last_name }} - email:
+					{{ person.email }}
+					<button
+						@click="handleRevokeAccess(person.id, office.id)"
+						class="bg-red-500 px-1.5 py-1 rounded-lg hover:bg-red-600"
+					>
+						Zrusiť prístup
+					</button>
+				</li>
+			</ul>
+		</div>
 	</div>
 </template>
 
 <script setup>
 import { useOfficeStore } from "~/stores/officeStore";
 const officeStore = useOfficeStore();
+import { useUserStore } from "~/stores/userStore";
+const userStore = useUserStore();
+
+const allOffices = ref([]);
+
+const selectedOfficeName = computed(() => {
+	const office = allOffices.value.find(
+		(office) => office.id === officeStore.defaultOfficeId
+	);
+
+	return office ? office.name : null;
+});
+
+const sharedWithUsers = ref([]);
 
 onMounted(async () => {
-	await officeStore.fetchOffices().then(() => {
-		const storedId = localStorage.getItem("selectedOfficeId");
-		selectedOfficeId.value = storedId ? Number(storedId) : null;
-		officeStore.setOfficeID = selectedOfficeId.value;
-		console.log("Selected Office ID on mount:", officeStore.setOfficeID);
-	});
+	await officeStore.fetchOffices();
+	await officeStore.fetchOfficesSharedWithMe();
+	await userStore.fetchUsers();
 
-	const storedOfficeId = localStorage.getItem("selectedOfficeId");
-	if (storedOfficeId) {
-		await officeStore.getOfficeActivities(Number(storedOfficeId)); // ✅ correct function
-	}
+	officeStore.defaultOfficeId = userStore.user.default_office_id;
 
-	officeStore.fetchOfficesSharedWithMe();
+	allOffices.value = [
+		...officeStore.offices,
+		...officeStore.officesSharedWithMe,
+	];
+
+	sharedWithUsers.value = userStore.allUsers;
+
+	console.log("office.shared_with:", sharedWithUsers.value);
 });
 const selectedOfficeId = ref(
 	Number(localStorage.getItem("selectedOfficeId")) || null
@@ -194,14 +229,16 @@ watch(selectedOfficeId, (newVal) => {
 	}
 });
 
-const handleOfficeCheckbox = (officeId) => {
-	if (selectedOfficeId.value === officeId) {
-		selectedOfficeId.value = null;
-		localStorage.removeItem("selectedOfficeId");
-	} else {
-		selectedOfficeId.value = officeId;
-		localStorage.setItem("selectedOfficeId", officeId.toString());
-	}
+const handleOfficeCheckbox = async (officeId) => {
+	const response = await officeStore.setDefaultOfficeId(officeId);
+	console.log("Set default office response:", response);
+	// if (selectedOfficeId.value === officeId) {
+	// 	selectedOfficeId.value = null;
+	// 	localStorage.removeItem("selectedOfficeId");
+	// } else {
+	// 	selectedOfficeId.value = officeId;
+	// 	localStorage.setItem("selectedOfficeId", officeId.toString());
+	// }
 };
 
 const showOfficeForm = ref(false);
@@ -244,5 +281,15 @@ const showOfficeActivities = async (officeId) => {
 	officeStore.setOfficeID = officeId;
 	//console.log("Selected Office ID:", officeStore.setOfficeID);
 	officeStore.getOfficeActivities(officeId);
+};
+
+const handleRevokeAccess = async (userId, officeId) => {
+	console.log("Before revoke:", sharedWithUsers.value);
+
+	await officeStore.revokeAccess(userId, officeId);
+
+	sharedWithUsers.value = sharedWithUsers.value.filter((u) => u.id !== userId);
+
+	console.log("After revoke:", sharedWithUsers.value);
 };
 </script>
