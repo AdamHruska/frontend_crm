@@ -11,8 +11,6 @@ const userStore = useUserStore();
 import { useToast } from "vue-toastification";
 const toast = useToast();
 
-import UAParser from "ua-parser-js";
-
 // Function to check authentication status
 const checkAuth = async () => {
 	const token =
@@ -136,6 +134,7 @@ const initializeOneSignal = () => {
 	};
 };
 //novy build
+import { UAParser } from "ua-parser-js";
 const getFriendlyDeviceName = () => {
 	const parser = new UAParser();
 	const { browser, os, device } = parser.getResult();
