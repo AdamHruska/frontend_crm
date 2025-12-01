@@ -167,7 +167,7 @@ const savePlayerIdToBackend = async (playerId) => {
 
 		if (!token) return;
 
-		await $fetch(`${config.public.apiUrl}save-onesignal-id`, {
+		const response = await $fetch(`${config.public.apiUrl}save-onesignal-id`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -175,6 +175,10 @@ const savePlayerIdToBackend = async (playerId) => {
 			},
 			body: { player_id: playerId, device_name: deviceName },
 		});
+
+		if (response.success === false) {
+			toast.error(response.message);
+		}
 	} catch (error) {
 		console.error("Error saving:", error);
 	}
