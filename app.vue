@@ -135,7 +135,7 @@ const initializeOneSignal = () => {
 		console.error("❌ Failed to load OneSignal script");
 	};
 };
-
+//novy build
 const getFriendlyDeviceName = () => {
 	const parser = new UAParser();
 	const { browser, os, device } = parser.getResult();
