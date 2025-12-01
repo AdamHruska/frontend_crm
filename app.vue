@@ -134,12 +134,24 @@ const initializeOneSignal = () => {
 	};
 };
 
+function getFriendlyDeviceName() {
+	const parser = new UAParser();
+	const { browser, os, device } = parser.getResult();
+
+	// Case 1: Mobile/tablet devices
+	if (device?.model) {
+		return `${device.model} · ${browser.name}`;
+	}
+
+	// Case 2: Desktop devices
+	return `${os.name} · ${browser.name}`;
+}
+
 // Save to backend function
 const savePlayerIdToBackend = async (playerId) => {
-	const parser = new UAParser();
-	const result = parser.getResult();
-
 	if (!process.client) return;
+
+	const deviceName = getFriendlyDeviceName();
 
 	try {
 		const config = useRuntimeConfig();
@@ -147,21 +159,9 @@ const savePlayerIdToBackend = async (playerId) => {
 			localStorage.getItem("auth_token") ||
 			sessionStorage.getItem("auth_token");
 
-		if (!token) {
-			console.log("⚠️ No auth token, skipping OneSignal ID save");
-			return;
-		}
+		if (!token) return;
 
-		console.log("📤 Saving OneSignal player ID to backend:", playerId);
-
-		const deviceName = [
-			result.os.name, // Windows / Android / iOS / Mac OS
-			result.browser.name, // Chrome / Safari / Firefox
-		]
-			.filter(Boolean)
-			.join(" · "); // "Windows · Chrome"
-
-		const response = await $fetch(`${config.public.apiUrl}save-onesignal-id`, {
+		await $fetch(`${config.public.apiUrl}save-onesignal-id`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -169,13 +169,8 @@ const savePlayerIdToBackend = async (playerId) => {
 			},
 			body: { player_id: playerId, device_name: deviceName },
 		});
-
-		if (response.success === false) {
-			toast.error(response.message || "Chyba pri ukladaní OneSignal ID");
-			return;
-		}
 	} catch (error) {
-		console.error("❌ Failed to save OneSignal player ID to backend:", error);
+		console.error("Error saving:", error);
 	}
 };
 </script>
