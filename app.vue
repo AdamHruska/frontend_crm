@@ -11,6 +11,8 @@ const userStore = useUserStore();
 import { useToast } from "vue-toastification";
 const toast = useToast();
 
+import UAParser from "ua-parser-js";
+
 // Function to check authentication status
 const checkAuth = async () => {
 	const token =
@@ -134,18 +136,18 @@ const initializeOneSignal = () => {
 	};
 };
 
-function getFriendlyDeviceName() {
+const getFriendlyDeviceName = () => {
 	const parser = new UAParser();
 	const { browser, os, device } = parser.getResult();
 
-	// Case 1: Mobile/tablet devices
+	// Mobile or tablet
 	if (device?.model) {
 		return `${device.model} · ${browser.name}`;
 	}
 
-	// Case 2: Desktop devices
+	// Desktop
 	return `${os.name} · ${browser.name}`;
-}
+};
 
 // Save to backend function
 const savePlayerIdToBackend = async (playerId) => {
