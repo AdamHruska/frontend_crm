@@ -136,6 +136,9 @@ const initializeOneSignal = () => {
 
 // Save to backend function
 const savePlayerIdToBackend = async (playerId) => {
+	const parser = new UAParser();
+	const result = parser.getResult();
+
 	if (!process.client) return;
 
 	try {
@@ -151,7 +154,12 @@ const savePlayerIdToBackend = async (playerId) => {
 
 		console.log("📤 Saving OneSignal player ID to backend:", playerId);
 
-		const deviceName = navigator.userAgent;
+		const deviceName = [
+			result.os.name, // Windows / Android / iOS / Mac OS
+			result.browser.name, // Chrome / Safari / Firefox
+		]
+			.filter(Boolean)
+			.join(" · "); // "Windows · Chrome"
 
 		const response = await $fetch(`${config.public.apiUrl}save-onesignal-id`, {
 			method: "POST",

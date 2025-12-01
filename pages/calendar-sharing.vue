@@ -223,7 +223,8 @@ const deleteNotification = async (clientID) => {
                     <th></th>
                 </tr>
                 <tr v-if="userStore.user && userStore.user.oneSignal_ID" class="border-b " v-for="ClientID in userStore.user.oneSignal_ID">
-                    <td class="p-3 px-5"> {{ ClientID }} </td>
+                    <td class="p-3 px-5"> {{ ClientID.device_name }} </td>
+										<td class="p-3 px-5"> {{ ClientID.added_at }} </td>
                     <td class="p-3 px-5 flex justify-end"><button @click="deleteNotification(ClientID)" type="button" class="text-sm bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded focus:outline-none focus:shadow-outline">Vymazať notifikácie</button></td>
                 </tr>
                
