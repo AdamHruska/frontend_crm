@@ -139,13 +139,18 @@ const getFriendlyDeviceName = () => {
 	const parser = new UAParser();
 	const { browser, os, device } = parser.getResult();
 
-	// Mobile or tablet
-	if (device?.model) {
-		return `${device.model} · ${browser.name}`;
+	let deviceName = "";
+
+	// If model exists and is reasonable
+	if (device?.model && device.model.length > 1) {
+		deviceName = device.model;
+	} else {
+		deviceName = os.name || "Unknown Device";
 	}
 
-	// Desktop
-	return `${os.name} · ${browser.name}`;
+	const browserName = browser.name || "Unknown Browser";
+
+	return `${deviceName} · ${browserName}`;
 };
 
 // Save to backend function

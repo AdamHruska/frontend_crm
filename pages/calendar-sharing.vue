@@ -96,35 +96,31 @@ const updateVizitka = async () => {
 	}
 };
 
-const deleteNotification = async (clientID) => {
-	try {
-		const response = await axios.post(
-				`${config.public.apiUrl}delete-onesignal-id`,
-				{
-					player_id: clientID,
-				},
-				{
+const deleteNotification = async (playerId) => {
+  try {
+    const response = await axios.post(
+      `${config.public.apiUrl}delete-onesignal-id`,
+      { player_id: playerId },
+      {
+        headers: {
+          Authorization: `Bearer ${authStore.token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
-					headers: {
-						Authorization: `Bearer ${authStore.token}`,
-						"Content-Type": "application/json",
-					},
-				}
-			);
-
-		if (response.status === 200) {
-			toast.success("Notifikácie boli úspešne vymazané!");
-			// Remove the deleted ID from the user store
-			userStore.user.oneSignal_ID = userStore.user.oneSignal_ID.filter(
-				(id) => id !== clientID
-			);
-		}
-	
-	} catch (error) {
-		console.error(error);
-		toast.error("Nastala chyba pri mazaní notifikácií!");
-	}
-}
+    if (response.status === 200) {
+      toast.success("Notifikácie boli úspešne vymazané!");
+      // Remove the deleted ID from the user store
+      userStore.user.oneSignal_ID = userStore.user.oneSignal_ID.filter(
+        (idObj) => idObj.player_id !== playerId
+      );
+    }
+  } catch (error) {
+    console.error(error);
+    toast.error("Nastala chyba pri mazaní notifikácií!");
+  }
+};
 </script>
 
 <template>
@@ -219,13 +215,13 @@ const deleteNotification = async (clientID) => {
             <tbody>
                 <tr class="border-b bg-gray-300 ">
                     <th class="text-left p-3 px-5">Zariadenie</th>
-                    
-                    <th></th>
+                    <th class="text-left p-3 px-5">Dátum</th>
+                   <th></th>
                 </tr>
                 <tr v-if="userStore.user && userStore.user.oneSignal_ID" class="border-b " v-for="ClientID in userStore.user.oneSignal_ID">
                     <td class="p-3 px-5"> {{ ClientID.device_name }} </td>
 										<td class="p-3 px-5"> {{ ClientID.added_at }} </td>
-                    <td class="p-3 px-5 flex justify-end"><button @click="deleteNotification(ClientID)" type="button" class="text-sm bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded focus:outline-none focus:shadow-outline">Vymazať notifikácie</button></td>
+                    <td class="p-3 px-5 flex justify-end"><button @click="deleteNotification(ClientID.player_id)" type="button" class="text-sm bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded focus:outline-none focus:shadow-outline">Vymazať notifikácie</button></td>
                 </tr>
                
                 
