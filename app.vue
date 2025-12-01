@@ -151,21 +151,21 @@ const savePlayerIdToBackend = async (playerId) => {
 
 		console.log("📤 Saving OneSignal player ID to backend:", playerId);
 
+		const deviceName = navigator.userAgent;
+
 		const response = await $fetch(`${config.public.apiUrl}save-onesignal-id`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 				Authorization: `Bearer ${token}`,
 			},
-			body: { player_id: playerId },
+			body: { player_id: playerId, device_name: deviceName },
 		});
 
 		if (response.success === false) {
 			toast.error(response.message || "Chyba pri ukladaní OneSignal ID");
 			return;
 		}
-
-		console.log("✅ OneSignal player ID saved to backend successfully");
 	} catch (error) {
 		console.error("❌ Failed to save OneSignal player ID to backend:", error);
 	}
