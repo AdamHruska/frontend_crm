@@ -164,8 +164,10 @@
 			<ul>
 				<li
 					class="flex justify-between items-center max-w-[600px]"
-					v-for="person in sharedWithUsers.filter((user) =>
-						office.shared_with.includes(user.id)
+					v-for="person in sharedWithUsers.filter(
+						(user) =>
+							Array.isArray(office.shared_with) &&
+							office.shared_with.includes(user.id)
 					)"
 					:key="person.id"
 				>
