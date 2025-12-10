@@ -43,6 +43,20 @@ const showMicrosoftEvents = ref(false);
 
 const calendarRef = ref(null);
 
+const pastelColors = [
+	"#FFB3BA", // koralovo ružová
+	"#FFDFBA", // broskyňová
+	"#FFFFBA", // svetlo žltá
+	"#BAFFC9", // mätovo zelená
+	"#FFD7BA", // marhuľová
+	"#FFB3E6", // svetlo ružová
+	"#C9FFE5", // aqua zelená
+	"#FFE4BA", // vanilková
+	"#FFCCE5", // bubble gum ružová
+	"#D4F0C9", // limetková zelená
+	"#FFC6D9", // lososová ružová
+	"#FFEAA7", // pastelovo žltá
+];
 const toggleUpdateActivity = () => {
 	if (updateActivity.value === true) {
 		//location.reload();
@@ -604,11 +618,11 @@ onUnmounted(() => {
 
 //const userColors = ref({});
 
-const generateRandomColor = () => {
-	// Generate pleasant, readable colors
-	const hue = Math.floor(Math.random() * 360);
-	return `hsl(${hue}, 70%, 60%)`;
-};
+// const generateRandomColor = () => {
+// 	// Generate pleasant, readable colors
+// 	const hue = Math.floor(Math.random() * 360);
+// 	return `hsl(${hue}, 70%, 60%)`;
+// };
 
 const transformData = (data) => {
 	return data.map((item) => {
@@ -625,7 +639,9 @@ const transformData = (data) => {
 		// Other users — assign consistent color
 		else {
 			if (!calendarStore.userColors[item.created_id]) {
-				calendarStore.userColors[item.created_id] = generateRandomColor();
+				const userIds = Object.keys(calendarStore.userColors).length;
+				calendarStore.userColors[item.created_id] =
+					pastelColors[userIds % pastelColors.length];
 			}
 			farba = calendarStore.userColors[item.created_id];
 		}

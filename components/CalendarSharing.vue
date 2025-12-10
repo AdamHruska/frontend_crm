@@ -121,14 +121,18 @@ const dropdownContainer = ref(null);
 const loading = ref(false);
 
 const pastelColors = [
-	"#FFD9C0",
-	"#FFE7A0",
-	"#C8F0C5",
+	"#FFB3BA",
+	"#FFDFBA",
+	"#FFFFBA",
+	"#BAFFC9",
+	"#FFD7BA",
+	"#FFB3E6",
+	"#C9FFE5",
+	"#FFE4BA",
 	"#FFCCE5",
-
-	"#F9E2AE",
-	"#CFF5E7",
-	"#E5D9F2",
+	"#D4F0C9",
+	"#FFC6D9",
+	"#FFEAA7",
 ];
 
 const getUserColor = (userId, index) => {

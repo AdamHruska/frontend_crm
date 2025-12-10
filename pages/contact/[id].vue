@@ -625,8 +625,8 @@ const handleActivityUpdate = (updatedActivity) => {
 		};
 	}
 
-	showDiscardActivityModal.value = !showDiscardActivityModal.value;
-
+	showDiscardActivityModal.value = false;
+	console.log("Updated activity:", showDiscardActivityModal.value);
 	//changeDiscardActivityModal();
 };
 

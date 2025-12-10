@@ -264,13 +264,18 @@
 
 			<!-- Bottom Navigation Item -->
 			<UTooltip
-				text="Zdielanie Kalendára"
+				text="Nastavenia"
 				:ui="{ background: '!bg-white', color: '' }"
 				class=""
 			>
 				<NuxtLink
-					class="flex items-center justify-center w-16 h-16 mt-auto hover:bg-blue-600 hover:text-gray-300 mb-2 cursor-pointer hover:scale-[105%] transition-transform"
-					:class="{ 'bg-blue-700 text-gray-200': activeTab === 'test' }"
+					class="flex items-center justify-center w-16 h-16 mt-auto hover:bg-blue-700 mb-2 cursor-pointer hover:scale-[105%] transition-transform"
+					:class="{
+						'bg-blue-700 text-gray-200': activeTab === 'test',
+						'bg-red-600 hover:bg-red-700':
+							requestStore.viewTheirCalendarForApproval.length > 0 ||
+							requestStore.letThemViewMineTabulka.length > 0,
+					}"
 					to="/calendar-sharing"
 					@click="setActiveTab('test')"
 				>
@@ -319,10 +324,11 @@
 <script setup>
 import { useAuthStore } from "@/stores/authStore";
 import { Icon } from "@iconify/vue";
-import { useContactsStore, useUserStore } from "#imports";
+import { useContactsStore, useUserStore, useRequestStore } from "#imports";
 
 const contactsStore = useContactsStore();
 const userStore = useUserStore();
+const requestStore = useRequestStore();
 
 const authStore = useAuthStore();
 authStore.loadLoginState();
@@ -344,8 +350,10 @@ function signOut() {
 	console.log("signed out");
 }
 
-onMounted(() => {
+onMounted(async () => {
 	setActiveTab("home");
+	await requestStore.fetchLetThemViewMineForApproval();
+	await requestStore.fetchLetThemViewMineTabulka5();
 });
 
 // Načítať usera pred renderom

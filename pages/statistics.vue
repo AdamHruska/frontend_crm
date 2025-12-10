@@ -138,126 +138,155 @@
 				</div>
 			</div>
 
-			<div class="container mb-6" v-if="otherActivies">
-				<div
-					class="item"
-					@mouseenter="
-						() => showVolaneFollower(otherActiviesNames['Prvé stretnutie'])
-					"
-					@mouseleave="hideFollower"
-				>
-					<div class="item-left">
-						<p>Prvé stretnutia:</p>
-					</div>
-					<div class="item-right">
-						<div class="right-count">
-							Pocet vsetkych: {{ otherActivies["Prvé stretnutie"]?.total || 0 }}
+			<div class="mb-6 flex flex-col gap-16" v-if="otherActivies">
+				<div class="flex gap-32">
+					<div
+						class="item"
+						@mouseenter="
+							() => showVolaneFollower(otherActiviesNames['Prvé stretnutie'])
+						"
+						@mouseleave="hideFollower"
+					>
+						<div class="item-left">
+							<p>Prvé stretnutia:</p>
 						</div>
-						<div class="right-count green">
-							Pocet zrealizovanych:
-							{{ otherActivies["Prvé stretnutie"]?.checked || 0 }}
+						<div class="item-right">
+							<div class="right-count">
+								Pocet vsetkych:
+								{{ otherActivies["Prvé stretnutie"]?.total || 0 }}
+							</div>
+							<div class="right-count green">
+								Pocet zrealizovanych:
+								{{ otherActivies["Prvé stretnutie"]?.checked || 0 }}
+							</div>
 						</div>
 					</div>
-				</div>
-				<div
-					class="item"
-					@mouseenter="
-						() =>
-							showVolaneFollower(
-								otherActiviesNames['Analýza osobných financií']
-							)
-					"
-					@mouseleave="hideFollower"
-				>
-					<div class="item-left">
-						<p>Analýza osobných financií:</p>
-					</div>
-					<div class="item-right">
-						<div class="right-count">
-							Pocet vsetkych:
-							{{ otherActivies["Analýza osobných financí"]?.total || 0 }}
+					<div
+						class="item"
+						@mouseenter="
+							() =>
+								showVolaneFollower(
+									otherActiviesNames['Analýza osobných financií']
+								)
+						"
+						@mouseleave="hideFollower"
+					>
+						<div class="item-left">
+							<p>Analýza osobných financií:</p>
 						</div>
-						<div class="right-count green">
-							Pocet zrealizovanych:
-							{{ otherActivies["Analýza osobných financí"]?.checked || 0 }}
+						<div class="item-right">
+							<div class="right-count">
+								Pocet vsetkych:
+								{{ otherActivies["Analýza osobných financí"]?.total || 0 }}
+							</div>
+							<div class="right-count green">
+								Pocet zrealizovanych:
+								{{ otherActivies["Analýza osobných financí"]?.checked || 0 }}
+							</div>
+						</div>
+					</div>
+
+					<div
+						class="item"
+						@mouseenter="
+							() => showVolaneFollower(otherActiviesNames['poradenstvo nové'])
+						"
+						@mouseleave="hideFollower"
+					>
+						<div class="item-left">
+							<p>Poradenstvo nové:</p>
+						</div>
+						<div class="item-right">
+							<div class="right-count">
+								Pocet vsetkych:
+								{{ otherActivies["poradenstvo nové"]?.total || 0 }}
+							</div>
+							<div class="right-count green">
+								Pocet zrealizovanych:
+								{{ otherActivies["poradenstvo nové"]?.checked || 0 }}
+							</div>
+						</div>
+
+						<div
+							class="item"
+							@mouseenter="
+								() => showVolaneFollower(otherActiviesNames['realizácia'])
+							"
+							@mouseleave="hideFollower"
+						>
+							<div class="item-left">
+								<p>Realizácie:</p>
+							</div>
+							<div class="item-right">
+								<div class="right-count">
+									Pocet vsetkych: {{ otherActivies["realizácia"]?.total || 0 }}
+								</div>
+								<div class="right-count green">
+									Pocet zrealizovanych:
+									{{ otherActivies["realizácia"]?.checked || 0 }}
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>
 
-				<div
-					class="item"
-					@mouseenter="
-						() => showVolaneFollower(otherActiviesNames['poradenstvo'])
-					"
-					@mouseleave="hideFollower"
-				>
-					<div class="item-left">
-						<p>Poradenstvá:</p>
-					</div>
-					<div class="item-right">
-						<div class="right-count">
-							Pocet vsetkych: {{ otherActivies["poradenstvo"]?.total || 0 }}
+				<div class="flex gap-32">
+					<div
+						class="item"
+						@mouseenter="
+							() => showVolaneFollower(otherActiviesNames['Servisná analýza'])
+						"
+						@mouseleave="hideFollower"
+					>
+						<div class="item-left">
+							<p>Servisná analýza:</p>
 						</div>
-						<div class="right-count green">
-							Pocet zrealizovanych:
-							{{ otherActivies["poradenstvo"]?.checked || 0 }}
+						<div class="item-right">
+							<div class="right-count">
+								Pocet vsetkych:
+								{{ otherActivies["Servisná analýza"]?.total || 0 }}
+							</div>
+							<div class="right-count green">
+								Pocet zrealizovanych:
+								{{ otherActivies["Servisná analýza"]?.checked || 0 }}
+							</div>
 						</div>
 					</div>
-				</div>
 
-				<div
-					class="item"
-					@mouseenter="
-						() => showVolaneFollower(otherActiviesNames['realizácia'])
-					"
-					@mouseleave="hideFollower"
-				>
-					<div class="item-left">
-						<p>Realizácie:</p>
-					</div>
-					<div class="item-right">
-						<div class="right-count">
-							Pocet vsetkych: {{ otherActivies["realizácia"]?.total || 0 }}
+					<div
+						class="item"
+						@mouseenter="
+							() =>
+								showVolaneFollower(otherActiviesNames['servisné poradenstvo'])
+						"
+						@mouseleave="hideFollower"
+					>
+						<div class="item-left">
+							<p>Poradenstvo servisné:</p>
 						</div>
-						<div class="right-count green">
-							Pocet zrealizovanych:
-							{{ otherActivies["realizácia"]?.checked || 0 }}
+						<div class="item-right">
+							<div class="right-count">
+								Pocet vsetkych:
+								{{ otherActivies["servisné poradenstvo"]?.total || 0 }}
+							</div>
+							<div class="right-count green">
+								Pocet zrealizovanych:
+								{{ otherActivies["servisné poradenstvo"]?.checked || 0 }}
+							</div>
 						</div>
 					</div>
-				</div>
 
-				<div
-					class="item"
-					@mouseenter="
-						() => showVolaneFollower(otherActiviesNames['Servisná analýza'])
-					"
-					@mouseleave="hideFollower"
-				>
-					<div class="item-left">
-						<p>Servisná analýza:</p>
-					</div>
-					<div class="item-right">
-						<div class="right-count">
-							Pocet vsetkych:
-							{{ otherActivies["Servisná analýza"]?.total || 0 }}
-						</div>
-						<div class="right-count green">
-							Pocet zrealizovanych:
-							{{ otherActivies["Servisná analýza"]?.checked || 0 }}
-						</div>
-					</div>
-				</div>
-
-				<div
-					class="item"
-					@mouseenter="() => showVolaneFollower(responseData.new_contacts)"
-					@mouseleave="hideFollower"
-				>
-					<div class="item-left"></div>
-					<div class="item-right">
-						<div class="right-count green">
-							Počet nových kontaktov:
-							{{ responseData?.new_contacts?.length || 0 }}
+					<div
+						class="item ml-24"
+						@mouseenter="() => showVolaneFollower(responseData.new_contacts)"
+						@mouseleave="hideFollower"
+					>
+						<div class="item-left"></div>
+						<div class="item-right">
+							<div class="right-count green">
+								Počet nových kontaktov:
+								{{ responseData?.new_contacts?.length || 0 }}
+							</div>
 						</div>
 					</div>
 				</div>

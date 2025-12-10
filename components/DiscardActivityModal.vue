@@ -63,7 +63,7 @@ const updateEvent = async () => {
 		activity_status: "discarded",
 	});
 
-	emit("closeDiscardActivity");
+	//emit("closeDiscardActivity");
 };
 </script>
 ;

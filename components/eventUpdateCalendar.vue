@@ -437,7 +437,7 @@ const updateActivity = async () => {
 			}
 		}
 
-		if (updateOfficeActivity) {
+		if (updateOfficeActivity.value && officeActivity.value) {
 			await axios.put(
 				`${config.public.apiUrl}update-office-activity/${officeActivity.value.id}`,
 				{
@@ -666,7 +666,8 @@ const setActive = (n) => {
 						Analýza osobných financí
 					</option>
 					<option value="Servisná analýza">Servisná analýza</option>
-					<option value="poradenstvo">Poradenstvo</option>
+					<option value="poradenstvo nové">Poradenstvo nové</option>
+					<option value="servisné poradenstvo">Servisné poradenstvo</option>
 					<option value="realizácia">realizácia</option>
 					<option value="konfirmačný servis">konfirmačný servis</option>
 					<option value="servis">servis</option>

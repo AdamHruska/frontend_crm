@@ -392,6 +392,10 @@ const addActivity = async () => {
 			});
 		}
 
+		if (activityResponse.data.activity.aktivita === "Pohovor") {
+			location.reload();
+		}
+
 		// Update email for contact if primary email is provided and online meeting
 		if (onlineMeeting.value && !emailBool.value && emails.value[0]) {
 			console.log("Adding email to contact:", emails.value[0]);
@@ -626,7 +630,8 @@ const setActive = (n) => {
 						Analýza osobných financí
 					</option>
 					<option value="Servisná analýza">Servisná analýza</option>
-					<option value="poradenstvo">Poradenstvo</option>
+					<option value="poradenstvo nové">Poradenstvo nové</option>
+					<option value="servisné poradenstvo">Servisné poradenstvo</option>
 					<option value="realizácia">realizácia</option>
 					<option value="welcome seminar">Welcome seminár</option>
 					<option value="basic 1">Basic 1</option>
