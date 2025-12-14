@@ -255,35 +255,37 @@ const columns = [
 	{
 		key: "meno",
 		label: "Meno",
+		class: "w-[140px]",
 	},
 	{
 		key: "priezvisko",
 		label: "Priezvisko",
+		class: "w-[160px]",
 	},
 	{
 		key: "cislo",
 		label: "tel. číslo",
-	},
-	{
-		key: "email",
-		label: "Email",
+		class: "w-[140px]",
 	},
 	{
 		key: "odporucitel",
 		label: "Odporucitel",
+		class: "w-[160px]",
 	},
 	{
 		key: "poznamka",
 		label: "Poznámka",
+		class: "w-[400px]", // 👈 wider column
 	},
-
 	{
 		key: "actions",
+		class: "w-[260px]",
 	},
 	{
 		key: "checkbox",
 		label: "",
 		type: "checkbox",
+		class: "w-[60px]",
 	},
 ];
 
@@ -622,8 +624,13 @@ const fetchCallLists = async () => {
 	<UTable
 		:rows="people"
 		:columns="columns"
-		class="mx-6 table-container shadow-md rounded-md"
+		class="mx-6 table-container shadow-md rounded-md table-fixed"
 		:row-class="(row) => row.class"
+		:ui="{
+			td: {
+				base: 'align-top whitespace-normal overflow-hidden',
+			},
+		}"
 	>
 		<template #actions-data="{ row }">
 			<div class="flex justify-between">
@@ -677,11 +684,12 @@ const fetchCallLists = async () => {
 
 		<template #poznamka-data="{ row }">
 			<div v-if="row.poznamka" class="group relative">
-				<div class="truncate max-w-[200px]">
+				<div class="truncate max-w-[380px]">
 					{{ row.poznamka }}
 				</div>
+
 				<div
-					class="absolute hidden group-hover:block z-10 w-[300px] p-2 bg-white border border-gray-200 rounded shadow-lg"
+					class="absolute hidden group-hover:block z-10 w-[500px] p-3 bg-white border border-gray-200 rounded shadow-lg"
 				>
 					<div class="text-sm text-gray-700 whitespace-normal">
 						{{ row.poznamka }}

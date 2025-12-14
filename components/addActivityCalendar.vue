@@ -571,7 +571,7 @@ const setActive = (n) => {
 		<div class="absolute inset-0 bg-gray bg-opacity-50 backdrop-blur-sm"></div>
 		<loadigcomponent v-if="loadingState" />
 		<form
-			class="relative bg-white bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full z-10"
+			class="relative bg-white bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full z-10 max-h-[100%] overflow-y-auto"
 		>
 			<div class="cursor-pointer" @click="cancelActivity()">
 				<Icon icon="fa6-solid:xmark" class="absolute top-4 right-6" />

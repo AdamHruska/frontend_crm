@@ -12,7 +12,42 @@
 		@openSharingForm="openSharingForm"
 	/>
 
+	<loadigcomponent v-if="officeStore.loadingState" />
+
 	<div class="flex items-center gap-8">
+		<!-- <button
+			class="mt-4 ml-8 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+			@click="openNewOfficeForm"
+			v-if="!showSharingForm"
+		>
+			Pridať kanceláriu
+		</button>
+
+		<button
+			class="mt-4 ml-8 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+			@click="openSharingForm"
+			v-if="!showSharingForm"
+		>
+			Zdielať kanceláriu
+		</button> -->
+
+		<div
+			class="my-4 ml-8 flex items-center gap-4 bg-slate-200 px-4 py-2 rounded-md"
+		>
+			<span class="font-semibold">Aktuálna kancelária:</span>
+			<span class="font-semibold underline">
+				{{ selectedOfficeName }}
+			</span>
+		</div>
+	</div>
+
+	<div class="w-full h-[2px] bg-slate-500"></div>
+
+	<div class="mt-8 mx-8 max-h-fit">
+		<OfficeCalendar />
+	</div>
+
+	<div class="mt-8">
 		<button
 			class="mt-4 ml-8 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
 			@click="openNewOfficeForm"
@@ -26,18 +61,93 @@
 			@click="openSharingForm"
 			v-if="!showSharingForm"
 		>
-			Zdielať moje kancelárie
+			Zdielať kanceláriu
 		</button>
-
-		<div class="mt-4 flex items-center gap-4">
-			<span class="font-semibold">Aktuálna kancelária:</span>
-			<span class="font-semibold underline">
-				{{ selectedOfficeName }}
-			</span>
-		</div>
 	</div>
 
 	<div class="ml-8 mt-8 mb-10">
+		<h1 class="text-xl font-semibold mb-4">Kancelárie</h1>
+
+		<div v-if="allOffices.length" class="overflow-x-auto">
+			<table
+				class="min-w-full border border-gray-300 rounded-lg overflow-hidden"
+			>
+				<thead class="bg-gray-100">
+					<tr>
+						<th class="px-4 py-2 border-b">#</th>
+						<th class="px-4 py-2 border-b">Názov</th>
+						<th class="px-4 py-2 border-b">Poloha</th>
+						<th class="px-4 py-2 border-b">Okres</th>
+						<th class="px-4 py-2 border-b">Telefón</th>
+						<th class="px-4 py-2 border-b">Typ</th>
+						<th class="px-4 py-2 border-b">Akcie</th>
+					</tr>
+				</thead>
+
+				<tbody>
+					<tr
+						v-for="(office, index) in allOffices"
+						:key="office.id"
+						class="hover:bg-gray-50"
+					>
+						<td class="px-4 py-2 border-b">{{ index + 1 }}</td>
+						<td class="px-4 py-2 border-b">{{ office.name }}</td>
+						<td class="px-4 py-2 border-b">{{ office.location }}</td>
+						<td class="px-4 py-2 border-b">{{ office.district }}</td>
+						<td class="px-4 py-2 border-b">{{ office.phone_number }}</td>
+
+						<!-- OWNED / SHARED -->
+						<td class="px-4 py-2 border-b">
+							<span
+								:class="office.isShared ? 'text-blue-600' : 'text-green-600'"
+								class="font-semibold"
+							>
+								{{ office.isShared ? "Zdielaná" : "Moja" }}
+							</span>
+						</td>
+
+						<td class="px-4 py-2 border-b flex gap-2">
+							<button
+								@click="showOfficeActivities(office.id)"
+								class="bg-green-600 text-white py-1 px-2 rounded-md hover:bg-green-700"
+							>
+								Aktivity
+							</button>
+
+							<!-- Only for owned offices -->
+							<button
+								v-if="!office.isShared"
+								class="bg-blue-600 text-white py-1 px-2 rounded-md hover:bg-blue-700"
+								@click="editOffice(office)"
+							>
+								Upraviť
+							</button>
+
+							<button
+								v-if="!office.isShared"
+								class="bg-red-600 text-white py-1 px-2 rounded-md hover:bg-red-700"
+								@click="deleteOffice(office.id)"
+							>
+								Odstrániť
+							</button>
+
+							<input
+								type="checkbox"
+								:checked="officeStore.defaultOfficeId === office.id"
+								@click="handleOfficeCheckbox(office.id)"
+							/>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<div v-else class="text-gray-500 mt-4">
+			Žiadne kancelárie zatiaľ neexistujú.
+		</div>
+	</div>
+
+	<!-- <div class="ml-8 mt-8 mb-10">
 		<h1 class="text-xl font-semibold mb-4">Moje kancelárie</h1>
 		<div v-if="officeStore.offices.length" class="overflow-x-auto">
 			<table
@@ -66,6 +176,12 @@
 						<td class="px-4 py-2 border-b">{{ office.phone_number }}</td>
 						<td class="px-4 py-2 border-b flex gap-2">
 							<button
+								@click="showOfficeActivities(office.id)"
+								class="bg-green-600 text-white py-1 px-2 rounded-md hover:bg-green-700"
+							>
+								Zobraziť aktivity
+							</button>
+							<button
 								class="bg-blue-600 text-white py-1 px-2 rounded-md hover:bg-blue-700"
 								@click="editOffice(office)"
 							>
@@ -77,12 +193,7 @@
 							>
 								Odstrániť
 							</button>
-							<button
-								@click="showOfficeActivities(office.id)"
-								class="bg-green-600 text-white py-1 px-2 rounded-md hover:bg-green-700"
-							>
-								Zobraziť aktivity
-							</button>
+
 							<input
 								type="checkbox"
 								:checked="officeStore.defaultOfficeId === office.id"
@@ -98,8 +209,6 @@
 			Žiadne kancelárie zatiaľ neexistujú.
 		</div>
 	</div>
-
-	<div class="w-full h-[2px] bg-black"></div>
 
 	<div class="ml-8 mt-10">
 		<h1 class="text-xl font-semibold mb-4">Zdielané kancelárie</h1>
@@ -146,13 +255,7 @@
 				</tbody>
 			</table>
 		</div>
-	</div>
-
-	<div class="w-full h-[2px] bg-black"></div>
-
-	<div class="mt-8 mx-8 max-h-fit">
-		<OfficeCalendar />
-	</div>
+	</div> -->
 
 	<div class="ml-8 mt-10 mb-10">
 		<h2 class="text-lg font-semibold">
@@ -191,8 +294,6 @@ const officeStore = useOfficeStore();
 import { useUserStore } from "~/stores/userStore";
 const userStore = useUserStore();
 
-const allOffices = ref([]);
-
 const selectedOfficeName = computed(() => {
 	const office = allOffices.value.find(
 		(office) => office.id === officeStore.defaultOfficeId
@@ -203,17 +304,25 @@ const selectedOfficeName = computed(() => {
 
 const sharedWithUsers = ref([]);
 
+const allOffices = computed(() => {
+	return [
+		...officeStore.offices.map((o) => ({
+			...o,
+			isShared: false,
+		})),
+		...officeStore.officesSharedWithMe.map((o) => ({
+			...o,
+			isShared: true,
+		})),
+	];
+});
+
 onMounted(async () => {
 	await officeStore.fetchOffices();
 	await officeStore.fetchOfficesSharedWithMe();
 	await userStore.fetchUsers();
 
 	officeStore.defaultOfficeId = userStore.user.default_office_id;
-
-	allOffices.value = [
-		...officeStore.offices,
-		...officeStore.officesSharedWithMe,
-	];
 
 	sharedWithUsers.value = userStore.allUsers;
 
@@ -233,6 +342,7 @@ watch(selectedOfficeId, (newVal) => {
 
 const handleOfficeCheckbox = async (officeId) => {
 	const response = await officeStore.setDefaultOfficeId(officeId);
+	showOfficeActivities(officeId);
 	console.log("Set default office response:", response);
 	// if (selectedOfficeId.value === officeId) {
 	// 	selectedOfficeId.value = null;

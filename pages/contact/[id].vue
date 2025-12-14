@@ -226,6 +226,7 @@ const items = (row) => [
 		{
 			label: "Edit",
 			icon: "i-heroicons-pencil-square-20-solid",
+			class: "bg-white text-gray-700 hover:bg-gray-100",
 			click: () => showAlterPersonForm(),
 		},
 	],
@@ -233,6 +234,7 @@ const items = (row) => [
 		{
 			label: "Delete",
 			icon: "i-heroicons-trash-20-solid",
+			class: "bg-white text-gray-700 hover:bg-gray-100",
 			click: () => deleteContact(row.id).then(navigateTo("/")),
 		},
 	],
@@ -281,6 +283,7 @@ const activity_items = (row) => [
 		{
 			label: "Edit",
 			icon: "i-heroicons-pencil-square-20-solid",
+			class: "bg-white text-gray-700 hover:bg-gray-100",
 			click: () => alterActivity(row.id),
 		},
 	],
@@ -288,6 +291,7 @@ const activity_items = (row) => [
 		{
 			label: "Delete",
 			icon: "i-heroicons-trash-20-solid",
+			class: "bg-white text-gray-700 hover:bg-gray-100",
 			click: () =>
 				axios
 					.delete(`${config.public.apiUrl}delete-activities/${row.id}`, {
@@ -629,19 +633,6 @@ const handleActivityUpdate = (updatedActivity) => {
 	console.log("Updated activity:", showDiscardActivityModal.value);
 	//changeDiscardActivityModal();
 };
-
-// In your component
-const requestNotificationPermission = async () => {
-	if (window.OneSignalReady) {
-		try {
-			const permission =
-				await window.OneSignal.Notifications.requestPermission();
-			console.log("Permission result:", permission);
-		} catch (error) {
-			console.error("Permission error:", error);
-		}
-	}
-};
 </script>
 
 <template>
@@ -690,7 +681,7 @@ const requestNotificationPermission = async () => {
 
 	<div class="flex justify-between items-center bg-gray-200 p-4">
 		<h1 class="text-2xl font-semibold ml-10 mt-4">Detail</h1>
-		<button @click="requestNotificationPermission">notif</button>
+
 		<button
 			class="bg-green-500 hover:bg-green-400 px-4 py-2 rounded-lg font-semibold shadow-md mr-10"
 			@click="changeCallListBool"
@@ -726,7 +717,8 @@ const requestNotificationPermission = async () => {
 			<UDropdown
 				:items="items(row)"
 				theme="light"
-				class="bg-white border border-gray-300 rounded-md shadow-lg udropdown"
+				class="bg-white"
+				:ui="{ item: { base: 'bg-white hover:bg-gray-100' } }"
 			>
 				<UButton
 					color="white"

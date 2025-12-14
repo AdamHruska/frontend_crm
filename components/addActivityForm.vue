@@ -543,7 +543,7 @@ const setActive = (n) => {
 			class="absolute inset-0 bg-gray-200 bg-opacity-50 backdrop-blur-sm"
 		></div>
 		<form
-			class="relative bg-white p-6 rounded-lg shadow-lg max-w-md w-full z-10"
+			class="relative bg-white p-6 rounded-lg shadow-lg max-w-md w-full z-10 max-h-[100%] overflow-y-auto"
 		>
 			<div class="cursor-pointer" @click="cancelActivity()">
 				<Icon icon="fa6-solid:xmark" class="absolute top-4 right-6" />

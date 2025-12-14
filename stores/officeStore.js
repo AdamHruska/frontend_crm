@@ -9,6 +9,7 @@ export const useOfficeStore = defineStore("office", {
 	state: () => ({
 		offices: [],
 		officesSharedWithMe: [],
+
 		officesAdmin: [],
 		usersSharedWithIDs: [],
 		sharedUsers: [],
@@ -17,6 +18,7 @@ export const useOfficeStore = defineStore("office", {
 		setOfficeID: null,
 		allOfficeActivities: [],
 		defaultOfficeId: null,
+		loadingState: false,
 	}),
 
 	actions: {
@@ -52,7 +54,7 @@ export const useOfficeStore = defineStore("office", {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
 			const userStore = useUserStore();
-
+			this.loadingState = true;
 			try {
 				await axios.post(
 					`${config.public.apiUrl}offices/${userId}/remove-shared-with`,
@@ -67,6 +69,7 @@ export const useOfficeStore = defineStore("office", {
 				this.sharedUsers = this.sharedUsers.filter(
 					(user) => user.id !== userId
 				);
+				this.loadingState = false;
 			} catch (error) {
 				console.error("Error revoking access:", error);
 			}
@@ -131,6 +134,7 @@ export const useOfficeStore = defineStore("office", {
 		async addOffice(officeData) {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
+			this.loadingState = true;
 
 			try {
 				const response = await axios.post(
@@ -147,13 +151,15 @@ export const useOfficeStore = defineStore("office", {
 				this.offices.push(response.data);
 			} catch (error) {
 				console.error("Error adding office:", error);
+			} finally {
+				this.loadingState = false;
 			}
 		},
 
 		async updateOffice(id, office) {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
-
+			this.loadingState = true;
 			try {
 				const response = await axios.put(
 					`${config.public.apiUrl}update-office/${id}`,
@@ -173,13 +179,15 @@ export const useOfficeStore = defineStore("office", {
 				}
 			} catch (error) {
 				console.error("Error updating office:", error);
+			} finally {
+				this.loadingState = false;
 			}
 		},
 
 		async deleteOffice(id) {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
-
+			this.loadingState = true;
 			try {
 				await axios.delete(`${config.public.apiUrl}delete-office/${id}`, {
 					headers: {
@@ -191,6 +199,8 @@ export const useOfficeStore = defineStore("office", {
 				this.offices = this.offices.filter((office) => office.id !== id);
 			} catch (error) {
 				console.error("Error deleting office:", error);
+			} finally {
+				this.loadingState = false;
 			}
 		},
 
@@ -199,7 +209,7 @@ export const useOfficeStore = defineStore("office", {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
 			const userStore = useUserStore();
-
+			this.loadingState = true;
 			try {
 				await axios.post(
 					`${config.public.apiUrl}create-office-activity`,
@@ -213,6 +223,8 @@ export const useOfficeStore = defineStore("office", {
 				this.officeActivities.push(activityData);
 			} catch (error) {
 				console.error("Error creating office activity:", error);
+			} finally {
+				this.loadingState = false;
 			}
 		},
 
@@ -220,7 +232,7 @@ export const useOfficeStore = defineStore("office", {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
 			const userStore = useUserStore();
-
+			this.loadingState = true;
 			try {
 				const payload = { ...activityData, user_id: userStore.user.id };
 
@@ -248,12 +260,14 @@ export const useOfficeStore = defineStore("office", {
 				}
 			} catch (error) {
 				console.error("Error updating office activity:", error);
+			} finally {
+				this.loadingState = false;
 			}
 		},
 		async deleteActivity(id) {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
-
+			this.loadingState = true;
 			try {
 				await axios.delete(
 					`${config.public.apiUrl}delete-office-activity/${id}`,
@@ -270,13 +284,15 @@ export const useOfficeStore = defineStore("office", {
 				);
 			} catch (error) {
 				console.error("Error deleting office activity:", error);
+			} finally {
+				this.loadingState = false;
 			}
 		},
 
 		async getOfficeActivities(id) {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
-
+			this.loadingState = true;
 			try {
 				const response = await axios.get(
 					`${config.public.apiUrl}get-office-activities/${id}`,
@@ -290,6 +306,8 @@ export const useOfficeStore = defineStore("office", {
 				console.log("Fetched office activities:", this.officeActivities);
 			} catch (error) {
 				console.error("Error fetching office activities:", error);
+			} finally {
+				this.loadingState = false;
 			}
 		},
 
@@ -297,6 +315,7 @@ export const useOfficeStore = defineStore("office", {
 		async findActivityId({ datum_cas, koniec, owner_id }) {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
+			this.loadingState = true;
 			//console.log("Finding activity ID with:", { datum_cas, koniec, owner_id });
 			try {
 				const response = await axios.post(
@@ -314,6 +333,8 @@ export const useOfficeStore = defineStore("office", {
 			} catch (error) {
 				console.error("Error finding activity ID:", error);
 				return null;
+			} finally {
+				this.loadingState = false;
 			}
 		},
 
@@ -346,6 +367,7 @@ export const useOfficeStore = defineStore("office", {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
 			const userStore = useUserStore();
+			this.loadingState = true;
 
 			try {
 				const response = await axios.get(
@@ -360,16 +382,36 @@ export const useOfficeStore = defineStore("office", {
 				console.log("Fetched all office activities:", response.data.activities);
 			} catch (error) {
 				console.error("Error adding user to office share:", error);
+			} finally {
+				this.loadingState = false;
 			}
 		},
 
+		// async setDefaultOfficeId(id) {
+		// 	const config = useRuntimeConfig();
+		// 	const authStore = useAuthStore();
+
+		// 	try {
+		// 		await axios.post(
+		// 			`${config.public.apiUrl}default-office/${id}`,
+		// 			{},
+		// 			{
+		// 				headers: { Authorization: `Bearer ${authStore.token}` },
+		// 			}
+		// 		);
+		// 		this.defaultOfficeId = id;
+		// 	} catch (error) {
+		// 		console.error("Error revoking access:", error);
+		// 	}
+		// },
 		async setDefaultOfficeId(id) {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
+			this.loadingState = true;
 
 			try {
 				await axios.post(
-					`${config.public.apiUrl}default-office/${id}`,
+					`${config.public.apiUrl}set-default-office/${id}`,
 					{},
 					{
 						headers: { Authorization: `Bearer ${authStore.token}` },
@@ -378,6 +420,8 @@ export const useOfficeStore = defineStore("office", {
 				this.defaultOfficeId = id;
 			} catch (error) {
 				console.error("Error revoking access:", error);
+			} finally {
+				this.loadingState = false;
 			}
 		},
 	},

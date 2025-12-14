@@ -78,7 +78,7 @@ onMounted(() => {
 			<input
 				v-model="searchText"
 				type="text"
-				class="w-full mb-2 p-1 pl-0 bg-gray-200 text-white pl-2 border-b-2 border-slate-500 focus:border-blue-500 w-[95%]"
+				class="w-full mb-2 p-1 pl-0 bg-gray-200 pl-2 border-b-2 border-slate-500 focus:border-blue-500 w-[95%] text-black"
 				placeholder="Vyhľadajte kontakt ..."
 			/>
 			<div
