@@ -134,7 +134,7 @@
 				</UTooltip>
 
 				<UTooltip
-					text="Delegované kontaky"
+					text="Presunuté kontaky"
 					:ui="{ background: '!bg-white', color: '' }"
 					class=""
 				>
@@ -189,6 +189,48 @@
 						@click="setActiveTab('declined-events')"
 					>
 						<Icon icon="ic:close" style="font-size: 36px" class="text-white" />
+					</NuxtLink>
+				</UTooltip>
+
+				<UTooltip
+					text="Odovzdané kontaky"
+					:ui="{ background: '!bg-white', color: '' }"
+					class=""
+				>
+					<NuxtLink
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
+						:class="{
+							'bg-blue-700 text-gray-200': activeTab === 'delegovane_kontakty',
+						}"
+						to="/delegovane-kontakty"
+						@click="setActiveTab('delegovane_kontakty')"
+					>
+						<Icon
+							icon="pepicons-pencil:share-android"
+							style="font-size: 36px"
+							class="text-white"
+						/>
+					</NuxtLink>
+				</UTooltip>
+
+				<UTooltip
+					text="Zdielané kontakty"
+					:ui="{ background: '!bg-white', color: '' }"
+					class=""
+				>
+					<NuxtLink
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
+						:class="{
+							'bg-blue-700 text-gray-200': activeTab === 'shared-contacts',
+						}"
+						to="/shared-contacts"
+						@click="setActiveTab('shared-contacts')"
+					>
+						<Icon
+							icon="material-symbols:share-outline"
+							style="font-size: 36px"
+							class="text-white"
+						/>
 					</NuxtLink>
 				</UTooltip>
 			</div>
@@ -255,6 +297,27 @@
 					>
 						<Icon
 							icon="hugeicons:office"
+							style="font-size: 36px"
+							class="text-white"
+						/>
+					</NuxtLink>
+				</UTooltip>
+
+				<UTooltip
+					text="Logy prihlásení"
+					:ui="{ background: '!bg-white', color: '' }"
+					class=""
+				>
+					<NuxtLink
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded hover:scale-[105%] transition-transform"
+						:class="{
+							'bg-blue-700 text-gray-200': activeTab === 'logs',
+						}"
+						to="/logs"
+						@click="setActiveTab('logs')"
+					>
+						<Icon
+							icon="material-symbols:receipt-long-rounded"
 							style="font-size: 36px"
 							class="text-white"
 						/>

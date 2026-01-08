@@ -89,6 +89,10 @@
 						v-for="(office, index) in allOffices"
 						:key="office.id"
 						class="hover:bg-gray-50"
+						:class="[
+							'hover:bg-gray-50 transition',
+							!isDefaultOffice(office.id) ? 'opacity-50' : 'opacity-100',
+						]"
 					>
 						<td class="px-4 py-2 border-b">{{ index + 1 }}</td>
 						<td class="px-4 py-2 border-b">{{ office.name }}</td>
@@ -111,7 +115,7 @@
 								@click="showOfficeActivities(office.id)"
 								class="bg-green-600 text-white py-1 px-2 rounded-md hover:bg-green-700"
 							>
-								Aktivity
+								Zobraziť kalendár
 							</button>
 
 							<!-- Only for owned offices -->
@@ -403,5 +407,9 @@ const handleRevokeAccess = async (userId, officeId) => {
 	sharedWithUsers.value = sharedWithUsers.value.filter((u) => u.id !== userId);
 
 	console.log("After revoke:", sharedWithUsers.value);
+};
+
+const isDefaultOffice = (officeId) => {
+	return officeStore.defaultOfficeId === officeId;
 };
 </script>

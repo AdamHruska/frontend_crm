@@ -325,7 +325,11 @@ const formatDateTime = (dateToFormat) => {
 function calculateAge(yearOfBirth) {
 	const currentYear = new Date().getFullYear();
 	const age = currentYear - yearOfBirth;
-	return age;
+	if (age === 0) {
+		return "N/A";
+	} else {
+		return age;
+	}
 }
 
 const showAlterPesonForm = ref(false);
@@ -633,6 +637,24 @@ const handleActivityUpdate = (updatedActivity) => {
 	console.log("Updated activity:", showDiscardActivityModal.value);
 	//changeDiscardActivityModal();
 };
+
+const setWrongNumber = async () => {
+	try {
+		const response = await axios.patch(
+			`${config.public.apiUrl}contacts/${id}/toggle-wrong-number`,
+			{}, // no body needed
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+				},
+			}
+		);
+
+		console.log("Wrong number toggled:", response.data);
+	} catch (error) {
+		console.error("Error toggling wrong number:", error);
+	}
+};
 </script>
 
 <template>
@@ -682,12 +704,22 @@ const handleActivityUpdate = (updatedActivity) => {
 	<div class="flex justify-between items-center bg-gray-200 p-4">
 		<h1 class="text-2xl font-semibold ml-10 mt-4">Detail</h1>
 
-		<button
-			class="bg-green-500 hover:bg-green-400 px-4 py-2 rounded-lg font-semibold shadow-md mr-10"
-			@click="changeCallListBool"
-		>
-			Pridať do call listu
-		</button>
+		<div>
+			<button
+				class="bg-red-500 hover:bg-red-400 px-4 py-2 rounded-lg font-semibold shadow-md mr-5"
+				@click="setWrongNumber()"
+			>
+				<span v-if="people?.[0]?.wrong_number == 0">Zlé tel. číslo</span>
+				<span v-else>Tel. číslo bolo opravené</span>
+			</button>
+
+			<button
+				class="bg-green-500 hover:bg-green-400 px-4 py-2 rounded-lg font-semibold shadow-md mr-10"
+				@click="changeCallListBool"
+			>
+				Pridať do call listu
+			</button>
+		</div>
 	</div>
 	<UTable
 		:rows="people"

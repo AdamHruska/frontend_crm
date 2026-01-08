@@ -28,6 +28,8 @@ const people = ref([]);
 const isChecked = ref(false);
 const selected = ref([]);
 
+const sharedPeople = ref([]);
+
 // funcion to toggle call list creation
 const callList = ref(false);
 const callListName = ref("");
@@ -44,22 +46,28 @@ const toggleCallList = async () => {
 };
 
 const toggleCheckbox = (id) => {
-	const person = people.value.find((p) => p.id === id);
-	if (person) {
-		const index = selected.value.findIndex((p) => p.id === id);
-		if (index === -1) {
-			//Adding checked contacts
-			selected.value.push(person);
-			contactsStore.selectedContacts.push(person);
-			console.log("added contacts in store:", contactsStore.selectedContacts);
-		} else {
-			//Deleting checked contacts
-			selected.value.splice(index, 1);
-			contactsStore.selectedContacts.splice(index, 1);
-			console.log("Deleted contacts in store:", contactsStore.selectedContacts);
-		}
+	// Try to find the contact in `people` or `sharedPeople`
+	const person =
+		people.value.find((p) => p.id === id) ||
+		sharedPeople.value.find((p) => p.id === id);
+
+	if (!person) return; // safety check
+
+	const index = selected.value.findIndex((p) => p.id === id);
+	if (index === -1) {
+		// Add to selection
+		selected.value.push(person);
+		contactsStore.selectedContacts.push(person);
+	} else {
+		// Remove from selection
+		selected.value.splice(index, 1);
+		contactsStore.selectedContacts.splice(
+			contactsStore.selectedContacts.findIndex((p) => p.id === id),
+			1
+		);
 	}
-	console.log("Selected", selected.value);
+
+	console.log("Selected:", selected.value);
 };
 
 const isSelected = (id) => {
@@ -140,24 +148,56 @@ const findPerson = async (id) => {
 };
 
 const deletePerson = async (id) => {
-	await contactsStore.deleteContact(id);
-	people.value = contactsStore.contacts.data;
+	try {
+		// optional confirmation
+		if (!confirm("Naozaj chcete zrušiť zdieľanie tohto kontaktu?")) {
+			return;
+		}
+
+		await axios.put(
+			`${config.public.apiUrl}contacts/${id}/unshare`,
+			{},
+			{
+				headers: {
+					Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+				},
+			}
+		);
+
+		// Remove from "shared with me" table
+		sharedPeople.value = sharedPeople.value.filter(
+			(person) => person.id !== id
+		);
+
+		// Also clean selection if selected
+		selected.value = selected.value.filter((p) => p.id !== id);
+		contactsStore.selectedContacts = contactsStore.selectedContacts.filter(
+			(p) => p.id !== id
+		);
+
+		console.log("Contact unshared successfully");
+	} catch (error) {
+		console.error("Error unsharing contact:", error);
+		alert(
+			error.response?.data?.message || "Nepodarilo sa zrušiť zdieľanie kontaktu"
+		);
+	}
 };
 
 token.value = sessionStorage.getItem("token");
 
 onMounted(async () => {
 	try {
-		console.log("Fetching contacts...");
-		// Fetch the contacts from the API
-		if (contactsStore.contacts.length === 0) {
-			await contactsStore.fetchContacts();
-		}
-		// people.value = contactsStore.contacts.data;
+		console.log("Fetching shared contacts...");
 
-		people.value = contactsStore.contacts.data.map((person) => {
+		const response = await axios.get(`${config.public.apiUrl}contacts/shared`, {
+			headers: {
+				Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+			},
+		});
+
+		people.value = response.data.map((person) => {
 			let cssClass = "";
-			console.log("person value", person);
 
 			if (person.first_event === 0) {
 				cssClass += "bg-green-200 ";
@@ -167,41 +207,66 @@ onMounted(async () => {
 				cssClass += "bg-blue-200 ";
 			}
 
-			if (person.first_event === 0) {
-				cssClass += "bg-green-200 ";
-			}
-
 			if (person.wrong_number === 1) {
 				cssClass += "bg-orange-300 ";
 			}
+
 			return {
 				...person,
 				class: cssClass.trim(),
 			};
 		});
 
-		console.log("poeple value", people.value);
+		console.log("Shared contacts loaded:", people.value);
 	} catch (error) {
-		console.error("Error:", error);
+		console.error("Error fetching shared contacts:", error);
 	}
 
+	// keep this part (user + call lists)
 	try {
-		// Fetch the useer ID from pinia
 		await userStore.fetchUser();
 		user_id.value = userStore.user.id;
-		console.log(user_id.value);
 	} catch (error) {
-		console.error("Error:", error);
+		console.error("Error fetching user:", error);
 	}
 
-	// Fetch the call list names
-	callListNames.value = await axios.get(`${config.public.apiUrl}call-lists`, {
-		headers: {
-			Authorization: `Bearer ${authStore.token}`,
-		},
-	});
+	callListNames.value = (
+		await axios.get(`${config.public.apiUrl}call-lists`, {
+			headers: {
+				Authorization: `Bearer ${authStore.token}`,
+			},
+		})
+	).data;
 
-	callListNames.value = callListNames.value.data;
+	try {
+		console.log("Fetching contacts shared to me...");
+
+		const response = await axios.get(
+			`${config.public.apiUrl}contacts/shared-to-me`,
+			{
+				headers: {
+					Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+				},
+			}
+		);
+
+		sharedPeople.value = response.data.map((person) => {
+			let cssClass = "";
+
+			if (person.first_event === 0) cssClass += "bg-green-200 ";
+			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
+			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
+
+			return {
+				...person,
+				class: cssClass.trim(),
+			};
+		});
+
+		console.log("Shared-to-me contacts loaded:", sharedPeople.value);
+	} catch (error) {
+		console.error("Error fetching shared-to-me contacts:", error);
+	}
 });
 
 const handleSearchResults = (results) => {
@@ -269,6 +334,49 @@ const onAuxClick = (event, id) => {
 };
 
 const columns = [
+	{
+		key: "meno",
+		label: "Meno",
+		class: "w-[140px]",
+	},
+	{
+		key: "priezvisko",
+		label: "Priezvisko",
+		class: "w-[160px]",
+	},
+	{
+		key: "cislo",
+		label: "tel. číslo",
+		class: "w-[140px]",
+	},
+	{
+		key: "odporucitel",
+		label: "Odporucitel",
+		class: "w-[160px]",
+	},
+	{
+		key: "shared_author_name",
+		label: "Vlastník",
+		class: "w-[160px]",
+	},
+	{
+		key: "poznamka",
+		label: "Poznámka",
+		class: "w-[400px]", // 👈 wider column
+	},
+	{
+		key: "actions",
+		class: "w-[260px]",
+	},
+	{
+		key: "checkbox",
+		label: "",
+		type: "checkbox",
+		class: "w-[60px]",
+	},
+];
+
+const columnsSecond = [
 	{
 		key: "meno",
 		label: "Meno",
@@ -603,12 +711,12 @@ const showShareContacts = ref(false);
 		/>
 
 		<loadigcomponent v-if="contactsStore.loadingState" />
-		<div class="flex justify-between">
-			<div class="max-w-sm ml-8 mt-8 mb-2 w-[400px]">
+		<div class="flex justify-between w-full">
+			<!-- <div class="max-w-sm ml-8 mt-8 mb-2 w-[400px]">
 				<searchBar @updateResults="handleSearchResults" />
-			</div>
+			</div> -->
 
-			<div class="flex items-center mb-2">
+			<div class="flex items-center mb-2 ml-auto">
 				<UTooltip
 					text="Pridať kontakt"
 					:ui="{ background: '!bg-white', color: '' }"
@@ -681,7 +789,7 @@ const showShareContacts = ref(false);
 				@click="showDelegateForm = !showDelegateForm"
 				class="px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded-lg text-white ml-4 shadow-xl"
 			>
-				Odovzdať kontakty
+				Posunúť kontakty
 			</button>
 
 			<button
@@ -694,9 +802,75 @@ const showShareContacts = ref(false);
 		</div>
 	</div>
 
+	<h1 class="ml-6 mt-10 mb-3 font-semibold text-lg">
+		Kontakty zdieľané so mnou:
+	</h1>
+	<UTable
+		:rows="sharedPeople"
+		:columns="columns"
+		class="mx-6 table-container shadow-md rounded-md table-fixed mb-12"
+		:row-class="(row) => row.class"
+		:ui="{
+			td: {
+				base: 'align-top whitespace-normal overflow-hidden',
+			},
+		}"
+	>
+		<template #actions-data="{ row }">
+			<div class="flex justify-between">
+				<div class="flex space-x-2">
+					<UButton
+						@click.left="detailView(row.id)"
+						@auxclick.prevent="onAuxClick($event, row.id)"
+						@mousedown="handleMouseDown"
+						class="bg-blue-500 text-white shadow-xl hover:scale-110 transition-transform"
+						label="Zobraziť detail"
+					/>
+
+					<UTooltip
+						text="Vymazať kontakt"
+						:ui="{ background: '!bg-white', color: '' }"
+						class=""
+					>
+						<UButton
+							@click="deletePerson(row.id)"
+							icon="i-heroicons-trash-20-solid"
+							color="ffffff"
+							class="shadow-xl text-red-500 hover:bg-gray-300 hover:scale-110 transition-transform"
+						/>
+					</UTooltip>
+				</div>
+
+				<!-- optional checkbox support -->
+				<input
+					type="checkbox"
+					@change="toggleCheckbox(row.id)"
+					:checked="isSelected(row.id)"
+				/>
+			</div>
+		</template>
+
+		<template #poznamka-data="{ row }">
+			<div v-if="row.poznamka" class="group relative">
+				<div class="truncate max-w-[380px]">
+					{{ row.poznamka }}
+				</div>
+
+				<div
+					class="absolute hidden group-hover:block z-10 w-[500px] p-3 bg-white border border-gray-200 rounded shadow-lg"
+				>
+					<div class="text-sm text-gray-700 whitespace-normal">
+						{{ row.poznamka }}
+					</div>
+				</div>
+			</div>
+		</template>
+	</UTable>
+
+	<h1 class="ml-6 mb-3 font-semibold text-lg">Moje kontakty:</h1>
 	<UTable
 		:rows="people"
-		:columns="columns"
+		:columns="columnsSecond"
 		class="mx-6 table-container shadow-md rounded-md table-fixed"
 		:row-class="(row) => row.class"
 		:ui="{
@@ -734,13 +908,7 @@ const showShareContacts = ref(false);
 						class=""
 					>
 						<UButton
-							@click="
-								deletePerson(row.id).then(() => {
-									people.value = people.value.filter(
-										(person) => person.id !== row.id
-									);
-								})
-							"
+							@click="deletePerson(row.id)"
 							icon="i-heroicons-trash-20-solid"
 							color="ffffff"
 							class="shadow-xl text-red-500 hover:bg-gray-300 hover:scale-110 transition-transform"
@@ -772,56 +940,6 @@ const showShareContacts = ref(false);
 		</template>
 	</UTable>
 
-	<!-- Pagination -->
-	<div
-		class="flex justify-center items-center gap-2 mt-[30px] mb-[50px]"
-		v-if="!contactsStore.searchQuery"
-	>
-		<div
-			class="cursor-pointer"
-			@click="prevPage()"
-			:class="{ 'opacity-50': contactsStore.page <= 1 }"
-		>
-			<Icon
-				class="hover:size-[38px]"
-				icon="fa6-solid:circle-arrow-left"
-				style="font-size: 35px; color: #0074b7"
-			/>
-		</div>
-
-		<!-- Page numbers -->
-		<div class="flex gap-2">
-			<template v-for="pageNum in pageNumbers" :key="pageNum">
-				<div v-if="pageNum === '...'" class="px-3 py-1 text-gray-500">
-					{{ pageNum }}
-				</div>
-				<div
-					v-else
-					@click="goToPage(pageNum)"
-					class="px-3 py-1 rounded-md cursor-pointer"
-					:class="[
-						contactsStore.page === pageNum
-							? 'bg-blue-600 text-white'
-							: 'bg-gray-200 hover:bg-gray-300',
-					]"
-				>
-					{{ pageNum }}
-				</div>
-			</template>
-		</div>
-
-		<div
-			class="cursor-pointer"
-			@click="nextPage()"
-			:class="{ 'opacity-50': contactsStore.page >= totalPages }"
-		>
-			<Icon
-				class="hover:size-[38px]"
-				icon="fa6-solid:circle-arrow-right"
-				style="font-size: 35px; color: #0074b7"
-			/>
-		</div>
-	</div>
 	<AddPersonForm
 		v-if="showAddPersonForm"
 		@cancelAdd="addPerson()"

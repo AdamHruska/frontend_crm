@@ -48,6 +48,18 @@
 	<loadigcomponent v-if="loadingStateCalendar" />
 	<div class="p-6">
 		<div class="mb-6">
+			<select
+				v-model="selectedUserId"
+				class="border rounded p-2 mb-4 bg-white shadow-md"
+				@change="onUserChange"
+			>
+				<option :value="null">Moje štatistiky</option>
+
+				<option v-for="user in sharedUsers" :key="user.id" :value="user.id">
+					{{ user.username }}
+				</option>
+			</select>
+
 			<h1 class="text-2xl font-bold mb-4">Štatistika aktivít</h1>
 
 			<!-- Date Range Picker -->
@@ -166,7 +178,7 @@
 						@mouseenter="
 							() =>
 								showVolaneFollower(
-									otherActiviesNames['Analýza osobných financií']
+									otherActiviesNames['Analýza osobných financí']
 								)
 						"
 						@mouseleave="hideFollower"
@@ -312,9 +324,9 @@
 			</div> -->
 
 			<!-- Chart -->
-			<div class="bg-white p-4 rounded shadow mb-6">
+			<!-- <div class="bg-white p-4 rounded shadow mb-6">
 				<BarChart :data="chartData" />
-			</div>
+			</div> -->
 
 			<!-- Results Table -->
 			<!-- <div class="bg-white rounded shadow">
@@ -360,8 +372,63 @@
 
 		<div class="p-2 bg-white font-semibold text-lg">Pohovory</div>
 
-		<div class="bg-white p-4 rounded shadow mb-6">
+		<!-- <div class="bg-white p-4 rounded shadow mb-6">
 			<BarChart :data="chartDataPohovory" />
+		</div> -->
+		<!-- Pohovory chart -->
+
+		<div
+			class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6 shadow-sm bg-white p-4"
+		>
+			<!-- Volané -->
+			<div
+				class="bg-blue-100 p-4 rounded"
+				@mouseenter="() => showPohovoryFollower('called')"
+				@mouseleave="hideFollower"
+			>
+				<h3 class="font-bold">Volané</h3>
+				<p class="text-2xl">{{ dataPohovory?.statistics?.called || 0 }}</p>
+			</div>
+
+			<!-- Dovolané -->
+			<div
+				class="bg-green-100 p-4 rounded"
+				@mouseenter="() => showPohovoryFollower('reached')"
+				@mouseleave="hideFollower"
+			>
+				<h3 class="font-bold">Dovolané</h3>
+				<p class="text-2xl">{{ dataPohovory?.statistics?.reached || 0 }}</p>
+			</div>
+
+			<!-- Dohodnuté -->
+			<div
+				class="bg-purple-100 p-4 rounded"
+				@mouseenter="() => showPohovoryFollower('scheduled')"
+				@mouseleave="hideFollower"
+			>
+				<h3 class="font-bold">Dohodnuté</h3>
+				<p class="text-2xl">{{ dataPohovory?.statistics?.scheduled || 0 }}</p>
+			</div>
+
+			<!-- Zrealizované -->
+			<div
+				class="bg-yellow-100 p-4 rounded"
+				@mouseenter="() => showPohovoryFollower('realized')"
+				@mouseleave="hideFollower"
+			>
+				<h3 class="font-bold">Zrealizované</h3>
+				<p class="text-2xl">{{ dataPohovory?.statistics?.realized || 0 }}</p>
+			</div>
+
+			<!-- Zaujatí -->
+			<div
+				class="bg-red-100 p-4 rounded"
+				@mouseenter="() => showPohovoryFollower('accepted')"
+				@mouseleave="hideFollower"
+			>
+				<h3 class="font-bold">Zaujatí</h3>
+				<p class="text-2xl">{{ dataPohovory?.statistics?.accepted || 0 }}</p>
+			</div>
 		</div>
 
 		<div class="container" v-if="seminarActivitesStatistics">
@@ -521,8 +588,12 @@ import { ref, computed, onMounted } from "vue";
 import BarChart from "~/components/BarChart.vue";
 import axios from "axios";
 const config = useRuntimeConfig();
+
 import { useAuthStore } from "#imports";
 const authStore = useAuthStore();
+
+import { useUserStore } from "#imports";
+const userStore = useUserStore();
 
 import { useRouter } from "vue-router";
 const router = useRouter();
@@ -538,6 +609,14 @@ const toggleUpdateActivity = (id) => {
 	updateActivity.value = !updateActivity.value;
 };
 
+const selectedUserId = ref(null);
+
+const onUserChange = () => {
+	fetchData(); // reuse existing logic
+};
+
+const sharedUsers = computed(() => userStore.sharedUsers);
+console.log("sharedUsers", sharedUsers.value);
 // State
 const zaujatiKandidati = ref([]);
 const dateRange = ref({ from: "", to: "" });
@@ -592,6 +671,7 @@ const chartData = computed(() => ({
 }));
 
 const chartDataPohovory = computed(() => {
+	console.log("dataPohovory.value", dataPohovory.value);
 	if (!dataPohovory.value) {
 		return {
 			labels: ["Volané", "Dovolané", "Dohodnuté", "Zrealizované", "Zaujatí"],
@@ -658,6 +738,7 @@ const fetchData = async () => {
 					from_date: fromDate.toISOString().split("T")[0], // e.g. "2025-08-18"
 					to_date: toDate.toISOString().split("T")[0], // e.g. "2025-09-18"
 					activity_type: selectedActivityType.value, // optional
+					user_id: selectedUserId.value,
 				},
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
@@ -677,6 +758,7 @@ const fetchData = async () => {
 					from_date: fromDate.toISOString().split("T")[0], // e.g. "2025-08-18"
 					to_date: toDate.toISOString().split("T")[0], // e.g. "2025-09-18"
 					activity_type: selectedActivityType.value, // optional
+					user_id: selectedUserId.value,
 				},
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
@@ -684,7 +766,7 @@ const fetchData = async () => {
 			}
 		);
 		console.log("responsePohovory", responsePohovory.data.statistics);
-		dataPohovory.value = responsePohovory.data.statistics;
+		dataPohovory.value = responsePohovory.data;
 
 		const otherActivitiesData = await axios.get(
 			`${config.public.apiUrl}other-activities-statistics`,
@@ -693,6 +775,7 @@ const fetchData = async () => {
 					from_date: fromDate.toISOString().split("T")[0], // e.g. "2025-08-18"
 					to_date: toDate.toISOString().split("T")[0], // e.g. "2025-09-18"
 					activity_type: selectedActivityType.value, // optional
+					user_id: selectedUserId.value,
 				},
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
@@ -714,6 +797,7 @@ const fetchData = async () => {
 					from_date: fromDate.toISOString().split("T")[0], // e.g. "2025-08-18"
 					to_date: toDate.toISOString().split("T")[0], // e.g. "2025-09-18"
 					activity_type: selectedActivityType.value, // optional
+					user_id: selectedUserId.value,
 				},
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
@@ -763,6 +847,7 @@ const fetchData = async () => {
 					from_date: fromDate.toISOString().split("T")[0], // e.g. "2025-08-18"
 					to_date: toDate.toISOString().split("T")[0], // e.g. "2025-09-18"
 					activity_type: selectedActivityType.value, // optional
+					user_id: selectedUserId.value,
 				},
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
@@ -770,6 +855,7 @@ const fetchData = async () => {
 			}
 		);
 		zaujatiKandidati.value = interviewCandidatesResponse.data.candidates;
+
 		console.log("zaujatiKandidati", zaujatiKandidati.value);
 	} catch (error) {
 		console.error(
@@ -845,6 +931,20 @@ onBeforeUnmount(() => {
 	// 	item.removeEventListener("mouseleave", handleMouseLeave);
 	// });
 });
+
+const getUserStatistics = (userId) => {
+	console.log("Selected user ID:", userId);
+	// Implement the logic to fetch and display statistics for the selected user
+};
+
+const showPohovoryFollower = (key) => {
+	if (!dataPohovory.value?.grouped_people?.[key]) {
+		dataInFollower.value = [{ meno: "Žiadni ľudia", priezvisko: "" }];
+	} else {
+		dataInFollower.value = dataPohovory.value.grouped_people[key];
+	}
+	showFollower.value = true;
+};
 </script>
 
 <style scoped>

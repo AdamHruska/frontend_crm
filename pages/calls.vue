@@ -36,6 +36,8 @@ const selected = ref([]);
 
 const selectedCallList = ref({});
 
+const showDisclaimer = ref(false);
+
 const detailView = (id) => {
 	router.push(`/contact/${id}`);
 };
@@ -321,6 +323,33 @@ const deleteCallList = async (id) => {
 		<div
 			class="bg-gr h-[calc(100vh-1.5rem)] w-full ml-3 mr-6 rounded-2xl my-3 shadow-lg p-4 table-container"
 		>
+			<div class="relative float-end mt-2">
+				<Icon
+					icon="material-symbols:chat-info-outline"
+					class="scale-[2] hover:scale-[2.5] cursor-pointer transition-transform"
+					@mouseenter="showDisclaimer = true"
+					@mouseleave="showDisclaimer = false"
+				/>
+				<div
+					class="bg-white rounded-md shadow-md w-[300px] absolute right-8 top-[-10px] z-[50] py-3 px-4"
+					id="disclaimer"
+					v-if="showDisclaimer"
+				>
+					<!-- Colour -->
+					<div class="flex items-center space-x-2 mb-3">
+						<div class="w-[32px] h-[32px] bg-yellow-200 shrink-0"></div>
+						<div>- Poslená aktivita je staršia ako vytvorenie call listu</div>
+					</div>
+					<div class="flex items-center space-x-2 mb-3">
+						<div class="w-[32px] h-[32px] bg-red-200 shrink-0"></div>
+						<div>- posledná aktivita je novšia ako vytvorenie call listu</div>
+					</div>
+					<div class="flex items-center space-x-2 mb-3">
+						<div class="w-[32px] h-[32px] bg-green-200 shrink-0"></div>
+						<div>- Žiadna aktivita</div>
+					</div>
+				</div>
+			</div>
 			<UTable
 				:rows="people"
 				:columns="columns"

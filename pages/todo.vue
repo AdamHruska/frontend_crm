@@ -17,6 +17,8 @@ const toast = useToast();
 
 const datepickerInput = ref(null);
 
+const activeGroup = ref("today");
+
 const todoItems = ref([]);
 
 const yesterDayUncompletedActivities = ref([]);
@@ -84,7 +86,23 @@ const goToToday = async () => {
 };
 
 // Show all todos
+// const showAllTodos = async () => {
+// 	showingAllTodos.value = true;
+// 	showingTodosWithoutContact.value = false;
+// 	await todoStore.fetchTodos();
+// 	todoItems.value = todoStore.todos.map((todo, index) => ({
+// 		id: todo.id || index,
+// 		activity: todo.activity_name,
+// 		dueDate: todo.due_date,
+// 		assignedTo: todo.contact_id,
+// 		contact_name: todo.contact_name,
+// 		completed: todo.is_completed,
+// 		updated_at: todo.is_completed ? todo.updated_at : null,
+// 	}));
+// };
+
 const showAllTodos = async () => {
+	activeGroup.value = "all";
 	showingAllTodos.value = true;
 	showingTodosWithoutContact.value = false;
 	await todoStore.fetchTodos();
@@ -99,21 +117,41 @@ const showAllTodos = async () => {
 	}));
 };
 
-// Show todos without contact
+// const showTodosWithoutContact = async () => {
+// 	const response = await axios.get(`${config.public.apiUrl}contact1`, {
+// 		headers: {
+// 			Authorization: `Bearer ${authStore.token}`,
+// 		},
+// 	});
+
+// 	todoItems.value = response.data.data.map((todo) => ({
+// 		id: todo.id,
+// 		activity: todo.activity_name,
+// 		dueDate: todo.due_date,
+// 		assignedTo: todo.contact_id,
+// 		contact_name: todo.contact_name,
+// 		completed: todo.is_completed,
+// 		updated_at: todo.is_completed ? todo.updated_at : null,
+// 	}));
+// };
+
 const showTodosWithoutContact = async () => {
+	activeGroup.value = "withoutContact";
 	showingTodosWithoutContact.value = true;
 	showingAllTodos.value = false;
-	await todoStore.fetchTodosWithoutContact();
-	todoItems.value = todoStore.todos.map((todo, index) => ({
-		id: todo.id || index,
+	const response = await axios.get(`${config.public.apiUrl}contact1`, {
+		headers: { Authorization: `Bearer ${authStore.token}` },
+	});
+	todoItems.value = response.data.data.map((todo) => ({
+		id: todo.id,
 		activity: todo.activity_name,
 		dueDate: todo.due_date,
 		assignedTo: todo.contact_id,
+		contact_name: todo.contact_name,
 		completed: todo.is_completed,
 		updated_at: todo.is_completed ? todo.updated_at : null,
 	}));
 };
-
 // Load todos for current date
 const loadTodosForCurrentDate = async () => {
 	const year = currentDate.value.getFullYear();
@@ -156,6 +194,7 @@ watch(
 );
 
 onMounted(async () => {
+	newTodo.value.dueDate = getNowForDatetimeLocal();
 	if (contactsStore.contacts.length === 0) {
 		await contactsStore.fetchContacts();
 	}
@@ -425,11 +464,33 @@ const goToContact = (id) => {
 	}
 };
 
+// const markAsDone = async (id) => {
+// 	const todo = todoItems.value.find((item) => item.id === id);
+// 	if (!todo) return;
+
+// 	// Check the current completion status and toggle it
+// 	const newCompletionStatus = !todo.completed;
+
+// 	await todoStore.updateTodo(id, {
+// 		activity_name: todo.activity,
+// 		due_date: todo.dueDate,
+// 		is_completed: newCompletionStatus,
+// 	});
+
+// 	// Reload the list after update
+// 	if (showingAllTodos.value) {
+// 		await showAllTodos();
+// 	} else if (showingTodosWithoutContact.value) {
+// 		await showTodosWithoutContact();
+// 	} else {
+// 		await loadTodosForCurrentDate();
+// 	}
+// };
+
 const markAsDone = async (id) => {
 	const todo = todoItems.value.find((item) => item.id === id);
 	if (!todo) return;
 
-	// Check the current completion status and toggle it
 	const newCompletionStatus = !todo.completed;
 
 	await todoStore.updateTodo(id, {
@@ -438,13 +499,23 @@ const markAsDone = async (id) => {
 		is_completed: newCompletionStatus,
 	});
 
-	// Reload the list after update
-	if (showingAllTodos.value) {
-		await showAllTodos();
-	} else if (showingTodosWithoutContact.value) {
-		await showTodosWithoutContact();
-	} else {
-		await loadTodosForCurrentDate();
+	// Reload **the same group** instead of defaulting
+	switch (activeGroup.value) {
+		case "all":
+			await showAllTodos();
+			break;
+		case "withoutContact":
+			await showTodosWithoutContact();
+			break;
+		case "past":
+			await showPastUncompletedTodos();
+			break;
+		case "future":
+			await showFutureUncompletedTodos();
+			break;
+		default:
+			await loadTodosForCurrentDate();
+			break;
 	}
 };
 
@@ -658,36 +729,81 @@ const handleConfirmEvent = async () => {
 	}
 };
 
+// const showPastUncompletedTodos = async () => {
+// 	showingAllTodos.value = true;
+// 	showingTodosWithoutContact.value = false;
+
+// 	await todoStore.fetchPastUncompletedTodos();
+
+// 	todoItems.value = todoStore.todosByDate.map((todo, index) => ({
+// 		id: todo.id || index,
+// 		activity: todo.activity_name,
+// 		dueDate: todo.due_date,
+// 		assignedTo: todo.contact_id,
+// 		contact_name: todo.contact_name, // ✅ THIS WAS MISSING
+// 		completed: todo.is_completed,
+// 		updated_at: todo.is_completed ? todo.updated_at : null,
+// 	}));
+// };
+
 const showPastUncompletedTodos = async () => {
+	activeGroup.value = "past";
 	showingAllTodos.value = true;
 	showingTodosWithoutContact.value = false;
-
 	await todoStore.fetchPastUncompletedTodos();
-
 	todoItems.value = todoStore.todosByDate.map((todo, index) => ({
 		id: todo.id || index,
 		activity: todo.activity_name,
 		dueDate: todo.due_date,
 		assignedTo: todo.contact_id,
+		contact_name: todo.contact_name,
 		completed: todo.is_completed,
 		updated_at: todo.is_completed ? todo.updated_at : null,
 	}));
 };
 
+// const showFutureUncompletedTodos = async () => {
+// 	showingAllTodos.value = true;
+// 	showingTodosWithoutContact.value = false;
+
+// 	await todoStore.fetchFutureUncompletedTodos();
+
+// 	todoItems.value = todoStore.todosByDate.map((todo, index) => ({
+// 		id: todo.id || index,
+// 		activity: todo.activity_name,
+// 		dueDate: todo.due_date,
+// 		assignedTo: todo.contact_id,
+// 		contact_name: todo.contact_name, // ✅ REQUIRED
+// 		completed: todo.is_completed,
+// 		updated_at: todo.is_completed ? todo.updated_at : null,
+// 	}));
+// };
+
 const showFutureUncompletedTodos = async () => {
+	activeGroup.value = "future";
 	showingAllTodos.value = true;
 	showingTodosWithoutContact.value = false;
-
 	await todoStore.fetchFutureUncompletedTodos();
-
 	todoItems.value = todoStore.todosByDate.map((todo, index) => ({
 		id: todo.id || index,
 		activity: todo.activity_name,
 		dueDate: todo.due_date,
 		assignedTo: todo.contact_id,
+		contact_name: todo.contact_name,
 		completed: todo.is_completed,
 		updated_at: todo.is_completed ? todo.updated_at : null,
 	}));
+};
+
+const getNowForDatetimeLocal = () => {
+	const now = new Date();
+	const year = now.getFullYear();
+	const month = String(now.getMonth() + 1).padStart(2, "0");
+	const day = String(now.getDate()).padStart(2, "0");
+	const hours = String(now.getHours()).padStart(2, "0");
+	const minutes = String(now.getMinutes()).padStart(2, "0");
+
+	return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 </script>
 

@@ -11,7 +11,7 @@
 
 		<div class="mt-8">
 			<div class="mb-4">
-				Delegovať kontakty používateľa (Meno a priezvisko) na:
+				Posunúť kontakty používateľa (Meno a priezvisko) na:
 			</div>
 
 			<!-- User list -->

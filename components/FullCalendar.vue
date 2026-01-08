@@ -624,19 +624,46 @@ onUnmounted(() => {
 // 	return `hsl(${hue}, 70%, 60%)`;
 // };
 
+const toDisabledColor = (color, factor = 0.5) => {
+	// factor: 0 = original color, 1 = full gray
+	if (color.startsWith("rgb")) {
+		const nums = color.match(/\d+/g).map(Number);
+		const avg = (nums[0] + nums[1] + nums[2]) / 3;
+
+		const r = Math.round(nums[0] + (avg - nums[0]) * factor);
+		const g = Math.round(nums[1] + (avg - nums[1]) * factor);
+		const b = Math.round(nums[2] + (avg - nums[2]) * factor);
+
+		return `rgb(${r}, ${g}, ${b})`;
+	}
+
+	// hex fallback
+	if (color.startsWith("#")) {
+		const bigint = parseInt(color.slice(1), 16);
+		const r = (bigint >> 16) & 255;
+		const g = (bigint >> 8) & 255;
+		const b = bigint & 255;
+		const avg = (r + g + b) / 3;
+
+		return `rgb(
+			${Math.round(r + (avg - r) * factor)},
+			${Math.round(g + (avg - g) * factor)},
+			${Math.round(b + (avg - b) * factor)}
+		)`;
+	}
+
+	return color;
+};
+
 const transformData = (data) => {
 	return data.map((item) => {
 		let farba;
 
-		// If activity discarded, always gray
-		if (item.activity_status === "discarded") {
-			farba = "gray";
-		}
-		// If it's the logged-in user
-		else if (item.created_id === userStore.user.id) {
+		// Logged-in user
+		if (item.created_id === userStore.user.id) {
 			farba = "rgb(37 99 235)";
 		}
-		// Other users — assign consistent color
+		// Other users
 		else {
 			if (!calendarStore.userColors[item.created_id]) {
 				const userIds = Object.keys(calendarStore.userColors).length;
@@ -644,6 +671,11 @@ const transformData = (data) => {
 					pastelColors[userIds % pastelColors.length];
 			}
 			farba = calendarStore.userColors[item.created_id];
+		}
+
+		// Discarded → desaturated color
+		if (item.activity_status === "discarded") {
+			farba = toDisabledColor(farba, 0.6);
 		}
 
 		const formattedStart = item.datumCas.replace(" ", "T");
@@ -664,10 +696,12 @@ const transformData = (data) => {
 				contact_id: item.contact_id || null,
 				firstName: contact?.meno || "",
 				lastName: contact?.priezvisko || "",
+				isDiscarded: item.activity_status === "discarded",
 			},
 		};
 	});
 };
+
 let eventGuid = 0;
 
 const currentEvents = ref([]);
@@ -1121,6 +1155,8 @@ const logoutWithMicrosoft = async () => {
 	} catch (error) {
 		console.error("Microsoft logout failed:", error);
 		throw error;
+	} finally {
+		location.reload();
 	}
 };
 
