@@ -274,7 +274,7 @@
 					v-for="person in sharedWithUsers.filter(
 						(user) =>
 							Array.isArray(office.shared_with) &&
-							office.shared_with.includes(user.id)
+							office.shared_with.includes(user.id),
 					)"
 					:key="person.id"
 				>
@@ -300,7 +300,7 @@ const userStore = useUserStore();
 
 const selectedOfficeName = computed(() => {
 	const office = allOffices.value.find(
-		(office) => office.id === officeStore.defaultOfficeId
+		(office) => office.id === officeStore.defaultOfficeId,
 	);
 
 	return office ? office.name : null;
@@ -330,19 +330,9 @@ onMounted(async () => {
 
 	sharedWithUsers.value = userStore.allUsers;
 
-	console.log("office.shared_with:", sharedWithUsers.value);
+	showOfficeActivities(officeStore.defaultOfficeId);
 });
-const selectedOfficeId = ref(
-	Number(localStorage.getItem("selectedOfficeId")) || null
-);
-
-watch(selectedOfficeId, (newVal) => {
-	if (newVal === null) {
-		localStorage.removeItem("selectedOfficeId");
-	} else {
-		localStorage.setItem("selectedOfficeId", newVal.toString());
-	}
-});
+const selectedOfficeId = officeStore.defaultOfficeId;
 
 const handleOfficeCheckbox = async (officeId) => {
 	const response = await officeStore.setDefaultOfficeId(officeId);

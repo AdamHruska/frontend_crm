@@ -115,7 +115,7 @@ const findPerson = async (id) => {
 	try {
 		// First, try to find the contact in the local store
 		const contactFromStore = contactsStore.contacts.data.find(
-			(contact) => contact.id === id
+			(contact) => contact.id === id,
 		);
 
 		if (contactFromStore) {
@@ -452,7 +452,7 @@ const updatePerson = async (updatedContact) => {
 
 		// Directly update the local people array
 		const index = people.value.findIndex(
-			(person) => person.id === updatedContact.id
+			(person) => person.id === updatedContact.id,
 		);
 
 		if (index !== -1) {
@@ -666,14 +666,14 @@ const showShareContacts = ref(false);
 				@click="uncheckAll"
 				class="px-3 py-1 bg-red-500 hover:bg-red-700 rounded-lg text-white shadow-xl"
 			>
-				Unselect all {{ contactsStore.selectedContacts.length }}
+				Zrušiť výber {{ contactsStore.selectedContacts.length }}
 			</button>
 			<button
 				v-if="contactsStore.selectedContacts.length > 0"
 				@click="toggleCallList"
 				class="px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded-lg text-white ml-4 shadow-xl"
 			>
-				Create Call List
+				Vytvoriť Call List
 			</button>
 
 			<button
@@ -737,7 +737,7 @@ const showShareContacts = ref(false);
 							@click="
 								deletePerson(row.id).then(() => {
 									people.value = people.value.filter(
-										(person) => person.id !== row.id
+										(person) => person.id !== row.id,
 									);
 								})
 							"

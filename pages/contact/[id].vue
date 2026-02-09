@@ -16,6 +16,9 @@ import { useAuthStore } from "@/stores/authStore";
 const authStore = useAuthStore();
 authStore.loadToken();
 
+import { useToast } from "vue-toastification";
+const toast = useToast();
+
 const { id } = useRoute().params;
 const people = ref([]);
 const AddActivityBool = ref(false);
@@ -47,7 +50,7 @@ watch(
 				completed: todo.is_completed,
 			}));
 	},
-	{ deep: true, immediate: true }
+	{ deep: true, immediate: true },
 );
 
 const callListNames = ref([]);
@@ -114,7 +117,7 @@ const findActivities = async (id) => {
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,
 			},
-		}
+		},
 	);
 	activities.value = response.data.activities;
 	// activities = activities.map((item) => ({
@@ -301,7 +304,7 @@ const activity_items = (row) => [
 					})
 					.then(() => {
 						activities.value = activities.value.filter(
-							(activity) => activity.id !== row.id
+							(activity) => activity.id !== row.id,
 						);
 					}),
 		},
@@ -479,7 +482,7 @@ const changeActivityStatus = async (row, status) => {
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
 				},
-			}
+			},
 		);
 
 		console.log(`Activity ${row.id} status updated to: ${status}`);
@@ -499,7 +502,7 @@ const handleConfirmEvent = async () => {
 			// Create the financial analysis activity
 			await addFinancialAnalysisActivity(
 				pendingFirstMeetingRow.value.contact_id,
-				pendingFirstMeetingRow.value.koniec
+				pendingFirstMeetingRow.value.koniec,
 			);
 
 			// Now update the status of the original meeting in the backend
@@ -512,7 +515,7 @@ const handleConfirmEvent = async () => {
 					headers: {
 						Authorization: `Bearer ${authStore.token}`,
 					},
-				}
+				},
 			);
 
 			// Refresh activities to show the new one
@@ -543,7 +546,7 @@ const handleCloseConfirmEvent = async () => {
 					headers: {
 						Authorization: `Bearer ${authStore.token}`,
 					},
-				}
+				},
 			);
 
 			// Refresh activities to show the new one
@@ -589,7 +592,7 @@ async function addFinancialAnalysisActivity(contactId, dateTimeStart) {
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
 				},
-			}
+			},
 		);
 
 		// Add the new activity to the local state
@@ -600,7 +603,7 @@ async function addFinancialAnalysisActivity(contactId, dateTimeStart) {
 	} catch (error) {
 		console.error(
 			"Error creating activity:",
-			error.response?.data || error.message
+			error.response?.data || error.message,
 		);
 		throw error;
 	}
@@ -642,16 +645,22 @@ const setWrongNumber = async () => {
 	try {
 		const response = await axios.patch(
 			`${config.public.apiUrl}contacts/${id}/toggle-wrong-number`,
-			{}, // no body needed
+			{},
 			{
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
 				},
-			}
+			},
 		);
-
-		console.log("Wrong number toggled:", response.data);
+		toast.success("Stav čísla bol zmenený", {
+			position: "top-right",
+			timeout: 5000,
+		});
 	} catch (error) {
+		toast.error("Prepísanie stavu tel. čísla", {
+			position: "top-right",
+			timeout: 5000,
+		});
 		console.error("Error toggling wrong number:", error);
 	}
 };
@@ -704,15 +713,24 @@ const setWrongNumber = async () => {
 	<div class="flex justify-between items-center bg-gray-200 p-4">
 		<h1 class="text-2xl font-semibold ml-10 mt-4">Detail</h1>
 
-		<div>
-			<button
-				class="bg-red-500 hover:bg-red-400 px-4 py-2 rounded-lg font-semibold shadow-md mr-5"
-				@click="setWrongNumber()"
-			>
-				<span v-if="people?.[0]?.wrong_number == 0">Zlé tel. číslo</span>
-				<span v-else>Tel. číslo bolo opravené</span>
-			</button>
+		<div class="flex gap-2">
+			<div>
+				<button
+					v-if="people?.[0]?.wrong_number == 0"
+					class="bg-red-500 hover:bg-red-400 px-4 py-2 rounded-lg font-semibold shadow-md mr-5"
+					@click="setWrongNumber()"
+				>
+					<span>Zlé tel. číslo</span>
+				</button>
 
+				<button
+					v-if="people?.[0]?.wrong_number !== 0"
+					class="bg-blue-500 hover:bg-blue-400 px-4 py-2 rounded-lg font-semibold shadow-md mr-5"
+					@click="setWrongNumber()"
+				>
+					<span>Tel. číslo bolo opravené</span>
+				</button>
+			</div>
 			<button
 				class="bg-green-500 hover:bg-green-400 px-4 py-2 rounded-lg font-semibold shadow-md mr-10"
 				@click="changeCallListBool"

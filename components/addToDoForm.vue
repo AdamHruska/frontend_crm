@@ -35,7 +35,7 @@ onMounted(async () => {
 	console.log(
 		"meno kotaktu:",
 		props.contact[0].meno,
-		props.contact[0].priezvisko
+		props.contact[0].priezvisko,
 	);
 });
 
@@ -129,7 +129,7 @@ const formatDateTime = (dateTimeString) => {
 					v-model="datum_cas"
 					id="floating_datum_cas"
 					required
-					class="w-full p-3 text-sm text-black bg-white border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+					class="w-full p-3 text-sm text-black bg-white border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 				/>
 			</div>
 

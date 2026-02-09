@@ -63,7 +63,7 @@ const toggleCheckbox = (id) => {
 		selected.value.splice(index, 1);
 		contactsStore.selectedContacts.splice(
 			contactsStore.selectedContacts.findIndex((p) => p.id === id),
-			1
+			1,
 		);
 	}
 
@@ -123,7 +123,7 @@ const findPerson = async (id) => {
 	try {
 		// First, try to find the contact in the local store
 		const contactFromStore = contactsStore.contacts.data.find(
-			(contact) => contact.id === id
+			(contact) => contact.id === id,
 		);
 
 		if (contactFromStore) {
@@ -161,25 +161,26 @@ const deletePerson = async (id) => {
 				headers: {
 					Authorization: `Bearer ${sessionStorage.getItem("token")}`,
 				},
-			}
+			},
 		);
 
 		// Remove from "shared with me" table
 		sharedPeople.value = sharedPeople.value.filter(
-			(person) => person.id !== id
+			(person) => person.id !== id,
 		);
 
 		// Also clean selection if selected
 		selected.value = selected.value.filter((p) => p.id !== id);
 		contactsStore.selectedContacts = contactsStore.selectedContacts.filter(
-			(p) => p.id !== id
+			(p) => p.id !== id,
 		);
 
 		console.log("Contact unshared successfully");
 	} catch (error) {
 		console.error("Error unsharing contact:", error);
 		alert(
-			error.response?.data?.message || "Nepodarilo sa zrušiť zdieľanie kontaktu"
+			error.response?.data?.message ||
+				"Nepodarilo sa zrušiť zdieľanie kontaktu",
 		);
 	}
 };
@@ -247,7 +248,7 @@ onMounted(async () => {
 				headers: {
 					Authorization: `Bearer ${sessionStorage.getItem("token")}`,
 				},
-			}
+			},
 		);
 
 		sharedPeople.value = response.data.map((person) => {
@@ -560,7 +561,7 @@ const updatePerson = async (updatedContact) => {
 
 		// Directly update the local people array
 		const index = people.value.findIndex(
-			(person) => person.id === updatedContact.id
+			(person) => person.id === updatedContact.id,
 		);
 
 		if (index !== -1) {
@@ -828,13 +829,13 @@ const showShareContacts = ref(false);
 					/>
 
 					<UTooltip
-						text="Vymazať kontakt"
+						text="Zrušiť zdielanie kontaktu"
 						:ui="{ background: '!bg-white', color: '' }"
 						class=""
 					>
 						<UButton
 							@click="deletePerson(row.id)"
-							icon="i-heroicons-trash-20-solid"
+							icon="mdi:share-off-outline"
 							color="ffffff"
 							class="shadow-xl text-red-500 hover:bg-gray-300 hover:scale-110 transition-transform"
 						/>
@@ -903,13 +904,13 @@ const showShareContacts = ref(false);
 					</UTooltip>
 
 					<UTooltip
-						text="Vymazať kontakt"
+						text="Zrušiť zdielanie kontaktu"
 						:ui="{ background: '!bg-white', color: '' }"
 						class=""
 					>
 						<UButton
 							@click="deletePerson(row.id)"
-							icon="i-heroicons-trash-20-solid"
+							icon="mdi:share-off-outline"
 							color="ffffff"
 							class="shadow-xl text-red-500 hover:bg-gray-300 hover:scale-110 transition-transform"
 						/>

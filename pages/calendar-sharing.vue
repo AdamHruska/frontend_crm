@@ -11,6 +11,8 @@ import RequestsHistoryTable from "~/components/RequestsHistoryTable.vue";
 import ToApproveShowingMyCal from "~/components/SharingTable5.vue";
 const userStore = useUserStore();
 
+const autoCreateOutlookEvent = ref(false);
+
 const showHistory = ref(false);
 
 const menoRef = ref('');
@@ -21,6 +23,7 @@ const textRef = ref('');
 
 onMounted(async () => {
 	await userStore.fetchUser();
+	autoCreateOutlookEvent.value = userStore.user.auto_create_outlook_event;
 
 	// userStore.user.oneSignal_ID.forEach(id => {
   // 	console.log(id);
@@ -121,6 +124,38 @@ const deleteNotification = async (playerId) => {
     toast.error("Nastala chyba pri mazaní notifikácií!");
   }
 };
+
+
+
+const toggleAutoCreateOutlookEvent = async () => {
+    try {
+        const response = await axios.patch(
+            `${config.public.apiUrl}user/auto-create-outlook-event`,
+            {},
+            {
+                headers: {
+                    Authorization: `Bearer ${authStore.token}`,
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+
+        if (response.data.success) {
+            autoCreateOutlookEvent.value = response.data.auto_create_outlook_event;
+            userStore.user.auto_create_outlook_event = response.data.auto_create_outlook_event;
+
+            toast.success(
+                `Automatické vytváranie Outlook eventu ${
+                    response.data.auto_create_outlook_event ? "zapnuté" : "vypnuté"
+                }`
+            );
+        }
+    } catch (error) {
+        console.error(error);
+        toast.error("Nastala chyba pri aktualizácii Outlook nastavenia!");
+    }
+};
+
 </script>
 
 <template>
@@ -229,7 +264,16 @@ const deleteNotification = async (playerId) => {
             </tbody>
         </table>
 
-				<span class="float-right">30.9.2025 aktuálna verzia</span>
+				<div class="flex items-center gap-4 ml-4 my-16"><span class="font-semibold text-lg">Automaticky vytvárať outlook event: </span>
+					<input
+        	class="w-4 h-4"
+        	type="checkbox"
+        	v-model="autoCreateOutlookEvent"
+        	@change="toggleAutoCreateOutlookEvent"
+    			>
+				</div>
+
+				<span class="float-right">9.2.2026 aktuálna verzia</span>
 		</div>
 </template>
 

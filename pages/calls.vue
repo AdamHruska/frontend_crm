@@ -170,7 +170,7 @@ function decoratePeople(contacts) {
 		if (person.last_activity && callListStore.singleCallList.created_at) {
 			const lastActivityDate = new Date(person.last_activity);
 			const callListCreatedDate = new Date(
-				callListStore.singleCallList.created_at
+				callListStore.singleCallList.created_at,
 			);
 
 			if (lastActivityDate < callListCreatedDate) {
@@ -224,7 +224,7 @@ const getCallList = async (id) => {
 					Authorization: `Bearer ${authStore.token}`,
 					"Content-Type": "application/json",
 				},
-			}
+			},
 		);
 
 		if (callListResponse.data.contacts) {
@@ -241,7 +241,7 @@ const getCallList = async (id) => {
 				if (person.last_activity && callListStore.singleCallList.created_at) {
 					const lastActivityDate = new Date(person.last_activity);
 					const callListCreatedDate = new Date(
-						callListStore.singleCallList.created_at
+						callListStore.singleCallList.created_at,
 					);
 
 					if (lastActivityDate < callListCreatedDate) {
@@ -271,7 +271,18 @@ const getCallList = async (id) => {
 	loadingState.value = false;
 };
 
+// const deleteCallList = async (id) => {
+// 	await callListStore.deleteCallList(id);
+// 	call_lists.value = callListStore.callLists;
+// };
+
 const deleteCallList = async (id) => {
+	const confirmed = window.confirm(
+		"Ste si istý, že chete vymazat tento call list?",
+	);
+
+	if (!confirmed) return;
+
 	await callListStore.deleteCallList(id);
 	call_lists.value = callListStore.callLists;
 };

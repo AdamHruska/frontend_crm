@@ -67,7 +67,7 @@ const checkOfficeAvailability = (officeId, newDatum, newKoniec) => {
 
 			// Check if time ranges overlap
 			return newStart < activityEnd && activityStart < newEnd;
-		}
+		},
 	);
 
 	if (overlappingActivity) {
@@ -100,14 +100,14 @@ watch(
 			availability[office.id] = checkOfficeAvailability(
 				office.id,
 				newDatum,
-				newKoniec
+				newKoniec,
 			);
 		});
 
 		officeAvailability.value = availability;
 		console.log("Office availability:", availability);
 	},
-	{ deep: true }
+	{ deep: true },
 );
 
 const emailBool = ref(false);
@@ -202,7 +202,7 @@ watch(kontakt, async (newValue) => {
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,
 			},
-		}
+		},
 	);
 	contact.value = responseContact.data.contact;
 	email.value = contact.value.email;
@@ -342,7 +342,7 @@ const addActivity = async () => {
 
 	// Validate emails - filter out empty strings
 	const validEmails = emails.value.filter(
-		(email) => email && email.trim() !== ""
+		(email) => email && email.trim() !== "",
 	);
 
 	// Check if online meeting is selected and no valid emails provided
@@ -382,7 +382,7 @@ const addActivity = async () => {
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
 				},
-			}
+			},
 		);
 
 		if (activityResponse.data.status === 201) {
@@ -408,7 +408,7 @@ const addActivity = async () => {
 					headers: {
 						Authorization: `Bearer ${authStore.token}`,
 					},
-				}
+				},
 			);
 		}
 
@@ -423,7 +423,7 @@ const addActivity = async () => {
 						additionalEmails: validEmails.slice(1),
 						importance: importance.value,
 					},
-					{ headers: { Authorization: `Bearer ${authStore.token}` } }
+					{ headers: { Authorization: `Bearer ${authStore.token}` } },
 				);
 
 				console.log("Teams meeting created:", teamsResponse.data);
@@ -435,7 +435,7 @@ const addActivity = async () => {
 			} catch (error) {
 				console.error(
 					"Error creating Teams meeting:",
-					error.response?.data || error.message
+					error.response?.data || error.message,
 				);
 				toast.error("Je potrebné prihlásiť sa do Microsoft účtu");
 			}
@@ -472,7 +472,7 @@ const addActivity = async () => {
 		console.error("Error adding activity:", error);
 		alert(
 			"Nastala chyba pri pridaní aktivity: " +
-				(error.response?.data?.error || error.message)
+				(error.response?.data?.error || error.message),
 		);
 	}
 
@@ -533,8 +533,8 @@ const filteredContacts = (index) => {
 
 	return contacts.value.filter((contact) =>
 		[contact.meno, contact.priezvisko, contact.email].some((field) =>
-			(field || "").toLowerCase().includes(searchText.toLowerCase())
-		)
+			(field || "").toLowerCase().includes(searchText.toLowerCase()),
+		),
 	);
 };
 
@@ -762,19 +762,38 @@ const setActive = (n) => {
 				</div>
 			</div>
 
-			<div class="relative z-0 w-full mb-5 mt-5 group">
+			<div class="relative z-0 w-full mb-5 mt-6 group">
 				<input
 					v-model="datum_cas"
 					type="datetime-local"
 					step="900"
 					name="datum_cas"
 					id="floating_datum_cas"
-					class="!text-black block py-2.5 px-0 w-full text-sm text-gray-200 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text- dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+					class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer pr-10"
 					placeholder=" "
 				/>
+				<!-- Black calendar icon -->
+				<span
+					class="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-5 w-5 text-black"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M8 7V3m8 4V3M3 11h18M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+						/>
+					</svg>
+				</span>
 				<label
 					for="floating_datum_cas"
-					class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+					class="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
 					>Dátum a čas začatia</label
 				>
 			</div>
@@ -786,12 +805,31 @@ const setActive = (n) => {
 					step="900"
 					name="datum_cas_koniec"
 					id="floating_datum_cas_koniec"
-					class="!text-black block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+					class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer pr-10"
 					placeholder=" "
 				/>
+				<!-- Black calendar icon -->
+				<span
+					class="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-5 w-5 text-black"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M8 7V3m8 4V3M3 11h18M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+						/>
+					</svg>
+				</span>
 				<label
 					for="floating_datum_cas_koniec"
-					class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+					class="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
 					>Dátum a čas ukončenia</label
 				>
 			</div>

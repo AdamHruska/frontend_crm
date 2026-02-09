@@ -22,6 +22,8 @@ authStore.loadToken();
 import { useOfficeStore } from "#imports";
 const officeStore = useOfficeStore();
 
+import { add, parseISO, format } from "date-fns";
+
 import { useToast } from "vue-toastification";
 const toast = useToast();
 
@@ -66,7 +68,7 @@ const checkOfficeAvailability = (officeId, newDatum, newKoniec) => {
 
 			// Check if time ranges overlap
 			return newStart < activityEnd && activityStart < newEnd;
-		}
+		},
 	);
 
 	if (overlappingActivity) {
@@ -99,14 +101,14 @@ watch(
 			availability[office.id] = checkOfficeAvailability(
 				office.id,
 				newDatum,
-				newKoniec
+				newKoniec,
 			);
 		});
 
 		officeAvailability.value = availability;
 		console.log("Office availability:", availability);
 	},
-	{ deep: true }
+	{ deep: true },
 );
 
 const emailBool = ref(false);
@@ -119,20 +121,52 @@ const officeActivity = ref(null);
 
 const showVDD = ref(false);
 
-watch(aktivita, (newValue) => {
-	if (newValue === "ine") {
-		ineBool.value = true;
-	} else {
-		ineBool.value = false;
-	}
+// watch(aktivita, (newValue) => {
+// 	if (newValue === "ine") {
+// 		ineBool.value = true;
+// 	} else {
+// 		ineBool.value = false;
+// 	}
 
-	if (newValue === "Telefonát klient" || newValue === "Telefonát nábor") {
+// 	if (newValue === "Telefonát klient" || newValue === "Telefonát nábor") {
+// 		showVDD.value = true;
+// 	} else {
+// 		showVDD.value = false;
+// 	}
+// });
+
+watch(aktivita, (newValue) => {
+	// Show/hide extra field
+	ineBool.value = newValue === "ine";
+
+	// If aktivita is "Telefonát klient", set koniec to datum_cas + 5 minutes
+	if (
+		(newValue === "Telefonát klient" || newValue === "Telefonát nábor") &&
+		datum_cas.value
+	) {
 		showVDD.value = true;
+		const newEndTime = add(parseISO(datum_cas.value), { minutes: 5 });
+		koniec.value = format(newEndTime, "yyyy-MM-dd'T'HH:mm");
 	} else {
 		showVDD.value = false;
 	}
 });
 
+watch([aktivita, datum_cas], ([newAktivita, newDatumCas]) => {
+	if (!newAktivita || !newDatumCas) return;
+
+	const val = newAktivita.toLowerCase().trim();
+
+	if (val.startsWith("telefonát")) {
+		// Telefonát → end time +5 minutes
+		const newEndTime = add(parseISO(newDatumCas), { minutes: 5 });
+		koniec.value = format(newEndTime, "yyyy-MM-dd'T'HH:mm");
+	} else {
+		// Other activities → end time +1 hour
+		const newEndTime = add(parseISO(newDatumCas), { hours: 1 });
+		koniec.value = format(newEndTime, "yyyy-MM-dd'T'HH:mm");
+	}
+});
 const officeActivityId = ref(null);
 
 const active = ref([]);
@@ -151,7 +185,7 @@ onMounted(async () => {
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,
 			},
-		}
+		},
 	);
 	console.log("Response:", response.data.activity.send_notification);
 
@@ -190,7 +224,7 @@ onMounted(async () => {
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,
 			},
-		}
+		},
 	);
 	contact.value = responseContact.data.contact;
 
@@ -272,7 +306,7 @@ const updateActivity = async () => {
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
 				},
-			}
+			},
 		);
 
 		// Update email if necessary - only if onlineMeeting is checked and there's a new email to add
@@ -287,7 +321,7 @@ const updateActivity = async () => {
 					headers: {
 						Authorization: `Bearer ${authStore.token}`,
 					},
-				}
+				},
 			);
 		}
 
@@ -302,7 +336,7 @@ const updateActivity = async () => {
 						importance: importance.value,
 						user_id: userStore.user.id,
 					},
-					{ headers: { Authorization: `Bearer ${authStore.token}` } }
+					{ headers: { Authorization: `Bearer ${authStore.token}` } },
 				);
 
 				console.log("Teams meeting created:", teamsResponse.data);
@@ -321,7 +355,7 @@ const updateActivity = async () => {
 							headers: {
 								Authorization: `Bearer ${authStore.token}`,
 							},
-						}
+						},
 					);
 				}
 
@@ -350,7 +384,7 @@ const updateActivity = async () => {
 			} catch (error) {
 				console.error(
 					"Error creating Teams meeting:",
-					error.response?.data || error.message
+					error.response?.data || error.message,
 				);
 				toast.error("Chyba pri vytváraní online stretnutia", {
 					position: "top-right",
@@ -375,7 +409,7 @@ const updateActivity = async () => {
 					poznamka: poznamka.value,
 					office_id: selectedOffice.value.id,
 				},
-				{ headers: { Authorization: `Bearer ${authStore.token}` } }
+				{ headers: { Authorization: `Bearer ${authStore.token}` } },
 			);
 		}
 
@@ -392,7 +426,7 @@ const updateActivity = async () => {
 		});
 
 		const activityIndex = calendarStore.activities.findIndex(
-			(activity) => activity.id === response.data.activity.id
+			(activity) => activity.id === response.data.activity.id,
 		);
 
 		// If the activity is found, replace it with the updated activity
@@ -420,7 +454,7 @@ const updateActivity = async () => {
 				draggablePercent: 60,
 				showCloseButtonOnHover: false,
 				hideProgressBar: false,
-			}
+			},
 		);
 		changeLoading();
 	}
@@ -631,19 +665,38 @@ const setActive = (n) => {
 				>
 			</div>
 
-			<div class="relative z-0 w-full mb-5 group">
+			<div class="relative z-0 w-full mb-5 mt-6 group">
 				<input
 					v-model="datum_cas"
 					type="datetime-local"
 					step="900"
 					name="datum_cas"
 					id="floating_datum_cas"
-					class="!text-black block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+					class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer pr-10"
 					placeholder=" "
 				/>
+				<!-- Black calendar icon -->
+				<span
+					class="absolute right-9 top-1/2 transform -translate-y-1/2 pointer-events-none"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-5 w-5 text-black"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M8 7V3m8 4V3M3 11h18M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+						/>
+					</svg>
+				</span>
 				<label
 					for="floating_datum_cas"
-					class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+					class="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
 					>Dátum a čas začatia</label
 				>
 			</div>
@@ -655,12 +708,31 @@ const setActive = (n) => {
 					step="900"
 					name="datum_cas_koniec"
 					id="floating_datum_cas_koniec"
-					class="!text-black block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+					class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer pr-10"
 					placeholder=" "
 				/>
+				<!-- Black calendar icon -->
+				<span
+					class="absolute right-9 top-1/2 transform -translate-y-1/2 pointer-events-none"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-5 w-5 text-black"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M8 7V3m8 4V3M3 11h18M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+						/>
+					</svg>
+				</span>
 				<label
 					for="floating_datum_cas_koniec"
-					class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+					class="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
 					>Dátum a čas ukončenia</label
 				>
 			</div>
