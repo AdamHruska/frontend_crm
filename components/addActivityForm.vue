@@ -51,6 +51,12 @@ const allOffices = computed(() => [
 	...officeStore.officesSharedWithMe,
 ]);
 
+const currentTimeFromDatum = computed(() => {
+	if (!datum_cas.value) return null;
+	const date = new Date(datum_cas.value);
+	return format(date, "HH:mm");
+});
+
 const checkOfficeAvailability = (officeId, newDatum, newKoniec) => {
 	if (!newDatum || !newKoniec)
 		return { isFree: true, overlappingActivity: null };
@@ -142,9 +148,8 @@ watch(datum_cas, (newValue) => {
 	const newEnd = add(parseISO(newValue), addedTime);
 	koniec.value = format(newEnd, "yyyy-MM-dd'T'HH:mm");
 
-	// Set dateOnly
-	dateOnly.value = format(new Date(datum_cas.value), "yyyy-MM-dd");
-	dateOnly.value = String(dateOnly.value);
+	// Set dateOnly - FIXED: extract date part directly without creating Date object
+	dateOnly.value = newValue.split("T")[0];
 
 	// Show calendar after 1 manual change
 	if (manualChangeCount.value > 1) {
@@ -153,7 +158,6 @@ watch(datum_cas, (newValue) => {
 
 	manualChangeCount.value = 10;
 });
-
 // const officeAvailability = ref({ isFree: true, overlappingActivity: null });
 
 // watch(
@@ -497,27 +501,54 @@ const selectOffice = (office) => {
 };
 
 const handleMiniCalendarDateChange = (newDate) => {
-	// Format date to match your input field (yyyy-MM-ddTHH:mm)
-	const formatted = format(new Date(newDate), "yyyy-MM-dd'T'HH:mm");
-	datum_cas.value = formatted;
+	// If we have an existing datum_cas, preserve its time
+	if (datum_cas.value) {
+		// Extract time from existing datum_cas (format: "yyyy-MM-dd'T'HH:mm")
+		const timePart = datum_cas.value.split("T")[1]; // Gets "HH:mm"
+
+		// Combine new date with existing time
+		datum_cas.value = `${newDate}T${timePart}`;
+	} else {
+		// If no existing time, use the current time
+		const now = new Date();
+		const hours = String(now.getHours()).padStart(2, "0");
+		const minutes = String(now.getMinutes()).padStart(2, "0");
+
+		datum_cas.value = `${newDate}T${hours}:${minutes}`;
+	}
 };
 
 const updateTime = (time) => {
-	// 🧠 Convert to proper datetime-local format
-	const parsed = parseISO(time);
-	const formatted = format(parsed, "yyyy-MM-dd'T'HH:mm");
+	if (!time) return;
 
-	datum_cas.value = formatted;
+	// If we have a date from the parent, combine it with the clicked time
+	if (props.date) {
+		const dateObj = new Date(props.date);
+		const [hours, minutes] = time.split(":").map(Number);
 
-	// 🕒 Optional: auto-set koniec to +30 minutes
-	const endDate = new Date(parsed.getTime() + 30 * 60000);
-	if (
+		dateObj.setHours(hours);
+		dateObj.setMinutes(minutes);
+
+		datum_cas.value = format(dateObj, "yyyy-MM-dd'T'HH:mm");
+	} else {
+		// If no date, just use the time with today's date
+		const [hours, minutes] = time.split(":").map(Number);
+		const now = new Date();
+		now.setHours(hours);
+		now.setMinutes(minutes);
+
+		datum_cas.value = format(now, "yyyy-MM-dd'T'HH:mm");
+	}
+
+	// Auto-set koniec based on activity type
+	const addedTime =
 		aktivita.value === "Telefonát klient" ||
 		aktivita.value === "Telefonát nábor"
-	) {
-		endDate.setMinutes(endDate.getMinutes() + 5);
-	}
-	koniec.value = format(endDate, "yyyy-MM-dd'T'HH:mm");
+			? { minutes: 5 }
+			: { hours: 1 };
+
+	const newEnd = add(parseISO(datum_cas.value), addedTime);
+	koniec.value = format(newEnd, "yyyy-MM-dd'T'HH:mm");
 };
 
 defineExpose({ updateTime });
@@ -581,7 +612,8 @@ const setActive = (n) => {
 					<option value="Servisná analýza">Servisná analýza</option>
 					<option value="poradenstvo nové">Poradenstvo nové</option>
 					<option value="servisné poradenstvo">Servisné poradenstvo</option>
-					<option value="realizácia">realizácia</option>
+					<option value="realizácia nová">realizácia nová</option>
+					<option value="realizácia servisná">realizácia servisná</option>
 					<option value="welcome seminár">Welcome seminár</option>
 					<option value="basic 1">Basic 1</option>
 					<option value="basic 2">Basic 2</option>

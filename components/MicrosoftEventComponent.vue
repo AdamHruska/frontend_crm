@@ -1,20 +1,18 @@
+
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRuntimeConfig } from "#imports";
 import axios from "axios";
 
-const config = useRuntimeConfig();
+// Emits for parent communication
 const emit = defineEmits(["close", "eventCreated"]);
 
-// Define props
+// Props
 const props = defineProps({
-	selectedDate: {
-		type: String,
-		default: "",
-	},
+	selectedDate: { type: String, default: "" },
 });
 
-// Form state
+// State
 const eventForm = ref({
 	subject: "",
 	location: "",
@@ -24,102 +22,70 @@ const eventForm = ref({
 	isOnlineMeeting: false,
 	attendees: [{ email: "", name: "" }],
 });
-
 const formError = ref("");
 const isLoading = ref(false);
+const config = useRuntimeConfig();
 
-// Set initial dates if a date was selected
+// Set initial form dates
 onMounted(() => {
-	if (props.selectedDate) {
-		const startDate = new Date(props.selectedDate);
-		const endDate = new Date(startDate);
-		endDate.setHours(startDate.getHours() + 1); // Default 1 hour duration
-
-		eventForm.value.start = formatDateTimeForInput(startDate);
-		eventForm.value.end = formatDateTimeForInput(endDate);
-	} else {
-		// Set default to current time + 1 hour
-		const now = new Date();
-		const later = new Date(now);
-		later.setHours(now.getHours() + 1);
-
-		eventForm.value.start = formatDateTimeForInput(now);
-		eventForm.value.end = formatDateTimeForInput(later);
-	}
+	const base = props.selectedDate ? new Date(props.selectedDate) : new Date();
+	const end = new Date(base);
+	end.setHours(base.getHours() + 1);
+	eventForm.value.start = formatDateTimeForInput(base);
+	eventForm.value.end = formatDateTimeForInput(end);
 });
 
-// Helper function to format date for datetime-local input
+// Format date for datetime-local input
 function formatDateTimeForInput(date) {
-	const year = date.getFullYear();
-	const month = String(date.getMonth() + 1).padStart(2, "0");
-	const day = String(date.getDate()).padStart(2, "0");
-	const hours = String(date.getHours()).padStart(2, "0");
-	const minutes = String(date.getMinutes()).padStart(2, "0");
-
-	return `${year}-${month}-${day}T${hours}:${minutes}`;
+	return [
+		date.getFullYear(),
+		String(date.getMonth() + 1).padStart(2, "0"),
+		String(date.getDate()).padStart(2, "0")
+	].join("-") +
+		"T" +
+		[String(date.getHours()).padStart(2, "0"), String(date.getMinutes()).padStart(2, "0")].join(":");
 }
 
-// Add attendee
 function addAttendee() {
 	eventForm.value.attendees.push({ email: "", name: "" });
 }
 
-// Remove attendee
 function removeAttendee(index) {
 	if (eventForm.value.attendees.length > 1) {
 		eventForm.value.attendees.splice(index, 1);
 	}
 }
 
-// Submit the form
 async function createEvent() {
 	formError.value = "";
-
-	// Basic validation
+	// Validation
 	if (!eventForm.value.subject) {
 		formError.value = "Please enter a subject for the event";
 		return;
 	}
-
 	if (!eventForm.value.start || !eventForm.value.end) {
 		formError.value = "Please set both start and end times";
 		return;
 	}
-
 	const startTime = new Date(eventForm.value.start);
 	const endTime = new Date(eventForm.value.end);
-
 	if (endTime <= startTime) {
 		formError.value = "End time must be after start time";
 		return;
 	}
-
-	// Validate attendees
-	const validAttendees = eventForm.value.attendees.filter(
-		(a) => a.email.trim() !== ""
-	);
-
+	const validAttendees = eventForm.value.attendees.filter(a => a.email.trim() !== "");
 	try {
 		isLoading.value = true;
-
-		// Format dates for API
-		const formattedData = {
-			...eventForm.value,
-			attendees: validAttendees,
-		};
-
+		const formattedData = { ...eventForm.value, attendees: validAttendees };
 		const response = await axios.post(
 			`${config.public.apiUrl}create-microsoft-event`,
 			formattedData
 		);
-
 		emit("eventCreated", response.data);
 		emit("close");
 	} catch (error) {
-		console.error("Error creating Microsoft event:", error);
-		formError.value =
-			error.response?.data?.error ||
-			"Failed to create event. Please try again.";
+		// Portfolio: show user-friendly error
+		formError.value = error?.response?.data?.error || "Failed to create event. Please try again.";
 	} finally {
 		isLoading.value = false;
 	}

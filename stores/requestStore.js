@@ -34,7 +34,7 @@ export const useRequestStore = defineStore("request", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 				this.viewTheirCalendar = response.data.requests;
 				console.log("viewTheirCalendar", this.viewTheirCalendar);
@@ -60,7 +60,7 @@ export const useRequestStore = defineStore("request", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 				this.viewTheirCalendar = response.data.requests;
 				console.log("viewTheirCalendar", this.viewTheirCalendar);
@@ -86,7 +86,7 @@ export const useRequestStore = defineStore("request", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 				this.letThemViewMineTabulka = response.data.requests;
 				console.log("letThemViewMineTabulka", this.letThemViewMineTabulka);
@@ -112,7 +112,7 @@ export const useRequestStore = defineStore("request", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 				this.letThemViewMineSkuska = response.data.requests;
 				console.log("letThemViewMineSkuska", this.letThemViewMineSkuska);
@@ -138,12 +138,12 @@ export const useRequestStore = defineStore("request", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 				this.viewTheirCalendarForApproval = response.data.requests;
 				console.log(
 					"letThemViewMineapproval",
-					this.viewTheirCalendarForApproval
+					this.viewTheirCalendarForApproval,
 				);
 			} catch (error) {
 				console.error("Error fetching user:", error);
@@ -168,12 +168,12 @@ export const useRequestStore = defineStore("request", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 
 				// Remove the deleted invite from the local store's viewTheirCalendar state
 				this.viewTheirCalendar = this.viewTheirCalendar.filter(
-					(invite) => invite.id !== id
+					(invite) => invite.id !== id,
 				);
 			} catch (error) {
 				console.error("Error deleting request:", error);
@@ -182,7 +182,7 @@ export const useRequestStore = defineStore("request", {
 			} finally {
 				// Remove ID from loading state whether successful or not
 				this.deletingIds = this.deletingIds.filter(
-					(loadingId) => loadingId !== id
+					(loadingId) => loadingId !== id,
 				);
 			}
 		},
@@ -202,12 +202,12 @@ export const useRequestStore = defineStore("request", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 
 				// Remove the deleted invite from the local store's viewTheirCalendar state
 				this.letThemViewMineSkuska = this.letThemViewMineSkuska.filter(
-					(invite) => invite.id !== id
+					(invite) => invite.id !== id,
 				);
 			} catch (error) {
 				console.error("Error deleting request:", error);
@@ -216,7 +216,7 @@ export const useRequestStore = defineStore("request", {
 			} finally {
 				// Remove ID from loading state whether successful or not
 				this.deletingIds = this.deletingIds.filter(
-					(loadingId) => loadingId !== id
+					(loadingId) => loadingId !== id,
 				);
 			}
 		},
@@ -236,12 +236,12 @@ export const useRequestStore = defineStore("request", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 
 				// Remove the deleted invite from the local store's viewTheirCalendar state
 				this.letThemViewMineSkuska = this.letThemViewMineSkuska.filter(
-					(invite) => invite.id !== id
+					(invite) => invite.id !== id,
 				);
 			} catch (error) {
 				console.error("Error deleting request:", error);
@@ -250,7 +250,7 @@ export const useRequestStore = defineStore("request", {
 			} finally {
 				// Remove ID from loading state whether successful or not
 				this.deletingIds = this.deletingIds.filter(
-					(loadingId) => loadingId !== id
+					(loadingId) => loadingId !== id,
 				);
 			}
 		},
@@ -270,7 +270,7 @@ export const useRequestStore = defineStore("request", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 			} catch (error) {
 				console.error("Error deleting request:", error);
@@ -320,6 +320,11 @@ export const useRequestStore = defineStore("request", {
 			this.error = null;
 
 			try {
+				// Find the approved request BEFORE removing it
+				const approvedRequest = this.letThemViewMineTabulka.find(
+					(request) => request.id === requestId,
+				);
+
 				const response = await axios.post(
 					`${config.public.apiUrl}add-sharing-id-table/${id}/${requestId}`,
 					{},
@@ -327,17 +332,12 @@ export const useRequestStore = defineStore("request", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 
-				// Remove from pending requests
+				// Remove from pending requests AFTER API success
 				this.letThemViewMineTabulka = this.letThemViewMineTabulka.filter(
-					(invite) => invite.id !== requestId
-				);
-
-				// Find the approved user from the request data
-				const approvedRequest = this.letThemViewMineTabulka.find(
-					(request) => request.id === requestId
+					(invite) => invite.id !== requestId,
 				);
 
 				if (approvedRequest) {
@@ -371,7 +371,7 @@ export const useRequestStore = defineStore("request", {
 				status: "pending",
 			};
 
-			userId, first_name, last_name;
+			(userId, first_name, last_name);
 
 			this.error = null;
 
@@ -383,7 +383,7 @@ export const useRequestStore = defineStore("request", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 				this.viewTheirCalendar = [
 					...this.viewTheirCalendar,
@@ -414,7 +414,7 @@ export const useRequestStore = defineStore("request", {
 				status: "pending",
 			};
 
-			userId, first_name, last_name;
+			(userId, first_name, last_name);
 
 			this.error = null;
 
@@ -426,7 +426,7 @@ export const useRequestStore = defineStore("request", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 				this.letThemViewMine = [...this.letThemViewMine, response.data.data];
 				this.letThemViewMineSkuska = [
@@ -457,7 +457,7 @@ export const useRequestStore = defineStore("request", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 				console.log("historia", response.data.requests);
 				this.history = response.data.requests;
@@ -483,7 +483,7 @@ export const useRequestStore = defineStore("request", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 				console.log("who-see-my-cal", response.data.requests);
 				this.seesMyCalendar = response.data.requests;
@@ -509,11 +509,11 @@ export const useRequestStore = defineStore("request", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 
 				this.seesMyCalendar = this.seesMyCalendar.filter(
-					(invite) => invite.id !== id
+					(invite) => invite.id !== id,
 				);
 			} catch (error) {
 				console.error("Error deleting request:", error);

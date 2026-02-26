@@ -33,6 +33,10 @@ const props = defineProps({
 	},
 });
 
+const todayFormatted = computed(() => {
+	return format(new Date(), "yyyy-MM-dd");
+});
+
 // Watch for date changes and update calendar
 watch(
 	() => props.date,
@@ -44,7 +48,7 @@ watch(
 			const dateObj = new Date(newDate);
 			fetchMicrosoftEvents(dateObj.getMonth() + 1, dateObj.getFullYear());
 		}
-	}
+	},
 );
 
 const emit = defineEmits(["updateDate", "timeClicked"]);
@@ -91,8 +95,14 @@ const calendarOptions = ref({
 		const month = currentDate.getMonth() + 1;
 		const year = currentDate.getFullYear();
 
+		// Format date without timezone conversion
+		const yearStr = currentDate.getFullYear();
+		const monthStr = String(currentDate.getMonth() + 1).padStart(2, "0");
+		const dayStr = String(currentDate.getDate()).padStart(2, "0");
+		const formattedDate = `${yearStr}-${monthStr}-${dayStr}`;
+
 		// 👇 Emit date to parent when user navigates
-		emit("updateDate", currentDate);
+		emit("updateDate", formattedDate);
 
 		if (
 			month !== currentLoadedMonth.value + 2 ||
@@ -120,7 +130,7 @@ const fetchMicrosoftEvents = async (month, year) => {
 	try {
 		const microsoftEventsData = await calendarStore.fetchMicrosoftEvents(
 			month,
-			year
+			year,
 		);
 		microsoftEvents.value = microsoftEventsData;
 		updateCalendarEvents();
@@ -169,14 +179,14 @@ onMounted(async () => {
 	events.value = transformData(rawData.value);
 
 	const sharedACT = transformData(
-		flattenActivities(calendarStore.shared_activities)
+		flattenActivities(calendarStore.shared_activities),
 	);
 	events.value = [...events.value, ...sharedACT];
 
 	const selectedDate = new Date(props.date);
 	await fetchMicrosoftEvents(
 		selectedDate.getMonth() + 1,
-		selectedDate.getFullYear()
+		selectedDate.getFullYear(),
 	);
 
 	updateCalendarEvents();
@@ -242,11 +252,11 @@ const alterEvents = (updatedEvent) => {
 	if (updatedEvent === null) {
 		events.value = events.value.filter((event) => event.id != activityID.value);
 		rawData.value = rawData.value.filter(
-			(event) => event.id !== activityID.value
+			(event) => event.id !== activityID.value,
 		);
 	} else {
 		rawData.value = rawData.value.map((event) =>
-			event.id === updatedEvent.id ? updatedEvent : event
+			event.id === updatedEvent.id ? updatedEvent : event,
 		);
 
 		events.value = events.value.map((event) => {
@@ -281,8 +291,25 @@ const alterEvents = (updatedEvent) => {
 };
 
 function handleTimeClick(info) {
-	// Only emit the time, don't open any form
-	emit("timeClicked", info.dateStr);
+	// Extract the time from the clicked slot
+	const clickedDate = info.date; // This is already a Date object
+
+	// Format directly without timezone conversion
+	const year = clickedDate.getFullYear();
+	const month = String(clickedDate.getMonth() + 1).padStart(2, "0");
+	const day = String(clickedDate.getDate()).padStart(2, "0");
+	const hours = String(clickedDate.getHours()).padStart(2, "0");
+	const minutes = String(clickedDate.getMinutes()).padStart(2, "0");
+
+	const dateStr = `${year}-${month}-${day}`;
+	const timeStr = `${hours}:${minutes}`;
+
+	// Emit the time
+	emit("timeClicked", timeStr);
+
+	// Also emit the full date if needed
+	emit("updateDate", dateStr);
+
 	// Prevent the default calendar behavior
 	info.jsEvent.preventDefault();
 	info.jsEvent.stopPropagation();

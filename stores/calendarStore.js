@@ -19,56 +19,6 @@ export const useCalendarstore = defineStore("calendar", {
 		userColors: {},
 	}),
 	actions: {
-		// async fetchActivities() {
-		// 	this.loadingState = true;
-		// 	const config = useRuntimeConfig();
-		// 	const authStore = useAuthStore();
-		// 	const userStore = useUserStore();
-
-		// 	const response = await axios.get(
-		// 		`${config.public.apiUrl}get-activities-diary`,
-		// 		{
-		// 			headers: {
-		// 				Authorization: `Bearer ${authStore.token}`,
-		// 			},
-		// 		}
-		// 	);
-		// 	this.activities = response.data.activities;
-
-		// 	// Getting sharedIDs
-		// 	let sharedIDs = userStore.user.share_user_id;
-
-		// 	// Parse the shared IDs if they exist
-		// 	sharedIDs = sharedIDs ? JSON.parse(sharedIDs) : [];
-
-		// 	// If sharedIDs is empty, skip the API call or handle it differently
-		// 	if (sharedIDs.length === 0) {
-		// 		this.shared_activities = [];
-		// 		this.loadingState = false;
-		// 		return;
-		// 	}
-
-		// 	try {
-		// 		const response_shared_activities = await axios.post(
-		// 			`${config.public.apiUrl}get-activities`,
-		// 			{
-		// 				user_ids: sharedIDs, // Send shared user IDs only if they exist
-		// 			},
-		// 			{
-		// 				headers: {
-		// 					Authorization: `Bearer ${authStore.token}`,
-		// 					"Content-Type": "application/json",
-		// 				},
-		// 			}
-		// 		);
-		// 		this.shared_activities = response_shared_activities.data.activities;
-		// 	} catch (error) {
-		// 		console.error("Error fetching shared activities:", error);
-		// 	}
-
-		// 	this.loadingState = false;
-		// },
-
 		async fetchActivities() {
 			this.loadingState = true;
 			const config = useRuntimeConfig();
@@ -83,7 +33,7 @@ export const useCalendarstore = defineStore("calendar", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 				this.activities = response.data.activities;
 				console.log("Fetched activities:", this.activities);
@@ -101,7 +51,7 @@ export const useCalendarstore = defineStore("calendar", {
 				// Skip shared activities fetch if no shared IDs
 				if (sharedIDs.length === 0) {
 					console.warn(
-						"No shared IDs found. Skipping shared activities fetch."
+						"No shared IDs found. Skipping shared activities fetch.",
 					);
 					this.shared_activities = [];
 					this.loadingState = false;
@@ -203,7 +153,7 @@ export const useCalendarstore = defineStore("calendar", {
 			await userStore.userGetCalendarNames();
 			console.log(
 				"Selected calendar names:",
-				userStore.selected_calendar_names
+				userStore.selected_calendar_names,
 			);
 			// Create a cache key using month and year
 			const cacheKey = `${year}-${month}`;
@@ -285,7 +235,7 @@ export const useCalendarstore = defineStore("calendar", {
 				console.log("Transformed Microsoft events:", microsoftEvents);
 				const hehe = microsoftEvents.filter(
 					(event) =>
-						event.title === "Pozvánka na stretnutie - 09.11.2025 o 09:00"
+						event.title === "Pozvánka na stretnutie - 09.11.2025 o 09:00",
 				);
 				console.log("Filtered events for debugging:", hehe);
 				return microsoftEvents;
@@ -370,7 +320,7 @@ export const useCalendarstore = defineStore("calendar", {
 							Authorization: `Bearer ${authStore.token}`,
 							"Content-Type": "application/json",
 						},
-					}
+					},
 				);
 
 				return response.data;
@@ -389,7 +339,7 @@ export const useCalendarstore = defineStore("calendar", {
 				// Get the activity details
 				const activityResponse = await axios.get(
 					`${config.public.apiUrl}activities/${activityId}`,
-					{ headers: { Authorization: `Bearer ${authStore.token}` } }
+					{ headers: { Authorization: `Bearer ${authStore.token}` } },
 				);
 
 				const activity = activityResponse.data.activity;
@@ -401,7 +351,7 @@ export const useCalendarstore = defineStore("calendar", {
 					} catch (error) {
 						console.error(
 							"Microsoft event deletion failed, continuing with local delete",
-							error
+							error,
 						);
 					}
 				}
@@ -409,14 +359,14 @@ export const useCalendarstore = defineStore("calendar", {
 				// Proceed with local deletion
 				await axios.delete(
 					`${config.public.apiUrl}delete-activities/${activityId}`,
-					{ headers: { Authorization: `Bearer ${authStore.token}` } }
+					{ headers: { Authorization: `Bearer ${authStore.token}` } },
 				);
 
 				// Update local state
 				this.activities = this.activities.filter((a) => a.id !== activityId);
 				Object.keys(this.shared_activities).forEach((key) => {
 					this.shared_activities[key] = this.shared_activities[key].filter(
-						(a) => a.id !== activityId
+						(a) => a.id !== activityId,
 					);
 				});
 
@@ -470,13 +420,13 @@ export const useCalendarstore = defineStore("calendar", {
 			// Remove from shared_activities array
 			if (Array.isArray(this.shared_activities)) {
 				this.shared_activities = this.shared_activities.filter(
-					(activity) => Number(activity.created_id) !== userIdNum
+					(activity) => Number(activity.created_id) !== userIdNum,
 				);
 			} else {
 				// If shared_activities is an object with arrays
 				Object.keys(this.shared_activities).forEach((key) => {
 					this.shared_activities[key] = this.shared_activities[key].filter(
-						(activity) => Number(activity.created_id) !== userIdNum
+						(activity) => Number(activity.created_id) !== userIdNum,
 					);
 				});
 			}
@@ -498,12 +448,12 @@ export const useCalendarstore = defineStore("calendar", {
 							Authorization: `Bearer ${authStore.token}`,
 							"Content-Type": "application/json",
 						},
-					}
+					},
 				);
 
 				// Update activity in the local store
 				const index = this.activities.findIndex(
-					(a) => a.id === updatedEvent.id
+					(a) => a.id === updatedEvent.id,
 				);
 				if (index !== -1) {
 					this.activities[index] = {

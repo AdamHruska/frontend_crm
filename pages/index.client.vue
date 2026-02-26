@@ -37,6 +37,48 @@ const callListNames = ref([]);
 
 const showDisclaimer = ref(false);
 
+const filterWrongNumbers = ref(false);
+
+const fetchWrongNumberContacts = async (query = "") => {
+	const response = await axios.get(
+		`${config.public.apiUrl}search-bad-phone-contacts`,
+		{
+			params: { query },
+			headers: { Authorization: `Bearer ${authStore.token}` },
+		},
+	);
+
+	const data = response.data.contacts;
+	contactsStore.contacts = data;
+
+	people.value = data.data.map((person) => ({
+		...person,
+		class: "bg-orange-300",
+	}));
+
+	page.value = data.current_page;
+};
+
+const toggleWrongNumberFilter = async () => {
+	filterWrongNumbers.value = !filterWrongNumbers.value;
+
+	if (filterWrongNumbers.value) {
+		contactsStore.searchQuery = "";
+		await fetchWrongNumberContacts();
+	} else {
+		contactsStore.searchQuery = "";
+		await contactsStore.fetchContacts();
+		people.value = contactsStore.contacts.data.map((person) => {
+			let cssClass = "";
+			if (person.first_event === 0) cssClass += "bg-green-200 ";
+			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
+			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
+			return { ...person, class: cssClass.trim() };
+		});
+		page.value = contactsStore.contacts.current_page;
+	}
+};
+
 const toggleCallList = async () => {
 	if (selected.value.length > 0) {
 		cancleCallListForm(); // Show the form
@@ -204,53 +246,79 @@ onMounted(async () => {
 	callListNames.value = callListNames.value.data;
 });
 
-const handleSearchResults = (results) => {
-	// If results is an array (search results), update people
-	if (Array.isArray(results)) {
-		contactsStore.contacts = {
-			...contactsStore.contacts,
-			data: results,
-		};
+const handleSearchResults = async (results) => {
+	if (filterWrongNumbers.value) {
+		await fetchWrongNumberContacts(contactsStore.searchQuery);
+		return;
+	}
 
+	if (Array.isArray(results)) {
+		contactsStore.contacts = { ...contactsStore.contacts, data: results };
 		people.value = results.map((person) => {
 			let cssClass = "";
-			if (person.first_event === 0) {
-				cssClass += "bg-green-200 ";
-			}
-			if (person.only_called_never_answered === 1) {
-				cssClass += "bg-blue-200 ";
-			}
-
-			if (person.wrong_number === 1) {
-				cssClass += "bg-orange-300 ";
-			}
-
-			return {
-				...person,
-				class: cssClass.trim(),
-			};
+			if (person.first_event === 0) cssClass += "bg-green-200 ";
+			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
+			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
+			return { ...person, class: cssClass.trim() };
 		});
-	}
-	// If results is paginated data (from store), use the data property
-	else if (results && results.data) {
+	} else if (results && results.data) {
 		people.value = results.data.map((person) => {
 			let cssClass = "";
-			if (person.first_event === 0) {
-				cssClass += "bg-green-200 ";
-			}
-			if (person.only_called_never_answered === 1) {
-				cssClass += "bg-blue-200 ";
-			}
-			if (person.wrong_number === 1) {
-				cssClass += "bg-orange-300 ";
-			}
-			return {
-				...person,
-				class: cssClass.trim(),
-			};
+			if (person.first_event === 0) cssClass += "bg-green-200 ";
+			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
+			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
+			return { ...person, class: cssClass.trim() };
 		});
 	}
 };
+
+// const handleSearchResults = (results) => {
+// 	// If results is an array (search results), update people
+// 	if (Array.isArray(results)) {
+// 		contactsStore.contacts = {
+// 			...contactsStore.contacts,
+// 			data: results,
+// 		};
+
+// 		people.value = results.map((person) => {
+// 			let cssClass = "";
+// 			if (person.first_event === 0) {
+// 				cssClass += "bg-green-200 ";
+// 			}
+// 			if (person.only_called_never_answered === 1) {
+// 				cssClass += "bg-blue-200 ";
+// 			}
+
+// 			if (person.wrong_number === 1) {
+// 				cssClass += "bg-orange-300 ";
+// 			}
+
+// 			return {
+// 				...person,
+// 				class: cssClass.trim(),
+// 			};
+// 		});
+// 	}
+// 	// If results is paginated data (from store), use the data property
+// 	else if (results && results.data) {
+// 		people.value = results.data.map((person) => {
+// 			let cssClass = "";
+// 			if (person.first_event === 0) {
+// 				cssClass += "bg-green-200 ";
+// 			}
+// 			if (person.only_called_never_answered === 1) {
+// 				cssClass += "bg-blue-200 ";
+// 			}
+// 			if (person.wrong_number === 1) {
+// 				cssClass += "bg-orange-300 ";
+// 			}
+// 			return {
+// 				...person,
+// 				class: cssClass.trim(),
+// 			};
+// 		});
+// 	}
+// };
 
 const detailView = (id) => {
 	router.push(`/contact/${id}`);
@@ -344,53 +412,88 @@ const items = (row) => [
 ];
 
 // PAGINATION
+// const nextPage = async () => {
+// 	await contactsStore.nextPage();
+// 	page.value = contactsStore.contacts.current_page;
+// 	//people.value = contactsStore.contacts.data;
+// 	people.value = contactsStore.contacts.data.map((person) => {
+// 		let cssClass = "";
+
+// 		if (person.first_event === 0) {
+// 			cssClass += "bg-green-200 ";
+// 		}
+
+// 		if (person.only_called_never_answered === 1) {
+// 			cssClass += "bg-blue-200 ";
+// 		}
+// 		if (person.wrong_number === 1) {
+// 			cssClass += "bg-orange-300 ";
+// 		}
+// 		return {
+// 			...person,
+// 			class: cssClass.trim(),
+// 		};
+// 	});
+// };
+
+// const prevPage = async () => {
+// 	await contactsStore.prevPage();
+// 	page.value = contactsStore.contacts.current_page;
+// 	//people.value = contactsStore.contacts.data;
+
+// 	people.value = contactsStore.contacts.data.map((person) => {
+// 		let cssClass = "";
+
+// 		if (person.first_event === 0) {
+// 			cssClass += "bg-green-200 ";
+// 		}
+
+// 		if (person.only_called_never_answered === 1) {
+// 			cssClass += "bg-blue-200 ";
+// 		}
+// 		if (person.wrong_number === 1) {
+// 			cssClass += "bg-orange-300 ";
+// 		}
+
+// 		return {
+// 			...person,
+// 			class: cssClass.trim(),
+// 		};
+// 	});
+// };
+
 const nextPage = async () => {
+	if (filterWrongNumbers.value) {
+		await contactsStore.nextPage(); // this updates contactsStore.contacts
+		// re-fetch with current page from the bad phone endpoint instead
+		const response = await axios.get(
+			`${config.public.apiUrl}search-bad-phone-contacts`,
+			{
+				params: {
+					query: contactsStore.searchQuery || "",
+					page: contactsStore.contacts.current_page + 1,
+				},
+				headers: { Authorization: `Bearer ${authStore.token}` },
+			},
+		);
+		const data = response.data.contacts;
+		contactsStore.contacts = data;
+		page.value = data.current_page;
+		people.value = data.data.map((person) => ({
+			...person,
+			class: "bg-orange-300",
+		}));
+		return;
+	}
+	// original logic
 	await contactsStore.nextPage();
 	page.value = contactsStore.contacts.current_page;
-	//people.value = contactsStore.contacts.data;
 	people.value = contactsStore.contacts.data.map((person) => {
 		let cssClass = "";
-
-		if (person.first_event === 0) {
-			cssClass += "bg-green-200 ";
-		}
-
-		if (person.only_called_never_answered === 1) {
-			cssClass += "bg-blue-200 ";
-		}
-		if (person.wrong_number === 1) {
-			cssClass += "bg-orange-300 ";
-		}
-		return {
-			...person,
-			class: cssClass.trim(),
-		};
-	});
-};
-
-const prevPage = async () => {
-	await contactsStore.prevPage();
-	page.value = contactsStore.contacts.current_page;
-	//people.value = contactsStore.contacts.data;
-
-	people.value = contactsStore.contacts.data.map((person) => {
-		let cssClass = "";
-
-		if (person.first_event === 0) {
-			cssClass += "bg-green-200 ";
-		}
-
-		if (person.only_called_never_answered === 1) {
-			cssClass += "bg-blue-200 ";
-		}
-		if (person.wrong_number === 1) {
-			cssClass += "bg-orange-300 ";
-		}
-
-		return {
-			...person,
-			class: cssClass.trim(),
-		};
+		if (person.first_event === 0) cssClass += "bg-green-200 ";
+		if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
+		if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
+		return { ...person, class: cssClass.trim() };
 	});
 };
 
@@ -604,11 +707,34 @@ const showShareContacts = ref(false);
 
 		<loadigcomponent v-if="contactsStore.loadingState" />
 		<div class="flex justify-between">
-			<div class="max-w-sm ml-8 mt-8 mb-2 w-[400px]">
-				<searchBar @updateResults="handleSearchResults" />
+			<div class="w-[650px] ml-8 mt-8 mb-2 flex gap-2 items-center">
+				<searchBar @updateResults="handleSearchResults" class="w-[70%]" />
+				<ContactImportComponent />
 			</div>
 
 			<div class="flex items-center mb-2">
+				<UTooltip
+					:text="
+						filterWrongNumbers
+							? 'Zobraziť všetky kontakty'
+							: 'Filtrovanie zlých čísel'
+					"
+					:ui="{ background: '!bg-white', color: '' }"
+					class="cursor-pointer flex items-center justify-center w-11 h-11 rounded-lg shadow-xl mr-4 mt-8"
+					:class="
+						filterWrongNumbers
+							? 'bg-orange-400 hover:bg-orange-500'
+							: 'bg-gray-300 hover:bg-gray-400'
+					"
+				>
+					<Icon
+						@click="toggleWrongNumberFilter"
+						icon="material-symbols:filter-alt"
+						style="font-size: 36px"
+						class="text-white"
+					/>
+				</UTooltip>
+
 				<UTooltip
 					text="Pridať kontakt"
 					:ui="{ background: '!bg-white', color: '' }"

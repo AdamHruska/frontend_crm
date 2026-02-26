@@ -16,54 +16,235 @@
 		@refreshCallLists="fetchCallLists"
 	/>
 
-	<div class="px-8 pt-6 pb-4 flex gap-2 items-center">
-		<select
-			@change="fetchData"
-			v-model="selectedMonth"
-			name=""
-			id=""
-			class="w-32 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 font-medium cursor-pointer hover:border-gray-400 transition-colors"
-		>
-			<option value="1">Januar</option>
-			<option value="2">Februar</option>
-			<option value="3">Marec</option>
-			<option value="4">Apríl</option>
-			<option value="5">Máj</option>
-			<option value="6">Jún</option>
-			<option value="7">Júl</option>
-			<option value="8">August</option>
-			<option value="9">September</option>
-			<option value="10">Október</option>
-			<option value="11">November</option>
-			<option value="12">December</option>
-		</select>
-		<select
-			v-model="selectedYear"
-			@change="fetchData"
-			class="w-28 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 font-medium cursor-pointer hover:border-gray-400 transition-colors"
-		>
-			<option v-for="year in years" :key="year" :value="year">
-				{{ year }}
-			</option>
-		</select>
+	<div class="px-8 pt-6 pb-8 flex gap-4 flex-col items-start">
+		<div class="flex gap-4">
+			<div class="flex gap-2 items-center">
+				<label for="dateFrom" class="font-semibold">Od:</label>
+				<input
+					id="dateFrom"
+					type="date"
+					v-model="dateFrom"
+					@change="fetchData"
+					class="px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 font-medium cursor-pointer hover:border-gray-400 transition-colors"
+				/>
+			</div>
+			<div class="flex gap-2 items-center">
+				<label for="dateTo" class="font-semibold">Do:</label>
+				<input
+					id="dateTo"
+					type="date"
+					v-model="dateTo"
+					@change="fetchData"
+					class="px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 font-medium cursor-pointer hover:border-gray-400 transition-colors"
+				/>
+			</div>
+		</div>
 
-		<div class="font-semibold">Selekty:</div>
-		<select
-			@change="fetchSelect"
-			v-model="selectedSelect"
-			name=""
-			id=""
-			class="w-full md:w-64 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 font-medium cursor-pointer hover:border-gray-400 transition-colors"
-		>
-			<option value="1">Kontakty so zlým telefónnym číslom</option>
-		</select>
+		<div class="flex gap-2 items-center justify-start w-full">
+			<div class="font-semibold">Selekty:</div>
+			<select
+				@change="fetchSelect"
+				v-model="selectedSelect"
+				name=""
+				id=""
+				class="w-full md:w-64 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 font-medium cursor-pointer hover:border-gray-400 transition-colors"
+			>
+				<option value="1">Kontakty so zlým telefónnym číslom</option>
+				<option value="2">Zrušené aktivity</option>
+				<option value="3">AOF bez dohodnutého poradenstva</option>
+				<option value="4">Servisná analýza bez poradenstva</option>
+				<option value="4">Servisná analýza bez poradenstva</option>
+				<option value="5">Poradenstvo bez doporučení</option>
+				<option value="6">Prvé stretnutie bez analýzy</option>
+			</select>
+		</div>
+	</div>
+
+	<div v-if="peopleWithoutAdvice.length > 0" class="px-8 pb-10 overflow-x-auto">
+		<h3>AOF bez dohodnutého poradenstva</h3>
+		<div class="bg-white shadow-lg rounded-xl overflow-hidden relative">
+			<Icon
+				@click="((peopleWithoutAdvice = []), (selectedSelect = ''))"
+				:icon="'material-symbols:close-rounded'"
+				class="w-6 h-6 absolute top-2 right-2 cursor-pointer text-gray-500 hover:scale-110 transition-transform z-10"
+			/>
+			<table class="min-w-full divide-y divide-gray-200">
+				<thead class="bg-gray-50">
+					<tr>
+						<th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">
+							Meno
+						</th>
+						<th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">
+							Priezvisko
+						</th>
+						<th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">
+							Údaje
+						</th>
+					</tr>
+				</thead>
+
+				<tbody class="divide-y divide-gray-100">
+					<tr
+						v-for="(person, index) in peopleWithoutAdvice"
+						:key="index"
+						class="hover:bg-gray-50 transition"
+					>
+						<td class="px-6 py-3 font-medium">
+							{{ person.meno }}
+						</td>
+
+						<td class="px-6 py-3">
+							{{ person.priezvisko }}
+						</td>
+
+						<td class="px-6 py-3 text-gray-600">
+							{{ person.other }}
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+
+	<div
+		v-if="activitiesWithoutAdvice.length > 0"
+		class="px-8 pb-10 overflow-x-auto"
+	>
+		<h3>Analýza bez dohodnutého poradenstva</h3>
+		<div class="bg-white shadow-lg rounded-xl overflow-hidden relative">
+			<Icon
+				@click="((activitiesWithoutAdvice = []), (selectedSelect = ''))"
+				:icon="'material-symbols:close-rounded'"
+				class="w-6 h-6 absolute top-2 right-2 cursor-pointer text-gray-500 hover:scale-110 transition-transform z-10"
+			/>
+			<table class="min-w-full divide-y divide-gray-200">
+				<thead class="bg-gray-50">
+					<tr>
+						<th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">
+							Meno
+						</th>
+						<th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">
+							Priezvisko
+						</th>
+						<th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">
+							Aktivita
+						</th>
+						<th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">
+							Dátum a čas
+						</th>
+						<th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">
+							Koniec
+						</th>
+					</tr>
+				</thead>
+
+				<tbody class="divide-y divide-gray-100">
+					<tr
+						v-for="activity in activitiesWithoutAdvice"
+						:key="activity.id"
+						class="hover:bg-gray-50 transition cursor-pointer"
+						@click="goToContact(activity.contact_id)"
+					>
+						<td class="px-6 py-3 font-medium">
+							{{ activity.contact.meno }}
+						</td>
+
+						<td class="px-6 py-3">
+							{{ activity.contact.priezvisko }}
+						</td>
+
+						<td class="px-6 py-3">
+							{{ activity.aktivita }}
+						</td>
+
+						<td class="px-6 py-3 text-gray-600">
+							{{ formatDate(activity.datumCas) }}
+						</td>
+
+						<td class="px-6 py-3 text-gray-600">
+							{{ formatDate(activity.koniec) }}
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+
+	<div
+		v-if="serviceAnalysisActivities.length > 0"
+		class="px-8 pb-10 overflow-x-auto"
+	>
+		<h3>Servisná analýza bez dohodnutého poradenstva</h3>
+		<div class="bg-white shadow-lg rounded-xl overflow-hidden relative">
+			<Icon
+				@click="((serviceAnalysisActivities = []), (selectedSelect = ''))"
+				:icon="'material-symbols:close-rounded'"
+				class="w-6 h-6 absolute top-2 right-2 cursor-pointer text-gray-500 hover:scale-110 transition-transform z-10"
+			/>
+			<table class="min-w-full divide-y divide-gray-200">
+				<thead class="bg-gray-50">
+					<tr>
+						<th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">
+							Meno
+						</th>
+						<th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">
+							Priezvisko
+						</th>
+						<th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">
+							Aktivita
+						</th>
+						<th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">
+							Dátum a čas
+						</th>
+						<th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">
+							Koniec
+						</th>
+					</tr>
+				</thead>
+
+				<tbody class="divide-y divide-gray-100">
+					<tr
+						v-for="activity in serviceAnalysisActivities"
+						:key="activity.id"
+						class="hover:bg-gray-50 transition cursor-pointer"
+						@click="goToContact(activity.contact_id)"
+					>
+						<td class="px-6 py-3 font-medium">
+							{{ activity.contact.meno }}
+						</td>
+
+						<td class="px-6 py-3">
+							{{ activity.contact.priezvisko }}
+						</td>
+
+						<td class="px-6 py-3">
+							{{ activity.aktivita }}
+						</td>
+
+						<td class="px-6 py-3 text-gray-600">
+							{{ formatDate(activity.datumCas) }}
+						</td>
+
+						<td class="px-6 py-3 text-gray-600">
+							{{ formatDate(activity.koniec) }}
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
 	</div>
 
 	<div
 		v-if="invalidPhoneContacts.length > 0"
 		class="px-8 pb-10 overflow-x-auto"
 	>
-		<div class="bg-white shadow-lg rounded-xl overflow-hidden">
+		<h3>(Za celé obdobie)</h3>
+		<div class="bg-white shadow-lg rounded-xl overflow-hidden relative">
+			<Icon
+				@click="((invalidPhoneContacts = []), (selectedSelect = ''))"
+				:icon="'material-symbols:close-rounded'"
+				class="w-6 h-6 absolute top-2 right-2 cursor-pointer text-gray-500 hover:scale-110 transition-transform"
+			/>
 			<table class="min-w-full divide-y divide-gray-200">
 				<thead class="bg-gray-50">
 					<tr>
@@ -197,83 +378,95 @@
 					</UTooltip>
 				</div>
 			</div>
-			<div
-				class="bg-blue-500 px-2 py-1 w-fit rounded-md mt-4 hover:bg-blue-300 hover:scale-105 cursor-pointer float-right"
-				@click="changeshowActivityForm(event.id)"
-			>
-				Obnoviť aktivitu
-			</div>
-		</div>
-
-		<div>
-			<p v-if="!loading && declinedEvents.length === 0" class="text-gray-500">
-				Žiadne odmietnuté udalosti za vybraný mesiac.
-			</p>
-		</div>
-	</div>
-
-	<h1 class="font-semibold ml-10">Aktivity z databázy</h1>
-	<div
-		class="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-6 md:gap-y-12 max-w-screen px-8 pb-12 pt-6"
-	>
-		<!--Card-->
-
-		<div
-			v-for="event in dbActivities"
-			:key="event.id"
-			class="relative p-6 bg-white rounded-lg shadow-lg max-w-[450px]"
-			v-if="!loading && dbActivities.length > 0"
-		>
-			<!-- Checkbox top-right -->
-			<input
-				type="checkbox"
-				class="absolute top-4 right-4 w-5 h-5 cursor-pointer"
-				:value="event.id"
-				v-model="selectedActivitiesArray"
-			/>
-
-			<div class="font-semibold mb-4 text-lg">{{ event.aktivita }}</div>
-			<div class="flex flex-col gap-2 mb-3">
-				<div>
-					<span class="font-semibold">Začiatok:</span>
-					{{ formatDate(event.datumCas) }}
-				</div>
-				<div>
-					<span class="font-semibold">Koniec:</span>
-					{{ formatDate(event.koniec) }}
-				</div>
-			</div>
-
-			<div
-				class="max-h-[200px] overflow-y-auto border-y-2 py-4 hover:bg-slate-100 cursor-pointer"
-				@click="goToContact(event.contact_id)"
-			>
-				<span class="font-semibold">Meno klienta:</span>
-				{{ event.meno }} {{ event.priezvisko }}
-			</div>
-
 			<div>
-				<span class="font-semibold">Poznámka:</span>
-				{{ event.poznamka || "Poznámka nie je vyplnená" }}
-			</div>
+				<div
+					class="bg-blue-500 px-2 py-1 w-fit rounded-md mt-4 hover:bg-blue-300 hover:scale-105 cursor-pointer float-right"
+					@click="changeshowActivityForm(event.id)"
+				>
+					Obnoviť aktivitu
+				</div>
 
-			<div
-				class="bg-blue-500 px-2 py-1 w-fit rounded-md mt-4 hover:bg-blue-300 hover:scale-105 cursor-pointer float-right"
-				@click="changeshowActivityForm(event.id)"
-			>
-				Obnoviť aktivitu
+				<div
+					class="bg-red-500 px-2 py-1 w-fit rounded-md mt-4 hover:bg-red-300 hover:scale-105 cursor-pointer float-right"
+					@click="deleteActivity(event.id)"
+				>
+					Odstrániť aktivitu
+				</div>
 			</div>
-		</div>
-
-		<div v-if="!loading && dbActivities.length === 0" class="text-gray-500">
-			Žiadne aktivity v databáze za vybraný mesiac.
 		</div>
 	</div>
 
-	<div>
-		<p v-if="!loading && dbActivities.length === 0" class="text-gray-500">
-			Žiadne aktivity v databáze za vybraný mesiac.
-		</p>
+	<div v-if="selectedSelect == 2" class="relative">
+		<Icon
+			@click="((dbActivities = []), (selectedSelect = ''))"
+			:icon="'material-symbols:close-rounded'"
+			class="w-6 h-6 absolute top-6 right-6 cursor-pointer text-gray-500 hover:scale-110 transition-transform z-10"
+		/>
+		<h1 class="font-semibold ml-10">Aktivity z databázy</h1>
+		<div
+			class="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-6 md:gap-y-12 max-w-screen px-8 pb-12 pt-6"
+		>
+			<!--Card-->
+
+			<div
+				v-for="event in dbActivities"
+				:key="event.id"
+				class="relative p-6 bg-white rounded-lg shadow-lg max-w-[450px]"
+				v-if="!loading && dbActivities.length > 0"
+			>
+				<!-- Checkbox top-right -->
+				<input
+					type="checkbox"
+					class="absolute top-4 right-4 w-5 h-5 cursor-pointer"
+					:value="event.id"
+					v-model="selectedActivitiesArray"
+				/>
+
+				<div class="font-semibold mb-4 text-lg">{{ event.aktivita }}</div>
+				<div class="flex flex-col gap-2 mb-3">
+					<div>
+						<span class="font-semibold">Začiatok:</span>
+						{{ formatDate(event.datumCas) }}
+					</div>
+					<div>
+						<span class="font-semibold">Koniec:</span>
+						{{ formatDate(event.koniec) }}
+					</div>
+				</div>
+
+				<div
+					class="max-h-[200px] overflow-y-auto border-y-2 py-4 hover:bg-slate-100 cursor-pointer"
+					@click="goToContact(event.contact_id)"
+				>
+					<span class="font-semibold">Meno klienta:</span>
+					{{ event.meno }} {{ event.priezvisko }}
+				</div>
+
+				<div>
+					<span class="font-semibold">Poznámka:</span>
+					{{ event.poznamka || "Poznámka nie je vyplnená" }}
+				</div>
+
+				<div class="flex justify-end gap-2 mt-4">
+					<div
+						class="bg-blue-500 px-2 py-1 w-fit rounded-md mt-4 hover:bg-blue-300 hover:scale-105 cursor-pointer float-right"
+						@click="changeshowActivityForm(event.id)"
+					>
+						Obnoviť aktivitu
+					</div>
+					<div
+						class="bg-red-500 px-2 py-1 w-fit rounded-md mt-4 hover:bg-red-300 hover:scale-105 cursor-pointer float-right"
+						@click="deleteActivity(event.id)"
+					>
+						Odstrániť aktivitu
+					</div>
+				</div>
+			</div>
+
+			<div v-if="!loading && dbActivities.length === 0" class="text-gray-500">
+				Žiadne aktivity v databáze za vybraný mesiac.
+			</div>
+		</div>
 	</div>
 
 	<div
@@ -337,27 +530,49 @@ const showCallListForm = ref(false);
 const declinedEvents = ref([]);
 const loading = ref(false);
 
-const selectedMonth = ref(
-	deleteActivitiesStore.selectedMonth ?? new Date().getMonth() + 1,
+// Initialize date range - default to today and 30 days ago
+const today = new Date();
+const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+const formatDateForInput = (date) => {
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, "0");
+	const day = String(date.getDate()).padStart(2, "0");
+	return `${year}-${month}-${day}`;
+};
+
+const deleteActivity = async (activityID) => {
+	try {
+		if (!confirm("Opravdu chcete odstranit tuto aktivitu?")) {
+			return;
+		}
+		const response = await axios.delete(
+			`${config.public.apiUrl}delete-activities/${activityID}`,
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+				},
+			},
+		);
+	} catch (error) {
+		console.error("Error deleting activity:", error);
+		toast.error("Nepodarilo se odstranit aktivitu");
+	} finally {
+		// Refresh the data after deletion
+		await fetchData();
+		toast.success("Aktivita byla odstraněna");
+	}
+};
+
+const dateFrom = ref(
+	deleteActivitiesStore.dateFrom ?? formatDateForInput(thirtyDaysAgo),
 );
-const selectedYear = ref(
-	deleteActivitiesStore.selectedYear ?? new Date().getFullYear(),
-);
+const dateTo = ref(deleteActivitiesStore.dateTo ?? formatDateForInput(today));
 
 const dbActivities = ref([]);
 const selectedActivities = ref(new Set());
 
 const callListNames = ref([]);
-
-const years = ref([
-	new Date().getFullYear(),
-	new Date().getFullYear() - 1,
-	new Date().getFullYear() - 2,
-	new Date().getFullYear() - 3,
-	new Date().getFullYear() - 4,
-	new Date().getFullYear() - 5,
-	new Date().getFullYear() - 6,
-]);
 
 // Convert Set to array for v-model binding
 const selectedActivitiesArray = computed({
@@ -388,19 +603,14 @@ watch(selectedCallListContacts, (val) => {
 const selectedSelect = ref("Kontakty so zlým telefónnym číslom");
 
 const invalidPhoneContacts = ref([]);
-
-const showActivityForm = ref(false);
-
+const peopleWithoutAdvice = ref([]);
+const activitiesWithoutAdvice = ref([]);
+const serviceAnalysisActivities = ref([]);
 const selectedActivityID = ref(null);
 
 function goToContact(contactId) {
 	router.push("/contact/" + contactId);
 }
-
-const formatMonthForAPI = (month, year) => {
-	const formattedMonth = String(month).padStart(2, "0"); // 01–12
-	return `${year}-${formattedMonth}`;
-};
 
 const changeshowActivityForm = (activityID) => {
 	console.log("Activity ID to edit:", activityID);
@@ -408,12 +618,12 @@ const changeshowActivityForm = (activityID) => {
 	showActivityForm.value = !showActivityForm.value;
 };
 
-watch(selectedMonth, (newSelectedMonth) => {
-	deleteActivitiesStore.selectedMonth = newSelectedMonth;
+watch(dateFrom, (newDateFrom) => {
+	deleteActivitiesStore.dateFrom = newDateFrom;
 });
 
-watch(selectedYear, (newSelectedYear) => {
-	deleteActivitiesStore.selectedYear = newSelectedYear;
+watch(dateTo, (newDateTo) => {
+	deleteActivitiesStore.dateTo = newDateTo;
 });
 
 const fetchCallLists = async () => {
@@ -431,6 +641,7 @@ const fetchCallLists = async () => {
 
 onMounted(async () => {
 	await userStore.fetchUser();
+
 	callListNames.value = await axios.get(`${config.public.apiUrl}call-lists`, {
 		headers: {
 			Authorization: `Bearer ${authStore.token}`,
@@ -449,40 +660,40 @@ onMounted(async () => {
 
 	try {
 		loading.value = true;
-		deleteActivitiesStore.selectedMonth = selectedMonth.value;
-		deleteActivitiesStore.selectedYear = selectedYear.value;
+		deleteActivitiesStore.dateFrom = dateFrom.value;
+		deleteActivitiesStore.dateTo = dateTo.value;
 
-		if (deleteActivitiesStore.selectedMonth != null) {
-			selectedMonth.value = deleteActivitiesStore.selectedMonth;
+		if (deleteActivitiesStore.dateFrom != null) {
+			dateFrom.value = deleteActivitiesStore.dateFrom;
 		}
 
-		if (deleteActivitiesStore.selectedYear != null) {
-			selectedYear.value = deleteActivitiesStore.selectedYear;
+		if (deleteActivitiesStore.dateTo != null) {
+			dateTo.value = deleteActivitiesStore.dateTo;
 		}
 
-		const responseMyActivities = await axios.get(
-			`${config.public.apiUrl}get-uncompleted-activities`,
-			{
-				headers: { Authorization: `Bearer ${authStore.token}` },
-				params: {
-					month: selectedMonth.value,
-					year: selectedYear.value,
-				},
-			},
-		);
+		// const responseMyActivities = await axios.get(
+		// 	`${config.public.apiUrl}get-uncompleted-activities`,
+		// 	{
+		// 		headers: { Authorization: `Bearer ${authStore.token}` },
+		// 		params: {
+		// 			dateFrom: dateFrom.value,
+		// 			dateTo: dateTo.value,
+		// 		},
+		// 	},
+		// );
 
-		dbActivities.value = responseMyActivities.data.activities;
+		// dbActivities.value = responseMyActivities.data.activities;
 
-		const response = await axios.post(
-			`${config.public.apiUrl}microsoft/declined-events/${userStore.user.id}`,
-			{
-				user_id: userStore.user.id,
-				month: formatMonthForAPI(selectedMonth.value),
-			},
-			{ headers: { Authorization: `Bearer ${authStore.token}` } },
-		);
-		declinedEvents.value = response.data.value;
-		console.log("Declined Events Response:", declinedEvents.value);
+		// const response = await axios.post(
+		// 	`${config.public.apiUrl}microsoft/declined-events/${userStore.user.id}`,
+		// 	{
+		// 		user_id: userStore.user.id,
+		// 		dateFrom: dateFrom.value,
+		// 		dateTo: dateTo.value,
+		// 	},
+		// 	{ headers: { Authorization: `Bearer ${authStore.token}` } },
+		// );
+		// declinedEvents.value = response.data.value;
 	} catch (error) {
 		console.error("Error fetching declined events:", error);
 	} finally {
@@ -502,11 +713,7 @@ const formatDate = (dateString) => {
 };
 
 const fetchData = async () => {
-	console.log(
-		"Selected Month & Year:",
-		selectedMonth.value,
-		selectedYear.value,
-	);
+	console.log("Selected Date Range:", dateFrom.value, "to", dateTo.value);
 	try {
 		loading.value = true;
 
@@ -515,8 +722,8 @@ const fetchData = async () => {
 			{
 				headers: { Authorization: `Bearer ${authStore.token}` },
 				params: {
-					month: selectedMonth.value,
-					year: selectedYear.value,
+					dateFrom: dateFrom.value,
+					dateTo: dateTo.value,
 				},
 			},
 		);
@@ -526,8 +733,8 @@ const fetchData = async () => {
 			`${config.public.apiUrl}microsoft/declined-events/${userStore.user.id}`,
 			{
 				user_id: userStore.user.id,
-				month: selectedMonth.value,
-				year: selectedYear.value,
+				dateFrom: dateFrom.value,
+				dateTo: dateTo.value,
 			},
 			{ headers: { Authorization: `Bearer ${authStore.token}` } },
 		);
@@ -544,24 +751,146 @@ const fetchSelect = async () => {
 	try {
 		loading.value = true;
 
-		const responseInvalidPhoneNum = await axios.get(
-			`${config.public.apiUrl}contacts-invalid-phone`,
-			{
-				headers: { Authorization: `Bearer ${authStore.token}` },
-			},
-		);
+		if (selectedSelect.value === "1") {
+			const responseInvalidPhoneNum = await axios.get(
+				`${config.public.apiUrl}contacts-invalid-phone`,
+				{
+					headers: { Authorization: `Bearer ${authStore.token}` },
+				},
+			);
 
-		invalidPhoneContacts.value = responseInvalidPhoneNum.data.contacts.map(
-			(c) => ({
-				...c,
-				corrected_phone: "",
-			}),
-		);
+			invalidPhoneContacts.value = responseInvalidPhoneNum.data.contacts.map(
+				(c) => ({
+					...c,
+					corrected_phone: "",
+				}),
+			);
 
-		toast.success("kontakty boli získané uspešne", {
-			position: "top-right",
-			timeout: 5000,
-		});
+			toast.success("kontakty boli získané uspešne", {
+				position: "top-right",
+				timeout: 5000,
+			});
+		}
+
+		if (selectedSelect.value === "2") {
+			const responseMyActivities = await axios.get(
+				`${config.public.apiUrl}get-uncompleted-activities`,
+				{
+					headers: { Authorization: `Bearer ${authStore.token}` },
+					params: {
+						dateFrom: dateFrom.value,
+						dateTo: dateTo.value,
+					},
+				},
+			);
+			dbActivities.value = responseMyActivities.data.activities;
+			const response = await axios.post(
+				`${config.public.apiUrl}microsoft/declined-events/${userStore.user.id}`,
+				{
+					user_id: userStore.user.id,
+					dateFrom: dateFrom.value,
+					dateTo: dateTo.value,
+				},
+				{ headers: { Authorization: `Bearer ${authStore.token}` } },
+			);
+			declinedEvents.value = response.data.value;
+		}
+
+		if (selectedSelect.value === "3") {
+			const response = await axios.get(
+				`${config.public.apiUrl}analyza-bez-poradenstva`,
+				{
+					headers: {
+						Authorization: `Bearer ${authStore.token}`,
+					},
+				},
+			);
+			console.log("skuska", response);
+			activitiesWithoutAdvice.value = response.data.activities;
+
+			toast.success(
+				"Kontakty bez dohodnutého poradenstva boli získané uspešne",
+				{
+					position: "top-right",
+					timeout: 5000,
+				},
+			);
+		}
+
+		if (selectedSelect.value === "3") {
+			const response = await axios.get(
+				`${config.public.apiUrl}analyza-bez-poradenstva`,
+				{
+					headers: {
+						Authorization: `Bearer ${authStore.token}`,
+					},
+				},
+			);
+			console.log("skuska", response);
+			activitiesWithoutAdvice.value = response.data.activities;
+
+			toast.success(
+				"Kontakty bez dohodnutého poradenstva boli získané uspešne",
+				{
+					position: "top-right",
+					timeout: 5000,
+				},
+			);
+		}
+
+		if (selectedSelect.value === "4") {
+			const response = await axios.get(
+				`${config.public.apiUrl}servisna-analyza-bez-poradenstva`,
+				{
+					headers: {
+						Authorization: `Bearer ${authStore.token}`,
+					},
+				},
+			);
+			console.log("skuska", response);
+			serviceAnalysisActivities.value = response.data.activities;
+
+			toast.success("Servisná analýza bez poradenstva boli získané uspešne", {
+				position: "top-right",
+				timeout: 5000,
+			});
+		}
+
+		if (selectedSelect.value === "5") {
+			const response = await axios.get(
+				`${config.public.apiUrl}poradenstvo-without-recommendations`,
+				{
+					headers: {
+						Authorization: `Bearer ${authStore.token}`,
+					},
+				},
+			);
+			console.log("skuska", response);
+			serviceAnalysisActivities.value = response.data.activities;
+
+			toast.success("Servisná analýza bez poradenstva boli získané uspešne", {
+				position: "top-right",
+				timeout: 5000,
+			});
+		}
+
+		if (selectedSelect.value === "6") {
+			const response = await axios.get(
+				`${config.public.apiUrl}prve-stretnutie-bez-analyzy`,
+				{
+					headers: {
+						Authorization: `Bearer ${authStore.token}`,
+					},
+				},
+			);
+			console.log("skuska", response);
+			serviceAnalysisActivities.value = response.data.activities;
+
+			toast.success("Servisná analýza bez poradenstva boli získané uspešne", {
+				position: "top-right",
+				timeout: 5000,
+			});
+		}
 	} catch (error) {
 		toast.error("Error pri zobrazovaní kontaktov", {
 			position: "top-right",

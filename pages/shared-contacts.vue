@@ -706,10 +706,15 @@ const showShareContacts = ref(false);
 
 <template>
 	<div class="">
-		<SelectedContactsComponent
-			v-if="showSelectedContactsBool"
-			@showSelectedContacts="showSelectedContacts"
-		/>
+		<div class="flex items-center justify-between w-full">
+			<h1 class="ml-6 mt-10 mb-3 font-semibold text-lg">
+				Kontakty na ktorých pracujeme dvaja zároven <span>(Zdieľaneé)</span>
+			</h1>
+			<SelectedContactsComponent
+				v-if="showSelectedContactsBool"
+				@showSelectedContacts="showSelectedContacts"
+			/>
+		</div>
 
 		<loadigcomponent v-if="contactsStore.loadingState" />
 		<div class="flex justify-between w-full">

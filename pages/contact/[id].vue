@@ -28,6 +28,8 @@ const activities = ref([]);
 const author_id = ref(null);
 const user_id = ref(null);
 
+const showWrongNumberButton = ref(true);
+
 const changeAddActivityBool = () => {
 	AddActivityBool.value = !AddActivityBool.value;
 };
@@ -57,7 +59,8 @@ const callListNames = ref([]);
 
 onBeforeMount(async () => {
 	contactsStore.lastShowenDetails = id;
-	await findPerson(id);
+	const person = await findPerson(id);
+	console.log("Person details:", person);
 	await findActivities(id);
 	await todoStore.fetchTodos();
 	activities_todo.value = todoStore.todos
@@ -102,6 +105,10 @@ const findPerson = async (id) => {
 		});
 		if (response.data && response.data.contact) {
 			people.value = [response.data.contact];
+
+			// Set the initial button state based on wrong_number
+			// wrong_number == 0 means "Zlom číslo" button should be shown
+			showWrongNumberButton.value = response.data.contact.wrong_number == 0;
 		}
 		author_id.value = response.data.contact.author_id;
 		console.log("people value:", people.value);
@@ -652,6 +659,10 @@ const setWrongNumber = async () => {
 				},
 			},
 		);
+
+		// Toggle the button state AFTER successful API call
+		showWrongNumberButton.value = !showWrongNumberButton.value;
+
 		toast.success("Stav čísla bol zmenený", {
 			position: "top-right",
 			timeout: 5000,
@@ -716,7 +727,7 @@ const setWrongNumber = async () => {
 		<div class="flex gap-2">
 			<div>
 				<button
-					v-if="people?.[0]?.wrong_number == 0"
+					v-if="showWrongNumberButton"
 					class="bg-red-500 hover:bg-red-400 px-4 py-2 rounded-lg font-semibold shadow-md mr-5"
 					@click="setWrongNumber()"
 				>
@@ -724,7 +735,7 @@ const setWrongNumber = async () => {
 				</button>
 
 				<button
-					v-if="people?.[0]?.wrong_number !== 0"
+					v-else
 					class="bg-blue-500 hover:bg-blue-400 px-4 py-2 rounded-lg font-semibold shadow-md mr-5"
 					@click="setWrongNumber()"
 				>

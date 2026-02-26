@@ -134,27 +134,6 @@
 				</UTooltip>
 
 				<UTooltip
-					text="Presunuté kontaky"
-					:ui="{ background: '!bg-white', color: '' }"
-					class=""
-				>
-					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
-						:class="{
-							'bg-blue-700 text-gray-200': activeTab === 'delegovane_kontakty',
-						}"
-						to="/delegovane-kontakty"
-						@click="setActiveTab('delegovane_kontakty')"
-					>
-						<Icon
-							icon="pepicons-pencil:share-android"
-							style="font-size: 36px"
-							class="text-white"
-						/>
-					</NuxtLink>
-				</UTooltip>
-
-				<UTooltip
 					text="Kancelárie"
 					:ui="{ background: '!bg-white', color: '' }"
 					class=""
@@ -188,7 +167,11 @@
 						to="/declined-events"
 						@click="setActiveTab('declined-events')"
 					>
-						<Icon icon="ic:close" style="font-size: 36px" class="text-white" />
+						<Icon
+							icon="material-symbols:filter-alt"
+							style="font-size: 36px"
+							class="text-white"
+						/>
 					</NuxtLink>
 				</UTooltip>
 

@@ -69,7 +69,7 @@ const checkOfficeAvailability = (officeId, newDatum, newKoniec) => {
 
 			// Check if time ranges overlap
 			return newStart < activityEnd && activityStart < newEnd;
-		}
+		},
 	);
 
 	if (overlappingActivity) {
@@ -102,14 +102,14 @@ watch(
 			availability[office.id] = checkOfficeAvailability(
 				office.id,
 				newDatum,
-				newKoniec
+				newKoniec,
 			);
 		});
 
 		officeAvailability.value = availability;
 		console.log("Office availability:", availability);
 	},
-	{ deep: true }
+	{ deep: true },
 );
 
 const emailBool = ref(false);
@@ -153,7 +153,7 @@ watch(aktivita, (newValue) => {
 });
 
 const validEmails = emails.value.filter(
-	(email) => email && email.trim() !== ""
+	(email) => email && email.trim() !== "",
 );
 
 const officeActivityId = ref(null);
@@ -188,7 +188,7 @@ onMounted(async () => {
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,
 			},
-		}
+		},
 	);
 
 	if (response.data.activity.send_notification_15) {
@@ -227,7 +227,7 @@ onMounted(async () => {
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,
 			},
-		}
+		},
 	);
 	contact.value = responseContact.data.contact;
 	console.log("Contact v evente:", contact.value);
@@ -304,7 +304,7 @@ const updateActivity = async () => {
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
 				},
-			}
+			},
 		);
 
 		// Update email if necessary - only if onlineMeeting is checked and there's a new email to add
@@ -319,7 +319,7 @@ const updateActivity = async () => {
 					headers: {
 						Authorization: `Bearer ${authStore.token}`,
 					},
-				}
+				},
 			);
 		}
 
@@ -337,7 +337,7 @@ const updateActivity = async () => {
 							additionalEmails: validEmails,
 							importance: importance.value,
 						},
-						{ headers: { Authorization: `Bearer ${authStore.token}` } }
+						{ headers: { Authorization: `Bearer ${authStore.token}` } },
 					);
 
 					console.log("Teams meeting created:", teamsResponse.data);
@@ -349,7 +349,7 @@ const updateActivity = async () => {
 							activityId: props.activityID,
 							additionalEmails: validEmails, // send all emails here too
 						},
-						{ headers: { Authorization: `Bearer ${authStore.token}` } }
+						{ headers: { Authorization: `Bearer ${authStore.token}` } },
 					);
 
 					console.log("Teams meeting updated:", teamsResponse.data);
@@ -368,7 +368,7 @@ const updateActivity = async () => {
 							headers: {
 								Authorization: `Bearer ${authStore.token}`,
 							},
-						}
+						},
 					);
 				}
 
@@ -414,12 +414,12 @@ const updateActivity = async () => {
 						draggablePercent: 60,
 						showCloseButtonOnHover: false,
 						hideProgressBar: false,
-					}
+					},
 				);
 			} catch (error) {
 				console.error(
 					"Error creating/updating Teams meeting:",
-					error.response?.data || error.message
+					error.response?.data || error.message,
 				);
 				toast.error(
 					"Chyba pri vytváraní alebo aktualizovaní online stretnutia",
@@ -432,7 +432,7 @@ const updateActivity = async () => {
 						draggablePercent: 60,
 						showCloseButtonOnHover: false,
 						hideProgressBar: false,
-					}
+					},
 				);
 			}
 		}
@@ -447,7 +447,7 @@ const updateActivity = async () => {
 					poznamka: poznamka.value,
 					office_id: selectedOffice.value.id,
 				},
-				{ headers: { Authorization: `Bearer ${authStore.token}` } }
+				{ headers: { Authorization: `Bearer ${authStore.token}` } },
 			);
 		}
 
@@ -478,7 +478,7 @@ const updateActivity = async () => {
 		});
 
 		const activityIndex = calendarStore.activities.findIndex(
-			(activity) => activity.id === response.data.activity.id
+			(activity) => activity.id === response.data.activity.id,
 		);
 
 		// If the activity is found, replace it with the updated activity
@@ -507,7 +507,7 @@ const updateActivity = async () => {
 				draggablePercent: 60,
 				showCloseButtonOnHover: false,
 				hideProgressBar: false,
-			}
+			},
 		);
 		changeLoading();
 	}
@@ -579,8 +579,8 @@ const filteredContacts = (index) => {
 
 	return contacts.value.filter((contact) =>
 		[contact.meno, contact.priezvisko, contact.email].some((field) =>
-			(field || "").toLowerCase().includes(searchText.toLowerCase())
-		)
+			(field || "").toLowerCase().includes(searchText.toLowerCase()),
+		),
 	);
 };
 

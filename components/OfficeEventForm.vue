@@ -91,7 +91,7 @@ const addActivity = async () => {
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,
 			},
-		}
+		},
 	);
 	console.log("Activity Response:", activityResponse.data);
 };
@@ -136,6 +136,8 @@ const delteActivity = async () => {
 			closeForm();
 		} catch (error) {
 			console.error("Error deleting activity:", error);
+		} finally {
+			location.reload(); // Obnoví stránku po odstranění aktivity
 		}
 	}
 };

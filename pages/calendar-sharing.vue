@@ -23,7 +23,10 @@ const textRef = ref('');
 
 onMounted(async () => {
 	await userStore.fetchUser();
-	autoCreateOutlookEvent.value = userStore.user.auto_create_outlook_event;
+	autoCreateOutlookEvent.value = userStore.user.auto_create_outlook_event === 1 || 
+	                                 userStore.user.auto_create_outlook_event === true;
+
+	console.log("userStore.user", autoCreateOutlookEvent.value);
 
 	// userStore.user.oneSignal_ID.forEach(id => {
   // 	console.log(id);

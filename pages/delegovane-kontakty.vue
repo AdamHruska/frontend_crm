@@ -86,7 +86,7 @@ const detailView = (id) => {
 	<div class="">
 		<loadigcomponent v-if="contactsStore.loadingState" />
 		<h1 class="text-center text-2xl" style="margin-block: 25px">
-			Delegované kontaky
+			Presunuté kontaky
 		</h1>
 	</div>
 

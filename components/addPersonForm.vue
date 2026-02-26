@@ -25,6 +25,7 @@ const users = ref([
 		vek: "",
 		zamestanie: "",
 		poznamka: "",
+		isNew: true,
 	},
 ]);
 
@@ -48,6 +49,7 @@ function addRow() {
 			vek: "",
 			zamestanie: "",
 			poznamka: "",
+			isNew: true,
 		});
 	}
 }
@@ -65,6 +67,7 @@ function resetForm() {
 			vek: "",
 			zamestanie: "",
 			poznamka: "",
+			isNew: true,
 		},
 	];
 }
@@ -110,7 +113,7 @@ const addPeople = async () => {
 
 	// Filter out users who have all required fields filled
 	const people = users.value.filter(
-		(person) => person.meno && person.priezvisko && person.odporucitel
+		(person) => person.meno && person.priezvisko && person.odporucitel,
 	);
 
 	// Validate fields
@@ -118,7 +121,7 @@ const addPeople = async () => {
 		// Check if required fields are missing
 		if (!user.meno || !user.priezvisko || !user.odporucitel) {
 			alert(
-				"Meno, priezvisko a odporúčiteľ sú povinné pre každý riadok. Prosím, vyplňte ich."
+				"Meno, priezvisko a odporúčiteľ sú povinné pre každý riadok. Prosím, vyplňte ich.",
 			);
 			contactsStore.loadingState = false;
 			return;
@@ -129,7 +132,7 @@ const addPeople = async () => {
 			alert(
 				`Vek musí byť číslo. Skontrolujte riadok s menom ${
 					user.meno || "bez mena"
-				}.`
+				}.`,
 			);
 			contactsStore.loadingState = false;
 			return;
@@ -140,7 +143,7 @@ const addPeople = async () => {
 			alert(
 				`Číslo musí byť platné číslo. Skontrolujte riadok s menom ${
 					user.meno || "bez mena"
-				}.`
+				}.`,
 			);
 			contactsStore.loadingState = false;
 			return;
@@ -172,7 +175,7 @@ const addPeople = async () => {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 
 				if (response.data.message.includes("ako duplikát")) {
@@ -185,7 +188,7 @@ const addPeople = async () => {
 							pauseOnHover: true,
 							draggable: true,
 							icon: "⚠️",
-						}
+						},
 					);
 				}
 
@@ -197,7 +200,7 @@ const addPeople = async () => {
 					console.warn("Duplicate contact found:", error.response.data.message);
 					console.log(
 						"Existing contact:",
-						error.response.data.existing_contact
+						error.response.data.existing_contact,
 					);
 
 					// You can display this to the user or add to a separate array
@@ -210,8 +213,8 @@ const addPeople = async () => {
 						`${person.meno} ${person.priezvisko} wasn't added - ${error.response.data.message}` +
 							(error.response.data.existing_contact.last_activity
 								? ` (last activity: ${formatDate(
-										error.response.data.existing_contact.last_activity
-								  )})`
+										error.response.data.existing_contact.last_activity,
+									)})`
 								: ""),
 						{
 							position: "top-center",
@@ -222,7 +225,7 @@ const addPeople = async () => {
 							draggablePercent: 60,
 							showCloseButtonOnHover: false,
 							hideProgressBar: false,
-						}
+						},
 					);
 					// Or store duplicates to show later
 					duplicates.value.push({
@@ -307,6 +310,7 @@ function removeRow(index) {
 			<table class="min-w-full table-auto text-sm mb-4">
 				<thead>
 					<tr class="">
+						<th>Nový kontakt</th>
 						<th>Meno</th>
 						<th>Priezvisko</th>
 						<th>Číslo</th>
@@ -320,6 +324,9 @@ function removeRow(index) {
 				</thead>
 				<tbody>
 					<tr v-for="(user, index) in users" :key="index" class="text-white">
+						<td class="flex justify-center items-end pt-3">
+							<input type="checkbox" v-model="user.isNew" class="w-4 h-4" />
+						</td>
 						<td>
 							<input v-model="user.meno" class="bg-gray-200 w-full shadow-sm" />
 						</td>

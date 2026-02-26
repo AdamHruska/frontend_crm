@@ -144,6 +144,7 @@ const calendarOptions = ref({
 });
 
 async function handleEventDrop(dropInfo) {
+	const officeStore = useOfficeStore();
 	const eventId = dropInfo.event.id;
 	const newStart = dropInfo.event.start;
 	const newEnd = dropInfo.event.end ?? newStart; // fallback if end is null
@@ -155,7 +156,7 @@ async function handleEventDrop(dropInfo) {
 				eventId,
 				newStart.toISOString(),
 				newEnd.toISOString(),
-				dropInfo.event.title
+				dropInfo.event.title,
 			);
 		} catch (error) {
 			console.error("Failed to update Microsoft event:", error);
@@ -171,6 +172,38 @@ async function handleEventDrop(dropInfo) {
 		alert("You don't have permission to edit this event.");
 		dropInfo.revert();
 		return;
+	}
+
+	// --- Find and update office activity using old times ---
+	if (event) {
+		try {
+			// Subtract 1 hour from old times to match backend
+			const oldStart = new Date(event.datumCas);
+			oldStart.setHours(oldStart.getHours() - 1);
+			const oldEnd = new Date(event.koniec);
+			oldEnd.setHours(oldEnd.getHours() - 1);
+			const officeActivityResult = await officeStore.findActivityId({
+				datum_cas: formatDateForBackend(oldStart),
+				koniec: formatDateForBackend(oldEnd),
+				owner_id: userStore.user.id,
+			});
+			if (officeActivityResult && officeActivityResult.activity) {
+				// Update the office activity with the new times
+				const officeActivity = officeActivityResult.activity;
+				const updatePayload = {
+					id: officeActivity.id,
+					aktivita: dropInfo.event.title,
+					datum_cas: formatDateForBackend(newStart),
+					koniec: formatDateForBackend(newEnd),
+					poznamka: officeActivity.poznamka || "",
+					office_id: officeActivity.office_id,
+					owner_number: userStore.user.vizitka_phone_num,
+				};
+				await officeStore.updateActivity(updatePayload);
+			}
+		} catch (err) {
+			console.error("Failed to update office activity:", err);
+		}
 	}
 
 	// Format for backend
@@ -208,7 +241,7 @@ async function updateEventInBackend(eventId, formattedStart, formattedEnd) {
 					Authorization: `Bearer ${authStore.token}`,
 					"Content-Type": "application/json",
 				},
-			}
+			},
 		);
 
 		console.log("Backend update response:", response.data);
@@ -221,7 +254,7 @@ async function updateEventInBackend(eventId, formattedStart, formattedEnd) {
 
 			// Update in rawData
 			rawData.value = rawData.value.map((event) =>
-				event.id == eventId ? updatedEvent : event
+				event.id == eventId ? updatedEvent : event,
 			);
 
 			// No need to update events.value as FullCalendar already updated the UI
@@ -243,7 +276,7 @@ function handleEventResize(resizeInfo) {
 			eventId,
 			resizeInfo.event.start,
 			newEnd,
-			resizeInfo.event.title
+			resizeInfo.event.title,
 		);
 		return;
 	}
@@ -282,7 +315,7 @@ async function updateEventEndInBackend(eventId, newEnd) {
 					Authorization: `Bearer ${authStore.token}`,
 					"Content-Type": "application/json",
 				},
-			}
+			},
 		);
 
 		if (response.data.status === "success") {
@@ -291,12 +324,12 @@ async function updateEventEndInBackend(eventId, newEnd) {
 
 			// Update in rawData
 			rawData.value = rawData.value.map((event) =>
-				event.id == eventId ? updatedEvent : event
+				event.id == eventId ? updatedEvent : event,
 			);
 
 			// Update in Pinia store
 			calendarStore.activities = calendarStore.activities.map((event) =>
-				event.id == eventId ? updatedEvent : event
+				event.id == eventId ? updatedEvent : event,
 			);
 
 			toast.success("Event end time updated successfully");
@@ -308,7 +341,7 @@ async function updateEventEndInBackend(eventId, newEnd) {
 	} catch (error) {
 		console.error("Error updating event:", error);
 		toast.error(
-			"An error occurred while updating the event. Please try again."
+			"An error occurred while updating the event. Please try again.",
 		);
 		calendarOptions.value.events = [...events.value]; // Force refresh
 	} finally {
@@ -339,7 +372,7 @@ async function updateMicrosoftEvent(eventId, newStart, newEnd, title) {
 					Authorization: `Bearer ${authStore.token}`,
 					"Content-Type": "application/json",
 				},
-			}
+			},
 		);
 
 		if (response.status === 200) {
@@ -351,7 +384,7 @@ async function updateMicrosoftEvent(eventId, newStart, newEnd, title) {
 	} catch (error) {
 		console.error("Error updating Microsoft event:", error);
 		alert(
-			"An error occurred while updating the Microsoft event. Please try again."
+			"An error occurred while updating the Microsoft event. Please try again.",
 		);
 		calendarOptions.value.events = [...events.value]; // Force refresh
 	} finally {
@@ -373,7 +406,7 @@ onMounted(async () => {
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
 				},
-			}
+			},
 		);
 		calendarList.value = response.data.calendars;
 	} catch (error) {
@@ -403,7 +436,7 @@ onMounted(async () => {
 
 	// Add shared activities to events
 	const sharedACT = transformData(
-		flattenActivities(calendarStore.shared_activities)
+		flattenActivities(calendarStore.shared_activities),
 	);
 	events.value = [...events.value, ...sharedACT];
 
@@ -429,7 +462,7 @@ onMounted(async () => {
 		try {
 			const response = await axios.post(
 				`${config.public.apiUrl}auth/callback`,
-				{ code }
+				{ code },
 			);
 
 			const { access_token, refresh_token } = response.data;
@@ -783,7 +816,7 @@ const addSharedEventsId = async (userId) => {
 
 	if (
 		Object.values(userStore.user.confirmed_share_user_id).some(
-			(id) => String(id) === userIdString
+			(id) => String(id) === userIdString,
 		)
 	) {
 		console.log("user je tam");
@@ -796,12 +829,12 @@ const addSharedEventsId = async (userId) => {
 						Authorization: `Bearer ${authStore.token}`,
 						"Content-Type": "application/json",
 					},
-				}
+				},
 			);
 
 			if (response && response.data && response.data.activities) {
 				const sharedEvents = transformData(
-					flattenActivities(response.data.activities)
+					flattenActivities(response.data.activities),
 				);
 
 				// Handle both cases - object with array and direct array
@@ -879,7 +912,7 @@ const alterEvents = (updatedEvent) => {
 
 		// Remove the event from rawData array
 		rawData.value = rawData.value.filter(
-			(event) => event.id !== activityID.value
+			(event) => event.id !== activityID.value,
 		);
 
 		// Update calendar options to refresh the view
@@ -899,7 +932,7 @@ const alterEvents = (updatedEvent) => {
 	} else {
 		// Existing update logic remains the same
 		rawData.value = rawData.value.map((event) =>
-			event.id === updatedEvent.id ? updatedEvent : event
+			event.id === updatedEvent.id ? updatedEvent : event,
 		);
 
 		events.value = events.value.map((event) => {
@@ -1049,7 +1082,7 @@ async function fetchMicrosoftEvents(month, year) {
 
 		// Add shared activities
 		const sharedACT = transformData(
-			flattenActivities(calendarStore.shared_activities)
+			flattenActivities(calendarStore.shared_activities),
 		);
 
 		events.value = [...transformData(rawData.value), ...sharedACT];
@@ -1057,13 +1090,13 @@ async function fetchMicrosoftEvents(month, year) {
 
 	// Store current non-Microsoft events before fetching new Microsoft events
 	const nonMicrosoftEvents = events.value.filter(
-		(event) => event.extendedProps?.source !== "microsoft"
+		(event) => event.extendedProps?.source !== "microsoft",
 	);
 
 	// Then get Microsoft events
 	const newMicrosoftEvents = await calendarStore.fetchMicrosoftEvents(
 		month,
-		year
+		year,
 	);
 
 	// Merge: keep all non-Microsoft events and add new Microsoft events
@@ -1128,9 +1161,9 @@ const loginWithMicrosoft = () => {
 	});
 
 	const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(
-		redirectUriRaw
+		redirectUriRaw,
 	)}&scope=${encodeURIComponent(
-		scope
+		scope,
 	)}&response_mode=query&state=${encodeURIComponent(state)}`;
 
 	window.location.href = authUrl;
@@ -1146,7 +1179,7 @@ const logoutWithMicrosoft = async () => {
 					Authorization: `Bearer ${authStore.token}`,
 					"Content-Type": "application/json",
 				},
-			}
+			},
 		);
 
 		console.log(response.data.message);
@@ -1194,7 +1227,7 @@ const deleteMicrosoftEvent = async (eventId) => {
 					Authorization: `Bearer ${authStore.token}`,
 					"Content-Type": "application/json",
 				},
-			}
+			},
 		);
 
 		if (response.status === 200) {
@@ -1256,16 +1289,16 @@ const toggleMyActivities = () => {
 		//console.log("events user id:", calendarStore.originalEvents[0].user_id);
 		console.log(
 			"events user id pred:",
-			calendarStore.originalEvents.map((ev) => ev.user_id)
+			calendarStore.originalEvents.map((ev) => ev.user_id),
 		);
 
 		events.value = calendarStore.originalEvents.filter(
-			(event) => event.user_id !== userId
+			(event) => event.user_id !== userId,
 		);
 		toast.success("Boli skryté vaše aktivity.");
 		console.log(
 			"events user id po:",
-			calendarStore.originalEvents.map((ev) => ev.user_id)
+			calendarStore.originalEvents.map((ev) => ev.user_id),
 		);
 		// Remove ALL events (empty the calendar)
 		//events.value = [];
@@ -1384,6 +1417,14 @@ const toggleMyActivities = () => {
 						</div>
 					</div> -->
 					<button
+						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+						@click="console.log('google login placeholder')"
+					>
+						<span>Prihlásiť sa pomocou Google</span>
+						<img src="/public/google_icon.png" alt="logo" />
+					</button>
+
+					<button
 						v-if="!isLoggedInWithMicrosoft"
 						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
 						@click="loginWithMicrosoft"
@@ -1410,7 +1451,7 @@ const toggleMyActivities = () => {
 								userStore.userAddCalendarName(
 									calendar.name,
 									currentLoadedMonth,
-									currentLoadedYear
+									currentLoadedYear,
 								)
 							"
 							class="w-full rounded-md py-1 cursor-pointer transition-colors"
@@ -1527,7 +1568,11 @@ b {
 .demo-app {
 	display: flex;
 	min-height: 100%;
-	font-family: Arial, Helvetica Neue, Helvetica, sans-serif;
+	font-family:
+		Arial,
+		Helvetica Neue,
+		Helvetica,
+		sans-serif;
 	font-size: 14px;
 	width: 100%;
 }

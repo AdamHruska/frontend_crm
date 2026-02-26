@@ -23,7 +23,7 @@
 			</p>
 			<div
 				v-for="person in dataInFollower.filter(
-					(p) => p.activity_status === 'check'
+					(p) => p.activity_status === 'check',
 				)"
 				:key="person.contact_id"
 				class="py-1 cursor-pointer hover:bg-gray-100 px-2 rounded"
@@ -35,7 +35,7 @@
 			<p class="font-semibold">Ostatné</p>
 			<div
 				v-for="person in dataInFollower.filter(
-					(p) => p.activity_status !== 'check'
+					(p) => p.activity_status !== 'check',
 				)"
 				:key="person.contact_id"
 				class="py-1 cursor-pointer hover:bg-gray-100 px-2 rounded"
@@ -178,7 +178,7 @@
 						@mouseenter="
 							() =>
 								showVolaneFollower(
-									otherActiviesNames['Analýza osobných financí']
+									otherActiviesNames['Analýza osobných financí'],
 								)
 						"
 						@mouseleave="hideFollower"
@@ -218,31 +218,55 @@
 								{{ otherActivies["poradenstvo nové"]?.checked || 0 }}
 							</div>
 						</div>
-
-						<div
-							class="item"
-							@mouseenter="
-								() => showVolaneFollower(otherActiviesNames['realizácia'])
-							"
-							@mouseleave="hideFollower"
-						>
-							<div class="item-left">
-								<p>Realizácie:</p>
-							</div>
-							<div class="item-right">
-								<div class="right-count">
-									Pocet vsetkych: {{ otherActivies["realizácia"]?.total || 0 }}
-								</div>
-								<div class="right-count green">
-									Pocet zrealizovanych:
-									{{ otherActivies["realizácia"]?.checked || 0 }}
-								</div>
-							</div>
-						</div>
 					</div>
 				</div>
 
 				<div class="flex gap-32">
+					<div
+						class="item"
+						@mouseenter="
+							() => showVolaneFollower(otherActiviesNames['realizácia nová'])
+						"
+						@mouseleave="hideFollower"
+					>
+						<div class="item-left">
+							<p>Realizácie nové:</p>
+						</div>
+						<div class="item-right">
+							<div class="right-count">
+								Pocet vsetkych:
+								{{ otherActivies["realizácia nová"]?.total || 0 }}
+							</div>
+							<div class="right-count green">
+								Pocet zrealizovanych:
+								{{ otherActivies["realizácia nová"]?.checked || 0 }}
+							</div>
+						</div>
+					</div>
+
+					<div
+						class="item"
+						@mouseenter="
+							() =>
+								showVolaneFollower(otherActiviesNames['realizácia servisná'])
+						"
+						@mouseleave="hideFollower"
+					>
+						<div class="item-left">
+							<p>Realizácie servisné:</p>
+						</div>
+						<div class="item-right">
+							<div class="right-count">
+								Pocet vsetkych:
+								{{ otherActivies["realizácia servisná"]?.total || 0 }}
+							</div>
+							<div class="right-count green">
+								Pocet zrealizovanych:
+								{{ otherActivies["realizácia servisná"]?.checked || 0 }}
+							</div>
+						</div>
+					</div>
+
 					<div
 						class="item"
 						@mouseenter="
@@ -264,7 +288,9 @@
 							</div>
 						</div>
 					</div>
+				</div>
 
+				<div class="flex gap-32">
 					<div
 						class="item"
 						@mouseenter="
@@ -743,7 +769,7 @@ const fetchData = async () => {
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
 				},
-			}
+			},
 		);
 
 		responseData.value = response.data;
@@ -763,7 +789,7 @@ const fetchData = async () => {
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
 				},
-			}
+			},
 		);
 		console.log("responsePohovory", responsePohovory.data.statistics);
 		dataPohovory.value = responsePohovory.data;
@@ -780,7 +806,7 @@ const fetchData = async () => {
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
 				},
-			}
+			},
 		);
 
 		otherActivies.value = otherActivitiesData.data.statistics;
@@ -788,7 +814,7 @@ const fetchData = async () => {
 
 		console.log(
 			"otherActiviesNames",
-			otherActiviesNames.value["Analýza osobných financií"]
+			otherActiviesNames.value["Analýza osobných financií"],
 		);
 		const seminarActivitesStatisticsResponse = await axios.get(
 			`${config.public.apiUrl}seminar-activities-statistics`,
@@ -802,7 +828,7 @@ const fetchData = async () => {
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
 				},
-			}
+			},
 		);
 
 		seminarActivitesStatistics.value =
@@ -852,7 +878,7 @@ const fetchData = async () => {
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
 				},
-			}
+			},
 		);
 		zaujatiKandidati.value = interviewCandidatesResponse.data.candidates;
 
@@ -860,7 +886,7 @@ const fetchData = async () => {
 	} catch (error) {
 		console.error(
 			"Error fetching statistics:",
-			error.response?.data || error.message
+			error.response?.data || error.message,
 		);
 	}
 	loadingStateCalendar.value = false;

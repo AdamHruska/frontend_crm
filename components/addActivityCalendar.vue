@@ -632,7 +632,8 @@ const setActive = (n) => {
 					<option value="Servisná analýza">Servisná analýza</option>
 					<option value="poradenstvo nové">Poradenstvo nové</option>
 					<option value="servisné poradenstvo">Servisné poradenstvo</option>
-					<option value="realizácia">realizácia</option>
+					<option value="realizácia servisná">realizácia servisná</option>
+					<option value="realizácia nová">realizácia nová</option>
 					<option value="welcome seminar">Welcome seminár</option>
 					<option value="basic 1">Basic 1</option>
 					<option value="basic 2">Basic 2</option>

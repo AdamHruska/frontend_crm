@@ -22,7 +22,11 @@ onMounted(() => {
 	console.log("aktivita", props.activityData.aktivita);
 });
 
-const emit = defineEmits(["closeDiscardActivity", "activityUpdated"]);
+const emit = defineEmits([
+	"closeDiscardActivity",
+	"activityUpdated",
+	"confirmDiscardActivity",
+]);
 
 const updateEvent = async () => {
 	const now = new Date();
@@ -54,7 +58,7 @@ const updateEvent = async () => {
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,
 			},
-		}
+		},
 	);
 
 	emit("activityUpdated", {
@@ -63,7 +67,7 @@ const updateEvent = async () => {
 		activity_status: "discarded",
 	});
 
-	//emit("closeDiscardActivity");
+	emit("closeDiscardActivity");
 };
 </script>
 ;
