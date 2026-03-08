@@ -8,6 +8,18 @@
 			left: `${mouseX + 15}px`,
 			top: `${mouseY + 15}px`,
 		}"
+		@mouseenter="
+			() => {
+				isHoveringFollower = true;
+				clearTimeout(hideTimeout);
+			}
+		"
+		@mouseleave="
+			() => {
+				isHoveringFollower = false;
+				hideFollower();
+			}
+		"
 	>
 		<p class="font-semibold">Zoznam ľudí</p>
 		<div class="my-4 overflow-y-auto max-h-[280px]">
@@ -115,9 +127,9 @@
 				<div
 					class="bg-blue-100 p-4 rounded"
 					@mouseenter="
-						() =>
+						(e) =>
 							responseData?.grouped_activities?.volane &&
-							showVolaneFollower(responseData.grouped_activities.volane)
+							showVolaneFollower(responseData.grouped_activities.volane, e)
 					"
 					@mouseleave="hideFollower"
 				>
@@ -127,9 +139,9 @@
 				<div
 					class="bg-green-100 p-4 rounded"
 					@mouseenter="
-						() =>
+						(e) =>
 							responseData?.grouped_activities?.dovolane &&
-							showVolaneFollower(responseData.grouped_activities.dovolane)
+							showVolaneFollower(responseData.grouped_activities.dovolane, e)
 					"
 					@mouseleave="hideFollower"
 				>
@@ -139,9 +151,9 @@
 				<div
 					class="bg-purple-100 p-4 rounded"
 					@mouseenter="
-						() =>
+						(e) =>
 							responseData?.grouped_activities?.dohodnute &&
-							showVolaneFollower(responseData.grouped_activities.dohodnute)
+							showVolaneFollower(responseData.grouped_activities.dohodnute, e)
 					"
 					@mouseleave="hideFollower"
 				>
@@ -155,7 +167,8 @@
 					<div
 						class="item"
 						@mouseenter="
-							() => showVolaneFollower(otherActiviesNames['Prvé stretnutie'])
+							(e) =>
+								showVolaneFollower(otherActiviesNames['Prvé stretnutie'], e)
 						"
 						@mouseleave="hideFollower"
 					>
@@ -176,9 +189,10 @@
 					<div
 						class="item"
 						@mouseenter="
-							() =>
+							(e) =>
 								showVolaneFollower(
 									otherActiviesNames['Analýza osobných financí'],
+									e,
 								)
 						"
 						@mouseleave="hideFollower"
@@ -201,7 +215,8 @@
 					<div
 						class="item"
 						@mouseenter="
-							() => showVolaneFollower(otherActiviesNames['poradenstvo nové'])
+							(e) =>
+								showVolaneFollower(otherActiviesNames['poradenstvo nové'], e)
 						"
 						@mouseleave="hideFollower"
 					>
@@ -225,7 +240,8 @@
 					<div
 						class="item"
 						@mouseenter="
-							() => showVolaneFollower(otherActiviesNames['realizácia nová'])
+							(e) =>
+								showVolaneFollower(otherActiviesNames['realizácia nová'], e)
 						"
 						@mouseleave="hideFollower"
 					>
@@ -247,8 +263,8 @@
 					<div
 						class="item"
 						@mouseenter="
-							() =>
-								showVolaneFollower(otherActiviesNames['realizácia servisná'])
+							(e) =>
+								showVolaneFollower(otherActiviesNames['realizácia servisná'], e)
 						"
 						@mouseleave="hideFollower"
 					>
@@ -270,7 +286,8 @@
 					<div
 						class="item"
 						@mouseenter="
-							() => showVolaneFollower(otherActiviesNames['Servisná analýza'])
+							(e) =>
+								showVolaneFollower(otherActiviesNames['Servisná analýza'], e)
 						"
 						@mouseleave="hideFollower"
 					>
@@ -294,8 +311,11 @@
 					<div
 						class="item"
 						@mouseenter="
-							() =>
-								showVolaneFollower(otherActiviesNames['servisné poradenstvo'])
+							(e) =>
+								showVolaneFollower(
+									otherActiviesNames['servisné poradenstvo'],
+									e,
+								)
 						"
 						@mouseleave="hideFollower"
 					>
@@ -316,7 +336,9 @@
 
 					<div
 						class="item ml-24"
-						@mouseenter="() => showVolaneFollower(responseData.new_contacts)"
+						@mouseenter="
+							(e) => showVolaneFollower(responseData.new_contacts, e)
+						"
 						@mouseleave="hideFollower"
 					>
 						<div class="item-left"></div>
@@ -409,7 +431,7 @@
 			<!-- Volané -->
 			<div
 				class="bg-blue-100 p-4 rounded"
-				@mouseenter="() => showPohovoryFollower('called')"
+				@mouseenter="(e) => showPohovoryFollower('called', e)"
 				@mouseleave="hideFollower"
 			>
 				<h3 class="font-bold">Volané</h3>
@@ -419,7 +441,7 @@
 			<!-- Dovolané -->
 			<div
 				class="bg-green-100 p-4 rounded"
-				@mouseenter="() => showPohovoryFollower('reached')"
+				@mouseenter="(e) => showPohovoryFollower('reached', e)"
 				@mouseleave="hideFollower"
 			>
 				<h3 class="font-bold">Dovolané</h3>
@@ -429,7 +451,7 @@
 			<!-- Dohodnuté -->
 			<div
 				class="bg-purple-100 p-4 rounded"
-				@mouseenter="() => showPohovoryFollower('scheduled')"
+				@mouseenter="(e) => showPohovoryFollower('scheduled', e)"
 				@mouseleave="hideFollower"
 			>
 				<h3 class="font-bold">Dohodnuté</h3>
@@ -439,7 +461,7 @@
 			<!-- Zrealizované -->
 			<div
 				class="bg-yellow-100 p-4 rounded"
-				@mouseenter="() => showPohovoryFollower('realized')"
+				@mouseenter="(e) => showPohovoryFollower('realized', e)"
 				@mouseleave="hideFollower"
 			>
 				<h3 class="font-bold">Zrealizované</h3>
@@ -449,7 +471,7 @@
 			<!-- Zaujatí -->
 			<div
 				class="bg-red-100 p-4 rounded"
-				@mouseenter="() => showPohovoryFollower('accepted')"
+				@mouseenter="(e) => showPohovoryFollower('accepted', e)"
 				@mouseleave="hideFollower"
 			>
 				<h3 class="font-bold">Zaujatí</h3>
@@ -461,7 +483,7 @@
 			<div
 				class="item"
 				@mouseenter="
-					() => showVolaneFollower(seminarActivitesNames['welcome seminár'])
+					(e) => showVolaneFollower(seminarActivitesNames['welcome seminár'], e)
 				"
 				@mouseleave="hideFollower"
 			>
@@ -482,7 +504,9 @@
 
 			<div
 				class="item"
-				@mouseenter="() => showVolaneFollower(seminarActivitesNames['basic 1'])"
+				@mouseenter="
+					(e) => showVolaneFollower(seminarActivitesNames['basic 1'], e)
+				"
 				@mouseleave="hideFollower"
 			>
 				<div class="item-left">
@@ -502,7 +526,9 @@
 
 			<div
 				class="item"
-				@mouseenter="() => showVolaneFollower(seminarActivitesNames['basic 2'])"
+				@mouseenter="
+					(e) => showVolaneFollower(seminarActivitesNames['basic 2'], ee)
+				"
 				@mouseleave="hideFollower"
 			>
 				<div class="item-left">
@@ -522,7 +548,9 @@
 
 			<div
 				class="item"
-				@mouseenter="() => showVolaneFollower(seminarActivitesNames['basic 3'])"
+				@mouseenter="
+					(e) => showVolaneFollower(seminarActivitesNames['basic 3'], e)
+				"
 				@mouseleave="hideFollower"
 			>
 				<div class="item-left">
@@ -542,7 +570,9 @@
 
 			<div
 				class="item"
-				@mouseenter="() => showVolaneFollower(seminarActivitesNames['basic 4'])"
+				@mouseenter="
+					(e) => showVolaneFollower(seminarActivitesNames['basic 4'], e)
+				"
 				@mouseleave="hideFollower"
 			>
 				<div class="item-left">
@@ -563,7 +593,7 @@
 			<div
 				class="item"
 				@mouseenter="
-					() => showVolaneFollower(seminarActivitesNames['Post info'])
+					(e) => showVolaneFollower(seminarActivitesNames['Post info'], e)
 				"
 				@mouseleave="hideFollower"
 			>
@@ -624,6 +654,9 @@ const userStore = useUserStore();
 import { useRouter } from "vue-router";
 const router = useRouter();
 
+const isHoveringFollower = ref(false);
+let hideTimeout = null;
+
 const updateActivity = ref(false);
 const activityID = ref(null);
 const responseData = ref({});
@@ -659,24 +692,32 @@ const showFollower = ref(false);
 
 const dataInFollower = ref([]);
 
-const showVolaneFollower = (data) => {
-	console.log("showVolaneFollower triggered with:", data);
+const showVolaneFollower = (data, event) => {
 	dataInFollower.value = Array.isArray(data) ? data : [];
+
 	if (dataInFollower.value.length === 0) {
 		dataInFollower.value = [{ meno: "Žiadni ľudia", priezvisko: "" }];
 	}
+
+	mouseX.value = event.clientX;
+	mouseY.value = event.clientY;
+
 	showFollower.value = true;
 };
 
 const hideFollower = () => {
-	showFollower.value = false;
-	dataInFollower.value = [];
+	hideTimeout = setTimeout(() => {
+		if (!isHoveringFollower.value) {
+			showFollower.value = false;
+			dataInFollower.value = [];
+		}
+	}, 150); // small delay
 };
 
-function handleMouseMove(e) {
-	mouseX.value = e.clientX;
-	mouseY.value = e.clientY;
-}
+// function handleMouseMove(e) {
+// 	mouseX.value = e.clientX;
+// 	mouseY.value = e.clientY;
+// }
 
 const goToContact = (id) => {
 	router.push(`/contact/${id}`);
@@ -937,7 +978,7 @@ function handleMouseLeave() {
 // Lifecycle
 onMounted(() => {
 	updateDateRange();
-	window.addEventListener("mousemove", handleMouseMove);
+	//window.addEventListener("mousemove", handleMouseMove);
 
 	// REMOVE THIS SECTION - it's causing the conflict
 	// const items = document.querySelectorAll(".item");
@@ -948,8 +989,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-	window.removeEventListener("mousemove", handleMouseMove);
-
+	//window.removeEventListener("mousemove", handleMouseMove);
 	// REMOVE THIS SECTION TOO
 	// const items = document.querySelectorAll(".item");
 	// items.forEach((item) => {

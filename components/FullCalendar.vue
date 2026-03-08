@@ -177,11 +177,12 @@ async function handleEventDrop(dropInfo) {
 	// --- Find and update office activity using old times ---
 	if (event) {
 		try {
-			// Subtract 1 hour from old times to match backend
+			//Subtract 1 hour from old times to match backend
 			const oldStart = new Date(event.datumCas);
 			oldStart.setHours(oldStart.getHours() - 1);
 			const oldEnd = new Date(event.koniec);
 			oldEnd.setHours(oldEnd.getHours() - 1);
+
 			const officeActivityResult = await officeStore.findActivityId({
 				datum_cas: formatDateForBackend(oldStart),
 				koniec: formatDateForBackend(oldEnd),
@@ -398,22 +399,24 @@ const calendarListLoading = ref(false);
 onMounted(async () => {
 	await userStore.userGetCalendarNames();
 
-	try {
-		calendarListLoading.value = true;
-		const response = await axios.get(
-			`${config.public.apiUrl}microsoft/calendars`,
-			{
-				headers: {
-					Authorization: `Bearer ${authStore.token}`,
-				},
-			},
-		);
-		calendarList.value = response.data.calendars;
-	} catch (error) {
-		console.error("Error during Microsoft login callback:", error);
-	} finally {
-		calendarListLoading.value = false;
-	}
+	await fetchGoogleEvents();
+
+	// try {
+	// 	calendarListLoading.value = true;
+	// 	const response = await axios.get(
+	// 		`${config.public.apiUrl}microsoft/calendars`,
+	// 		{
+	// 			headers: {
+	// 				Authorization: `Bearer ${authStore.token}`,
+	// 			},
+	// 		},
+	// 	);
+	// 	calendarList.value = response.data.calendars;
+	// } catch (error) {
+	// 	console.error("Error during Microsoft login callback:", error);
+	// } finally {
+	// 	calendarListLoading.value = false;
+	// }
 
 	// Fetch activities and contacts in parallel
 	await Promise.all([
@@ -480,6 +483,27 @@ onMounted(async () => {
 			window.location.href = "/calendar";
 		} catch (error) {
 			console.error("Error during Microsoft login callback:", error);
+		}
+	}
+
+	const googleCode = urlParams.get("code");
+	const googleState = urlParams.get("state");
+
+	if (googleCode && googleState) {
+		try {
+			const response = await axios.post(
+				`${config.public.apiUrl}auth/google/callback`,
+				{ code: googleCode, state: googleState },
+			);
+
+			const { access_token } = response.data;
+			sessionStorage.setItem("google_access_token", access_token);
+
+			toast.success("Prihlásenie cez Google úspešné!");
+			window.location.href = "/calendar";
+		} catch (error) {
+			console.error("Google login callback error:", error);
+			toast.error("Prihlásenie cez Google zlyhalo.");
 		}
 	}
 });
@@ -1136,6 +1160,124 @@ const eventType = ref("regular");
 // 	window.location.href = authUrl;
 // };
 
+// const hehe = async () => {
+// 	const response = await axios.get(
+// 		`${config.public.apiUrl}google/calendar/events`,
+// 		{
+// 			params: {
+// 				userId: userStore.user.id,
+// 			},
+// 			headers: {
+// 				Authorization: `Bearer ${authStore.token}`,
+// 				"Content-Type": "application/json",
+// 			},
+// 		},
+// 	);
+
+// 	console.log("hehe", response);
+// };
+
+const fetchGoogleEvents = async () => {
+	try {
+		const response = await axios.get(
+			`${config.public.apiUrl}google/calendar/events`,
+			{
+				params: {
+					userId: userStore.user.id,
+				},
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+					"Content-Type": "application/json",
+				},
+			},
+		);
+
+		const googleEvents = response.data.map((event) => ({
+			id: event.id,
+			title: event.summary?.trim() || "Bez názvu",
+			start: event.start,
+			end: event.end,
+			backgroundColor: "#34A853", // Google green
+			borderColor: "#34A853",
+			extendedProps: {
+				source: "google",
+				description: event.description,
+			},
+		}));
+
+		// Merge with existing events, remove old google events first
+		const nonGoogleEvents = events.value.filter(
+			(e) => e.extendedProps?.source !== "google",
+		);
+
+		events.value = [...nonGoogleEvents, ...googleEvents];
+
+		calendarOptions.value = {
+			...calendarOptions.value,
+			events: [...events.value],
+		};
+
+		toast.success(`Načítaných ${googleEvents.length} Google udalostí`);
+	} catch (error) {
+		console.error("Error fetching Google events:", error);
+		toast.error("Nepodarilo sa načítať Google udalosti.");
+	}
+};
+
+const loginWithGoogle = () => {
+	const clientId = config.public.GOOGLE_CLIENT_ID;
+	const redirectUri = config.public.GOOGLE_REDIRECT_URI;
+	const scope = config.public.GOOGLE_SCOPE;
+	const userId = userStore.user.id;
+
+	console.log("clientid", clientId);
+	console.log("redirect ui", redirectUri);
+	console.log("scope", scope);
+	console.log("userid", userId);
+
+	if (!userId) {
+		console.error("No user logged in");
+		return;
+	}
+
+	const state = JSON.stringify({
+		userId,
+		csrf: authStore.csrfToken,
+	});
+
+	const params = new URLSearchParams({
+		client_id: clientId,
+		response_type: "code",
+		redirect_uri: redirectUri,
+		scope,
+		access_type: "offline",
+		prompt: "consent",
+		state,
+	});
+
+	window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+};
+
+const logoutWithGoogle = async (userId) => {
+	try {
+		// Call your backend endpoint to logout/revoke Google tokens
+		const response = await $fetch(`/api/google/logout?userId=${userId}`, {
+			method: "POST",
+		});
+
+		if (response.success) {
+			alert("Successfully logged out from Google.");
+			// Optionally, redirect to calendar or dashboard
+			window.location.href = "/calendar";
+		} else {
+			alert("Failed to log out from Google.");
+		}
+	} catch (error) {
+		console.error(error);
+		alert("An error occurred while logging out from Google.");
+	}
+};
+
 const loginWithMicrosoft = () => {
 	const config = useRuntimeConfig();
 	const authStore = useAuthStore(); // or however you access current user
@@ -1418,7 +1560,15 @@ const toggleMyActivities = () => {
 					</div> -->
 					<button
 						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
-						@click="console.log('google login placeholder')"
+						@click="fetchGoogleEvents"
+					>
+						<span>Zobraziť Google udalosti</span>
+						<img src="/public/google_icon.png" alt="logo" />
+					</button>
+
+					<button
+						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+						@click="loginWithGoogle"
 					>
 						<span>Prihlásiť sa pomocou Google</span>
 						<img src="/public/google_icon.png" alt="logo" />
@@ -1438,6 +1588,14 @@ const toggleMyActivities = () => {
 					>
 						<span>Odhlásiť sa z Microsoft účtu</span>
 						<img src="/public/icons8-microsoft-48.png" alt="logo" />
+					</button>
+
+					<button
+						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+						@click="logoutWithGoogle"
+					>
+						<span>Odhlásiť sa z Google účtu</span>
+						<img src="/public/google_icon.png" alt="logo" />
 					</button>
 					<div
 						class="bg-[#D1D5DB] px-2 py-2 rounded-md shadow flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3 flex flex-col text-center"
