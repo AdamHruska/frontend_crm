@@ -505,25 +505,37 @@ onMounted(async () => {
 		}
 	}
 
-	const googleCode = urlParams.get("code");
-	const googleState = urlParams.get("state");
+	// const googleCode = urlParams.get("code");
+	// const googleState = urlParams.get("state");
 
-	if (googleCode && googleState) {
-		try {
-			const response = await axios.post(
-				`${config.public.apiUrl}auth/google/callback`,
-				{ code: googleCode, state: googleState },
-			);
+	// if (googleCode && googleState) {
+	// 	try {
+	// 		const response = await axios.post(
+	// 			`${config.public.apiUrl}auth/google/callback`,
+	// 			{ code: googleCode, state: googleState },
+	// 		);
 
-			const { access_token } = response.data;
-			sessionStorage.setItem("google_access_token", access_token);
+	// 		const { access_token } = response.data;
+	// 		sessionStorage.setItem("google_access_token", access_token);
 
-			toast.success("Prihlásenie cez Google úspešné!");
-			window.location.href = "/calendar";
-		} catch (error) {
-			console.error("Google login callback error:", error);
-			toast.error("Prihlásenie cez Google zlyhalo.");
-		}
+	// 		toast.success("Prihlásenie cez Google úspešné!");
+	// 		window.location.href = "/calendar";
+	// 	} catch (error) {
+	// 		console.error("Google login callback error:", error);
+	// 		toast.error("Prihlásenie cez Google zlyhalo.");
+	// 	}
+	// }
+
+	const googleStatus = urlParams.get("google");
+
+	if (googleStatus === "success") {
+		toast.success("Prihlásenie cez Google úspešné!");
+		// Clean URL without reload
+		window.history.replaceState({}, document.title, "/calendar");
+	} else if (googleStatus === "error") {
+		const reason = urlParams.get("reason");
+		toast.error(`Prihlásenie cez Google zlyhalo: ${reason}`);
+		window.history.replaceState({}, document.title, "/calendar");
 	}
 });
 
