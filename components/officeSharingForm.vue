@@ -65,6 +65,8 @@ import { useUserStore } from "#imports";
 const userStore = useUserStore();
 import { useOfficeStore } from "#imports";
 const officeStore = useOfficeStore();
+import { useToast } from "vue-toastification";
+const toast = useToast();
 
 import { Icon } from "@iconify/vue";
 
@@ -101,12 +103,18 @@ const filteredUsers = computed(() => {
 });
 
 const addUserToShare = () => {
-	console.log("office id", selectedOfficeId.value);
-	console.log("user id", selectedUserId.value);
-	officeStore.addUserToOfficeShare(
-		selectedUserId.value,
-		selectedOfficeId.value
-	);
-	emit("openSharingForm");
+	try {
+		console.log("office id", selectedOfficeId.value);
+		console.log("user id", selectedUserId.value);
+		officeStore.addUserToOfficeShare(
+			selectedUserId.value,
+			selectedOfficeId.value,
+		);
+		toast.success("Aktivita prebehla úspešne.");
+		emit("openSharingForm");
+	} catch (error) {
+		console.log(error);
+		toast.error("Nastala chyba");
+	}
 };
 </script>

@@ -49,21 +49,33 @@ onMounted(async () => {
 
 const addUserToCalendar = async (id, requestId) => {
 	isProcessing.value = true;
+
 	try {
 		await requestStore.approveRequestTable5(id, requestId);
 	} catch (error) {
+		if (error.response && error.response.status === 406) {
+			alert("You are already sharing the calendar with this user.");
+			return;
+		}
+
 		console.error("Error adding user to calendar:", error);
 	} finally {
 		isProcessing.value = false;
-		location.reload();
+		await requestStore.fetchSharedUsers();
 	}
 };
 
 const deleteSharedUser = async (id) => {
 	isProcessing.value = true;
+
 	try {
-		await requestStore.deleteRequestTable5(id);
+		await requestStore.deleteRequest(id);
 	} catch (error) {
+		if (error.response && error.response.status === 406) {
+			alert("This user cannot be removed from sharing.");
+			return;
+		}
+
 		console.error("Error deleting shared user:", error);
 	} finally {
 		isProcessing.value = false;

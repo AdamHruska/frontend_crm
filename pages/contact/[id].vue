@@ -337,6 +337,9 @@ function calculateAge(yearOfBirth) {
 	const age = currentYear - yearOfBirth;
 	if (age === 0) {
 		return "N/A";
+	}
+	if (age === 2026) {
+		return "N/A";
 	} else {
 		return age;
 	}

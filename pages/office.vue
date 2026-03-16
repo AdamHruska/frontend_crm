@@ -1,17 +1,4 @@
 <template>
-	<OfficeForm
-		v-if="showOfficeForm"
-		:officeToEdit="selectedOffice"
-		@officeSaved="handleOfficeSaved"
-		@officeEdited="handleOfficeEdited"
-		@cancel="showOfficeForm = false"
-	/>
-
-	<OfficeSharingForm
-		v-if="showSharingForm"
-		@openSharingForm="openSharingForm"
-	/>
-
 	<loadigcomponent v-if="officeStore.loadingState" />
 
 	<div class="flex items-center gap-8">
@@ -64,6 +51,19 @@
 			Zdielať kanceláriu
 		</button>
 	</div>
+
+	<OfficeForm
+		v-if="showOfficeForm"
+		:officeToEdit="selectedOffice"
+		@officeSaved="handleOfficeSaved"
+		@officeEdited="handleOfficeEdited"
+		@cancel="showOfficeForm = false"
+	/>
+
+	<OfficeSharingForm
+		v-if="showSharingForm"
+		@openSharingForm="openSharingForm"
+	/>
 
 	<div class="ml-8 mt-8 mb-10">
 		<h1 class="text-xl font-semibold mb-4">Kancelárie</h1>

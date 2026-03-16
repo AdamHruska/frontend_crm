@@ -357,6 +357,30 @@ export const useRequestStore = defineStore("request", {
 			}
 		},
 
+		async unshareUser(id, requestId) {
+			const config = useRuntimeConfig();
+			const authStore = useAuthStore();
+			const token = authStore.token;
+
+			this.error = null;
+
+			try {
+				await axios.post(
+					`${config.public.apiUrl}remove-sharing-id/${id}/${requestId}`,
+					{},
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					},
+				);
+			} catch (error) {
+				console.error("Error unsharing user:", error);
+				this.error = error.message;
+				throw error;
+			}
+		},
+
 		async requestToSeeTheirCalendar(userId, first_name, last_name) {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
@@ -485,8 +509,8 @@ export const useRequestStore = defineStore("request", {
 						},
 					},
 				);
-				console.log("who-see-my-cal", response.data.requests);
-				this.seesMyCalendar = response.data.requests;
+				console.log("who-see-my-cal", response.data.users);
+				this.seesMyCalendar = response.data.users;
 			} catch (error) {
 				console.error("Error fetching history:", error);
 				this.error = error.message;

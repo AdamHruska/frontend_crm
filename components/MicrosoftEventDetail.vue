@@ -6,12 +6,13 @@ const props = defineProps({
 		type: Object,
 		required: true,
 	},
+	eventType: { type: String, default: "microsoft" },
 });
 
 const showNote = ref(false);
 
 onMounted(() => {
-	console.log("Microsoft Event Detail Props:", props.event.importance);
+	console.log("google Event Detail Props:", props);
 });
 
 // Ensure all required properties exist with defaults
@@ -99,7 +100,7 @@ const closeModal = () => {
 					</p>
 				</div>
 
-				<div class="border-b pb-2">
+				<div class="border-b pb-2" v-if="eventType === 'microsoft'">
 					<p class="text-gray-600 font-semibold mb-2">Organizátor</p>
 					<p class="font-medium">
 						{{ props.event.organizer.name || "Not specified" }}
@@ -113,7 +114,89 @@ const closeModal = () => {
 					</a>
 				</div>
 
-				<div class="border-b pb-2 max-h-[300px] overflow-y-auto">
+				<div
+					class="border-b pb-2"
+					v-if="eventType === 'google' && props.event.organizer"
+				>
+					<a href="">
+						<p class="text-gray-600 font-semibold mb-2">Organizátor</p>
+						<p class="font-medium">
+							{{
+								props.event.organizer.displayName ||
+								props.event.organizer.email ||
+								"Neznámy"
+							}}
+						</p>
+
+						v-if="props.event.organizer.email"
+						:href="`mailto:${props.event.organizer.email}`" class="font-medium
+						text-blue-600 hover:opacity-60" >
+						{{ props.event.organizer.email }}
+					</a>
+				</div>
+
+				<!-- Google attendees -->
+				<div
+					class="border-b pb-2 max-h-[300px] overflow-y-auto"
+					v-if="eventType === 'google'"
+				>
+					<p class="text-gray-600 font-semibold">Účastníci</p>
+					<div
+						v-if="props.event.attendees && props.event.attendees.length"
+						class="space-y-2"
+					>
+						<p
+							v-for="(attendee, index) in props.event.attendees"
+							:key="index"
+							class="font-medium flex items-center justify-between"
+						>
+							{{
+								attendee.displayName
+									? `${attendee.displayName} - ${attendee.email}`
+									: attendee.email
+							}}
+
+							<UTooltip
+								text="Pozvánka bola akceptovaná"
+								:ui="{ background: '!bg-white', color: '' }"
+								v-if="attendee.responseStatus === 'accepted'"
+							>
+								<span class="p-1 bg-green-500 mr-4 rounded-md">
+									<Icon icon="ic:baseline-done" />
+								</span>
+							</UTooltip>
+
+							<UTooltip
+								text="Pozvánka bola odmietnutá"
+								:ui="{ background: '!bg-white', color: '' }"
+								v-if="attendee.responseStatus === 'declined'"
+							>
+								<span class="p-1 bg-red-500 mr-4 rounded-md">
+									<Icon icon="ic:round-close" />
+								</span>
+							</UTooltip>
+
+							<UTooltip
+								text="Pozvánka čaká na odpoveď"
+								:ui="{ background: '!bg-white', color: '' }"
+								v-if="
+									attendee.responseStatus !== 'accepted' &&
+									attendee.responseStatus !== 'declined'
+								"
+							>
+								<span class="p-1 bg-gray-400 mr-4 rounded-md">
+									<Icon icon="ic:baseline-question-mark" />
+								</span>
+							</UTooltip>
+						</p>
+					</div>
+					<div v-else class="font-medium text-gray-500">Žiadni účastníci</div>
+				</div>
+
+				<div
+					class="border-b pb-2 max-h-[300px] overflow-y-auto"
+					v-if="eventType === 'microsoft'"
+				>
 					<p class="text-gray-600 font-semibold">Ostatní účastníci</p>
 					<div
 						v-if="props.event.attendees && props.event.attendees.length"
@@ -128,12 +211,12 @@ const closeModal = () => {
 								attendee && attendee.name === attendee.email
 									? attendee.email
 									: attendee && attendee.name && attendee.email
-									? `${attendee.name} - ${attendee.email}`
-									: attendee && attendee.name
-									? attendee.name
-									: attendee && attendee.email
-									? attendee.email
-									: "Unknown attendee"
+										? `${attendee.name} - ${attendee.email}`
+										: attendee && attendee.name
+											? attendee.name
+											: attendee && attendee.email
+												? attendee.email
+												: "Unknown attendee"
 							}}
 							<UTooltip
 								text="Pozvánka bola akceptovaná"
@@ -203,6 +286,16 @@ const closeModal = () => {
 					</p>
 				</div>
 
+				<div
+					class="border-b pb-2"
+					v-if="eventType === 'google' && props.event.note"
+				>
+					<p class="text-gray-600 font-semibold">Popis</p>
+					<p class="font-medium break-words max-h-[350px] overflow-y-auto">
+						{{ props.event.note }}
+					</p>
+				</div>
+
 				<div class="border-b pb-2">
 					<p class="text-gray-600 font-semibold">Lokalita</p>
 					<p class="font-medium break-words">
@@ -249,7 +342,7 @@ const closeModal = () => {
 					</div> -->
 
 				<div class="flex justify-between items-center">
-					<div class="flex gap-4 items-center">
+					<div class="flex gap-4 items-center" v-if="eventType === 'microsoft'">
 						<div class="text-gray-600 font-semibold">Dôležitosť:</div>
 
 						<div

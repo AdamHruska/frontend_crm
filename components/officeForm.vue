@@ -61,6 +61,8 @@
 <script setup>
 import { useOfficeStore } from "~/stores/officeStore";
 const officeStore = useOfficeStore();
+import { useToast } from "vue-toastification";
+const toast = useToast();
 
 import { Icon } from "@iconify/vue";
 
@@ -92,22 +94,29 @@ watch(
 			phone_number.value = "";
 		}
 	},
-	{ immediate: true }
+	{ immediate: true },
 );
 
 const saveOffice = async () => {
-	const officeData = {
-		name: name.value,
-		location: location.value,
-		phone_number: phone_number.value,
-	};
+	try {
+		const officeData = {
+			name: name.value,
+			location: location.value,
+			phone_number: phone_number.value,
+		};
 
-	if (props.officeToEdit) {
-		await officeStore.updateOffice(props.officeToEdit.id, officeData);
-		emit("officeEdited", { ...officeData, id: props.officeToEdit.id });
-	} else {
-		await officeStore.addOffice(officeData);
-		emit("officeSaved");
+		if (props.officeToEdit) {
+			await officeStore.updateOffice(props.officeToEdit.id, officeData);
+			emit("officeEdited", { ...officeData, id: props.officeToEdit.id });
+		} else {
+			await officeStore.addOffice(officeData);
+			emit("officeSaved");
+		}
+
+		toast.success("Akcia prebehla úspešne.");
+	} catch (err) {
+		console.log(err);
+		toast.error("Akcia bola neúspešná.");
 	}
 };
 </script>

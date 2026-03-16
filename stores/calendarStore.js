@@ -16,6 +16,7 @@ export const useCalendarstore = defineStore("calendar", {
 		microsoftLoadingState: false,
 		checkedUsers: [],
 		microsoftEventCache: {}, // Format: {"2025-4": [...events]}
+		googleEventCache: {},
 		userColors: {},
 	}),
 	actions: {
@@ -493,6 +494,61 @@ export const useCalendarstore = defineStore("calendar", {
 		// 		this.showOnlyMine = false; // next execution will filter again
 		// 	}
 		// },
+
+		async fetchGoogleEvents(month, year) {
+			const cacheKey = `${year}-${month}`;
+
+			// Return cached data if available
+			if (this.googleEventCache[cacheKey]) {
+				return this.googleEventCache[cacheKey];
+			}
+
+			const config = useRuntimeConfig();
+			const authStore = useAuthStore();
+			const userStore = useUserStore();
+
+			try {
+				const response = await axios.get(
+					`${config.public.apiUrl}google/calendar/events`,
+					{
+						params: {
+							userId: userStore.user.id,
+							month,
+							year,
+						},
+						headers: {
+							Authorization: `Bearer ${authStore.token}`,
+							"Content-Type": "application/json",
+						},
+					},
+				);
+
+				const googleEvents = response.data.map((event) => ({
+					id: event.id,
+					title: event.summary?.trim() || "Bez názvu",
+					start: event.start,
+					end: event.end,
+					backgroundColor: "#34A853",
+					borderColor: "#34A853",
+					extendedProps: {
+						source: "google",
+						description: event.description,
+						calendar: event.calendar,
+					},
+				}));
+
+				// Store in cache
+				this.googleEventCache[cacheKey] = googleEvents;
+				return googleEvents;
+			} catch (error) {
+				console.error("Error fetching Google events:", error);
+				return [];
+			}
+		},
+
+		clearGoogleEventCache() {
+			this.googleEventCache = {};
+		},
 	},
 	getters: {
 		// Getter to return all contacts

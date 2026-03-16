@@ -60,6 +60,7 @@ const fetchWrongNumberContacts = async (query = "") => {
 };
 
 const toggleWrongNumberFilter = async () => {
+	contactsStore.loadingState = true;
 	filterWrongNumbers.value = !filterWrongNumbers.value;
 
 	if (filterWrongNumbers.value) {
@@ -77,6 +78,50 @@ const toggleWrongNumberFilter = async () => {
 		});
 		page.value = contactsStore.contacts.current_page;
 	}
+
+	contactsStore.loadingState = false;
+};
+const filterNeverAnswered = ref(false);
+
+const toggleNeverAnsweredFilter = async () => {
+	filterNeverAnswered.value = !filterNeverAnswered.value;
+
+	if (filterNeverAnswered.value) {
+		contactsStore.searchQuery = "";
+		await fetchNeverAnsweredContacts();
+	} else {
+		contactsStore.searchQuery = "";
+		await contactsStore.fetchContacts();
+
+		people.value = contactsStore.contacts.data.map((person) => {
+			let cssClass = "";
+			if (person.first_event === 0) cssClass += "bg-green-200 ";
+			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
+			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
+			return { ...person, class: cssClass.trim() };
+		});
+
+		page.value = contactsStore.contacts.current_page;
+	}
+};
+
+const fetchNeverAnsweredContacts = async () => {
+	await contactsStore.fetchContacts({
+		filter: "never_answered",
+	});
+
+	people.value = contactsStore.contacts.data
+		.filter((person) => person.only_called_never_answered === 1)
+		.map((person) => {
+			let cssClass = "";
+			if (person.first_event === 0) cssClass += "bg-green-200 ";
+			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
+			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
+
+			return { ...person, class: cssClass.trim() };
+		});
+
+	page.value = contactsStore.contacts.current_page;
 };
 
 const toggleCallList = async () => {
@@ -696,6 +741,93 @@ const fetchCallLists = async () => {
 const showDelegateForm = ref(false);
 
 const showShareContacts = ref(false);
+
+const showFilterModal = ref(false);
+const activeFilter = ref(null);
+
+function toggleShowFilterModal() {
+	showFilterModal.value = !showFilterModal.value;
+}
+
+const selectFilter = async (filter) => {
+	if (activeFilter.value === filter || filter === "none") {
+		// unselect filter → reset to default
+		activeFilter.value = null;
+
+		contactsStore.searchQuery = "";
+		await contactsStore.fetchContacts();
+
+		people.value = contactsStore.contacts.data.map((person) => {
+			let cssClass = "";
+			if (person.first_event === 0) cssClass += "bg-green-200 ";
+			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
+			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
+			return { ...person, class: cssClass.trim() };
+		});
+
+		page.value = contactsStore.contacts.current_page;
+	} else {
+		// select filter → toggle modal only when clicking from modal
+		activeFilter.value = filter;
+
+		if (filter === "wrong_number") {
+			await toggleWrongNumberFilter();
+		}
+
+		if (filter === "never_answered") {
+			await toggleNeverAnsweredFilter();
+		}
+
+		if (filter === "never_called") {
+			await toggleNeverCalledFilter();
+		}
+
+		// toggle modal only here
+		toggleShowFilterModal();
+	}
+};
+
+const filterNeverCalled = ref(false);
+
+const toggleNeverCalledFilter = async () => {
+	filterNeverCalled.value = !filterNeverCalled.value;
+
+	if (filterNeverCalled.value) {
+		contactsStore.searchQuery = "";
+		await fetchNeverCalledContacts();
+	} else {
+		contactsStore.searchQuery = "";
+		await contactsStore.fetchContacts();
+
+		people.value = contactsStore.contacts.data.map((person) => {
+			let cssClass = "";
+			if (person.first_event === 0) cssClass += "bg-green-200 ";
+			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
+			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
+
+			return { ...person, class: cssClass.trim() };
+		});
+
+		page.value = contactsStore.contacts.current_page;
+	}
+};
+
+const fetchNeverCalledContacts = async () => {
+	await contactsStore.fetchContacts();
+
+	people.value = contactsStore.contacts.data
+		.filter((person) => person.first_event === 0)
+		.map((person) => {
+			let cssClass = "";
+			if (person.first_event === 0) cssClass += "bg-green-200 ";
+			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
+			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
+
+			return { ...person, class: cssClass.trim() };
+		});
+
+	page.value = contactsStore.contacts.current_page;
+};
 </script>
 
 <template>
@@ -713,7 +845,7 @@ const showShareContacts = ref(false);
 			</div>
 
 			<div class="flex items-center mb-2">
-				<UTooltip
+				<!-- <UTooltip
 					:text="
 						filterWrongNumbers
 							? 'Zobraziť všetky kontakty'
@@ -733,7 +865,73 @@ const showShareContacts = ref(false);
 						style="font-size: 36px"
 						class="text-white"
 					/>
-				</UTooltip>
+				</UTooltip> -->
+
+				<Icon
+					v-if="activeFilter !== null"
+					@click="selectFilter('none')"
+					icon="material-symbols:close"
+					style="font-size: 36px"
+					class="text-red mt-7 mr-4 cursor-pointer hover:scale-110"
+				/>
+
+				<div class="relative">
+					<UTooltip
+						text="Filtrovanie"
+						class="cursor-pointer flex items-center justify-center w-11 h-11 rounded-lg shadow-xl mr-4 mt-8 bg-gray-300 hover:bg-gray-400"
+					>
+						<Icon
+							@click="toggleShowFilterModal"
+							icon="material-symbols:filter-alt"
+							style="font-size: 36px"
+							class="text-white"
+						/>
+					</UTooltip>
+
+					<!-- small modal under button -->
+					<div
+						v-if="showFilterModal"
+						class="absolute right-0 mt-2 w-56 bg-white shadow-xl rounded-lg border p-3 z-50"
+					>
+						<p class="text-sm font-semibold mb-2 px-1">Filter</p>
+
+						<div
+							@click="selectFilter('never_called')"
+							:class="[
+								'flex items-center gap-2 text-sm py-1 px-1 cursor-pointer rounded-md',
+								activeFilter === 'never_called'
+									? 'bg-slate-200'
+									: 'hover:bg-slate-200',
+							]"
+						>
+							Nikdy nevolané čísla
+						</div>
+
+						<div
+							@click="selectFilter('never_answered')"
+							:class="[
+								'flex items-center gap-2 text-sm py-1 px-1 cursor-pointer rounded-md',
+								activeFilter === 'never_answered'
+									? 'bg-slate-200'
+									: 'hover:bg-slate-200',
+							]"
+						>
+							Nikdy nezdvihli
+						</div>
+
+						<div
+							@click="selectFilter('wrong_number')"
+							:class="[
+								'flex items-center gap-2 text-sm py-1 px-1 cursor-pointer rounded-md',
+								activeFilter === 'wrong_number'
+									? 'bg-slate-200'
+									: 'hover:bg-slate-200',
+							]"
+						>
+							Zlé telefónne číslo
+						</div>
+					</div>
+				</div>
 
 				<UTooltip
 					text="Pridať kontakt"

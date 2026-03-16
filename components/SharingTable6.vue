@@ -10,7 +10,7 @@
 			</thead>
 			<tbody>
 				<tr v-for="row in seesMyCalendar" :key="row.id">
-					<td class="border px-4 py-2">{{ row.target_user_name }}</td>
+					<td class="border px-4 py-2">{{ row.username }}</td>
 					<td class="border px-4 py-2 flex justify-center">
 						<div v-if="row.isLoading" class="spinner"></div>
 						<button
@@ -38,7 +38,8 @@ const requestStore = useRequestStore();
 const seesMyCalendar = computed(() => requestStore.seesMyCalendar);
 
 onMounted(async () => {
-	await requestStore.WhoSeesMyCal();
+	const response = await requestStore.WhoSeesMyCal();
+	console.log("skuska tu", response);
 });
 
 const deleteSeesMine = async (id) => {

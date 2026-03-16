@@ -4,8 +4,8 @@ const requestStore = useRequestStore();
 
 const receivedInvites = computed(() =>
 	requestStore.viewTheirCalendarForApproval.filter(
-		(invite) => invite.status === "pending"
-	)
+		(invite) => invite.status === "pending",
+	),
 );
 const loadingButtonId = ref(null);
 
@@ -21,43 +21,49 @@ onMounted(async () => {
 
 const approveInvite = async (id, requestId) => {
 	try {
-		// Set the loading button ID if you want to show loading state
 		loadingButtonId.value = id;
 
-		// Perform the approve operation
-		await requestStore.approveRequest(id, requestId);
+		const response = await requestStore.approveRequest(id, requestId);
 
-		// Remove the approved invite from the list
+		console.log(response);
+
 		receivedInvites.value = receivedInvites.value.filter(
-			(invite) => invite.id !== requestId
+			(invite) => invite.id !== requestId,
 		);
 
-		// Optionally refresh the data
 		await requestStore.fetchLetThemViewMineForApproval();
 	} catch (error) {
+		// Check if it is the 406 response
+		if (error.response && error.response.status === 406) {
+			alert("Už zdielate kalendár s týmto používateľom.");
+			return;
+		}
+
 		console.error("Error approving invite:", error);
 	} finally {
-		// Reset the loading button ID
 		loadingButtonId.value = null;
 	}
 };
 
 const declineInvite = async (id) => {
 	try {
-		// Set the loading button ID
 		loadingButtonId.value = id;
 
-		// Perform the delete operation
-		await requestStore.deleteRequest(id);
+		const response = await requestStore.deleteRequest(id);
 
-		// Remove the invite from the list after deletion
+		console.log(response);
+
 		receivedInvites.value = receivedInvites.value.filter(
-			(invite) => invite.id !== id
+			(invite) => invite.id !== id,
 		);
 	} catch (error) {
+		if (error.response && error.response.status === 406) {
+			alert("This request cannot be declined.");
+			return;
+		}
+
 		console.error("Error deleting invite:", error);
 	} finally {
-		// Reset the loading button ID
 		loadingButtonId.value = null;
 	}
 };

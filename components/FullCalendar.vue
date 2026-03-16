@@ -114,26 +114,42 @@ const calendarOptions = ref({
 	locale: "sk",
 	firstDay: 1,
 	datesSet: (dateInfo) => {
-		// Extract the current view's start date
 		const currentDate = dateInfo.view.currentStart;
-
-		// Get the month (0-11) and year
 		const month = currentDate.getMonth() + 1;
 		const year = currentDate.getFullYear();
 
-		// Check if this is a new month or year
 		if (
 			month !== currentLoadedMonth.value + 2 ||
 			year !== currentLoadedYear.value
 		) {
-			// Call fetchMicrosoftEvents function with current month and year
 			fetchMicrosoftEvents(month, year);
+			fetchGoogleEventsForMonth(month, year); // 👈 new
 
-			// Update the current loaded month and year
 			currentLoadedMonth.value = month;
 			currentLoadedYear.value = year;
 		}
 	},
+	// datesSet: (dateInfo) => {
+	// 	// Extract the current view's start date
+	// 	const currentDate = dateInfo.view.currentStart;
+
+	// 	// Get the month (0-11) and year
+	// 	const month = currentDate.getMonth() + 1;
+	// 	const year = currentDate.getFullYear();
+
+	// 	// Check if this is a new month or year
+	// 	if (
+	// 		month !== currentLoadedMonth.value + 2 ||
+	// 		year !== currentLoadedYear.value
+	// 	) {
+	// 		// Call fetchMicrosoftEvents function with current month and year
+	// 		fetchMicrosoftEvents(month, year);
+
+	// 		// Update the current loaded month and year
+	// 		currentLoadedMonth.value = month;
+	// 		currentLoadedYear.value = year;
+	// 	}
+	// },
 	// Add this event render function to verify all-day events are being processed correctly
 	eventDidMount: (info) => {
 		// You could also visually mark all-day events differently if needed
@@ -399,7 +415,7 @@ const calendarListLoading = ref(false);
 onMounted(async () => {
 	await userStore.userGetCalendarNames();
 
-	await fetchGoogleEvents();
+	//await fetchGoogleEvents();
 
 	// try {
 	// 	calendarListLoading.value = true;
@@ -442,6 +458,9 @@ onMounted(async () => {
 		flattenActivities(calendarStore.shared_activities),
 	);
 	events.value = [...events.value, ...sharedACT];
+
+	const now = new Date();
+	await fetchGoogleEventsForMonth(now.getMonth() + 1, now.getFullYear());
 
 	// Update calendar options with current events
 	calendarOptions.value = {
@@ -767,44 +786,71 @@ const handleWeekendsToggle = () => {
 	calendarOptions.value.weekends = !calendarOptions.value.weekends;
 };
 
-// function handleEventClick(clickInfo) {
-// 	toggleUpdateActivity();
-
-// 	activityID.value = clickInfo.event._def.publicId;
-// }
-
 const selectedMicrosoftEvent = ref(null);
 
 function handleEventClick(clickInfo) {
-	console.log("prebehol klik");
 	activityID.value = clickInfo.event._def.publicId;
 	eventType.value =
 		clickInfo.event.extendedProps.source === "microsoft"
 			? "microsoft"
-			: "regular";
+			: clickInfo.event.extendedProps.source === "google"
+				? "google"
+				: "regular";
 
 	if (eventType.value === "microsoft") {
-		console.log("tuto", clickInfo);
+		selectedMicrosoftEvent.value = {
+			/* existing code */
+		};
+		toggleMicrosoftEvents();
+	} else if (eventType.value === "google") {
 		selectedMicrosoftEvent.value = {
 			id: clickInfo.event.id,
 			title: clickInfo.event.title,
 			start: clickInfo.event.start,
 			end: clickInfo.event.end,
-			location:
-				clickInfo.event.extendedProps.location || "Nebola zadaná lokalita",
-			link: clickInfo.event.extendedProps.link || "",
-			organizer: clickInfo.event.extendedProps.organizer,
-			attendees: clickInfo.event.extendedProps.attendees,
-			allDay: clickInfo.event.allDay,
-			note: clickInfo.event.extendedProps.note || "Žiadna poznámka",
-			importance: clickInfo.event.extendedProps.importance || "normal",
+			note: clickInfo.event.extendedProps.description || "Žiadna poznámka",
+			organizer: clickInfo.event.extendedProps.organizer || null, // 👈
+			attendees: clickInfo.event.extendedProps.attendees || [], // 👈
+			calendar: clickInfo.event.extendedProps.calendar || "", // 👈
 		};
-		console.log(selectedMicrosoftEvent.value);
-		toggleMicrosoftEvents();
+		toggleMicrosoftEvents(); // reuse the same modal
 	} else {
 		toggleUpdateActivity();
 	}
 }
+
+// function handleEventClick(clickInfo) {
+// 	console.log("prebehol klik");
+// 	activityID.value = clickInfo.event._def.publicId;
+// 	eventType.value = eventType.value =
+// 		clickInfo.event.extendedProps.source === "microsoft"
+// 			? "microsoft"
+// 			: clickInfo.event.extendedProps.source === "google"
+// 				? "google"
+// 				: "regular";
+
+// 	if (eventType.value === "microsoft") {
+// 		console.log("tuto", clickInfo);
+// 		selectedMicrosoftEvent.value = {
+// 			id: clickInfo.event.id,
+// 			title: clickInfo.event.title,
+// 			start: clickInfo.event.start,
+// 			end: clickInfo.event.end,
+// 			location:
+// 				clickInfo.event.extendedProps.location || "Nebola zadaná lokalita",
+// 			link: clickInfo.event.extendedProps.link || "",
+// 			organizer: clickInfo.event.extendedProps.organizer,
+// 			attendees: clickInfo.event.extendedProps.attendees,
+// 			allDay: clickInfo.event.allDay,
+// 			note: clickInfo.event.extendedProps.note || "Žiadna poznámka",
+// 			importance: clickInfo.event.extendedProps.importance || "normal",
+// 		};
+// 		console.log(selectedMicrosoftEvent.value);
+// 		toggleMicrosoftEvents();
+// 	} else {
+// 		toggleUpdateActivity();
+// 	}
+// }
 
 const toggleMicrosoftEvents = () => {
 	showMicrosoftEvents.value = !showMicrosoftEvents.value;
@@ -1135,6 +1181,22 @@ async function fetchMicrosoftEvents(month, year) {
 	return newMicrosoftEvents;
 }
 
+async function fetchGoogleEventsForMonth(month, year) {
+	const newGoogleEvents = await calendarStore.fetchGoogleEvents(month, year);
+
+	// Replace old google events, keep everything else
+	const nonGoogleEvents = events.value.filter(
+		(event) => event.extendedProps?.source !== "google",
+	);
+
+	events.value = [...nonGoogleEvents, ...newGoogleEvents];
+
+	calendarOptions.value = {
+		...calendarOptions.value,
+		events: [...events.value],
+	};
+}
+
 const eventType = ref("regular");
 
 // const loginWithMicrosoft = () => {
@@ -1197,13 +1259,33 @@ const fetchGoogleEvents = async () => {
 			title: event.summary?.trim() || "Bez názvu",
 			start: event.start,
 			end: event.end,
-			backgroundColor: "#34A853", // Google green
+			backgroundColor: "#34A853",
 			borderColor: "#34A853",
 			extendedProps: {
 				source: "google",
-				description: event.description,
+				description: event.description ?? null,
+				calendar: event.calendar ?? null,
+				organizer: event.organizer ?? event.creator ?? null, // 👈 try both
+				attendees: event.attendees ?? [],
+				location: event.location ?? null,
 			},
 		}));
+
+		// const googleEvents = response.data.map((event) => ({
+		// 	id: event.id,
+		// 	title: event.summary?.trim() || "Bez názvu",
+		// 	start: event.start,
+		// 	end: event.end,
+		// 	backgroundColor: "#34A853",
+		// 	borderColor: "#34A853",
+		// 	extendedProps: {
+		// 		source: "google",
+		// 		description: event.description,
+		// 		calendar: event.calendar,
+		// 		organizer: event.organizer ?? null, // 👈
+		// 		attendees: event.attendees ?? [], // 👈
+		// 	},
+		// }));
 
 		// Merge with existing events, remove old google events first
 		const nonGoogleEvents = events.value.filter(
@@ -1491,6 +1573,7 @@ const toggleMyActivities = () => {
 		<MicrosoftEventDetail
 			v-if="showMicrosoftEvents"
 			:event="selectedMicrosoftEvent"
+			:eventType="eventType"
 			@close="toggleMicrosoftEvents"
 			@closeMicrosoftEvents="toggleMicrosoftEvents"
 			@deleteMicrosoftEvent="deleteMicrosoftEvent"

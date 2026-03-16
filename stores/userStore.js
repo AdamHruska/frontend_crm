@@ -22,6 +22,7 @@ export const useUserStore = defineStore("user", {
 		vizitka_position: "",
 		vizitka_email: "",
 		vizitka_phone_num: "",
+		allSharedUsers: [],
 	}),
 
 	actions: {
@@ -67,7 +68,7 @@ export const useUserStore = defineStore("user", {
 							: [];
 						console.log(
 							"confirmed_share_user_id:",
-							this.user.confirmed_share_user_id
+							this.user.confirmed_share_user_id,
 						);
 					} catch (parseError) {
 						console.error("Error parsing confirmed_share_user_id:", parseError);
@@ -161,7 +162,7 @@ export const useUserStore = defineStore("user", {
 					: [];
 
 				this.sharedUsers = this.allUsers.filter((user) =>
-					this.shareIdArray.includes(user.id)
+					this.shareIdArray.includes(user.id),
 				);
 			} catch (error) {
 				console.error("Error parsing share_user_id:", error);
@@ -241,7 +242,7 @@ export const useUserStore = defineStore("user", {
 							Authorization: `Bearer ${authStore.token}`,
 							"Content-Type": "application/json",
 						},
-					}
+					},
 				);
 
 				// Update local state
@@ -259,6 +260,28 @@ export const useUserStore = defineStore("user", {
 				throw error;
 			} finally {
 				this.loadingState = false;
+			}
+		},
+
+		async fetchSharedCalendarUsers() {
+			try {
+				const config = useRuntimeConfig();
+				const authStore = useAuthStore();
+
+				const response = await axios.get(
+					`${config.public.apiUrl}calendar-shared-users`,
+					{
+						headers: {
+							Authorization: `Bearer ${authStore.token}`,
+						},
+					},
+				);
+
+				this.allSharedUsers = response.data.users;
+				console.log("skuska vsetkych userov", response.data.users);
+			} catch (error) {
+				console.error("Error fetching shared users:", error);
+				throw error;
 			}
 		},
 
@@ -306,7 +329,7 @@ export const useUserStore = defineStore("user", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 
 				//console.log("API response:", response.data);
@@ -340,13 +363,13 @@ export const useUserStore = defineStore("user", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 				this.allUsersAdmin = this.allUsersAdmin.filter(
-					(user) => user.id !== id
+					(user) => user.id !== id,
 				);
 				this.allUsersAdminALL = this.allUsersAdminALL.filter(
-					(user) => user.id !== id
+					(user) => user.id !== id,
 				);
 			} catch (error) {
 				console.error("Error deleting user:", error);
@@ -365,7 +388,7 @@ export const useUserStore = defineStore("user", {
 			if (!Array.isArray(this.selected_calendar_names)) {
 				try {
 					this.selected_calendar_names = JSON.parse(
-						this.selected_calendar_names
+						this.selected_calendar_names,
 					);
 				} catch {
 					this.selected_calendar_names = [];
@@ -392,7 +415,7 @@ export const useUserStore = defineStore("user", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 
 				calendarStore.microsoftEventCache = {};
@@ -418,7 +441,7 @@ export const useUserStore = defineStore("user", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 
 				let data = response.data.selected_calendar_names;
@@ -457,7 +480,7 @@ export const useUserStore = defineStore("user", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 				console.log(response);
 				toast.success("Kontakty úspešne delegované", {
@@ -499,7 +522,7 @@ export const useUserStore = defineStore("user", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 				console.log(response);
 				toast.success("Kontakt bol úspešne obnovený");

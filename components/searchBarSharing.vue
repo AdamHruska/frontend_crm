@@ -33,7 +33,7 @@ const showDropdown = () => {
 watch(searchInput, (newValue) => {
 	const searchText = newValue.toLowerCase();
 	filteredUsers.value = userStore.allUsers.filter((user) =>
-		`${user.first_name} ${user.last_name}`.toLowerCase().includes(searchText)
+		`${user.first_name} ${user.last_name}`.toLowerCase().includes(searchText),
 	);
 	console.log("Filtered users:", filteredUsers.value);
 });
@@ -145,7 +145,7 @@ const createRequestSeeMyCal = async (userId, first_name, last_name) => {
 								createRequestSeeTheirCal(
 									user.id,
 									user.first_name,
-									user.last_name
+									user.last_name,
 								)
 							"
 							class="ml-1 bg-green-500 text-white px-2 py-1 rounded-md hover:bg-green-600 shadow"
