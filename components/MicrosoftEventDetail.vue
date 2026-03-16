@@ -100,17 +100,20 @@ const closeModal = () => {
 					</p>
 				</div>
 
-				<div class="border-b pb-2" v-if="eventType === 'microsoft'">
+				<div
+					class="border-b pb-2"
+					v-if="eventType === 'microsoft' && props.event.organizer"
+				>
 					<p class="text-gray-600 font-semibold mb-2">Organizátor</p>
 					<p class="font-medium">
-						{{ props.event.organizer.name || "Not specified" }}
+						{{ props.event.organizer?.name || "Not specified" }}
 					</p>
 
 					<a
 						href="mailto:{{ props.event.organizer.email }}"
 						class="font-medium text-underline text-blue-600 hover:opacity-60"
 					>
-						{{ props.event.organizer.email || "Not specified" }}
+						{{ props.event.organizer?.email || "Not specified" }}
 					</a>
 				</div>
 

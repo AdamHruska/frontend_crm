@@ -811,7 +811,18 @@ function handleEventClick(clickInfo) {
 
 	if (eventType.value === "microsoft") {
 		selectedMicrosoftEvent.value = {
-			/* existing code */
+			id: clickInfo.event.id,
+			title: clickInfo.event.title,
+			start: clickInfo.event.start,
+			end: clickInfo.event.end,
+			location:
+				clickInfo.event.extendedProps.location || "Nebola zadaná lokalita",
+			link: clickInfo.event.extendedProps.link || "",
+			organizer: clickInfo.event.extendedProps.organizer,
+			attendees: clickInfo.event.extendedProps.attendees,
+			allDay: clickInfo.event.allDay,
+			note: clickInfo.event.extendedProps.note || "Žiadna poznámka",
+			importance: clickInfo.event.extendedProps.importance || "normal",
 		};
 		toggleMicrosoftEvents();
 	} else if (eventType.value === "google") {
