@@ -417,22 +417,22 @@ onMounted(async () => {
 
 	//await fetchGoogleEvents();
 
-	// try {
-	// 	calendarListLoading.value = true;
-	// 	const response = await axios.get(
-	// 		`${config.public.apiUrl}microsoft/calendars`,
-	// 		{
-	// 			headers: {
-	// 				Authorization: `Bearer ${authStore.token}`,
-	// 			},
-	// 		},
-	// 	);
-	// 	calendarList.value = response.data.calendars;
-	// } catch (error) {
-	// 	console.error("Error during Microsoft login callback:", error);
-	// } finally {
-	// 	calendarListLoading.value = false;
-	// }
+	try {
+		calendarListLoading.value = true;
+		const response = await axios.get(
+			`${config.public.apiUrl}microsoft/calendars`,
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+				},
+			},
+		);
+		calendarList.value = response.data.calendars;
+	} catch (error) {
+		console.error("Error during Microsoft login callback:", error);
+	} finally {
+		calendarListLoading.value = false;
+	}
 
 	// Fetch activities and contacts in parallel
 	await Promise.all([
