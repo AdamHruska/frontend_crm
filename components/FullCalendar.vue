@@ -887,6 +887,8 @@ function handleEvents(events) {
 	// );
 }
 
+//zmena kvoli locahost url a vercecl
+
 const flattenActivities = (activitiesObject) => {
 	// Use `Object.values` to get arrays of activities and `flat()` to merge them
 	return Object.values(activitiesObject).flat();
