@@ -34,9 +34,9 @@ export default defineNuxtConfig({
 			AZURE_SCOPE: process.env.NUXT_PUBLIC_AZURE_SCOPE,
 
 			//google
-			GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
-			GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI,
-			GOOGLE_SCOPE: process.env.GOOGLE_SCOPE,
+			GOOGLE_CLIENT_ID: process.env.NUXT_PUBLIC_GOOGLE_CLIENT_ID,
+			GOOGLE_REDIRECT_URI: process.env.NUXT_PUBLIC_GOOGLE_REDIRECT_URI,
+			GOOGLE_SCOPE: process.env.NUXT_PUBLIC_GOOGLE_SCOPE,
 		},
 	},
 });
