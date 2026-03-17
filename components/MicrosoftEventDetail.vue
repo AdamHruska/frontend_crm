@@ -1,6 +1,7 @@
 <script setup>
 import { Icon } from "@iconify/vue";
-import { computed } from "vue";
+import { computed, ref, onMounted } from "vue";
+
 const props = defineProps({
 	event: {
 		type: Object,
@@ -15,6 +16,33 @@ onMounted(() => {
 	console.log("google Event Detail Props:", props);
 });
 
+// Extrahuj meeting link z note textu (Teams, Meet, Zoom...)
+const extractMeetingLink = (note) => {
+	if (!note) return null;
+	// Hľadaj Teams link (pripojiť sa)
+	const teamsMatch = note.match(
+		/https:\/\/teams\.microsoft\.com\/meet\/[^\s\n>)]+/,
+	);
+	if (teamsMatch) return teamsMatch[0];
+	// Hľadaj Teams meetup-join link
+	const teamsJoinMatch = note.match(
+		/https:\/\/teams\.microsoft\.com\/l\/meetup-join\/[^\s\n>)]+/,
+	);
+	if (teamsJoinMatch) return decodeURIComponent(teamsJoinMatch[0]);
+	// Hľadaj Google Meet
+	const meetMatch = note.match(/https:\/\/meet\.google\.com\/[^\s\n>)]+/);
+	if (meetMatch) return meetMatch[0];
+	// Hľadaj Zoom
+	const zoomMatch = note.match(/https:\/\/[a-z0-9.]*zoom\.us\/[^\s\n>)]+/);
+	if (zoomMatch) return zoomMatch[0];
+	return null;
+};
+
+const meetingLink = computed(() => {
+	// Použij explicitný link ak existuje, inak parsuj z note
+	return props.event.link || extractMeetingLink(props.event.note) || null;
+});
+
 // Ensure all required properties exist with defaults
 const event = computed(() => {
 	return {
@@ -23,7 +51,7 @@ const event = computed(() => {
 		end: props.event.end,
 		location: props.event.location || "No location",
 		organizator: props.event.organizator || "Not specified",
-		link: props.event.link || "",
+		link: meetingLink.value,
 		id: props.event.id || "",
 		attendees: props.event.attendees || [],
 		allDay: props.event.allDay || false,
@@ -34,16 +62,9 @@ const emit = defineEmits(["close", "deleteMicrosoftEvent"]);
 
 const formatDateTime = (date, isAllDay = false) => {
 	if (!date) return "Not specified";
-
 	try {
 		const dateObj = new Date(date);
-
-		// For all-day events, show only the date without time
-		if (isAllDay) {
-			return dateObj.toLocaleDateString();
-		}
-
-		// For regular events, show date and time
+		if (isAllDay) return dateObj.toLocaleDateString();
 		return dateObj.toLocaleString();
 	} catch (error) {
 		console.error("Error formatting date:", error);
@@ -73,7 +94,6 @@ const closeModal = () => {
 					<Icon icon="fa6-solid:xmark" class="h-6 w-6" />
 				</button>
 
-				<!-- Event details -->
 				<h2 class="text-xl font-bold mb-4 pr-4">
 					{{ props.event.title || "Untitled Event" }}
 				</h2>
@@ -108,9 +128,8 @@ const closeModal = () => {
 					<p class="font-medium">
 						{{ props.event.organizer?.name || "Not specified" }}
 					</p>
-
 					<a
-						href="mailto:{{ props.event.organizer.email }}"
+						:href="`mailto:${props.event.organizer?.email}`"
 						class="font-medium text-underline text-blue-600 hover:opacity-60"
 					>
 						{{ props.event.organizer?.email || "Not specified" }}
@@ -121,19 +140,19 @@ const closeModal = () => {
 					class="border-b pb-2"
 					v-if="eventType === 'google' && props.event.organizer"
 				>
-					<a href="">
-						<p class="text-gray-600 font-semibold mb-2">Organizátor</p>
-						<p class="font-medium">
-							{{
-								props.event.organizer.displayName ||
-								props.event.organizer.email ||
-								"Neznámy"
-							}}
-						</p>
-
+					<p class="text-gray-600 font-semibold mb-2">Organizátor</p>
+					<p class="font-medium">
+						{{
+							props.event.organizer.displayName ||
+							props.event.organizer.email ||
+							"Neznámy"
+						}}
+					</p>
+					<a
 						v-if="props.event.organizer.email"
-						:href="`mailto:${props.event.organizer.email}`" class="font-medium
-						text-blue-600 hover:opacity-60" >
+						:href="`mailto:${props.event.organizer.email}`"
+						class="font-medium text-blue-600 hover:opacity-60"
+					>
 						{{ props.event.organizer.email }}
 					</a>
 				</div>
@@ -196,6 +215,7 @@ const closeModal = () => {
 					<div v-else class="font-medium text-gray-500">Žiadni účastníci</div>
 				</div>
 
+				<!-- Microsoft attendees -->
 				<div
 					class="border-b pb-2 max-h-[300px] overflow-y-auto"
 					v-if="eventType === 'microsoft'"
@@ -224,43 +244,43 @@ const closeModal = () => {
 							<UTooltip
 								text="Pozvánka bola akceptovaná"
 								:ui="{ background: '!bg-white', color: '' }"
-								class=""
 								v-if="attendee.response == 'accepted'"
 							>
-								<span class="p-1 w-auto bg-green-500 mr-4 rounded-md"
-									><Icon
+								<span class="p-1 w-auto bg-green-500 mr-4 rounded-md">
+									<Icon
 										icon="ic:baseline-done"
 										class="transition-transform duration-300"
-								/></span>
+									/>
+								</span>
 							</UTooltip>
 
 							<UTooltip
 								text="Pozvánka bola odmietnutá"
 								:ui="{ background: '!bg-white', color: '' }"
-								class=""
 								v-if="attendee.response == 'declined'"
 							>
-								<span class="p-1 w-auto bg-red-500 mr-4 rounded-md"
-									><Icon
+								<span class="p-1 w-auto bg-red-500 mr-4 rounded-md">
+									<Icon
 										icon="ic:round-close"
 										class="transition-transform duration-300"
-								/></span>
+									/>
+								</span>
 							</UTooltip>
 
 							<UTooltip
 								text="Pozvánka čaká na odpoveď"
 								:ui="{ background: '!bg-white', color: '' }"
-								class=""
 								v-if="
 									attendee.response !== 'accepted' &&
 									attendee.response !== 'declined'
 								"
 							>
-								<span class="p-1 w-auto bg-gray-400 mr-4 rounded-md"
-									><Icon
+								<span class="p-1 w-auto bg-gray-400 mr-4 rounded-md">
+									<Icon
 										icon="ic:baseline-question-mark"
 										class="transition-transform duration-300"
-								/></span>
+									/>
+								</span>
 							</UTooltip>
 						</p>
 					</div>
@@ -282,20 +302,10 @@ const closeModal = () => {
 						</div>
 					</div>
 					<p
-						class="font-medium break-words max-h-[350px] overflow-y-auto"
+						class="font-medium break-words max-h-[350px] overflow-y-auto whitespace-pre-wrap"
 						v-if="showNote"
 					>
 						{{ props.event.note || "Not specified" }}
-					</p>
-				</div>
-
-				<div
-					class="border-b pb-2"
-					v-if="eventType === 'google' && props.event.note"
-				>
-					<p class="text-gray-600 font-semibold">Popis</p>
-					<p class="font-medium break-words max-h-[350px] overflow-y-auto">
-						{{ props.event.note }}
 					</p>
 				</div>
 
@@ -306,11 +316,12 @@ const closeModal = () => {
 					</p>
 				</div>
 
+				<!-- ✅ Meeting link — explicitný alebo extrahovaný z note -->
 				<div class="border-b pb-2">
 					<p class="text-gray-600 font-semibold">Link na meeting</p>
 					<a
-						v-if="props.event.link"
-						:href="props.event.link"
+						v-if="meetingLink"
+						:href="meetingLink"
 						class="font-medium break-words text-blue-600 hover:underline"
 						target="_blank"
 						rel="noopener noreferrer"
@@ -319,30 +330,6 @@ const closeModal = () => {
 					</a>
 					<div v-else class="font-medium text-gray-500">Link nie je určený</div>
 				</div>
-
-				<!-- <div>
-						<div
-							v-if="props.event.attendees[0].response == 'accepted'"
-							class="px-4 py-2 bg-green-500 text-white rounded-md"
-						>
-							Stretnutie akceptované
-						</div>
-						<div
-							v-if="props.event.attendees[0].response == 'declined'"
-							class="px-4 py-2 bg-red-500 text-white rounded-md"
-						>
-							Stretnutie odmietnuté
-						</div>
-						<div
-							v-if="
-								props.event.attendees[0].response !== 'accepted' &&
-								props.event.attendees[0].response !== 'declined'
-							"
-							class="px-4 py-2 bg-gray-500 text-white rounded-md"
-						>
-							Čaká na odpoveď
-						</div>
-					</div> -->
 
 				<div class="flex justify-between items-center">
 					<div class="flex gap-4 items-center" v-if="eventType === 'microsoft'">
