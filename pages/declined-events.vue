@@ -744,10 +744,14 @@ const fetchData = async () => {
 	} finally {
 		loading.value = false;
 	}
+
+	if (selectedSelect.value && !["1", "2"].includes(selectedSelect.value)) {
+		await fetchSelect();
+	}
 };
 
 const fetchSelect = async () => {
-	console.log("Selected query:", selectedSelect.value);
+	console.log("from", dateFrom, dateTo);
 	try {
 		loading.value = true;
 
@@ -803,26 +807,9 @@ const fetchSelect = async () => {
 					headers: {
 						Authorization: `Bearer ${authStore.token}`,
 					},
-				},
-			);
-			console.log("skuska", response);
-			activitiesWithoutAdvice.value = response.data.activities;
-
-			toast.success(
-				"Kontakty bez dohodnutého poradenstva boli získané uspešne",
-				{
-					position: "top-right",
-					timeout: 5000,
-				},
-			);
-		}
-
-		if (selectedSelect.value === "3") {
-			const response = await axios.get(
-				`${config.public.apiUrl}analyza-bez-poradenstva`,
-				{
-					headers: {
-						Authorization: `Bearer ${authStore.token}`,
+					params: {
+						dateFrom: dateFrom.value,
+						dateTo: dateTo.value,
 					},
 				},
 			);
@@ -845,6 +832,10 @@ const fetchSelect = async () => {
 					headers: {
 						Authorization: `Bearer ${authStore.token}`,
 					},
+					params: {
+						dateFrom: dateFrom.value,
+						dateTo: dateTo.value,
+					},
 				},
 			);
 			console.log("skuska", response);
@@ -863,6 +854,10 @@ const fetchSelect = async () => {
 					headers: {
 						Authorization: `Bearer ${authStore.token}`,
 					},
+					params: {
+						dateFrom: dateFrom.value,
+						dateTo: dateTo.value,
+					},
 				},
 			);
 			console.log("skuska", response);
@@ -880,6 +875,10 @@ const fetchSelect = async () => {
 				{
 					headers: {
 						Authorization: `Bearer ${authStore.token}`,
+					},
+					params: {
+						dateFrom: dateFrom.value,
+						dateTo: dateTo.value,
 					},
 				},
 			);

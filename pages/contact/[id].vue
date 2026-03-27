@@ -4,6 +4,9 @@ const config = useRuntimeConfig();
 import { useContactsStore } from "#imports";
 const contactsStore = useContactsStore();
 
+import { useUserStore } from "#imports";
+const userStore = useUserStore();
+
 import axios from "axios";
 import { format } from "date-fns";
 
@@ -57,7 +60,17 @@ watch(
 
 const callListNames = ref([]);
 
+const sharedId = ref(null);
+
+const sharedAuthorName = computed(() => {
+	sharedId.value = people.value[0]?.shared_author;
+	if (!sharedId.value) return "";
+	const user = userStore.allUsersAdmin.find((u) => u.id === sharedId.value);
+	return user ? `${user.first_name} ${user.last_name}` : "";
+});
+
 onBeforeMount(async () => {
+	await userStore.fetchAllUsersAdmin();
 	contactsStore.lastShowenDetails = id;
 	const person = await findPerson(id);
 	console.log("Person details:", person);
@@ -261,18 +274,18 @@ const columns_activity = ref([
 	{
 		key: "poznamka",
 		label: "Poznámka k aktivite",
-		class: "bg-gray-200 w-[800px]",
+		class: "bg-gray-200 w-full",
 	},
-	{ key: "volane", label: "Volané", class: "bg-gray-200 w-10" },
+	{ key: "volane", label: "Volané", class: "bg-gray-200 w-[40px]" },
 	{
 		key: "dovolane",
 		label: "Dovolané",
-		class: "bg-gray-200 w-10",
+		class: "bg-gray-200 w-[40px]",
 	},
 	{
 		key: "dohodnute",
 		label: "Dohodnuté",
-		class: "bg-gray-200 w-10",
+		class: "bg-gray-200 w-[40px]",
 	},
 	{
 		key: "letters",
@@ -479,6 +492,13 @@ const changeActivityStatus = async (row, status) => {
 			changeDiscardActivityModal();
 		}
 
+		if (
+			(row.aktivita === "Analýza osobných financí" && status === "check") ||
+			(row.aktivita === "Servisná analýza" && status === "check")
+		) {
+			changeShowNewNamesModal();
+		}
+
 		// Update local state immediately for better UX
 		const originalStatus = row.activity_status;
 		row.activity_status = status;
@@ -631,6 +651,12 @@ const changeDiscardActivityModal = () => {
 	showDiscardActivityModal.value = !showDiscardActivityModal.value;
 };
 
+const showNewNamesModal = ref(false);
+
+const changeShowNewNamesModal = () => {
+	showNewNamesModal.value = !showNewNamesModal.value;
+};
+
 // const handleConfirmDiscardActivity = (discardMessage) => {
 // 	changeDiscardActivityModal();
 // 	console.log(discardMessage);
@@ -678,15 +704,21 @@ const setWrongNumber = async () => {
 		console.error("Error toggling wrong number:", error);
 	}
 };
+
+const closeDiscardActivityModal = () => {
+	showDiscardActivityModal.value = false;
+};
 </script>
 
 <template>
 	<DiscardActivityModal
 		v-if="showDiscardActivityModal"
 		:activityData="currentActivity"
-		@closeDiscardActivity="changeDiscardActivityModal"
+		@closeDiscardActivity="closeDiscardActivityModal"
 		@activityUpdated="handleActivityUpdate"
 	/>
+
+	<NewNamesModal v-if="showNewNamesModal" @close="changeShowNewNamesModal" />
 
 	<ConfirmEventModal
 		v-if="showConfirmEvent"
@@ -726,6 +758,18 @@ const setWrongNumber = async () => {
 
 	<div class="flex justify-between items-center bg-gray-200 p-4">
 		<h1 class="text-2xl font-semibold ml-10 mt-4">Detail</h1>
+
+		<h3
+			v-if="
+				userStore.user &&
+				people[0]?.shared_author !== null &&
+				people[0]?.shared_author !== userStore.user.id
+			"
+			class="bg-blue-300 px-4 py-2 rounded-lg font-semibold shadow-md"
+		>
+			Kontakt je zdielaný s
+			<span class="underline">{{ sharedAuthorName }}</span>
+		</h3>
 
 		<div class="flex gap-2">
 			<div>
@@ -909,9 +953,6 @@ const setWrongNumber = async () => {
 					class="w-full"
 					:ui="{
 						wrapper: 'max-w-full overflow-x-auto',
-						td: {
-							white: 'whitespace-normal',
-						},
 					}"
 				>
 					<template #default="{ row }">
@@ -947,6 +988,45 @@ const setWrongNumber = async () => {
 						</a>
 						<span v-else class="break-all">
 							{{ row.miesto_stretnutia }}
+						</span>
+					</template>
+
+					<template #poznamka-data="{ row }">
+						<div
+							class="max-w-full truncate cursor-pointer"
+							:title="row.poznamka"
+						>
+							{{ row.poznamka }}
+						</div>
+					</template>
+
+					<template #volane-data="{ row }">
+						<span v-if="row.volane === null"></span>
+						<span
+							v-else
+							:class="row.volane ? 'text-green-600' : 'text-red-500'"
+						>
+							{{ row.volane ? "✔" : "✖" }}
+						</span>
+					</template>
+
+					<template #dovolane-data="{ row }">
+						<span v-if="row.dovolane === null"></span>
+						<span
+							v-else
+							:class="row.dovolane ? 'text-green-600' : 'text-red-500'"
+						>
+							{{ row.dovolane ? "✔" : "✖" }}
+						</span>
+					</template>
+
+					<template #dohodnute-data="{ row }">
+						<span v-if="row.dohodnute === null"></span>
+						<span
+							v-else
+							:class="row.dohodnute ? 'text-green-600' : 'text-red-500'"
+						>
+							{{ row.dohodnute ? "✔" : "✖" }}
 						</span>
 					</template>
 
@@ -1065,7 +1145,7 @@ const setWrongNumber = async () => {
 				</template>
 			</UTable> -->
 			<button
-				v-if="author_id == user_id"
+				v-if="author_id == user_id || people[0].shared_author == user_id"
 				@click="changeAddActivityBool"
 				class="bg-blue-500 hover:bg-blue-600 p-2 rounded-lg absolute right-10 top-2 font-semibold shadow-md"
 			>
@@ -1073,7 +1153,7 @@ const setWrongNumber = async () => {
 			</button>
 
 			<button
-				v-if="author_id == user_id"
+				v-if="author_id == user_id || people[0].shared_author == user_id"
 				@click="changeToDoBool"
 				class="bg-green-500 hover:bg-green-600 p-2 rounded-lg absolute right-50 top-2 font-semibold shadow-md"
 			>

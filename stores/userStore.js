@@ -164,6 +164,7 @@ export const useUserStore = defineStore("user", {
 				this.sharedUsers = this.allUsers.filter((user) =>
 					this.shareIdArray.includes(user.id),
 				);
+				console.log("tu su sharovani useri", this.sharedUsers);
 			} catch (error) {
 				console.error("Error parsing share_user_id:", error);
 				this.shareIdArray = [];

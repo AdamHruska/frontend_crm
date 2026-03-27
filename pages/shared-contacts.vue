@@ -197,6 +197,8 @@ onMounted(async () => {
 			},
 		});
 
+		console.log("skuska", response.data);
+
 		people.value = response.data.map((person) => {
 			let cssClass = "";
 
@@ -355,11 +357,11 @@ const columns = [
 		label: "Odporucitel",
 		class: "w-[160px]",
 	},
-	{
-		key: "shared_author_name",
-		label: "Vlastník",
-		class: "w-[160px]",
-	},
+	// {
+	// 	key: "shared_author_name",
+	// 	label: "Vlastník",
+	// 	class: "w-[160px]",
+	// },
 	{
 		key: "poznamka",
 		label: "Poznámka",
@@ -396,6 +398,11 @@ const columnsSecond = [
 	{
 		key: "odporucitel",
 		label: "Odporucitel",
+		class: "w-[160px]",
+	},
+	{
+		key: "odporucitel",
+		label: "Zdielané s",
 		class: "w-[160px]",
 	},
 	{

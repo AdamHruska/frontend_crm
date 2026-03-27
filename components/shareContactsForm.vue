@@ -29,8 +29,10 @@ const props = defineProps({
 	},
 });
 
-onMounted(() => {
-	console.log("Selected contacts for delegation:", props.selected);
+onMounted(async () => {
+	console.log("Selected contacts for Sharign:", props.selected);
+
+	//await userStore.fetchUsers();
 });
 
 // const alterPerson = async (id) => {
@@ -108,9 +110,9 @@ const delegateContacts = async (newSharedAuthorId) => {
 						headers: {
 							Authorization: `Bearer ${sessionStorage.getItem("token")}`,
 						},
-					}
-				)
-			)
+					},
+				),
+			),
 		);
 
 		// refresh UI state

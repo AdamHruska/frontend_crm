@@ -4,6 +4,9 @@ const config = useRuntimeConfig();
 import { useContactsStore } from "@/stores/contactsStore";
 const contactsStore = useContactsStore();
 
+import { useUserStore } from "#imports";
+const userStore = useUserStore();
+
 import { useToast } from "vue-toastification";
 const toast = useToast();
 
@@ -51,6 +54,8 @@ onMounted(async () => {
 		.then((response) => {
 			users.value = response.data.users;
 		});
+
+	console.log("single contact", props.single_contact);
 });
 
 // Watch for changes in props.single_contact
@@ -66,7 +71,7 @@ watch(
 			odporucitel.value = newVal.odporucitel || "";
 			adresa.value = newVal.adresa || "";
 			rok_narodenia.value = calculateAge(
-				newVal.rok_narodenia || new Date().getFullYear()
+				newVal.rok_narodenia || new Date().getFullYear(),
 			);
 			zamestanie.value = newVal.zamestanie || "";
 			poznamka.value = newVal.poznamka || "";
@@ -77,7 +82,7 @@ watch(
 			resetForm();
 		}
 	},
-	{ immediate: true }
+	{ immediate: true },
 );
 
 function resetForm() {
@@ -127,7 +132,7 @@ const alterPerson = async (id) => {
 			headers: {
 				Authorization: `Bearer ${sessionStorage.getItem("token")}`,
 			},
-		}
+		},
 	);
 
 	if (response.status === 200) {
@@ -327,7 +332,10 @@ const alterPerson = async (id) => {
 							/>
 						</div>
 						<div class="flex gap-16 mb-9">
-							<div class="flex-1">
+							<div
+								v-if="props.single_contact.author_id == userStore.user.id"
+								class="flex-1"
+							>
 								<label
 									for="author_id"
 									class="block text-gray-800 mb-2 font-medium"

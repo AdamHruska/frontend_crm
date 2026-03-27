@@ -7,18 +7,8 @@
 			left: `${mouseX + 15}px`,
 			top: `${mouseY + 15}px`,
 		}"
-		@mouseenter="
-			() => {
-				isHoveringFollower = true;
-				clearTimeout(hideTimeout);
-			}
-		"
-		@mouseleave="
-			() => {
-				isHoveringFollower = false;
-				hideFollower();
-			}
-		"
+		@mouseenter="onFollowerEnter"
+		@mouseleave="onFollowerLeave"
 	>
 		<p class="font-semibold">Zoznam ľudí</p>
 		<div class="my-4 overflow-y-auto max-h-[280px]">
@@ -188,37 +178,40 @@
 				class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 shadow-sm bg-white p-4"
 			>
 				<div
-					class="bg-blue-100 p-4 rounded"
+					class="bg-blue-100 p-4 rounded cursor-default"
 					@mouseenter="
 						(e) =>
 							responseData?.grouped_activities?.volane &&
-							showVolaneFollower(responseData.grouped_activities.volane, e)
+							onTriggerEnter(responseData.grouped_activities.volane, e)
 					"
-					@mouseleave="hideFollower"
+					@mousemove="onTriggerMove"
+					@mouseleave="onTriggerLeave"
 				>
 					<h3 class="font-bold">Volané</h3>
 					<p class="text-2xl">{{ statistics.called }}</p>
 				</div>
 				<div
-					class="bg-green-100 p-4 rounded"
+					class="bg-green-100 p-4 rounded cursor-default"
 					@mouseenter="
 						(e) =>
 							responseData?.grouped_activities?.dovolane &&
-							showVolaneFollower(responseData.grouped_activities.dovolane, e)
+							onTriggerEnter(responseData.grouped_activities.dovolane, e)
 					"
-					@mouseleave="hideFollower"
+					@mousemove="onTriggerMove"
+					@mouseleave="onTriggerLeave"
 				>
 					<h3 class="font-bold">Dovolané</h3>
 					<p class="text-2xl">{{ statistics.reached }}</p>
 				</div>
 				<div
-					class="bg-purple-100 p-4 rounded"
+					class="bg-purple-100 p-4 rounded cursor-default"
 					@mouseenter="
 						(e) =>
 							responseData?.grouped_activities?.dohodnute &&
-							showVolaneFollower(responseData.grouped_activities.dohodnute, e)
+							onTriggerEnter(responseData.grouped_activities.dohodnute, e)
 					"
-					@mouseleave="hideFollower"
+					@mousemove="onTriggerMove"
+					@mouseleave="onTriggerLeave"
 				>
 					<h3 class="font-bold">Dohodnuté</h3>
 					<p class="text-2xl">{{ statistics.scheduled }}</p>
@@ -230,10 +223,10 @@
 					<div
 						class="item"
 						@mouseenter="
-							(e) =>
-								showVolaneFollower(otherActiviesNames['Prvé stretnutie'], e)
+							(e) => onTriggerEnter(otherActiviesNames['Prvé stretnutie'], e)
 						"
-						@mouseleave="hideFollower"
+						@mousemove="onTriggerMove"
+						@mouseleave="onTriggerLeave"
 					>
 						<div class="item-left"><p>Prvé stretnutia:</p></div>
 						<div class="item-right">
@@ -251,12 +244,13 @@
 						class="item"
 						@mouseenter="
 							(e) =>
-								showVolaneFollower(
+								onTriggerEnter(
 									otherActiviesNames['Analýza osobných financí'],
 									e,
 								)
 						"
-						@mouseleave="hideFollower"
+						@mousemove="onTriggerMove"
+						@mouseleave="onTriggerLeave"
 					>
 						<div class="item-left"><p>Analýza osobných financií:</p></div>
 						<div class="item-right">
@@ -273,10 +267,10 @@
 					<div
 						class="item"
 						@mouseenter="
-							(e) =>
-								showVolaneFollower(otherActiviesNames['poradenstvo nové'], e)
+							(e) => onTriggerEnter(otherActiviesNames['poradenstvo nové'], e)
 						"
-						@mouseleave="hideFollower"
+						@mousemove="onTriggerMove"
+						@mouseleave="onTriggerLeave"
 					>
 						<div class="item-left"><p>Poradenstvo nové:</p></div>
 						<div class="item-right">
@@ -296,10 +290,10 @@
 					<div
 						class="item"
 						@mouseenter="
-							(e) =>
-								showVolaneFollower(otherActiviesNames['realizácia nová'], e)
+							(e) => onTriggerEnter(otherActiviesNames['realizácia nová'], e)
 						"
-						@mouseleave="hideFollower"
+						@mousemove="onTriggerMove"
+						@mouseleave="onTriggerLeave"
 					>
 						<div class="item-left"><p>Realizácie nové:</p></div>
 						<div class="item-right">
@@ -317,9 +311,10 @@
 						class="item"
 						@mouseenter="
 							(e) =>
-								showVolaneFollower(otherActiviesNames['realizácia servisná'], e)
+								onTriggerEnter(otherActiviesNames['realizácia servisná'], e)
 						"
-						@mouseleave="hideFollower"
+						@mousemove="onTriggerMove"
+						@mouseleave="onTriggerLeave"
 					>
 						<div class="item-left"><p>Realizácie servisné:</p></div>
 						<div class="item-right">
@@ -336,10 +331,10 @@
 					<div
 						class="item"
 						@mouseenter="
-							(e) =>
-								showVolaneFollower(otherActiviesNames['Servisná analýza'], e)
+							(e) => onTriggerEnter(otherActiviesNames['Servisná analýza'], e)
 						"
-						@mouseleave="hideFollower"
+						@mousemove="onTriggerMove"
+						@mouseleave="onTriggerLeave"
 					>
 						<div class="item-left"><p>Servisná analýza:</p></div>
 						<div class="item-right">
@@ -360,12 +355,10 @@
 						class="item"
 						@mouseenter="
 							(e) =>
-								showVolaneFollower(
-									otherActiviesNames['servisné poradenstvo'],
-									e,
-								)
+								onTriggerEnter(otherActiviesNames['servisné poradenstvo'], e)
 						"
-						@mouseleave="hideFollower"
+						@mousemove="onTriggerMove"
+						@mouseleave="onTriggerLeave"
 					>
 						<div class="item-left"><p>Poradenstvo servisné:</p></div>
 						<div class="item-right">
@@ -381,10 +374,9 @@
 					</div>
 					<div
 						class="item ml-24"
-						@mouseenter="
-							(e) => showVolaneFollower(responseData.new_contacts, e)
-						"
-						@mouseleave="hideFollower"
+						@mouseenter="(e) => onTriggerEnter(responseData.new_contacts, e)"
+						@mousemove="onTriggerMove"
+						@mouseleave="onTriggerLeave"
 					>
 						<div class="item-left"></div>
 						<div class="item-right">
@@ -406,41 +398,57 @@
 			class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6 shadow-sm bg-white p-4"
 		>
 			<div
-				class="bg-blue-100 p-4 rounded"
-				@mouseenter="(e) => showPohovoryFollower('called', e)"
-				@mouseleave="hideFollower"
+				class="bg-blue-100 p-4 rounded cursor-default"
+				@mouseenter="
+					(e) => onTriggerEnter(dataPohovory?.grouped_people?.called || [], e)
+				"
+				@mousemove="onTriggerMove"
+				@mouseleave="onTriggerLeave"
 			>
 				<h3 class="font-bold">Volané</h3>
 				<p class="text-2xl">{{ dataPohovory?.statistics?.called || 0 }}</p>
 			</div>
 			<div
-				class="bg-green-100 p-4 rounded"
-				@mouseenter="(e) => showPohovoryFollower('reached', e)"
-				@mouseleave="hideFollower"
+				class="bg-green-100 p-4 rounded cursor-default"
+				@mouseenter="
+					(e) => onTriggerEnter(dataPohovory?.grouped_people?.reached || [], e)
+				"
+				@mousemove="onTriggerMove"
+				@mouseleave="onTriggerLeave"
 			>
 				<h3 class="font-bold">Dovolané</h3>
 				<p class="text-2xl">{{ dataPohovory?.statistics?.reached || 0 }}</p>
 			</div>
 			<div
-				class="bg-purple-100 p-4 rounded"
-				@mouseenter="(e) => showPohovoryFollower('scheduled', e)"
-				@mouseleave="hideFollower"
+				class="bg-purple-100 p-4 rounded cursor-default"
+				@mouseenter="
+					(e) =>
+						onTriggerEnter(dataPohovory?.grouped_people?.scheduled || [], e)
+				"
+				@mousemove="onTriggerMove"
+				@mouseleave="onTriggerLeave"
 			>
 				<h3 class="font-bold">Dohodnuté</h3>
 				<p class="text-2xl">{{ dataPohovory?.statistics?.scheduled || 0 }}</p>
 			</div>
 			<div
-				class="bg-yellow-100 p-4 rounded"
-				@mouseenter="(e) => showPohovoryFollower('realized', e)"
-				@mouseleave="hideFollower"
+				class="bg-yellow-100 p-4 rounded cursor-default"
+				@mouseenter="
+					(e) => onTriggerEnter(dataPohovory?.grouped_people?.realized || [], e)
+				"
+				@mousemove="onTriggerMove"
+				@mouseleave="onTriggerLeave"
 			>
 				<h3 class="font-bold">Zrealizované</h3>
 				<p class="text-2xl">{{ dataPohovory?.statistics?.realized || 0 }}</p>
 			</div>
 			<div
-				class="bg-red-100 p-4 rounded"
-				@mouseenter="(e) => showPohovoryFollower('accepted', e)"
-				@mouseleave="hideFollower"
+				class="bg-red-100 p-4 rounded cursor-default"
+				@mouseenter="
+					(e) => onTriggerEnter(dataPohovory?.grouped_people?.accepted || [], e)
+				"
+				@mousemove="onTriggerMove"
+				@mouseleave="onTriggerLeave"
 			>
 				<h3 class="font-bold">Zaujatí</h3>
 				<p class="text-2xl">{{ dataPohovory?.statistics?.accepted || 0 }}</p>
@@ -451,9 +459,10 @@
 			<div
 				class="item"
 				@mouseenter="
-					(e) => showVolaneFollower(seminarActivitesNames['welcome seminár'], e)
+					(e) => onTriggerEnter(seminarActivitesNames['welcome seminár'], e)
 				"
-				@mouseleave="hideFollower"
+				@mousemove="onTriggerMove"
+				@mouseleave="onTriggerLeave"
 			>
 				<div class="item-left"><p>Welcome Seminár:</p></div>
 				<div class="item-right">
@@ -469,10 +478,9 @@
 			</div>
 			<div
 				class="item"
-				@mouseenter="
-					(e) => showVolaneFollower(seminarActivitesNames['basic 1'], e)
-				"
-				@mouseleave="hideFollower"
+				@mouseenter="(e) => onTriggerEnter(seminarActivitesNames['basic 1'], e)"
+				@mousemove="onTriggerMove"
+				@mouseleave="onTriggerLeave"
 			>
 				<div class="item-left"><p>Basic 1:</p></div>
 				<div class="item-right">
@@ -487,10 +495,9 @@
 			</div>
 			<div
 				class="item"
-				@mouseenter="
-					(e) => showVolaneFollower(seminarActivitesNames['basic 2'], e)
-				"
-				@mouseleave="hideFollower"
+				@mouseenter="(e) => onTriggerEnter(seminarActivitesNames['basic 2'], e)"
+				@mousemove="onTriggerMove"
+				@mouseleave="onTriggerLeave"
 			>
 				<div class="item-left"><p>Basic 2:</p></div>
 				<div class="item-right">
@@ -505,10 +512,9 @@
 			</div>
 			<div
 				class="item"
-				@mouseenter="
-					(e) => showVolaneFollower(seminarActivitesNames['basic 3'], e)
-				"
-				@mouseleave="hideFollower"
+				@mouseenter="(e) => onTriggerEnter(seminarActivitesNames['basic 3'], e)"
+				@mousemove="onTriggerMove"
+				@mouseleave="onTriggerLeave"
 			>
 				<div class="item-left"><p>Basic 3:</p></div>
 				<div class="item-right">
@@ -523,10 +529,9 @@
 			</div>
 			<div
 				class="item"
-				@mouseenter="
-					(e) => showVolaneFollower(seminarActivitesNames['basic 4'], e)
-				"
-				@mouseleave="hideFollower"
+				@mouseenter="(e) => onTriggerEnter(seminarActivitesNames['basic 4'], e)"
+				@mousemove="onTriggerMove"
+				@mouseleave="onTriggerLeave"
 			>
 				<div class="item-left"><p>Basic 4:</p></div>
 				<div class="item-right">
@@ -542,9 +547,10 @@
 			<div
 				class="item"
 				@mouseenter="
-					(e) => showVolaneFollower(seminarActivitesNames['Post info'], e)
+					(e) => onTriggerEnter(seminarActivitesNames['Post info'], e)
 				"
-				@mouseleave="hideFollower"
+				@mousemove="onTriggerMove"
+				@mouseleave="onTriggerLeave"
 			>
 				<div class="item-left"><p>Post info:</p></div>
 				<div class="item-right">
@@ -583,7 +589,6 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
-import BarChart from "~/components/BarChart.vue";
 import axios from "axios";
 const config = useRuntimeConfig();
 
@@ -616,19 +621,19 @@ const dropdownLabel = computed(() => {
 
 const toggleMyStats = () => {
 	includeMyStats.value = !includeMyStats.value;
-	onUserSelectionChange();
+	fetchData();
 };
 
 const selectAll = () => {
 	includeMyStats.value = true;
 	selectedUserIds.value = sharedUsers.value.map((u) => u.id);
-	onUserSelectionChange();
+	fetchData();
 };
 
 const clearAll = () => {
 	includeMyStats.value = false;
 	selectedUserIds.value = [];
-	onUserSelectionChange();
+	fetchData();
 };
 
 const toggleUser = (id) => {
@@ -638,10 +643,6 @@ const toggleUser = (id) => {
 	} else {
 		selectedUserIds.value.splice(idx, 1);
 	}
-	onUserSelectionChange();
-};
-
-const onUserSelectionChange = () => {
 	fetchData();
 };
 
@@ -653,61 +654,112 @@ const handleClickOutside = (e) => {
 };
 
 // ─── Existing state ─────────────────────────────────────────────────────────
-const isHoveringFollower = ref(false);
-let hideTimeout = null;
-
-const updateActivity = ref(false);
-const activityID = ref(null);
 const responseData = ref({});
-
-const sharedUsers = computed(() => userStore.allSharedUsers);
+const sharedUsers = computed(() =>
+	userStore.sharedUsers.map((u) => ({
+		id: u.id,
+		name: u.username || `${u.first_name} ${u.last_name}`,
+	})),
+);
 
 const zaujatiKandidati = ref([]);
 const dateRange = ref({ from: "", to: "" });
 const selectedPeriod = ref("month");
 const selectedActivityType = ref("Telefonát klient");
 const statistics = ref({ called: 0, reached: 0, scheduled: 0 });
-const activities = ref([]);
 const loadingStateCalendar = ref(false);
 const dataPohovory = ref();
 
+// ─── Follower state ──────────────────────────────────────────────────────────
 const mouseX = ref(0);
 const mouseY = ref(0);
 const showFollower = ref(false);
 const dataInFollower = ref([]);
+
+// Two independent flags: is mouse over a trigger element, is mouse over the follower popup
+const isOverTrigger = ref(false);
+const isOverFollower = ref(false);
+let hideTimeout = null;
 
 const otherActivies = ref({});
 const otherActiviesNames = ref([]);
 const seminarActivitesStatistics = ref({});
 const seminarActivitesNames = ref([]);
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-const showVolaneFollower = (data, event) => {
-	dataInFollower.value = Array.isArray(data) ? data : [];
-	if (dataInFollower.value.length === 0) {
-		dataInFollower.value = [{ meno: "Žiadni ľudia", priezvisko: "" }];
-	}
+// ─── Follower helpers ────────────────────────────────────────────────────────
+
+/**
+ * Called on @mouseenter of a trigger element.
+ * Sets the data to display and marks that the mouse is over a trigger.
+ */
+const onTriggerEnter = (data, event) => {
+	isOverTrigger.value = true;
+	clearTimeout(hideTimeout);
+
+	const list = Array.isArray(data) ? data : [];
+	dataInFollower.value =
+		list.length > 0 ? list : [{ meno: "Žiadni ľudia", priezvisko: "" }];
+
 	mouseX.value = event.clientX;
 	mouseY.value = event.clientY;
 	showFollower.value = true;
 };
 
-const hideFollower = () => {
+/**
+ * Called on @mousemove of a trigger element.
+ * Keeps the follower positioned under the cursor while inside the trigger.
+ */
+const onTriggerMove = (event) => {
+	mouseX.value = event.clientX;
+	mouseY.value = event.clientY;
+};
+
+/**
+ * Called on @mouseleave of a trigger element.
+ * Starts the hide timer — cancelled if mouse enters the follower popup quickly.
+ */
+const onTriggerLeave = () => {
+	isOverTrigger.value = false;
+	scheduleHide();
+};
+
+/**
+ * Called on @mouseenter of the follower popup itself.
+ * Cancels any pending hide so the popup stays visible.
+ */
+const onFollowerEnter = () => {
+	isOverFollower.value = true;
+	clearTimeout(hideTimeout);
+};
+
+/**
+ * Called on @mouseleave of the follower popup.
+ * Starts the hide timer.
+ */
+const onFollowerLeave = () => {
+	isOverFollower.value = false;
+	scheduleHide();
+};
+
+/**
+ * Shared hide scheduler. Only hides if neither the trigger nor the follower
+ * is currently hovered after the delay.
+ */
+const scheduleHide = () => {
+	clearTimeout(hideTimeout);
 	hideTimeout = setTimeout(() => {
-		if (!isHoveringFollower.value) {
+		if (!isOverTrigger.value && !isOverFollower.value) {
 			showFollower.value = false;
 			dataInFollower.value = [];
 		}
-	}, 150);
+	}, 120);
 };
 
 const goToContact = (id) => {
 	router.push(`/contact/${id}`);
 };
 
-const formatDate = (date) => new Date(date).toLocaleDateString("sk-SK");
-
-// ─── Fetch (now supports multiple user IDs, sums results) ───────────────────
+// ─── Fetch ───────────────────────────────────────────────────────────────────
 const fetchData = async () => {
 	loadingStateCalendar.value = true;
 	const fromDate = new Date(dateRange.value.from);
@@ -718,7 +770,6 @@ const fetchData = async () => {
 	const from_date = fromDate.toISOString().split("T")[0];
 	const to_date = toDate.toISOString().split("T")[0];
 
-	// Determine which user IDs to fetch. null = own stats.
 	const userIdList = [
 		...(includeMyStats.value ? [null] : []),
 		...selectedUserIds.value,
@@ -730,7 +781,6 @@ const fetchData = async () => {
 	}
 
 	try {
-		// Fetch all endpoints for every selected user in parallel
 		const allResults = await Promise.all(
 			userIdList.map((uid) =>
 				Promise.all([
@@ -782,8 +832,6 @@ const fetchData = async () => {
 				]),
 			),
 		);
-
-		// ── Sum / merge results across users ──────────────────────────────────
 
 		// 1. telefonat-klient statistics
 		const sumStats = { called: 0, reached: 0, scheduled: 0 };
@@ -941,17 +989,6 @@ const updateDateRange = () => {
 	fetchData();
 };
 
-const showPohovoryFollower = (key, event) => {
-	if (!dataPohovory.value?.grouped_people?.[key]) {
-		dataInFollower.value = [{ meno: "Žiadni ľudia", priezvisko: "" }];
-	} else {
-		dataInFollower.value = dataPohovory.value.grouped_people[key];
-	}
-	mouseX.value = event.clientX;
-	mouseY.value = event.clientY;
-	showFollower.value = true;
-};
-
 onMounted(async () => {
 	updateDateRange();
 	await userStore.fetchSharedCalendarUsers();
@@ -960,6 +997,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
 	document.removeEventListener("click", handleClickOutside);
+	clearTimeout(hideTimeout);
 });
 </script>
 

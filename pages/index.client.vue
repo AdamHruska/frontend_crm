@@ -816,7 +816,7 @@ const fetchNeverCalledContacts = async () => {
 	await contactsStore.fetchContacts();
 
 	people.value = contactsStore.contacts.data
-		.filter((person) => person.first_event === 0)
+		.filter((person) => person.first_event === 0 && person.isNew === 1)
 		.map((person) => {
 			let cssClass = "";
 			if (person.first_event === 0) cssClass += "bg-green-200 ";

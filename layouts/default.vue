@@ -216,6 +216,27 @@
 						/>
 					</NuxtLink>
 				</UTooltip>
+
+				<UTooltip
+					text="Ohrievač"
+					:ui="{ background: '!bg-white', color: '' }"
+					class=""
+				>
+					<NuxtLink
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
+						:class="{
+							'bg-blue-700 text-gray-200': activeTab === 'ohrievac',
+						}"
+						to="/ohrievac"
+						@click="setActiveTab('ohrievac')"
+					>
+						<Icon
+							icon="material-symbols:calendar-check-outline-sharp"
+							style="font-size: 36px"
+							class="text-white"
+						/>
+					</NuxtLink>
+				</UTooltip>
 			</div>
 
 			<!-- Admin Navigation Items -->
