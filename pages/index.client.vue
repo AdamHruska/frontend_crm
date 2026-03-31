@@ -663,10 +663,11 @@ const closeMenuOnOutsideClick = (e) => {
 								syncAllToGoogle();
 								showMenuModal = false;
 							"
-							class="flex items-center gap-2 text-sm py-2 px-2 cursor-pointer rounded-md hover:bg-slate-100"
+							class="flex items-center gap-2 text-sm py-2 px-2 bg-slate-100 cursor-pointer rounded-md hover:bg-slate-200"
 						>
 							Uložiť kontakty do telefónu
 						</div>
+						<hr class="my-1 border-gray-200" />
 						<div
 							@click="
 								deleteAllFromGoogle();
