@@ -619,6 +619,7 @@ const closeMenuOnOutsideClick = (e) => {
 		<span v-if="deletingAll">⏳ Mažem...</span>
 		<span v-else>🗑️ Vymazať z Google</span>
 	</button> -->
+	skuskaskuskaskuskaskuskaskuskaskuskaskuskaskuska
 	<div class="">
 		<SelectedContactsComponent
 			v-if="showSelectedContactsBool"
