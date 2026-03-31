@@ -1,6 +1,6 @@
 <script setup>
 const config = useRuntimeConfig();
-
+//force redeploy
 import { useContactsStore } from "#imports";
 const contactsStore = useContactsStore();
 
