@@ -921,7 +921,9 @@ const closeMenuOnOutsideClick = (e) => {
 		</h3>
 
 		<h3
-			v-if="people[0]?.who_created_contact == userStore.user.id"
+			v-if="
+				people[0]?.who_created_contact == userStore.user.id && delegatedUser
+			"
 			class="bg-blue-300 px-4 py-2 rounded-lg font-semibold shadow-md"
 		>
 			Kontakt je delegovaný používateľovi
