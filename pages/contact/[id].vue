@@ -58,6 +58,22 @@ watch(
 	{ deep: true, immediate: true },
 );
 
+const delegatedUser = computed(() => {
+	const user = userStore.allUsers.find(
+		(user) => user.id == people.value[0]?.author_id,
+	);
+
+	return user ? `${user.first_name} ${user.last_name}` : "";
+});
+
+onMounted(() => {
+	document.addEventListener("click", closeMenuOnOutsideClick);
+});
+
+onUnmounted(() => {
+	document.removeEventListener("click", closeMenuOnOutsideClick);
+});
+
 const callListNames = ref([]);
 
 const sharedId = ref(null);
@@ -708,6 +724,139 @@ const setWrongNumber = async () => {
 const closeDiscardActivityModal = () => {
 	showDiscardActivityModal.value = false;
 };
+
+// const checkDuplicity = async () => {
+// 	authStore.loadToken();
+// 	const phone = people.value[0]?.cislo;
+
+// 	const responseData = await axios.get(
+// 		`${config.public.apiUrl}duplicate-check`,
+// 		{
+// 			params: {
+// 				cislo: phone, // ✅ correct
+// 			},
+// 			headers: {
+// 				Authorization: `Bearer ${authStore.token}`,
+// 			},
+// 		},
+// 	);
+// 	console.log(responseData);
+// };
+
+const checkDuplicity = async () => {
+	authStore.loadToken();
+	const phone = people.value[0]?.cislo;
+
+	try {
+		const responseData = await axios.get(
+			`${config.public.apiUrl}duplicate-check`,
+			{
+				params: { cislo: phone },
+				headers: { Authorization: `Bearer ${authStore.token}` },
+			},
+		);
+
+		toast.success("Kontakt nie je duplicitný", {
+			position: "top-right",
+			timeout: 5000,
+		});
+	} catch (error) {
+		if (error.response?.status === 409) {
+			const data = error.response.data;
+
+			if (data.type === "own") {
+				toast.warning("Kontakt už existuje vo vašej databáze", {
+					position: "top-right",
+					timeout: 5000,
+				});
+				return;
+			}
+
+			if (data.type === "other_users" && data.duplicates?.length > 0) {
+				// Build note text
+				const now = new Date().toLocaleDateString("sk-SK");
+				let noteLines = [`[Kontrola duplicity ${now}]`];
+
+				for (const dup of data.duplicates) {
+					noteLines.push(
+						`• Používateľ: ${dup.username} | Posledná aktivita: ${dup.last_activity}`,
+					);
+				}
+
+				const duplicateNote = noteLines.join("\n");
+
+				// Append to existing note
+				const existingNote = people.value[0]?.poznamka || "";
+				const newNote = existingNote
+					? `${existingNote}\n\n${duplicateNote}`
+					: duplicateNote;
+
+				// Update locally
+				people.value[0].poznamka = newNote;
+
+				// Save to backend
+				try {
+					await axios.patch(
+						`${config.public.apiUrl}contact/${id}`,
+						{ poznamka: newNote },
+						{ headers: { Authorization: `Bearer ${authStore.token}` } },
+					);
+					toast.warning(`Duplicita nájdená! Poznámka bola aktualizovaná.`, {
+						position: "top-right",
+						timeout: 7000,
+					});
+				} catch (saveError) {
+					console.error("Error saving note:", saveError);
+					toast.error("Duplicita nájdená, ale poznámku sa nepodarilo uložiť.", {
+						position: "top-right",
+						timeout: 5000,
+					});
+				}
+			}
+		} else {
+			console.error("Chyba pri kontrole duplicity:", error);
+			toast.error("Chyba pri kontrole duplicity", {
+				position: "top-right",
+				timeout: 5000,
+			});
+		}
+	}
+};
+
+const syncingGoogle = ref(false);
+
+const syncToGoogle = async () => {
+	syncingGoogle.value = true;
+	try {
+		await axios.post(
+			`${config.public.apiUrl}google/contacts/sync`,
+			{
+				userId: user_id.value,
+				contactId: id,
+			},
+			{
+				headers: { Authorization: `Bearer ${authStore.token}` },
+			},
+		);
+		toast.success("Kontakt bol uložený do Google Contacts!", {
+			position: "top-right",
+			timeout: 4000,
+		});
+	} catch (error) {
+		const msg = error.response?.data?.error ?? "Chyba pri synchronizácii";
+		toast.error(msg, { position: "top-right", timeout: 5000 });
+	} finally {
+		syncingGoogle.value = false;
+	}
+};
+
+const actionsMenuOpen = ref(false);
+
+const closeMenuOnOutsideClick = (e) => {
+	if (!e.target.closest(".menu-dropdown-wrapper")) {
+		actionsMenuOpen.value = false;
+	}
+};
 </script>
 
 <template>
@@ -771,8 +920,104 @@ const closeDiscardActivityModal = () => {
 			<span class="underline">{{ sharedAuthorName }}</span>
 		</h3>
 
+		<h3
+			v-if="people[0]?.who_created_contact == userStore.user.id"
+			class="bg-blue-300 px-4 py-2 rounded-lg font-semibold shadow-md"
+		>
+			Kontakt je delegovaný používateľovi
+			<span class="underline">{{ delegatedUser }}</span>
+		</h3>
+
 		<div class="flex gap-2">
-			<div>
+			<div class="relative menu-dropdown-wrapper">
+				<button
+					@click="actionsMenuOpen = !actionsMenuOpen"
+					class="px-4 py-2 bg-green-400 text-black rounded-lg font-semibold shadow-md flex items-center gap-2"
+				>
+					Akcie
+					<Icon
+						:name="
+							actionsMenuOpen
+								? 'heroicons:chevron-up-20-solid'
+								: 'heroicons:chevron-down-20-solid'
+						"
+						size="18"
+					/>
+				</button>
+
+				<div
+					v-if="actionsMenuOpen"
+					class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 z-50 flex flex-col overflow-hidden"
+				>
+					<button
+						class="px-4 py-3 text-left hover:bg-gray-100 font-semibold text-gray-800 border-b border-gray-100"
+						@click="
+							checkDuplicity();
+							actionsMenuOpen = false;
+						"
+					>
+						🔍 Kontrola duplicity
+					</button>
+
+					<button
+						class="px-4 py-3 text-left hover:bg-gray-100 font-semibold text-gray-800 border-b border-gray-100 disabled:opacity-50"
+						:disabled="syncingGoogle"
+						@click="
+							syncToGoogle();
+							actionsMenuOpen = false;
+						"
+					>
+						<span v-if="syncingGoogle">⏳ Synchronizujem...</span>
+						<span v-else>📱 Uložiť do telefónu</span>
+					</button>
+
+					<button
+						v-if="showWrongNumberButton"
+						class="px-4 py-3 text-left hover:bg-red-50 font-semibold text-red-600 border-b border-gray-100"
+						@click="
+							setWrongNumber();
+							actionsMenuOpen = false;
+						"
+					>
+						❌ Zlé tel. číslo
+					</button>
+					<button
+						v-else
+						class="px-4 py-3 text-left hover:bg-blue-50 font-semibold text-blue-600 border-b border-gray-100"
+						@click="
+							setWrongNumber();
+							actionsMenuOpen = false;
+						"
+					>
+						✅ Tel. číslo bolo opravené
+					</button>
+
+					<button
+						class="px-4 py-3 text-left hover:bg-green-50 font-semibold text-green-700"
+						@click="
+							changeCallListBool();
+							actionsMenuOpen = false;
+						"
+					>
+						📋 Pridať do call listu
+					</button>
+				</div>
+			</div>
+			<!-- <div>
+				<button
+					class="px-4 bg-yellow-200 py-2 rounded-lg font-semibold shadow-md mr-5"
+					@click="checkDuplicity()"
+				>
+					<span>Kontrola duplicity</span>
+				</button>
+				<button
+					class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg font-semibold shadow-md mr-2 flex items-center gap-2 disabled:opacity-50"
+					:disabled="syncingGoogle"
+					@click="syncToGoogle"
+				>
+					<span v-if="syncingGoogle">⏳ Synchronizujem...</span>
+					<span v-else>📱 Uložiť do Google</span>
+				</button>
 				<button
 					v-if="showWrongNumberButton"
 					class="bg-red-500 hover:bg-red-400 px-4 py-2 rounded-lg font-semibold shadow-md mr-5"
@@ -794,7 +1039,7 @@ const closeDiscardActivityModal = () => {
 				@click="changeCallListBool"
 			>
 				Pridať do call listu
-			</button>
+			</button> -->
 		</div>
 	</div>
 	<UTable
@@ -876,7 +1121,7 @@ const closeDiscardActivityModal = () => {
 	</UTable>
 
 	<div class="ml-10 mt-4 shadow-md flex gap-8 flex-col max-w-[83.5%]">
-		<div class="max-w-[450px]">
+		<div class="max-w-[450px]" v-if="people[0]?.current_advisor">
 			<div class="bg-gray-200 text-black text-xl font-semibold p-2">
 				Aktuálny poradca
 			</div>
@@ -886,7 +1131,7 @@ const closeDiscardActivityModal = () => {
 			</div>
 		</div>
 
-		<div class="">
+		<div class="" v-if="people[0]?.poznamka">
 			<div class="bg-gray-200 text-black text-xl font-semibold p-2">
 				Poznamka
 			</div>

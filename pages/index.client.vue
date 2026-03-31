@@ -81,43 +81,28 @@ const toggleWrongNumberFilter = async () => {
 
 	contactsStore.loadingState = false;
 };
+
 const filterNeverAnswered = ref(false);
 
-const toggleNeverAnsweredFilter = async () => {
-	filterNeverAnswered.value = !filterNeverAnswered.value;
-
-	if (filterNeverAnswered.value) {
-		contactsStore.searchQuery = "";
-		await fetchNeverAnsweredContacts();
-	} else {
-		contactsStore.searchQuery = "";
-		await contactsStore.fetchContacts();
-
-		people.value = contactsStore.contacts.data.map((person) => {
-			let cssClass = "";
-			if (person.first_event === 0) cssClass += "bg-green-200 ";
-			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
-			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
-			return { ...person, class: cssClass.trim() };
-		});
-
-		page.value = contactsStore.contacts.current_page;
-	}
-};
-
-const fetchNeverAnsweredContacts = async () => {
+const fetchNeverAnsweredContacts = async (filterType = null) => {
 	await contactsStore.fetchContacts({
 		filter: "never_answered",
 	});
 
 	people.value = contactsStore.contacts.data
-		.filter((person) => person.only_called_never_answered === 1)
+		.filter((person) => {
+			if (person.only_called_never_answered !== 1) return false;
+			if (filterType === "clients")
+				return person.isContact == 1 && person.isCoWorker == 0;
+			if (filterType === "coworkers")
+				return person.isCoWorker == 1 && person.isContact == 0;
+			return true;
+		})
 		.map((person) => {
 			let cssClass = "";
 			if (person.first_event === 0) cssClass += "bg-green-200 ";
 			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
 			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
-
 			return { ...person, class: cssClass.trim() };
 		});
 
@@ -126,7 +111,7 @@ const fetchNeverAnsweredContacts = async () => {
 
 const toggleCallList = async () => {
 	if (selected.value.length > 0) {
-		cancleCallListForm(); // Show the form
+		cancleCallListForm();
 	}
 };
 
@@ -135,12 +120,10 @@ const toggleCheckbox = (id) => {
 	if (person) {
 		const index = selected.value.findIndex((p) => p.id === id);
 		if (index === -1) {
-			//Adding checked contacts
 			selected.value.push(person);
 			contactsStore.selectedContacts.push(person);
 			console.log("added contacts in store:", contactsStore.selectedContacts);
 		} else {
-			//Deleting checked contacts
 			selected.value.splice(index, 1);
 			contactsStore.selectedContacts.splice(index, 1);
 			console.log("Deleted contacts in store:", contactsStore.selectedContacts);
@@ -158,27 +141,12 @@ function addPerson(addedPeople) {
 
 	if (addedPeople) {
 		contactsStore.addToContactsStore(addedPeople);
-		// Refresh the local people ref with the updated store data
-		//people.value = contactsStore.contacts.data;
 		people.value = contactsStore.contacts.data.map((person) => {
 			let cssClass = "";
-
-			if (person.first_event === 0) {
-				cssClass += "bg-green-200 ";
-			}
-
-			if (person.only_called_never_answered === 1) {
-				cssClass += "bg-blue-200 ";
-			}
-
-			if (person.wrong_number === 1) {
-				cssClass += "bg-orange-300 ";
-			}
-
-			return {
-				...person,
-				class: cssClass.trim(),
-			};
+			if (person.first_event === 0) cssClass += "bg-green-200 ";
+			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
+			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
+			return { ...person, class: cssClass.trim() };
 		});
 	}
 }
@@ -188,28 +156,15 @@ function alterPerson() {
 	console.log(showAlterPesonForm.value);
 }
 
-// const findPerson = async (id) => {
-// 	const response = await axios.get(`${config.public.apiUrl}contact/${id}`, {
-// 		headers: {
-// 			Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-// 		},
-// 	});
-// 	single_contact.value = response.data.contact;
-// 	alterPerson();
-// };
-
 const findPerson = async (id) => {
 	try {
-		// First, try to find the contact in the local store
 		const contactFromStore = contactsStore.contacts.data.find(
 			(contact) => contact.id === id,
 		);
 
 		if (contactFromStore) {
-			// Use contact from store if found
 			single_contact.value = { ...contactFromStore };
 		} else {
-			// Fetch contact from API if not in store
 			const response = await axios.get(`${config.public.apiUrl}contact/${id}`, {
 				headers: {
 					Authorization: `Bearer ${sessionStorage.getItem("token")}`,
@@ -218,7 +173,6 @@ const findPerson = async (id) => {
 			single_contact.value = response.data.contact;
 		}
 
-		// Open the alter person form
 		alterPerson();
 	} catch (error) {
 		console.error("Error finding person:", error);
@@ -233,38 +187,25 @@ const deletePerson = async (id) => {
 
 token.value = sessionStorage.getItem("token");
 
+onUnmounted(() => {
+	document.removeEventListener("click", closeMenuOnOutsideClick);
+});
+
 onMounted(async () => {
+	document.addEventListener("click", closeMenuOnOutsideClick);
 	try {
 		console.log("Fetching contacts...");
-		// Fetch the contacts from the API
 		if (contactsStore.contacts.length === 0) {
 			await contactsStore.fetchContacts();
 		}
-		// people.value = contactsStore.contacts.data;
 
 		people.value = contactsStore.contacts.data.map((person) => {
 			let cssClass = "";
 			console.log("person value", person);
-
-			if (person.first_event === 0) {
-				cssClass += "bg-green-200 ";
-			}
-
-			if (person.only_called_never_answered === 1) {
-				cssClass += "bg-blue-200 ";
-			}
-
-			if (person.first_event === 0) {
-				cssClass += "bg-green-200 ";
-			}
-
-			if (person.wrong_number === 1) {
-				cssClass += "bg-orange-300 ";
-			}
-			return {
-				...person,
-				class: cssClass.trim(),
-			};
+			if (person.first_event === 0) cssClass += "bg-green-200 ";
+			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
+			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
+			return { ...person, class: cssClass.trim() };
 		});
 
 		console.log("poeple value", people.value);
@@ -273,7 +214,6 @@ onMounted(async () => {
 	}
 
 	try {
-		// Fetch the useer ID from pinia
 		await userStore.fetchUser();
 		user_id.value = userStore.user.id;
 		console.log(user_id.value);
@@ -281,7 +221,6 @@ onMounted(async () => {
 		console.error("Error:", error);
 	}
 
-	// Fetch the call list names
 	callListNames.value = await axios.get(`${config.public.apiUrl}call-lists`, {
 		headers: {
 			Authorization: `Bearer ${authStore.token}`,
@@ -317,54 +256,6 @@ const handleSearchResults = async (results) => {
 	}
 };
 
-// const handleSearchResults = (results) => {
-// 	// If results is an array (search results), update people
-// 	if (Array.isArray(results)) {
-// 		contactsStore.contacts = {
-// 			...contactsStore.contacts,
-// 			data: results,
-// 		};
-
-// 		people.value = results.map((person) => {
-// 			let cssClass = "";
-// 			if (person.first_event === 0) {
-// 				cssClass += "bg-green-200 ";
-// 			}
-// 			if (person.only_called_never_answered === 1) {
-// 				cssClass += "bg-blue-200 ";
-// 			}
-
-// 			if (person.wrong_number === 1) {
-// 				cssClass += "bg-orange-300 ";
-// 			}
-
-// 			return {
-// 				...person,
-// 				class: cssClass.trim(),
-// 			};
-// 		});
-// 	}
-// 	// If results is paginated data (from store), use the data property
-// 	else if (results && results.data) {
-// 		people.value = results.data.map((person) => {
-// 			let cssClass = "";
-// 			if (person.first_event === 0) {
-// 				cssClass += "bg-green-200 ";
-// 			}
-// 			if (person.only_called_never_answered === 1) {
-// 				cssClass += "bg-blue-200 ";
-// 			}
-// 			if (person.wrong_number === 1) {
-// 				cssClass += "bg-orange-300 ";
-// 			}
-// 			return {
-// 				...person,
-// 				class: cssClass.trim(),
-// 			};
-// 		});
-// 	}
-// };
-
 const detailView = (id) => {
 	router.push(`/contact/${id}`);
 };
@@ -375,48 +266,19 @@ const detailViewNewTab = (id) => {
 
 const onAuxClick = (event, id) => {
 	if (event.button === 1) {
-		// middle mouse button
 		event.preventDefault();
 		detailViewNewTab(id);
 	}
 };
 
 const columns = [
-	{
-		key: "meno",
-		label: "Meno",
-		class: "w-[140px]",
-	},
-	{
-		key: "priezvisko",
-		label: "Priezvisko",
-		class: "w-[160px]",
-	},
-	{
-		key: "cislo",
-		label: "tel. číslo",
-		class: "w-[140px]",
-	},
-	{
-		key: "odporucitel",
-		label: "Odporucitel",
-		class: "w-[160px]",
-	},
-	{
-		key: "poznamka",
-		label: "Poznámka",
-		class: "w-[400px]", // 👈 wider column
-	},
-	{
-		key: "actions",
-		class: "w-[260px]",
-	},
-	{
-		key: "checkbox",
-		label: "",
-		type: "checkbox",
-		class: "w-[60px]",
-	},
+	{ key: "meno", label: "Meno", class: "w-[140px]" },
+	{ key: "priezvisko", label: "Priezvisko", class: "w-[160px]" },
+	{ key: "cislo", label: "tel. číslo", class: "w-[140px]" },
+	{ key: "odporucitel", label: "Odporucitel", class: "w-[160px]" },
+	{ key: "poznamka", label: "Poznámka", class: "w-[400px]" },
+	{ key: "actions", class: "w-[260px]" },
+	{ key: "checkbox", label: "", type: "checkbox", class: "w-[60px]" },
 ];
 
 const items = (row) => [
@@ -432,7 +294,6 @@ const items = (row) => [
 			label: "Show Contact Details",
 			icon: "i-heroicons-information-circle-20-solid",
 			click: () => {
-				// Navigate to the contact details page
 				router.push(`/contact/${row.id}`);
 			},
 		},
@@ -456,61 +317,9 @@ const items = (row) => [
 	],
 ];
 
-// PAGINATION
-// const nextPage = async () => {
-// 	await contactsStore.nextPage();
-// 	page.value = contactsStore.contacts.current_page;
-// 	//people.value = contactsStore.contacts.data;
-// 	people.value = contactsStore.contacts.data.map((person) => {
-// 		let cssClass = "";
-
-// 		if (person.first_event === 0) {
-// 			cssClass += "bg-green-200 ";
-// 		}
-
-// 		if (person.only_called_never_answered === 1) {
-// 			cssClass += "bg-blue-200 ";
-// 		}
-// 		if (person.wrong_number === 1) {
-// 			cssClass += "bg-orange-300 ";
-// 		}
-// 		return {
-// 			...person,
-// 			class: cssClass.trim(),
-// 		};
-// 	});
-// };
-
-// const prevPage = async () => {
-// 	await contactsStore.prevPage();
-// 	page.value = contactsStore.contacts.current_page;
-// 	//people.value = contactsStore.contacts.data;
-
-// 	people.value = contactsStore.contacts.data.map((person) => {
-// 		let cssClass = "";
-
-// 		if (person.first_event === 0) {
-// 			cssClass += "bg-green-200 ";
-// 		}
-
-// 		if (person.only_called_never_answered === 1) {
-// 			cssClass += "bg-blue-200 ";
-// 		}
-// 		if (person.wrong_number === 1) {
-// 			cssClass += "bg-orange-300 ";
-// 		}
-
-// 		return {
-// 			...person,
-// 			class: cssClass.trim(),
-// 		};
-// 	});
-// };
-
 const nextPage = async () => {
 	if (filterWrongNumbers.value) {
-		await contactsStore.nextPage(); // this updates contactsStore.contacts
-		// re-fetch with current page from the bad phone endpoint instead
+		await contactsStore.nextPage();
 		const response = await axios.get(
 			`${config.public.apiUrl}search-bad-phone-contacts`,
 			{
@@ -530,7 +339,6 @@ const nextPage = async () => {
 		}));
 		return;
 	}
-	// original logic
 	await contactsStore.nextPage();
 	page.value = contactsStore.contacts.current_page;
 	people.value = contactsStore.contacts.data.map((person) => {
@@ -542,79 +350,19 @@ const nextPage = async () => {
 	});
 };
 
-// const updatePerson = async (updatedContact) => {
-// 	try {
-// 		await contactsStore.updatePerson(updatedContact);
-// 		showAlterPesonForm.value = false;
-// 		people.value = contactsStore.contacts.data;
-// 		alert("Kontakt bol upravený");
-// 	} catch (error) {
-// 		// More detailed error handling
-// 		if (error.response) {
-// 			// The request was made and the server responded with a status code
-// 			// that falls out of the range of 2xx
-// 			alert(
-// 				`Chyba pri úprave kontaktu: ${
-// 					error.response.data.message || "Neznáma chyba"
-// 				}`
-// 			);
-// 		} else if (error.request) {
-// 			// The request was made but no response was received
-// 			alert("Nepodarilo sa spojiť so serverom");
-// 		} else {
-// 			// Something happened in setting up the request that triggered an Error
-// 			alert("Nastala chyba pri spracovaní požiadavky");
-// 		}
-// 		console.error("Detailed error:", error);
-// 	}
-// };
-// const updatePerson = async (updatedContact) => {
-// 	// try {
-// 	// 	// Call the store method to update the contact in the backend
-// 	// 	await contactsStore.updatePerson(updatedContact);
-// 	// 	// Update the `people` array with the new data
-// 	// 	const index = people.value.findIndex(
-// 	// 		(person) => person.id === updatedContact.id
-// 	// 	);
-// 	// 	if (index !== -1) {
-// 	// 		people.value[index] = { ...people.value[index], ...updatedContact };
-// 	// 	}
-// 	// 	// Close the form
-// 	// 	showAlterPesonForm.value = false;
-// 	// 	alert("Kontakt bol upravený");
-// 	// } catch (error) {
-// 	// 	// Handle errors with appropriate alerts
-// 	// 	alert(`Error updating person: ${error.message || "Unknown error"}`);
-// 	// 	console.error(error);
-// 	// }
-
-// 	//useContactsStore.updateContactInStore(updatedContact);
-// 	people.value = contactsStore.contacts.data;
-// 	showAlterPesonForm.value = false;
-// };
-
 const updatePerson = async (updatedContact) => {
 	try {
-		// Call the store method to update the contact
 		await contactsStore.updatePerson(updatedContact);
 
-		// Directly update the local people array
 		const index = people.value.findIndex(
 			(person) => person.id === updatedContact.id,
 		);
 
 		if (index !== -1) {
-			// Replace the old contact with the updated contact
 			people.value[index] = { ...updatedContact };
 		}
 
-		// Close the alter person form
 		showAlterPesonForm.value = false;
-
-		// Optional: Refresh the entire contacts list to ensure consistency
-		// await contactsStore.fetchContacts();
-		// people.value = contactsStore.contacts.data;
-
 		console.log("Contact updated successfully");
 	} catch (error) {
 		console.error("Error updating contact:", error);
@@ -623,10 +371,7 @@ const updatePerson = async (updatedContact) => {
 };
 
 const uncheckAll = () => {
-	// Clear the selected array
 	selected.value = [];
-
-	// Find all checkboxes and uncheck them
 	const checkboxes = document.querySelectorAll('input[type="checkbox"]');
 	checkboxes.forEach((checkbox) => {
 		checkbox.checked = false;
@@ -649,65 +394,33 @@ const totalPages = computed(() => contactsStore.contacts.last_page || 1);
 const goToPage = async (pageNum) => {
 	await contactsStore.goToPage(pageNum);
 	page.value = contactsStore.contacts.current_page;
-	//people.value = contactsStore.contacts.data;
-
 	people.value = contactsStore.contacts.data.map((person) => {
 		let cssClass = "";
-
-		if (person.first_event === 0) {
-			cssClass += "bg-green-200 ";
-		}
-
-		if (person.only_called_never_answered === 1) {
-			cssClass += "bg-blue-200 ";
-		}
-
-		if (person.wrong_number === 1) {
-			cssClass += "bg-orange-300 ";
-		}
-		return {
-			...person,
-			class: cssClass.trim(),
-		};
+		if (person.first_event === 0) cssClass += "bg-green-200 ";
+		if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
+		if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
+		return { ...person, class: cssClass.trim() };
 	});
 };
 
 const pageNumbers = computed(() => {
 	const total = totalPages.value;
 	const current = contactsStore.page;
-	const delta = 2; // Number of pages to show before and after current page
+	const delta = 2;
 
-	// If we have 7 or fewer pages, show all of them
 	if (total <= 7) {
 		return Array.from({ length: total }, (_, i) => i + 1);
 	}
 
-	// Calculate range to display
 	let range = [];
-
-	// Always include first page
 	range.push(1);
 
-	// Calculate start and end of range around current page
 	const rangeStart = Math.max(2, current - delta);
 	const rangeEnd = Math.min(total - 1, current + delta);
 
-	// Add ellipsis if needed before rangeStart
-	if (rangeStart > 2) {
-		range.push("...");
-	}
-
-	// Add pages around current page
-	for (let i = rangeStart; i <= rangeEnd; i++) {
-		range.push(i);
-	}
-
-	// Add ellipsis if needed after rangeEnd
-	if (rangeEnd < total - 1) {
-		range.push("...");
-	}
-
-	// Always include last page
+	if (rangeStart > 2) range.push("...");
+	for (let i = rangeStart; i <= rangeEnd; i++) range.push(i);
+	if (rangeEnd < total - 1) range.push("...");
 	range.push(total);
 
 	return range;
@@ -728,9 +441,7 @@ const handleMouseDown = (event) => {
 const fetchCallLists = async () => {
 	try {
 		const response = await axios.get(`${config.public.apiUrl}call-lists`, {
-			headers: {
-				Authorization: `Bearer ${authStore.token}`,
-			},
+			headers: { Authorization: `Bearer ${authStore.token}` },
 		});
 		callListNames.value = response.data;
 	} catch (error) {
@@ -739,9 +450,7 @@ const fetchCallLists = async () => {
 };
 
 const showDelegateForm = ref(false);
-
 const showShareContacts = ref(false);
-
 const showFilterModal = ref(false);
 const activeFilter = ref(null);
 
@@ -751,12 +460,9 @@ function toggleShowFilterModal() {
 
 const selectFilter = async (filter) => {
 	if (activeFilter.value === filter || filter === "none") {
-		// unselect filter → reset to default
 		activeFilter.value = null;
-
 		contactsStore.searchQuery = "";
 		await contactsStore.fetchContacts();
-
 		people.value = contactsStore.contacts.data.map((person) => {
 			let cssClass = "";
 			if (person.first_event === 0) cssClass += "bg-green-200 ";
@@ -764,73 +470,155 @@ const selectFilter = async (filter) => {
 			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
 			return { ...person, class: cssClass.trim() };
 		});
-
 		page.value = contactsStore.contacts.current_page;
 	} else {
-		// select filter → toggle modal only when clicking from modal
 		activeFilter.value = filter;
 
 		if (filter === "wrong_number") {
 			await toggleWrongNumberFilter();
 		}
-
-		if (filter === "never_answered") {
-			await toggleNeverAnsweredFilter();
+		if (filter === "never_answered_clients") {
+			contactsStore.searchQuery = "";
+			await fetchNeverAnsweredContacts("clients");
+		}
+		if (filter === "never_answered_coworkers") {
+			contactsStore.searchQuery = "";
+			await fetchNeverAnsweredContacts("coworkers");
+		}
+		if (filter === "never_called_clients") {
+			contactsStore.searchQuery = "";
+			await fetchNeverCalledContacts("clients");
+		}
+		if (filter === "never_called_coworkers") {
+			contactsStore.searchQuery = "";
+			await fetchNeverCalledContacts("coworkers");
 		}
 
-		if (filter === "never_called") {
-			await toggleNeverCalledFilter();
-		}
-
-		// toggle modal only here
 		toggleShowFilterModal();
 	}
 };
 
 const filterNeverCalled = ref(false);
 
-const toggleNeverCalledFilter = async () => {
-	filterNeverCalled.value = !filterNeverCalled.value;
-
-	if (filterNeverCalled.value) {
-		contactsStore.searchQuery = "";
-		await fetchNeverCalledContacts();
-	} else {
-		contactsStore.searchQuery = "";
-		await contactsStore.fetchContacts();
-
-		people.value = contactsStore.contacts.data.map((person) => {
-			let cssClass = "";
-			if (person.first_event === 0) cssClass += "bg-green-200 ";
-			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
-			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
-
-			return { ...person, class: cssClass.trim() };
-		});
-
-		page.value = contactsStore.contacts.current_page;
-	}
-};
-
-const fetchNeverCalledContacts = async () => {
+const fetchNeverCalledContacts = async (filterType = null) => {
 	await contactsStore.fetchContacts();
 
 	people.value = contactsStore.contacts.data
-		.filter((person) => person.first_event === 0 && person.isNew === 1)
+		.filter((person) => {
+			if (person.first_event !== 0 || person.isNew !== 1) return false;
+			if (filterType === "clients")
+				return person.isContact == 1 && person.isCoWorker == 0;
+			if (filterType === "coworkers")
+				return person.isCoWorker == 1 && person.isContact == 0;
+			return true;
+		})
 		.map((person) => {
 			let cssClass = "";
 			if (person.first_event === 0) cssClass += "bg-green-200 ";
 			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
 			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
-
 			return { ...person, class: cssClass.trim() };
 		});
 
 	page.value = contactsStore.contacts.current_page;
 };
+
+const syncingAll = ref(false);
+const deletingAll = ref(false);
+const syncStats = ref(null);
+
+const syncAllToGoogle = async () => {
+	if (
+		!confirm("Synchronizovať všetky kontakty do Google? Môže to chvíľu trvať.")
+	)
+		return;
+	syncingAll.value = true;
+	syncStats.value = null;
+	try {
+		const res = await axios.post(
+			`${config.public.apiUrl}google/contacts/sync-all`,
+			{
+				userId: user_id.value,
+			},
+			{
+				headers: { Authorization: `Bearer ${authStore.token}` },
+			},
+		);
+		syncStats.value = res.data;
+		toast.success(
+			`✅ Synchronizovaných ${res.data.synced}/${res.data.total} kontaktov`,
+			{
+				position: "top-right",
+				timeout: 5000,
+			},
+		);
+	} catch (error) {
+		toast.error(error.response?.data?.error ?? "Chyba pri synchronizácii", {
+			position: "top-right",
+			timeout: 5000,
+		});
+	} finally {
+		syncingAll.value = false;
+	}
+};
+
+const deleteAllFromGoogle = async () => {
+	if (
+		!confirm(
+			"Naozaj chcete vymazať VŠETKY kontakty z Google Contacts? Táto akcia je nevratná.",
+		)
+	)
+		return;
+	deletingAll.value = true;
+	try {
+		const res = await axios.delete(
+			`${config.public.apiUrl}google/contacts/delete-all`,
+			{
+				data: { userId: user_id.value },
+				headers: { Authorization: `Bearer ${authStore.token}` },
+			},
+		);
+		toast.success(`🗑️ Vymazaných ${res.data.deleted} kontaktov z Google`, {
+			position: "top-right",
+			timeout: 5000,
+		});
+	} catch (error) {
+		toast.error(error.response?.data?.error ?? "Chyba pri mazaní", {
+			position: "top-right",
+			timeout: 5000,
+		});
+	} finally {
+		deletingAll.value = false;
+	}
+};
+
+const showMenuModal = ref(false);
+
+const closeMenuOnOutsideClick = (e) => {
+	if (!e.target.closest(".menu-dropdown-wrapper")) {
+		showMenuModal.value = false;
+	}
+};
 </script>
 
 <template>
+	<!-- <button
+		class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg font-semibold shadow-md flex items-center gap-2 disabled:opacity-50"
+		:disabled="syncingAll"
+		@click="syncAllToGoogle"
+	>
+		<span v-if="syncingAll">⏳ Synchronizujem...</span>
+		<span v-else>☁️ Sync všetkých do Google</span>
+	</button>
+
+	<button
+		class="bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg font-semibold shadow-md flex items-center gap-2 disabled:opacity-50"
+		:disabled="deletingAll"
+		@click="deleteAllFromGoogle"
+	>
+		<span v-if="deletingAll">⏳ Mažem...</span>
+		<span v-else>🗑️ Vymazať z Google</span>
+	</button> -->
 	<div class="">
 		<SelectedContactsComponent
 			v-if="showSelectedContactsBool"
@@ -845,28 +633,6 @@ const fetchNeverCalledContacts = async () => {
 			</div>
 
 			<div class="flex items-center mb-2">
-				<!-- <UTooltip
-					:text="
-						filterWrongNumbers
-							? 'Zobraziť všetky kontakty'
-							: 'Filtrovanie zlých čísel'
-					"
-					:ui="{ background: '!bg-white', color: '' }"
-					class="cursor-pointer flex items-center justify-center w-11 h-11 rounded-lg shadow-xl mr-4 mt-8"
-					:class="
-						filterWrongNumbers
-							? 'bg-orange-400 hover:bg-orange-500'
-							: 'bg-gray-300 hover:bg-gray-400'
-					"
-				>
-					<Icon
-						@click="toggleWrongNumberFilter"
-						icon="material-symbols:filter-alt"
-						style="font-size: 36px"
-						class="text-white"
-					/>
-				</UTooltip> -->
-
 				<Icon
 					v-if="activeFilter !== null"
 					@click="selectFilter('none')"
@@ -874,6 +640,57 @@ const fetchNeverCalledContacts = async () => {
 					style="font-size: 36px"
 					class="text-red mt-7 mr-4 cursor-pointer hover:scale-110"
 				/>
+
+				<div class="relative menu-dropdown-wrapper">
+					<UTooltip
+						text="Možnosti"
+						class="cursor-pointer flex items-center justify-center w-11 h-11 rounded-lg shadow-xl mr-4 mt-8 bg-gray-300 hover:bg-gray-400"
+					>
+						<Icon
+							@click="showMenuModal = !showMenuModal"
+							icon="material-symbols:more-vert"
+							style="font-size: 36px"
+							class="text-white"
+						/>
+					</UTooltip>
+
+					<div
+						v-if="showMenuModal"
+						class="absolute right-0 mt-2 w-60 bg-white shadow-xl rounded-lg border p-2 z-50"
+					>
+						<div
+							@click="
+								syncAllToGoogle();
+								showMenuModal = false;
+							"
+							class="flex items-center gap-2 text-sm py-2 px-2 cursor-pointer rounded-md hover:bg-slate-100"
+						>
+							Uložiť kontakty do telefónu
+						</div>
+						<div
+							@click="
+								deleteAllFromGoogle();
+								showMenuModal = false;
+							"
+							class="flex items-center gap-2 text-sm py-2 px-2 cursor-pointer rounded-md hover:bg-slate-100 text-red-600"
+						>
+							🗑️ Vymazať kontakty z telefónu
+						</div>
+						<hr class="my-1 border-gray-200" />
+						<div class="mt-2">
+							<ContactImportComponent class="" />
+						</div>
+						<div
+							@click="
+								showSelectedContacts();
+								showMenuModal = false;
+							"
+							class="flex items-center gap-2 text-md py-[8px] px-2 mt-2 cursor-pointer rounded-md hover:bg-slate-100 bg-green-400"
+						>
+							Zobraziť zakliknuté kontakty
+						</div>
+					</div>
+				</div>
 
 				<div class="relative">
 					<UTooltip
@@ -891,38 +708,62 @@ const fetchNeverCalledContacts = async () => {
 					<!-- small modal under button -->
 					<div
 						v-if="showFilterModal"
-						class="absolute right-0 mt-2 w-56 bg-white shadow-xl rounded-lg border p-3 z-50"
+						class="absolute right-0 mt-2 w-64 bg-white shadow-xl rounded-lg border p-3 z-50"
 					>
 						<p class="text-sm font-semibold mb-2 px-1">Filter</p>
 
 						<div
-							@click="selectFilter('never_called')"
+							@click="selectFilter('never_called_clients')"
 							:class="[
-								'flex items-center gap-2 text-sm py-1 px-1 cursor-pointer rounded-md',
-								activeFilter === 'never_called'
+								'flex items-center gap-2 text-sm py-1.5 px-1 cursor-pointer rounded-md',
+								activeFilter === 'never_called_clients'
 									? 'bg-slate-200'
 									: 'hover:bg-slate-200',
 							]"
 						>
-							Nikdy nevolané čísla
+							Nikdy nevolané čísla klienti
 						</div>
 
 						<div
-							@click="selectFilter('never_answered')"
+							@click="selectFilter('never_called_coworkers')"
 							:class="[
-								'flex items-center gap-2 text-sm py-1 px-1 cursor-pointer rounded-md',
-								activeFilter === 'never_answered'
+								'flex items-center gap-2 text-sm py-1.5 px-1 cursor-pointer rounded-md',
+								activeFilter === 'never_called_coworkers'
 									? 'bg-slate-200'
 									: 'hover:bg-slate-200',
 							]"
 						>
-							Nikdy nezdvihli
+							Nikdy nevolané čísla spolupracovníci
+						</div>
+
+						<div
+							@click="selectFilter('never_answered_clients')"
+							:class="[
+								'flex items-center gap-2 text-sm py-1.5 px-1 cursor-pointer rounded-md',
+								activeFilter === 'never_answered_clients'
+									? 'bg-slate-200'
+									: 'hover:bg-slate-200',
+							]"
+						>
+							Nikdy nezdvihli klienti
+						</div>
+
+						<div
+							@click="selectFilter('never_answered_coworkers')"
+							:class="[
+								'flex items-center gap-2 text-sm py-1.5 px-1 cursor-pointer rounded-md',
+								activeFilter === 'never_answered_coworkers'
+									? 'bg-slate-200'
+									: 'hover:bg-slate-200',
+							]"
+						>
+							Nikdy nezdvihli spolupracovníci
 						</div>
 
 						<div
 							@click="selectFilter('wrong_number')"
 							:class="[
-								'flex items-center gap-2 text-sm py-1 px-1 cursor-pointer rounded-md',
+								'flex items-center gap-2 text-sm py-1.5 px-1 cursor-pointer rounded-md',
 								activeFilter === 'wrong_number'
 									? 'bg-slate-200'
 									: 'hover:bg-slate-200',
@@ -967,7 +808,6 @@ const fetchNeverCalledContacts = async () => {
 				id="disclaimer"
 				v-if="showDisclaimer"
 			>
-				<!-- Colour -->
 				<div class="flex items-center space-x-2 mb-2">
 					<div class="w-[32px] h-[32px] bg-green-200"></div>
 					<div>- Kontakt nemá žiadne aktivity</div>
@@ -984,7 +824,6 @@ const fetchNeverCalledContacts = async () => {
 		</div>
 
 		<div class="flex justify-end mr-20 h-11">
-			<!-- Added fixed height h-12 -->
 			<button
 				v-if="contactsStore.selectedContacts.length > 0"
 				@click="uncheckAll"
@@ -1113,7 +952,6 @@ const fetchNeverCalledContacts = async () => {
 			/>
 		</div>
 
-		<!-- Page numbers -->
 		<div class="flex gap-2">
 			<template v-for="pageNum in pageNumbers" :key="pageNum">
 				<div v-if="pageNum === '...'" class="px-3 py-1 text-gray-500">
@@ -1146,6 +984,7 @@ const fetchNeverCalledContacts = async () => {
 			/>
 		</div>
 	</div>
+
 	<AddPersonForm
 		v-if="showAddPersonForm"
 		@cancelAdd="addPerson()"

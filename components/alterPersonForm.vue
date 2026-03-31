@@ -38,6 +38,11 @@ const selectedAuthorId = ref("");
 const author_id = ref("");
 const aktualnyPoradca = ref("");
 
+// Contact type refs
+const isNew = ref(false);
+const isContact = ref(true);
+const isCoWorker = ref(false);
+
 // Define emits and props
 const emit = defineEmits(["cancelAlter", "alterPerson"]);
 const props = defineProps({
@@ -78,6 +83,9 @@ watch(
 			Investicny_dotaznik.value = newVal.Investicny_dotaznik || "";
 			selectedAuthorId.value = newVal.author_id || "";
 			aktualnyPoradca.value = newVal.current_advisor || "";
+			isNew.value = newVal.isNew ?? false;
+			isContact.value = newVal.isContact ?? true;
+			isCoWorker.value = newVal.isCoWorker ?? false;
 		} else {
 			resetForm();
 		}
@@ -99,6 +107,9 @@ function resetForm() {
 	Investicny_dotaznik.value = null;
 	selectedAuthorId.value = null;
 	aktualnyPoradca.value = "";
+	isNew.value = false;
+	isContact.value = true;
+	isCoWorker.value = false;
 }
 
 function cancelAlter() {
@@ -123,8 +134,11 @@ const alterPerson = async (id) => {
 		author_id: selectedAuthorId.value,
 		is_deleted: true,
 		current_advisor: aktualnyPoradca.value,
+		isNew: isNew.value,
+		isContact: isContact.value,
+		isCoWorker: isCoWorker.value,
 	};
-	// console.log(person);
+
 	const response = await axios.put(
 		`${config.public.apiUrl}post-update-contact/${id}`,
 		person,
@@ -258,7 +272,7 @@ const alterPerson = async (id) => {
 						</div>
 
 						<div class="flex gap-16 mb-9 relative">
-							<div class="flex-1">
+							<!-- <div class="flex-1">
 								<label for="Investicny_dotaznik" class="absolute text-gray-600"
 									>Investicný dotazník vyplnený</label
 								>
@@ -269,7 +283,7 @@ const alterPerson = async (id) => {
 									v-model="Investicny_dotaznik"
 									:class="{ 'text-gray-800': Investicny_dotaznik }"
 								/>
-							</div>
+							</div> -->
 							<div class="flex-1">
 								<label
 									v-if="adresa"
@@ -331,6 +345,7 @@ const alterPerson = async (id) => {
 								placeholder="Poznámka"
 							/>
 						</div>
+
 						<div class="flex gap-16 mb-9">
 							<div
 								v-if="props.single_contact.author_id == userStore.user.id"
@@ -365,6 +380,54 @@ const alterPerson = async (id) => {
 									class="w-full"
 									placeholder="Aktuálny poradca"
 								/>
+							</div>
+						</div>
+						<!-- Contact type row -->
+						<div class="flex items-center gap-8 mb-8">
+							<div class="flex items-center gap-3">
+								<label class="custom-check">
+									<input type="checkbox" v-model="isNew" />
+									<span class="check-box">
+										<svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+											<path
+												d="M1 4L3.5 6.5L9 1"
+												stroke="white"
+												stroke-width="1.8"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+											/>
+										</svg>
+									</span>
+								</label>
+								<span class="text-sm text-gray-600 font-medium"
+									>Nový kontakt</span
+								>
+							</div>
+
+							<div class="flex items-center gap-3">
+								<span class="text-sm text-gray-600 font-medium">Typ:</span>
+								<div class="type-toggle">
+									<button
+										type="button"
+										:class="['toggle-btn', isContact ? 'active-contact' : '']"
+										@click="
+											isContact = true;
+											isCoWorker = false;
+										"
+									>
+										Klient
+									</button>
+									<button
+										type="button"
+										:class="['toggle-btn', isCoWorker ? 'active-coworker' : '']"
+										@click="
+											isCoWorker = true;
+											isContact = false;
+										"
+									>
+										Spolupracovník
+									</button>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -424,5 +487,77 @@ select:focus {
 	outline: none;
 	border-color: #3b82f6;
 	ring: 2px solid #3b82f6;
+}
+
+/* Custom checkbox */
+.custom-check {
+	display: inline-flex;
+	align-items: center;
+	cursor: pointer;
+}
+
+.custom-check input {
+	display: none;
+}
+
+.check-box {
+	width: 18px;
+	height: 18px;
+	border-radius: 5px;
+	border: 1.5px solid #d1d5db;
+	background: #f9fafb;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.15s ease;
+}
+
+.check-box svg {
+	display: none;
+}
+
+.custom-check input:checked + .check-box {
+	background: #3b82f6;
+	border-color: #3b82f6;
+}
+
+.custom-check input:checked + .check-box svg {
+	display: block;
+}
+
+.custom-check:hover .check-box {
+	border-color: #93c5fd;
+}
+
+/* Type toggle */
+.type-toggle {
+	display: inline-flex;
+	gap: 4px;
+	background: #f3f4f6;
+	border-radius: 8px;
+	padding: 3px;
+	border: 1px solid #e5e7eb;
+}
+
+.toggle-btn {
+	font-size: 12px;
+	font-weight: 500;
+	padding: 4px 12px;
+	border-radius: 5px;
+	cursor: pointer;
+	color: #6b7280;
+	border: none;
+	background: transparent;
+	transition: all 0.15s ease;
+}
+
+.toggle-btn.active-contact {
+	background: #3b82f6;
+	color: #fff;
+}
+
+.toggle-btn.active-coworker {
+	background: #8b5cf6;
+	color: #fff;
 }
 </style>

@@ -217,7 +217,8 @@
 								v-for="row in filteredNove"
 								:key="row.id"
 								:class="rowColorClass(row)"
-								class="border-b border-slate-100 transition-colors last:border-0"
+								class="border-b border-slate-100 transition-colors last:border-0 cursor-pointer"
+								@click="navigateTo(`/contact/${row.id}`)"
 							>
 								<td
 									class="px-4 py-3 font-medium text-slate-900 whitespace-nowrap"
@@ -310,13 +311,14 @@
 								<th
 									class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
 								>
-									Serv. poradenstvo
+									Serv. analýza
 								</th>
 								<th
 									class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
 								>
-									Serv. analýza
+									Serv. poradenstvo
 								</th>
+
 								<th
 									class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
 								>
@@ -334,7 +336,8 @@
 								v-for="row in filteredServisne"
 								:key="row.id"
 								:class="rowColorClass(row)"
-								class="border-b border-slate-100 transition-colors last:border-0"
+								class="border-b border-slate-100 transition-colors last:border-0 cursor-pointer"
+								@click="navigateTo(`/contact/${row.id}`)"
 							>
 								<td
 									class="px-4 py-3 font-medium text-slate-900 whitespace-nowrap"
@@ -349,18 +352,19 @@
 								</td>
 								<td class="px-4 py-3 text-center">
 									<DateCell
-										:date="row.datumServisPoradenstvo"
-										:done="row.servisPoradenstvoD"
-										:status="row.servisPoradenstvoStatus"
-									/>
-								</td>
-								<td class="px-4 py-3 text-center">
-									<DateCell
 										:date="row.datumServisAnalyza"
 										:done="row.servisAnalyzaD"
 										:status="row.servisAnalyzaStatus"
 									/>
 								</td>
+								<td class="px-4 py-3 text-center">
+									<DateCell
+										:date="row.datumServisPoradenstvo"
+										:done="row.servisPoradenstvoD"
+										:status="row.servisPoradenstvoStatus"
+									/>
+								</td>
+
 								<td class="px-4 py-3 text-center">
 									<span
 										v-if="row.mienAoF"

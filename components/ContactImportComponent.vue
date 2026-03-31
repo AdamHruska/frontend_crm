@@ -332,11 +332,12 @@ const uploadFile = async () => {
 
 .btn {
 	color: white;
-	padding: 10px 20px;
+	padding: 8px 20px;
 	border-radius: 4px;
 	border: none;
 	cursor: pointer;
 	transition: background-color 0.3s ease;
+	width: 100%;
 }
 
 .btn-primary {

@@ -26,6 +26,8 @@ const users = ref([
 		zamestanie: "",
 		poznamka: "",
 		isNew: true,
+		isContact: true,
+		isCoWorker: false,
 	},
 ]);
 
@@ -50,6 +52,8 @@ function addRow() {
 			zamestanie: "",
 			poznamka: "",
 			isNew: true,
+			isContact: true,
+			isCoWorker: false,
 		});
 	}
 }
@@ -68,6 +72,8 @@ function resetForm() {
 			zamestanie: "",
 			poznamka: "",
 			isNew: true,
+			isContact: true,
+			isCoWorker: false,
 		},
 	];
 }
@@ -272,6 +278,16 @@ function removeRow(index) {
 		users.value.splice(index, 1);
 	}
 }
+
+function toggleType(user, type) {
+	if (type === "contact") {
+		user.isContact = true;
+		user.isCoWorker = false;
+	} else if (type === "coworker") {
+		user.isContact = false;
+		user.isCoWorker = true;
+	}
+}
 </script>
 
 <template>
@@ -311,6 +327,8 @@ function removeRow(index) {
 				<thead>
 					<tr class="">
 						<th>Nový kontakt</th>
+						<th>Klient</th>
+						<th>Spolupracovník</th>
 						<th>Meno</th>
 						<th>Priezvisko</th>
 						<th>Číslo</th>
@@ -324,8 +342,45 @@ function removeRow(index) {
 				</thead>
 				<tbody>
 					<tr v-for="(user, index) in users" :key="index" class="text-white">
-						<td class="flex justify-center items-end pt-3">
-							<input type="checkbox" v-model="user.isNew" class="w-4 h-4" />
+						<td class="flex justify-center items-center pt-3">
+							<label class="custom-check">
+								<input type="checkbox" v-model="user.isNew" />
+								<span class="check-box">
+									<svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+										<path
+											d="M1 4L3.5 6.5L9 1"
+											stroke="white"
+											stroke-width="1.8"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+										/>
+									</svg>
+								</span>
+							</label>
+						</td>
+
+						<!-- Klient / Spolupracovník toggle -->
+						<td colspan="2">
+							<div class="type-toggle">
+								<button
+									:class="[
+										'toggle-btn',
+										user.isContact ? 'active-contact' : '',
+									]"
+									@click="toggleType(user, 'contact')"
+								>
+									Klient
+								</button>
+								<button
+									:class="[
+										'toggle-btn',
+										user.isCoWorker ? 'active-coworker' : '',
+									]"
+									@click="toggleType(user, 'coworker')"
+								>
+									Spol.
+								</button>
+							</div>
 						</td>
 						<td>
 							<input v-model="user.meno" class="bg-gray-200 w-full shadow-sm" />
@@ -404,5 +459,65 @@ input {
 	padding: 0.5rem;
 	border-radius: 4px;
 	/* border: 1px solid #4b5563; */
+}
+
+.custom-check {
+	display: inline-flex;
+	align-items: center;
+	cursor: pointer;
+}
+.custom-check input {
+	display: none;
+}
+.check-box {
+	width: 18px;
+	height: 18px;
+	border-radius: 5px;
+	border: 1.5px solid #4b5563;
+	background: #374151;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.15s ease;
+}
+.check-box svg {
+	display: none;
+}
+.custom-check input:checked + .check-box {
+	background: #3b82f6;
+	border-color: #3b82f6;
+}
+.custom-check input:checked + .check-box svg {
+	display: block;
+}
+.custom-check:hover .check-box {
+	border-color: #60a5fa;
+}
+
+.type-toggle {
+	display: inline-flex;
+	gap: 4px;
+	background: #374151;
+	border-radius: 8px;
+	padding: 3px;
+}
+.toggle-btn {
+	font-size: 11px;
+	font-weight: 500;
+	padding: 3px 9px;
+	border-radius: 5px;
+	cursor: pointer;
+	color: #9ca3af;
+	border: none;
+	background: transparent;
+	transition: all 0.15s ease;
+}
+.toggle-btn.active-contact {
+	background: #3b82f6;
+	color: #fff;
+}
+.toggle-btn.active-coworker {
+	background: #8b5cf6;
+	color: #fff;
 }
 </style>
