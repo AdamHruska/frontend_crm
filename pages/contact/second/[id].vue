@@ -762,17 +762,19 @@ const contactInitials = computed(() => {
 							<td>
 								<span class="activity-pill">{{ row.aktivita }}</span>
 							</td>
-							<td class="td-mono">{{ row.datumCas }}</td>
-							<td class="td-mono">{{ row.koniec }}</td>
-							<td class="td-note" :title="row.poznamka">{{ row.poznamka }}</td>
+							<td class="td-mono">{{ formatDateTime(row.datumCas) }}</td>
+							<td class="td-mono">{{ formatDateTime(row.koniec) }}</td>
+							<td class="td-note td-wide" :title="row.poznamka">
+								{{ row.poznamka }}
+							</td>
 
-							<td class="td-center">
+							<td class="td-center td-narrow">
 								<span v-if="row.volane === null"></span>
 								<span v-else :class="row.volane ? 'check-icon' : 'cross-icon'">
 									{{ row.volane ? "✔" : "✖" }}
 								</span>
 							</td>
-							<td class="td-center">
+							<td class="td-center td-narrow">
 								<span v-if="row.dovolane === null"></span>
 								<span
 									v-else
@@ -781,7 +783,7 @@ const contactInitials = computed(() => {
 									{{ row.dovolane ? "✔" : "✖" }}
 								</span>
 							</td>
-							<td class="td-center">
+							<td class="td-center td-narrow">
 								<span v-if="row.dohodnute === null"></span>
 								<span
 									v-else
@@ -1413,5 +1415,26 @@ const contactInitials = computed(() => {
 	.info-grid {
 		grid-template-columns: 1fr 1fr;
 	}
+}
+
+/* Narrow boolean columns */
+.td-narrow {
+	width: 1%;
+	white-space: nowrap;
+	text-align: center;
+	padding-left: 6px !important;
+	padding-right: 6px !important;
+}
+
+/* Make note column expand */
+.td-wide {
+	width: 100%;
+	max-width: none;
+	white-space: normal;
+}
+
+/* Optional: ensure table layout behaves nicely */
+.data-table {
+	table-layout: auto;
 }
 </style>
