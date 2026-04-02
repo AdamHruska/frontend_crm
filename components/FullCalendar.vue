@@ -479,13 +479,13 @@ onMounted(async () => {
 	events.value = [...events.value, ...sharedACT];
 
 	const now = new Date();
-	// Fetch both Google and Microsoft events for the current month
-	await Promise.all([
-		fetchGoogleEventsForMonth(now.getMonth() + 1, now.getFullYear()),
-		showMicrosoftEventsOnCalendar.value
-			? fetchMicrosoftEvents(now.getMonth() + 1, now.getFullYear())
-			: Promise.resolve(),
-	]);
+	// Fetch Google events first
+	await fetchGoogleEventsForMonth(now.getMonth() + 1, now.getFullYear());
+
+	// Then fetch Microsoft events if enabled
+	if (showMicrosoftEventsOnCalendar.value) {
+		await fetchMicrosoftEvents(now.getMonth() + 1, now.getFullYear());
+	}
 
 	// Update calendar options with current events
 	calendarOptions.value = {
