@@ -74,6 +74,40 @@ const events = ref([]);
 const currentLoadedMonth = ref(null);
 const currentLoadedYear = ref(null);
 
+// Helper to fetch and merge all event types for a given month/year
+async function fetchAndMergeAllEvents(month, year) {
+	// Always fetch local activities and shared activities
+	if (calendarStore.activities.length === 0) {
+		await calendarStore.fetchActivities();
+	}
+	rawData.value = calendarStore.activities;
+	const localEvents = transformData(rawData.value);
+	const sharedEvents = transformData(
+		flattenActivities(calendarStore.shared_activities),
+	);
+
+	// Fetch Google and Microsoft events in parallel
+	const [googleEvents, microsoftEvents] = await Promise.all([
+		calendarStore.fetchGoogleEvents(month, year),
+		showMicrosoftEventsOnCalendar.value
+			? calendarStore.fetchMicrosoftEvents(month, year)
+			: Promise.resolve([]),
+	]);
+
+	// Merge all event types
+	events.value = [
+		...localEvents,
+		...sharedEvents,
+		...googleEvents,
+		...microsoftEvents,
+	];
+
+	calendarOptions.value = {
+		...calendarOptions.value,
+		events: [...events.value],
+	};
+}
+
 const calendarOptions = ref({
 	plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
 	headerToolbar: {
@@ -113,21 +147,17 @@ const calendarOptions = ref({
 	},
 	locale: "sk",
 	firstDay: 1,
-	datesSet: (dateInfo) => {
+	datesSet: async (dateInfo) => {
 		const currentDate = dateInfo.view.currentStart;
 		const month = currentDate.getMonth() + 1;
 		const year = currentDate.getFullYear();
 
+		// Only fetch if not already loaded for this month/year
 		if (
-			month !== currentLoadedMonth.value + 2 ||
+			month !== currentLoadedMonth.value ||
 			year !== currentLoadedYear.value
 		) {
-			// Only fetch if not hidden by user
-			if (showMicrosoftEventsOnCalendar.value) {
-				fetchMicrosoftEvents(month, year);
-			}
-			fetchGoogleEventsForMonth(month, year);
-
+			await fetchAndMergeAllEvents(month, year);
 			currentLoadedMonth.value = month;
 			currentLoadedYear.value = year;
 		}
@@ -433,9 +463,6 @@ const calendarListLoading = ref(false);
 
 onMounted(async () => {
 	await userStore.userGetCalendarNames();
-
-	//await fetchGoogleEvents();
-
 	try {
 		calendarListLoading.value = true;
 		const response = await axios.get(
@@ -453,45 +480,25 @@ onMounted(async () => {
 		calendarListLoading.value = false;
 	}
 
-	// Fetch activities and contacts in parallel
 	await Promise.all([
-		calendarStore.activities.length === 0
-			? calendarStore.fetchActivities()
-			: Promise.resolve(),
 		contactsStore.contacts.data.length === 0
 			? contactsStore.fetchContacts()
 			: Promise.resolve(),
+		calendarStore.shared_activities.length === 0
+			? calendarStore.fetchSharedActivities()
+			: Promise.resolve(),
 	]);
 
-	// Set up local activities first
-	rawData.value = [...calendarStore.activities]; // Use spread to ensure reactivity
-	events.value = transformData(rawData.value);
-
-	// Fetch shared activities if needed
-	if (calendarStore.shared_activities.length === 0) {
-		await calendarStore.fetchSharedActivities();
-	}
-
-	// Add shared activities to events
-	const sharedACT = transformData(
-		flattenActivities(calendarStore.shared_activities),
-	);
-	events.value = [...events.value, ...sharedACT];
-
 	const now = new Date();
-	// Fetch Google events first
-	await fetchGoogleEventsForMonth(now.getMonth() + 1, now.getFullYear());
+	await fetchAndMergeAllEvents(now.getMonth() + 1, now.getFullYear());
+	currentLoadedMonth.value = now.getMonth() + 1;
+	currentLoadedYear.value = now.getFullYear();
 
-	// Then fetch Microsoft events if enabled
-	if (showMicrosoftEventsOnCalendar.value) {
-		await fetchMicrosoftEvents(now.getMonth() + 1, now.getFullYear());
+	if (calendarRef.value) {
+		setTimeout(() => {
+			calendarRef.value.getApi().refetchEvents();
+		}, 100);
 	}
-
-	// Update calendar options with current events
-	calendarOptions.value = {
-		...calendarOptions.value,
-		events: [...events.value],
-	};
 
 	// Set up event listener for deleteSharedEvents
 	eventBus.on("deleteSharedEvents", ({ userId }) => {
@@ -1806,10 +1813,19 @@ const isMounted = ref(false);
 					</button>
 
 					<button
+						v-if="showMicrosoftEventsOnCalendar"
 						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
 						@click="toggleMicrosoftEventsVisibility"
 					>
-						<span> Skryt microsoft eventy </span>
+						<span>Skryť microsoft eventy</span>
+						<img src="/public/icons8-microsoft-48.png" alt="logo" />
+					</button>
+					<button
+						v-else
+						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+						@click="toggleMicrosoftEventsVisibility"
+					>
+						<span>Zobraziť microsoft eventy</span>
 						<img src="/public/icons8-microsoft-48.png" alt="logo" />
 					</button>
 
