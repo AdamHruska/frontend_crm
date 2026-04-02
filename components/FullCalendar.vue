@@ -122,13 +122,32 @@ const calendarOptions = ref({
 			month !== currentLoadedMonth.value + 2 ||
 			year !== currentLoadedYear.value
 		) {
-			fetchMicrosoftEvents(month, year);
-			fetchGoogleEventsForMonth(month, year); // 👈 new
+			// Only fetch if not hidden by user
+			if (showMicrosoftEventsOnCalendar.value) {
+				fetchMicrosoftEvents(month, year);
+			}
+			fetchGoogleEventsForMonth(month, year);
 
 			currentLoadedMonth.value = month;
 			currentLoadedYear.value = year;
 		}
 	},
+	// datesSet: (dateInfo) => {
+	// 	const currentDate = dateInfo.view.currentStart;
+	// 	const month = currentDate.getMonth() + 1;
+	// 	const year = currentDate.getFullYear();
+
+	// 	if (
+	// 		month !== currentLoadedMonth.value + 2 ||
+	// 		year !== currentLoadedYear.value
+	// 	) {
+	// 		fetchMicrosoftEvents(month, year);
+	// 		fetchGoogleEventsForMonth(month, year); // 👈 new
+
+	// 		currentLoadedMonth.value = month;
+	// 		currentLoadedYear.value = year;
+	// 	}
+	// },
 	// datesSet: (dateInfo) => {
 	// 	// Extract the current view's start date
 	// 	const currentDate = dateInfo.view.currentStart;
@@ -1161,39 +1180,35 @@ const areMicrosofEventsShown = ref(false);
 async function fetchMicrosoftEvents(month, year) {
 	loadingStateCalendar.value = true;
 
-	// ALWAYS ensure local events are present, even if store has them
-	if (
-		events.value.length === 0 ||
-		!events.value.some((e) => !e.extendedProps?.source)
-	) {
-		// Refetch if events are empty OR if we only have Microsoft events
-		if (calendarStore.activities.length === 0) {
-			await calendarStore.fetchActivities();
-		}
-
-		rawData.value = calendarStore.activities;
-
-		// Add shared activities
-		const sharedACT = transformData(
-			flattenActivities(calendarStore.shared_activities),
-		);
-
-		events.value = [...transformData(rawData.value), ...sharedACT];
+	// Ensure local DB activities are loaded
+	if (calendarStore.activities.length === 0) {
+		await calendarStore.fetchActivities();
 	}
+	rawData.value = calendarStore.activities;
 
-	// Store current non-Microsoft events before fetching new Microsoft events
-	const nonMicrosoftEvents = events.value.filter(
-		(event) => event.extendedProps?.source !== "microsoft",
+	// Rebuild local + shared events
+	const sharedACT = transformData(
+		flattenActivities(calendarStore.shared_activities),
 	);
+	const localEvents = [...transformData(rawData.value), ...sharedACT];
 
-	// Then get Microsoft events
+	// Fetch new Microsoft events
 	const newMicrosoftEvents = await calendarStore.fetchMicrosoftEvents(
 		month,
 		year,
 	);
 
-	// Merge: keep all non-Microsoft events and add new Microsoft events
-	events.value = [...nonMicrosoftEvents, ...newMicrosoftEvents];
+	// Preserve Google events that are already displayed — never touch them here
+	const existingGoogleEvents = events.value.filter(
+		(event) => event.extendedProps?.source === "google",
+	);
+
+	// Merge: local + preserved google + new microsoft
+	events.value = [
+		...localEvents,
+		...existingGoogleEvents,
+		...newMicrosoftEvents,
+	];
 
 	calendarOptions.value = {
 		...calendarOptions.value,
@@ -1203,6 +1218,89 @@ async function fetchMicrosoftEvents(month, year) {
 	loadingStateCalendar.value = false;
 	return newMicrosoftEvents;
 }
+
+// async function fetchMicrosoftEvents(month, year) {
+// 	loadingStateCalendar.value = true;
+
+// 	// Store current google events before anything
+// 	const googleEvents = events.value.filter(
+// 		(event) => event.extendedProps?.source === "google",
+// 	);
+
+// 	// Ensure local events are present
+// 	if (calendarStore.activities.length === 0) {
+// 		await calendarStore.fetchActivities();
+// 	}
+
+// 	rawData.value = calendarStore.activities;
+// 	const sharedACT = transformData(
+// 		flattenActivities(calendarStore.shared_activities),
+// 	);
+// 	const localEvents = [...transformData(rawData.value), ...sharedACT];
+
+// 	// Get Microsoft events
+// 	const newMicrosoftEvents = await calendarStore.fetchMicrosoftEvents(
+// 		month,
+// 		year,
+// 	);
+
+// 	// Merge all three: local + google (preserved) + microsoft
+// 	events.value = [...localEvents, ...googleEvents, ...newMicrosoftEvents];
+
+// 	calendarOptions.value = {
+// 		...calendarOptions.value,
+// 		events: [...events.value],
+// 	};
+
+// 	loadingStateCalendar.value = false;
+// 	return newMicrosoftEvents;
+// }
+
+// async function fetchMicrosoftEvents(month, year) {
+// 	loadingStateCalendar.value = true;
+
+// 	// ALWAYS ensure local events are present, even if store has them
+// 	if (
+// 		events.value.length === 0 ||
+// 		!events.value.some((e) => !e.extendedProps?.source)
+// 	) {
+// 		// Refetch if events are empty OR if we only have Microsoft events
+// 		if (calendarStore.activities.length === 0) {
+// 			await calendarStore.fetchActivities();
+// 		}
+
+// 		rawData.value = calendarStore.activities;
+
+// 		// Add shared activities
+// 		const sharedACT = transformData(
+// 			flattenActivities(calendarStore.shared_activities),
+// 		);
+
+// 		events.value = [...transformData(rawData.value), ...sharedACT];
+// 	}
+
+// 	// Store current non-Microsoft events before fetching new Microsoft events
+// 	const nonMicrosoftEvents = events.value.filter(
+// 		(event) => event.extendedProps?.source !== "microsoft",
+// 	);
+
+// 	// Then get Microsoft events
+// 	const newMicrosoftEvents = await calendarStore.fetchMicrosoftEvents(
+// 		month,
+// 		year,
+// 	);
+
+// 	// Merge: keep all non-Microsoft events and add new Microsoft events
+// 	events.value = [...nonMicrosoftEvents, ...newMicrosoftEvents];
+
+// 	calendarOptions.value = {
+// 		...calendarOptions.value,
+// 		events: [...events.value],
+// 	};
+
+// 	loadingStateCalendar.value = false;
+// 	return newMicrosoftEvents;
+// }
 
 async function fetchGoogleEventsForMonth(month, year) {
 	const newGoogleEvents = await calendarStore.fetchGoogleEvents(month, year);
@@ -1570,20 +1668,18 @@ const toggleMicrosoftEventsVisibility = () => {
 	showMicrosoftEventsOnCalendar.value = !showMicrosoftEventsOnCalendar.value;
 
 	if (!showMicrosoftEventsOnCalendar.value) {
+		// Just filter them out from current events
 		events.value = events.value.filter(
 			(event) => event.extendedProps?.source !== "microsoft",
 		);
+		calendarOptions.value = {
+			...calendarOptions.value,
+			events: [...events.value],
+		};
 	} else {
-		// Re-fetch to restore them
-		const now = new Date();
-		fetchMicrosoftEvents(now.getMonth() + 1, now.getFullYear());
-		return;
+		// Re-fetch using the currently loaded month/year, not today
+		fetchMicrosoftEvents(currentLoadedMonth.value, currentLoadedYear.value);
 	}
-
-	calendarOptions.value = {
-		...calendarOptions.value,
-		events: [...events.value],
-	};
 };
 </script>
 
@@ -1686,7 +1782,6 @@ const toggleMicrosoftEventsVisibility = () => {
 							<img src="/public/icons8-microsoft-48.png" alt="" />
 						</div>
 					</div> -->
-
 					<button
 						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
 						@click="fetchGoogleEvents"
@@ -1707,11 +1802,7 @@ const toggleMicrosoftEventsVisibility = () => {
 						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
 						@click="toggleMicrosoftEventsVisibility"
 					>
-						<span>{{
-							showMicrosoftEventsOnCalendar
-								? "Skryť Microsoft udalosti"
-								: "Zobraziť Microsoft udalosti"
-						}}</span>
+						<span> Skryt microsoft eventy </span>
 						<img src="/public/icons8-microsoft-48.png" alt="logo" />
 					</button>
 
