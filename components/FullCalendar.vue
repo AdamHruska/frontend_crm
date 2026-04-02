@@ -1,3 +1,4 @@
+// Collapsible menu state const showEventMenu = ref(false);
 <script setup>
 const end_date = ref("");
 const emit = defineEmits(["deleteSharedEventsId"]);
@@ -57,6 +58,9 @@ const pastelColors = [
 	"#FFC6D9", // lososová ružová
 	"#FFEAA7", // pastelovo žltá
 ];
+// Collapsible menu state for account/calendar actions
+const showEventMenu = ref(false);
+
 const toggleUpdateActivity = () => {
 	if (updateActivity.value === true) {
 		//location.reload();
@@ -1783,7 +1787,19 @@ const isMounted = ref(false);
 					/>
 				</div>
 				<div class="flex flex-col items-center py-6 shadow-lg rounded-b-lg">
-					<!-- <div
+					<button
+						class="bg-blue-200 px-4 py-2 rounded-md shadow hover:bg-blue-300 mb-3 font-semibold"
+						@click="showEventMenu = !showEventMenu"
+					>
+						{{
+							showEventMenu
+								? "Skryť menu"
+								: "Zobraziť menu pre účty a kalendáre"
+						}}
+					</button>
+					<transition name="fade">
+						<div v-if="showEventMenu" class="w-full flex flex-col items-center">
+							<!-- <div
 						@click="fetchMicrosoftEvents"
 						class="flex items-center gap-2 mt-4 bg-purple-600 rounded-md hover:bg-purple-700 cursor-pointer w-[240px] px-2 py-1 shadow"
 					>
@@ -1796,62 +1812,64 @@ const isMounted = ref(false);
 							<img src="/public/icons8-microsoft-48.png" alt="" />
 						</div>
 					</div> -->
-					<button
-						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
-						@click="fetchGoogleEvents"
-					>
-						<span>Zobraziť Google udalosti</span>
-						<img src="/public/google_icon.png" alt="logo" />
-					</button>
+							<button
+								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+								@click="fetchGoogleEvents"
+							>
+								<span>Zobraziť Google udalosti</span>
+								<img src="/public/google_icon.png" alt="logo" />
+							</button>
 
-					<button
-						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
-						@click="loginWithGoogle"
-					>
-						<span>Prihlásiť sa pomocou Google</span>
-						<img src="/public/google_icon.png" alt="logo" />
-					</button>
+							<button
+								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+								@click="loginWithGoogle"
+							>
+								<span>Prihlásiť sa pomocou Google</span>
+								<img src="/public/google_icon.png" alt="logo" />
+							</button>
 
-					<button
-						v-if="showMicrosoftEventsOnCalendar"
-						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
-						@click="toggleMicrosoftEventsVisibility"
-					>
-						<span>Skryť microsoft eventy</span>
-						<img src="/public/icons8-microsoft-48.png" alt="logo" />
-					</button>
-					<button
-						v-else
-						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
-						@click="toggleMicrosoftEventsVisibility"
-					>
-						<span>Zobraziť microsoft eventy</span>
-						<img src="/public/icons8-microsoft-48.png" alt="logo" />
-					</button>
+							<button
+								v-if="showMicrosoftEventsOnCalendar"
+								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+								@click="toggleMicrosoftEventsVisibility"
+							>
+								<span>Skryť microsoft eventy</span>
+								<img src="/public/icons8-microsoft-48.png" alt="logo" />
+							</button>
+							<button
+								v-else
+								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+								@click="toggleMicrosoftEventsVisibility"
+							>
+								<span>Zobraziť microsoft eventy</span>
+								<img src="/public/icons8-microsoft-48.png" alt="logo" />
+							</button>
 
-					<button
-						v-if="!isLoggedInWithMicrosoft"
-						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
-						@click="loginWithMicrosoft"
-					>
-						<span>Prihlásiť pomocou Microsoft</span>
-						<img src="/public/icons8-microsoft-48.png" alt="logo" />
-					</button>
-					<button
-						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
-						@click="logoutWithMicrosoft"
-					>
-						<span>Odhlásiť sa z Microsoft účtu</span>
-						<img src="/public/icons8-microsoft-48.png" alt="logo" />
-					</button>
+							<button
+								v-if="!isLoggedInWithMicrosoft"
+								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+								@click="loginWithMicrosoft"
+							>
+								<span>Prihlásiť pomocou Microsoft</span>
+								<img src="/public/icons8-microsoft-48.png" alt="logo" />
+							</button>
+							<button
+								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+								@click="logoutWithMicrosoft"
+							>
+								<span>Odhlásiť sa z Microsoft účtu</span>
+								<img src="/public/icons8-microsoft-48.png" alt="logo" />
+							</button>
 
-					<button
-						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
-						@click="logoutWithGoogle"
-					>
-						<span>Odhlásiť sa z Google účtu</span>
-						<img src="/public/google_icon.png" alt="logo" />
-					</button>
+							<button
+								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+								@click="logoutWithGoogle"
+							>
+								<span>Odhlásiť sa z Google účtu</span>
+								<img src="/public/google_icon.png" alt="logo" />
+							</button>
+						</div>
+					</transition>
 					<div
 						class="bg-[#D1D5DB] px-2 py-2 rounded-md shadow flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3 flex flex-col text-center"
 					>
