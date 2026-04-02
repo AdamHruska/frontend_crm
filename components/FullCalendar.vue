@@ -1563,6 +1563,28 @@ const toggleMyActivities = () => {
 		events: [...events.value],
 	};
 };
+
+const showMicrosoftEventsOnCalendar = ref(true);
+
+const toggleMicrosoftEventsVisibility = () => {
+	showMicrosoftEventsOnCalendar.value = !showMicrosoftEventsOnCalendar.value;
+
+	if (!showMicrosoftEventsOnCalendar.value) {
+		events.value = events.value.filter(
+			(event) => event.extendedProps?.source !== "microsoft",
+		);
+	} else {
+		// Re-fetch to restore them
+		const now = new Date();
+		fetchMicrosoftEvents(now.getMonth() + 1, now.getFullYear());
+		return;
+	}
+
+	calendarOptions.value = {
+		...calendarOptions.value,
+		events: [...events.value],
+	};
+};
 </script>
 
 <template>
@@ -1664,6 +1686,7 @@ const toggleMyActivities = () => {
 							<img src="/public/icons8-microsoft-48.png" alt="" />
 						</div>
 					</div> -->
+
 					<button
 						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
 						@click="fetchGoogleEvents"
@@ -1678,6 +1701,18 @@ const toggleMyActivities = () => {
 					>
 						<span>Prihlásiť sa pomocou Google</span>
 						<img src="/public/google_icon.png" alt="logo" />
+					</button>
+
+					<button
+						class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+						@click="toggleMicrosoftEventsVisibility"
+					>
+						<span>{{
+							showMicrosoftEventsOnCalendar
+								? "Skryť Microsoft udalosti"
+								: "Zobraziť Microsoft udalosti"
+						}}</span>
+						<img src="/public/icons8-microsoft-48.png" alt="logo" />
 					</button>
 
 					<button
