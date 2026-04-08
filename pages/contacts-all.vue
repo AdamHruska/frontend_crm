@@ -8,14 +8,14 @@
 
 		<button
 			@click="toggleDeletedContacts"
-			class="px-4 py-2 bg-blue-500 rounded-md absolute right-6 hover:bg-blue-400 text-white cursor-pointer hover:scale-105 transition-transform"
+			class="px-4 py-2 bg-blue-400 border border-gray-300 rounded-md absolute right-6 hover:bg-blue-500 text-gray-800 cursor-pointer hover:scale-105 transition-transform"
 		>
 			{{ showDeletedOnly ? "Všetky kontakty" : "Vymazané kontakty" }}
 		</button>
 
 		<div class="float-right relative">
-			<Icon
-				icon="material-symbols:chat-info-outline"
+			<UIcon
+				name="i-material-symbols-chat-info-outline"
 				class="absolute top-[-40px] right-12 scale-[2] hover:scale-[2.5] cursor-pointer transition-transform"
 				@mouseenter="showDisclaimer = true"
 				@mouseleave="showDisclaimer = false"
@@ -45,36 +45,48 @@
 			<template #actions-data="{ row }">
 				<div class="flex justify-between">
 					<div class="flex space-x-4">
-						<UButton
-							@click.left="detailView(row.id)"
-							@auxclick.prevent="onAuxClick($event, row.id)"
-							@mousedown="handleMouseDown"
-							class="bg-blue-500 text-white shadow-xl hover:scale-110 transition-transform"
-							label="Show Details"
-						/>
+						<button
+							@click="detailView(row.id)"
+							color="white"
+							class="shadow-xl bg-green-400 px-2 py-1 rounded text-gray-800 border border-gray-300 hover:bg-green-500 hover:scale-110 transition-transform"
+						>
+							Zobraziť detaily
+						</button>
+						<UTooltip
+							text="Obnoviť kontakt"
+							:ui="{ background: '!bg-white' }"
+							class=""
+						>
+							<UButton
+								@click="restoreContact(row.id)"
+								icon="typcn:media-play-reverse-outline"
+								color="white"
+								class="shadow-xl !bg-white text-gray-800 border hover:bg-gray-100 hover:scale-110 transition-transform"
+							/>
+						</UTooltip>
 						<UTooltip
 							text="Editovať kontakt"
-							:ui="{ background: '!bg-white', color: '' }"
+							:ui="{ background: '!bg-white' }"
 							class=""
 						>
 							<UButton
 								@click="findPerson(row.id)"
 								icon="i-heroicons-pencil-square-20-solid"
-								variant="ghost"
-								class="shadow-xl hover:bg-gray-100 hover:scale-110 transition-transform"
+								color="white"
+								class="shadow-xl !bg-white text-gray-800 border hover:bg-gray-100 hover:scale-110 transition-transform"
 							/>
 						</UTooltip>
 
 						<UTooltip
 							text="Vymazať kontakt"
-							:ui="{ background: '!bg-white', color: '' }"
+							:ui="{ background: '!bg-white' }"
 							class=""
 						>
 							<UButton
 								@click="deletePerson(row.id)"
 								icon="i-heroicons-trash-20-solid"
-								color="ffffff"
-								class="shadow-xl text-red-500 hover:bg-gray-100 hover:scale-110 transition-transform"
+								color="white"
+								class="shadow-xl !bg-red-400 text-red-500 border border-gray-300 hover:bg-red-500 hover:scale-110 transition-transform"
 							/>
 						</UTooltip>
 
@@ -91,8 +103,8 @@
 							<UButton
 								@click="restoreContact(row.id)"
 								icon="typcn:media-play-reverse-outline"
-								color="ffffff"
-								class="shadow-xl hover:bg-gray-100 hover:scale-110 transition-transform"
+								color="white"
+								class="shadow-xl !bg-white text-gray-800 border hover:bg-gray-100 hover:scale-110 transition-transform"
 							/>
 						</UTooltip>
 					</div>
@@ -147,22 +159,29 @@ const showDisclaimer = ref(false);
 
 const people = computed(() => {
 	const contacts = contactsStore.allContactsAdmin ?? [];
+
 	return contacts
 		.filter((contact) => !showDeletedOnly.value || contact.hidden === 1)
 		.map((contact) => ({
 			...contact,
-			class: contact.hidden === 1 ? "bg-gray-300" : "",
+			meno: contact.meno ?? "",
+			priezvisko: contact.priezvisko ?? "",
+			email: contact.email ?? "",
+			cislo: contact.cislo ?? "",
+			odporucitel: contact.odporucitel ?? "",
+			poznamka: contact.poznamka ?? "",
+			class: (contact.hidden ?? 0) === 1 ? "bg-gray-300" : "",
 		}));
 });
 
 const showAlterPesonForm = ref(false);
 
 const detailView = (id) => {
-	router.push(`/contact/${id}`);
+	router.push(`/contact/admin/${id}`);
 };
 
 const detailViewNewTab = (id) => {
-	window.open(`/contact/${id}`, "_blank");
+	window.open(`/contact/admin/${id}`, "_blank");
 };
 
 function alterPerson() {
@@ -214,6 +233,8 @@ const columns = [
 	},
 ];
 
+import AlterPersonForm from "@/components/alterPersonForm.vue";
+
 onBeforeMount(() => {});
 
 onMounted(async () => {
@@ -247,7 +268,7 @@ const findPerson = async (id) => {
 	try {
 		// First, try to find the contact in the local store
 		const contactFromStore = contactsStore.allContactsAdmin.find(
-			(contact) => contact.id === id
+			(contact) => contact.id === id,
 		);
 
 		if (contactFromStore) {

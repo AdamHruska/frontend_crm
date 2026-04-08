@@ -597,6 +597,7 @@ const setActive = (n) => {
 				>
 					<option value="Telefonát klient">Telefonát klient</option>
 					<option value="Telefonát nábor">Telefonát nábor</option>
+					<option value="Telefonát">Telefonát</option>
 					<option value="Pohovor">Pohovor</option>
 					<option value="Prvé stretnutie">Prvé stretnutie</option>
 					<option value="Analýza osobných financí">

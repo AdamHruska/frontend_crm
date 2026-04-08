@@ -28,7 +28,6 @@ const people = ref([]);
 const isChecked = ref(false);
 const selected = ref([]);
 
-// funcion to toggle call list creation
 const callList = ref(false);
 const callListName = ref("");
 const user_id = ref("");
@@ -39,11 +38,28 @@ const showDisclaimer = ref(false);
 
 const filterWrongNumbers = ref(false);
 
-const fetchWrongNumberContacts = async (query = "") => {
+// --- Load More state ---
+const CHUNK = 50;
+const allFilteredResults = ref([]);
+const displayedCount = ref(CHUNK);
+const hasMoreResults = ref(false);
+// For wrong_number backend pagination
+const wrongNumberPage = ref(1);
+const wrongNumberLastPage = ref(1);
+
+const mapWithClass = (person) => {
+	let cssClass = "";
+	if (person.first_event === 0) cssClass += "bg-green-200 ";
+	if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
+	if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
+	return { ...person, class: cssClass.trim() };
+};
+
+const fetchWrongNumberContacts = async (query = "", pageNum = 1) => {
 	const response = await axios.get(
 		`${config.public.apiUrl}search-bad-phone-contacts`,
 		{
-			params: { query },
+			params: { query, page: pageNum },
 			headers: { Authorization: `Bearer ${authStore.token}` },
 		},
 	);
@@ -51,11 +67,20 @@ const fetchWrongNumberContacts = async (query = "") => {
 	const data = response.data.contacts;
 	contactsStore.contacts = data;
 
-	people.value = data.data.map((person) => ({
+	const newItems = data.data.map((person) => ({
 		...person,
 		class: "bg-orange-300",
 	}));
 
+	if (pageNum === 1) {
+		people.value = newItems;
+	} else {
+		people.value = [...people.value, ...newItems];
+	}
+
+	wrongNumberPage.value = data.current_page;
+	wrongNumberLastPage.value = data.last_page;
+	hasMoreResults.value = data.current_page < data.last_page;
 	page.value = data.current_page;
 };
 
@@ -65,21 +90,26 @@ const toggleWrongNumberFilter = async () => {
 
 	if (filterWrongNumbers.value) {
 		contactsStore.searchQuery = "";
-		await fetchWrongNumberContacts();
+		wrongNumberPage.value = 1;
+		await fetchWrongNumberContacts("", 1);
 	} else {
 		contactsStore.searchQuery = "";
 		await contactsStore.fetchContacts();
-		people.value = contactsStore.contacts.data.map((person) => {
-			let cssClass = "";
-			if (person.first_event === 0) cssClass += "bg-green-200 ";
-			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
-			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
-			return { ...person, class: cssClass.trim() };
-		});
+		people.value = contactsStore.contacts.data.map(mapWithClass);
 		page.value = contactsStore.contacts.current_page;
+		hasMoreResults.value = false;
 	}
 
 	contactsStore.loadingState = false;
+};
+
+const applyLocalFilter = (filterFn) => {
+	allFilteredResults.value = contactsStore.contacts.data
+		.filter(filterFn)
+		.map(mapWithClass);
+	displayedCount.value = CHUNK;
+	people.value = allFilteredResults.value.slice(0, CHUNK);
+	hasMoreResults.value = allFilteredResults.value.length > CHUNK;
 };
 
 const filterNeverAnswered = ref(false);
@@ -89,24 +119,61 @@ const fetchNeverAnsweredContacts = async (filterType = null) => {
 		filter: "never_answered",
 	});
 
-	people.value = contactsStore.contacts.data
-		.filter((person) => {
-			if (person.only_called_never_answered !== 1) return false;
-			if (filterType === "clients")
-				return person.isContact == 1 && person.isCoWorker == 0;
-			if (filterType === "coworkers")
-				return person.isCoWorker == 1 && person.isContact == 0;
-			return true;
-		})
-		.map((person) => {
-			let cssClass = "";
-			if (person.first_event === 0) cssClass += "bg-green-200 ";
-			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
-			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
-			return { ...person, class: cssClass.trim() };
-		});
+	applyLocalFilter((person) => {
+		if (person.only_called_never_answered !== 1) return false;
+		if (filterType === "clients")
+			return person.isContact == 1 && person.isCoWorker == 0;
+		if (filterType === "coworkers")
+			return person.isCoWorker == 1 && person.isContact == 0;
+		return true;
+	});
+};
 
-	page.value = contactsStore.contacts.current_page;
+const filterContacts = () => {
+	applyLocalFilter(
+		(person) => person.isContact === 1 && person.isCoWorker === 0,
+	);
+};
+
+const filterCoworkers = () => {
+	applyLocalFilter(
+		(person) => person.isCoWorker === 1 && person.isContact === 0,
+	);
+};
+
+const fetchNeverCalledContacts = async (filterType = null) => {
+	await contactsStore.fetchContacts();
+
+	applyLocalFilter((person) => {
+		if (person.first_event !== 0 || person.isNew !== 1) return false;
+		if (filterType === "clients")
+			return person.isContact == 1 && person.isCoWorker == 0;
+		if (filterType === "coworkers")
+			return person.isCoWorker == 1 && person.isContact == 0;
+		return true;
+	});
+};
+
+// Load more handler — called by the "Load more" button
+const loadMore = async () => {
+	if (!hasMoreResults.value) return;
+
+	// wrong_number uses backend pagination
+	if (activeFilter.value === "wrong_number") {
+		contactsStore.loadingState = true;
+		await fetchWrongNumberContacts(
+			contactsStore.searchQuery || "",
+			wrongNumberPage.value + 1,
+		);
+		contactsStore.loadingState = false;
+		return;
+	}
+
+	// All other filters are local — just reveal next chunk
+	const next = displayedCount.value + CHUNK;
+	people.value = allFilteredResults.value.slice(0, next);
+	displayedCount.value = next;
+	hasMoreResults.value = next < allFilteredResults.value.length;
 };
 
 const toggleCallList = async () => {
@@ -122,14 +189,11 @@ const toggleCheckbox = (id) => {
 		if (index === -1) {
 			selected.value.push(person);
 			contactsStore.selectedContacts.push(person);
-			console.log("added contacts in store:", contactsStore.selectedContacts);
 		} else {
 			selected.value.splice(index, 1);
 			contactsStore.selectedContacts.splice(index, 1);
-			console.log("Deleted contacts in store:", contactsStore.selectedContacts);
 		}
 	}
-	console.log("Selected", selected.value);
 };
 
 const isSelected = (id) => {
@@ -141,19 +205,12 @@ function addPerson(addedPeople) {
 
 	if (addedPeople) {
 		contactsStore.addToContactsStore(addedPeople);
-		people.value = contactsStore.contacts.data.map((person) => {
-			let cssClass = "";
-			if (person.first_event === 0) cssClass += "bg-green-200 ";
-			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
-			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
-			return { ...person, class: cssClass.trim() };
-		});
+		people.value = contactsStore.contacts.data.map(mapWithClass);
 	}
 }
 
 function alterPerson() {
 	showAlterPesonForm.value = !showAlterPesonForm.value;
-	console.log(showAlterPesonForm.value);
 }
 
 const findPerson = async (id) => {
@@ -194,21 +251,11 @@ onUnmounted(() => {
 onMounted(async () => {
 	document.addEventListener("click", closeMenuOnOutsideClick);
 	try {
-		console.log("Fetching contacts...");
 		if (contactsStore.contacts.length === 0) {
 			await contactsStore.fetchContacts();
 		}
 
-		people.value = contactsStore.contacts.data.map((person) => {
-			let cssClass = "";
-			console.log("person value", person);
-			if (person.first_event === 0) cssClass += "bg-green-200 ";
-			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
-			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
-			return { ...person, class: cssClass.trim() };
-		});
-
-		console.log("poeple value", people.value);
+		people.value = contactsStore.contacts.data.map(mapWithClass);
 	} catch (error) {
 		console.error("Error:", error);
 	}
@@ -216,7 +263,6 @@ onMounted(async () => {
 	try {
 		await userStore.fetchUser();
 		user_id.value = userStore.user.id;
-		console.log(user_id.value);
 	} catch (error) {
 		console.error("Error:", error);
 	}
@@ -238,21 +284,9 @@ const handleSearchResults = async (results) => {
 
 	if (Array.isArray(results)) {
 		contactsStore.contacts = { ...contactsStore.contacts, data: results };
-		people.value = results.map((person) => {
-			let cssClass = "";
-			if (person.first_event === 0) cssClass += "bg-green-200 ";
-			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
-			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
-			return { ...person, class: cssClass.trim() };
-		});
+		people.value = results.map(mapWithClass);
 	} else if (results && results.data) {
-		people.value = results.data.map((person) => {
-			let cssClass = "";
-			if (person.first_event === 0) cssClass += "bg-green-200 ";
-			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
-			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
-			return { ...person, class: cssClass.trim() };
-		});
+		people.value = results.data.map(mapWithClass);
 	}
 };
 
@@ -318,36 +352,9 @@ const items = (row) => [
 ];
 
 const nextPage = async () => {
-	if (filterWrongNumbers.value) {
-		await contactsStore.nextPage();
-		const response = await axios.get(
-			`${config.public.apiUrl}search-bad-phone-contacts`,
-			{
-				params: {
-					query: contactsStore.searchQuery || "",
-					page: contactsStore.contacts.current_page + 1,
-				},
-				headers: { Authorization: `Bearer ${authStore.token}` },
-			},
-		);
-		const data = response.data.contacts;
-		contactsStore.contacts = data;
-		page.value = data.current_page;
-		people.value = data.data.map((person) => ({
-			...person,
-			class: "bg-orange-300",
-		}));
-		return;
-	}
 	await contactsStore.nextPage();
 	page.value = contactsStore.contacts.current_page;
-	people.value = contactsStore.contacts.data.map((person) => {
-		let cssClass = "";
-		if (person.first_event === 0) cssClass += "bg-green-200 ";
-		if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
-		if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
-		return { ...person, class: cssClass.trim() };
-	});
+	people.value = contactsStore.contacts.data.map(mapWithClass);
 };
 
 const updatePerson = async (updatedContact) => {
@@ -363,7 +370,6 @@ const updatePerson = async (updatedContact) => {
 		}
 
 		showAlterPesonForm.value = false;
-		console.log("Contact updated successfully");
 	} catch (error) {
 		console.error("Error updating contact:", error);
 		alert(`Failed to update contact: ${error.message}`);
@@ -383,7 +389,6 @@ const showCallListForm = ref(false);
 
 const cancleCallListForm = (status) => {
 	showCallListForm.value = !showCallListForm.value;
-	console.log("cancleCallListForm");
 	if (status === 201 || status === 200) {
 		// alert("Call list created successfully");
 	}
@@ -394,13 +399,7 @@ const totalPages = computed(() => contactsStore.contacts.last_page || 1);
 const goToPage = async (pageNum) => {
 	await contactsStore.goToPage(pageNum);
 	page.value = contactsStore.contacts.current_page;
-	people.value = contactsStore.contacts.data.map((person) => {
-		let cssClass = "";
-		if (person.first_event === 0) cssClass += "bg-green-200 ";
-		if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
-		if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
-		return { ...person, class: cssClass.trim() };
-	});
+	people.value = contactsStore.contacts.data.map(mapWithClass);
 };
 
 const pageNumbers = computed(() => {
@@ -458,40 +457,56 @@ function toggleShowFilterModal() {
 	showFilterModal.value = !showFilterModal.value;
 }
 
+const currentFilter = ref(null);
+
 const selectFilter = async (filter) => {
 	if (activeFilter.value === filter || filter === "none") {
+		currentFilter.value = null;
 		activeFilter.value = null;
 		contactsStore.searchQuery = "";
+		hasMoreResults.value = false;
+		allFilteredResults.value = [];
+		filterWrongNumbers.value = false;
 		await contactsStore.fetchContacts();
-		people.value = contactsStore.contacts.data.map((person) => {
-			let cssClass = "";
-			if (person.first_event === 0) cssClass += "bg-green-200 ";
-			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
-			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
-			return { ...person, class: cssClass.trim() };
-		});
+		people.value = contactsStore.contacts.data.map(mapWithClass);
 		page.value = contactsStore.contacts.current_page;
 	} else {
 		activeFilter.value = filter;
 
 		if (filter === "wrong_number") {
+			currentFilter.value = "Zlé telefónne číslo";
+			filterWrongNumbers.value = false; // reset so toggleWrongNumberFilter turns it on
 			await toggleWrongNumberFilter();
 		}
 		if (filter === "never_answered_clients") {
 			contactsStore.searchQuery = "";
+			currentFilter.value = "Nikdy nezdvihli - klienti";
 			await fetchNeverAnsweredContacts("clients");
 		}
 		if (filter === "never_answered_coworkers") {
 			contactsStore.searchQuery = "";
+			currentFilter.value = "Nikdy nezdvihli - kolegovia";
 			await fetchNeverAnsweredContacts("coworkers");
 		}
 		if (filter === "never_called_clients") {
 			contactsStore.searchQuery = "";
+			currentFilter.value = "Nikdy nevolané - klienti";
 			await fetchNeverCalledContacts("clients");
 		}
 		if (filter === "never_called_coworkers") {
 			contactsStore.searchQuery = "";
+			currentFilter.value = "Nikdy nevolané - kolegovia";
 			await fetchNeverCalledContacts("coworkers");
+		}
+		if (filter === "clients") {
+			contactsStore.searchQuery = "";
+			currentFilter.value = "Zobrazit všetkých klientov";
+			await filterContacts();
+		}
+		if (filter === "Kolegovia") {
+			contactsStore.searchQuery = "";
+			currentFilter.value = "Zobrazit všetkých kolegov";
+			await filterCoworkers();
 		}
 
 		toggleShowFilterModal();
@@ -499,29 +514,6 @@ const selectFilter = async (filter) => {
 };
 
 const filterNeverCalled = ref(false);
-
-const fetchNeverCalledContacts = async (filterType = null) => {
-	await contactsStore.fetchContacts();
-
-	people.value = contactsStore.contacts.data
-		.filter((person) => {
-			if (person.first_event !== 0 || person.isNew !== 1) return false;
-			if (filterType === "clients")
-				return person.isContact == 1 && person.isCoWorker == 0;
-			if (filterType === "coworkers")
-				return person.isCoWorker == 1 && person.isContact == 0;
-			return true;
-		})
-		.map((person) => {
-			let cssClass = "";
-			if (person.first_event === 0) cssClass += "bg-green-200 ";
-			if (person.only_called_never_answered === 1) cssClass += "bg-blue-200 ";
-			if (person.wrong_number === 1) cssClass += "bg-orange-300 ";
-			return { ...person, class: cssClass.trim() };
-		});
-
-	page.value = contactsStore.contacts.current_page;
-};
 
 const syncingAll = ref(false);
 const deletingAll = ref(false);
@@ -537,20 +529,13 @@ const syncAllToGoogle = async () => {
 	try {
 		const res = await axios.post(
 			`${config.public.apiUrl}google/contacts/sync-all`,
-			{
-				userId: user_id.value,
-			},
-			{
-				headers: { Authorization: `Bearer ${authStore.token}` },
-			},
+			{ userId: user_id.value },
+			{ headers: { Authorization: `Bearer ${authStore.token}` } },
 		);
 		syncStats.value = res.data;
 		toast.success(
 			`✅ Synchronizovaných ${res.data.synced}/${res.data.total} kontaktov`,
-			{
-				position: "top-right",
-				timeout: 5000,
-			},
+			{ position: "top-right", timeout: 5000 },
 		);
 	} catch (error) {
 		toast.error(error.response?.data?.error ?? "Chyba pri synchronizácii", {
@@ -602,24 +587,6 @@ const closeMenuOnOutsideClick = (e) => {
 </script>
 
 <template>
-	<!-- <button
-		class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg font-semibold shadow-md flex items-center gap-2 disabled:opacity-50"
-		:disabled="syncingAll"
-		@click="syncAllToGoogle"
-	>
-		<span v-if="syncingAll">⏳ Synchronizujem...</span>
-		<span v-else>☁️ Sync všetkých do Google</span>
-	</button>
-
-	<button
-		class="bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg font-semibold shadow-md flex items-center gap-2 disabled:opacity-50"
-		:disabled="deletingAll"
-		@click="deleteAllFromGoogle"
-	>
-		<span v-if="deletingAll">⏳ Mažem...</span>
-		<span v-else>🗑️ Vymazať z Google</span>
-	</button> -->
-
 	<div class="">
 		<SelectedContactsComponent
 			v-if="showSelectedContactsBool"
@@ -641,6 +608,10 @@ const closeMenuOnOutsideClick = (e) => {
 					style="font-size: 36px"
 					class="text-red mt-7 mr-4 cursor-pointer hover:scale-110"
 				/>
+
+				<div class="font-semibold text-md mt-7 mr-4">
+					{{ currentFilter }}
+				</div>
 
 				<div class="relative menu-dropdown-wrapper">
 					<UTooltip
@@ -707,7 +678,6 @@ const closeMenuOnOutsideClick = (e) => {
 						/>
 					</UTooltip>
 
-					<!-- small modal under button -->
 					<div
 						v-if="showFilterModal"
 						class="absolute right-0 mt-2 w-64 bg-white shadow-xl rounded-lg border p-3 z-50"
@@ -772,6 +742,30 @@ const closeMenuOnOutsideClick = (e) => {
 							]"
 						>
 							Zlé telefónne číslo
+						</div>
+
+						<div
+							@click="selectFilter('clients')"
+							:class="[
+								'flex items-center gap-2 text-sm py-1.5 px-1 cursor-pointer rounded-md',
+								activeFilter === 'clients'
+									? 'bg-slate-200'
+									: 'hover:bg-slate-200',
+							]"
+						>
+							Zobraziť všetky kontakty na klientov
+						</div>
+
+						<div
+							@click="selectFilter('Kolegovia')"
+							:class="[
+								'flex items-center gap-2 text-sm py-1.5 px-1 cursor-pointer rounded-md',
+								activeFilter === 'Kolegovia'
+									? 'bg-slate-200'
+									: 'hover:bg-slate-200',
+							]"
+						>
+							Zobraziť všetky kontakty na spolupracovníkov
 						</div>
 					</div>
 				</div>
@@ -937,10 +931,33 @@ const closeMenuOnOutsideClick = (e) => {
 		</template>
 	</UTable>
 
-	<!-- Pagination -->
+	<!-- Load More button (only when a filter is active and there are more results) -->
+	<div
+		v-if="activeFilter !== null && hasMoreResults"
+		class="flex justify-center mt-6 mb-4"
+	>
+		<button
+			@click="loadMore"
+			:disabled="contactsStore.loadingState"
+			class="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg shadow-md"
+		>
+			<span v-if="contactsStore.loadingState">Načítavam...</span>
+			<span v-else>Načítať viac</span>
+		</button>
+	</div>
+
+	<!-- No more results message (filter active, all shown) -->
+	<div
+		v-if="activeFilter !== null && !hasMoreResults && people.length > 0"
+		class="flex justify-center mt-4 mb-4 text-sm text-gray-400"
+	>
+		Všetky výsledky sú zobrazené
+	</div>
+
+	<!-- Normal pagination (only when no filter is active) -->
 	<div
 		class="flex justify-center items-center gap-2 mt-[30px] mb-[50px]"
-		v-if="!contactsStore.searchQuery"
+		v-if="!contactsStore.searchQuery && activeFilter === null"
 	>
 		<div
 			class="cursor-pointer"

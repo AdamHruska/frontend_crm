@@ -263,6 +263,11 @@
 									<th
 										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
 									>
+										Prvý telefonát
+									</th>
+									<th
+										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
+									>
 										1. stretnutie
 									</th>
 									<th
@@ -285,6 +290,11 @@
 									>
 										Realizácia
 									</th>
+									<th
+										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
+									>
+										Počet odporučení
+									</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -305,6 +315,9 @@
 											></span>
 											{{ row.priezvisko }} {{ row.meno }}
 										</div>
+									</td>
+									<td class="px-4 py-3 text-center">
+										<DateCell :date="row.prvStretnutieCreatedAt" />
 									</td>
 									<td class="px-4 py-3 text-center">
 										<DateCell
@@ -341,6 +354,14 @@
 											:done="row.realizaciaD"
 											:status="row.realizaciaStatus"
 										/>
+									</td>
+									<td class="px-4 py-3 text-center">
+										<span
+											v-if="row.recommendationsByName !== null"
+											class="font-['DM_Mono'] text-slate-700 font-medium"
+											>{{ row.recommendationsByName }}</span
+										>
+										<span v-else class="text-slate-300">—</span>
 									</td>
 								</tr>
 								<tr v-if="filteredNove.length === 0">
@@ -403,6 +424,11 @@
 									>
 										Serv. realizácia
 									</th>
+									<th
+										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
+									>
+										Počet odporučení
+									</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -453,6 +479,14 @@
 											:status="row.servisRealizaciaStatus"
 										/>
 									</td>
+									<td class="px-4 py-3 text-center">
+										<span
+											v-if="row.recommendationsByName !== null"
+											class="font-['DM_Mono'] text-slate-700 font-medium"
+											>{{ row.recommendationsByName }}</span
+										>
+										<span v-else class="text-slate-300">—</span>
+									</td>
 								</tr>
 								<tr v-if="filteredServisne.length === 0">
 									<td
@@ -488,6 +522,8 @@ const toast = useToast();
 const klienti = ref([]);
 const selectedTimUser = ref(null);
 
+const id = ref(null);
+
 function formatLocalDate(date) {
 	const year = date.getFullYear();
 	const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -516,6 +552,7 @@ function userInitials(user) {
 function switchToMoje() {
 	viewMode.value = "moje";
 	selectedTimUser.value = null;
+	id.value = userStore.user?.id ?? null;
 	fetchData();
 }
 
@@ -533,11 +570,14 @@ function selectTimUser(user) {
 		return;
 	}
 	selectedTimUser.value = user;
+	id.value = user.id;
 	fetchData();
 }
 
 const fetchData = async () => {
 	loadingState.value = true;
+
+	console.log("selected id", id.value);
 
 	const params = {
 		from: dateFrom.value,
@@ -547,6 +587,8 @@ const fetchData = async () => {
 	// pass the selected team user's id when in tim mode
 	if (viewMode.value === "tim" && selectedTimUser.value) {
 		params.user_id = selectedTimUser.value.id;
+	} else {
+		params.user_id = userStore.user?.id;
 	}
 
 	const res = await axios.get(`${config.public.apiUrl}monthly-overview`, {
@@ -559,7 +601,9 @@ const fetchData = async () => {
 	loadingState.value = false;
 };
 
-onMounted(() => {
+onMounted(async () => {
+	await userStore.fetchUser();
+	id.value = userStore.user?.id;
 	fetchData();
 });
 

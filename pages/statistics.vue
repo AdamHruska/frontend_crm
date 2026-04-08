@@ -175,13 +175,13 @@
 				</div>
 			</div>
 
-			<select
+			<!-- <select
 				v-model="selectedActivityType"
 				class="border rounded p-2 bg-white shadow-md"
 				@change="fetchData"
 			>
 				<option value="Telefonát klient">Telefonát klient</option>
-			</select>
+			</select> -->
 
 			<!-- Statistics Cards -->
 			<div
@@ -688,6 +688,7 @@ const seminarActivitesNames = ref([]);
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const showVolaneFollower = (data, event) => {
+	if (hideTimeout) clearTimeout(hideTimeout);
 	dataInFollower.value = Array.isArray(data) ? data : [];
 	if (dataInFollower.value.length === 0) {
 		dataInFollower.value = [{ meno: "Žiadni ľudia", priezvisko: "" }];
@@ -698,12 +699,13 @@ const showVolaneFollower = (data, event) => {
 };
 
 const hideFollower = () => {
+	if (hideTimeout) clearTimeout(hideTimeout);
 	hideTimeout = setTimeout(() => {
 		if (!isHoveringFollower.value) {
 			showFollower.value = false;
 			dataInFollower.value = [];
 		}
-	}, 150);
+	}, 300);
 };
 
 const goToContact = (id) => {
@@ -947,6 +949,7 @@ const updateDateRange = () => {
 };
 
 const showPohovoryFollower = (key, event) => {
+	if (hideTimeout) clearTimeout(hideTimeout);
 	if (!dataPohovory.value?.grouped_people?.[key]) {
 		dataInFollower.value = [{ meno: "Žiadni ľudia", priezvisko: "" }];
 	} else {
