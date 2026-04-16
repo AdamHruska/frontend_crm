@@ -208,18 +208,16 @@ const toggleAutoCreateOutlookEvent = async () => {
 			<MyCalendarShareTable1 :user="userStore.user" class="" />
 			<SharingTable6 />
 		</div>
-		<div class="flex w-full mt-6">
-			<!-- First Table -->
+		<!-- <div class="flex w-full mt-6">
 			<MyInvitationsTable2 />
-			<!-- Second Table -->
 			<SharingIvitationsTable3 />
-		</div>
+		</div> -->
 
 		<!-- Third Table -->
-		<div class="flex mt-6">
+		<!-- <div class="flex mt-6">
 			<SharingTable4 />
 			<SharingTable5 />
-		</div>
+		</div> -->
 		<!-- Modified history section -->
 		<div class="mt-6">
 			<div class="flex items-center mb-4 pl-4">

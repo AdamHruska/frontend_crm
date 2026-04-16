@@ -6,6 +6,7 @@ import axios from "axios";
 const props = defineProps({
 	activityID: String,
 	user: Object,
+	people: Object,
 });
 
 import { useUserStore } from "#imports";
@@ -358,7 +359,8 @@ const updateActivity = async () => {
 						},
 					);
 				}
-
+				const datumCasDate = new Date(datum_cas.value);
+				const koniecDate = new Date(koniec.value);
 				const newActivity = {
 					aktivita:
 						aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
@@ -918,20 +920,25 @@ const setActive = (n) => {
 			</div>
 
 			<div
-				v-if="userStore.user.id == activity_creator"
+				v-if="
+					userStore.user.id == activity_creator ||
+					(people &&
+						people.length > 0 &&
+						people[0].shared_author == userStore.user.id)
+				"
 				class="flex justify-center items-center mt-3 gap-6"
 			>
 				<button
 					@click="updateActivity()"
 					class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
 				>
-					Update
+					Upraviť
 				</button>
 				<button
 					@click="deleteActivity()"
 					class="text-white bg-red-500 hover:bg-red-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center dark:bg-red-500 dark:hover:bg-red-60"
 				>
-					Delete
+					Vymazať
 				</button>
 			</div>
 		</form>

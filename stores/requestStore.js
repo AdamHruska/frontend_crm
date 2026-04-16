@@ -2,6 +2,8 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import { useAuthStore } from "@/stores/authStore";
 import { useUserStore } from "#imports";
+import { useToast } from "vue-toastification";
+const toast = useToast();
 
 export const useRequestStore = defineStore("request", {
 	// Note the change from "auth" to "user"
@@ -428,6 +430,7 @@ export const useRequestStore = defineStore("request", {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
 			const token = authStore.token;
+			const toast = useToast();
 
 			const fullName = first_name + " " + last_name;
 
@@ -457,12 +460,14 @@ export const useRequestStore = defineStore("request", {
 					...this.letThemViewMineSkuska,
 					response.data.data,
 				];
-				if (response.status == 201) {
-					alert("Požiadavka bola úspešne odoslaná");
-				}
+				// if (response.status == 201) {
+				// 	alert("Požiadavka bola úspešne odoslaná");
+				// }
+				toast.success("Požiadavka bola úspešne odoslaná.");
 			} catch (error) {
 				console.error("Error deleting request:", error);
 				this.error = error.message;
+				toast.error("Chyba pri odoslaní požiadavky.");
 				throw error;
 			}
 		},
@@ -541,8 +546,11 @@ export const useRequestStore = defineStore("request", {
 				);
 			} catch (error) {
 				console.error("Error deleting request:", error);
+				toast.error("Chyba při zrušení sdílení kalendáře.");
 				this.error = error.message;
 				throw error;
+			} finally {
+				toast.success("Zdieľanie kalendára bolo úspěšne zrušeno.");
 			}
 		},
 	},

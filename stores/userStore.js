@@ -236,7 +236,7 @@ export const useUserStore = defineStore("user", {
 
 				// Call the API to remove shared user
 				await axios.post(
-					`${config.public.apiUrl}null-share-id/${id}`,
+					`${config.public.apiUrl}remove-shared-user/${id}`,
 					{},
 					{
 						headers: {

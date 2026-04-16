@@ -1353,7 +1353,10 @@ const closeMenuOnOutsideClick = (e) => {
 						</div>
 					</template>
 
-					<template #actions-data="{ row }" v-if="author_id == user_id">
+					<template
+						#actions-data="{ row }"
+						v-if="author_id == user_id || people[0].shared_author == user_id"
+					>
 						<UDropdown :items="activity_items(row)" theme="light">
 							<UButton
 								color="gray"
@@ -1419,6 +1422,7 @@ const closeMenuOnOutsideClick = (e) => {
 	<AlterActivityForm
 		v-if="actityFormBool"
 		:activityID="activityID"
+		:people="people"
 		@cancelAddActivity="alterActivity"
 	/>
 </template>

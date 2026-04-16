@@ -4,6 +4,9 @@ import { useAuthStore } from "@/stores/authStore";
 import { useUserStore } from "#imports";
 import { useRequestStore } from "~/stores/requestStore";
 
+import { useToast } from "vue-toastification";
+const toast = useToast();
+
 const userStore = useUserStore();
 const authStore = useAuthStore();
 const requestStore = useRequestStore();
@@ -18,7 +21,10 @@ const isLoading = ref(true); // Add loading state
 onMounted(async () => {
 	try {
 		isLoading.value = true;
-		await userStore.fetchUsers(); // Assuming this is the method to fetch users
+		if (!userStore.allUsers.length) {
+			await userStore.fetchUsers();
+		}
+
 		filteredUsers.value = userStore.allUsers;
 	} finally {
 		isLoading.value = false;
@@ -138,9 +144,9 @@ const createRequestSeeMyCal = async (userId, first_name, last_name) => {
 							"
 							class="mr-1 bg-blue-500 text-white px-2 py-1 rounded-md hover:bg-blue-600 shadow"
 						>
-							vidieť môj
+							Zdielať môj kalendár
 						</button>
-						<button
+						<!-- <button
 							@click="
 								createRequestSeeTheirCal(
 									user.id,
@@ -151,7 +157,7 @@ const createRequestSeeMyCal = async (userId, first_name, last_name) => {
 							class="ml-1 bg-green-500 text-white px-2 py-1 rounded-md hover:bg-green-600 shadow"
 						>
 							vidieť ich
-						</button>
+						</button> -->
 					</div>
 				</li>
 				<li v-if="filteredUsers.length === 0" class="p-2 text-gray-500">

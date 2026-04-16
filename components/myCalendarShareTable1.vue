@@ -37,6 +37,8 @@ const sharedUsers = computed(() => userStore.sharedUsers);
 
 // event BUS
 import eventBus from "@/eventBus";
+import { useToast } from "vue-toastification";
+const toast = useToast();
 
 const deleteSharedUser = async (id) => {
 	const user = userStore.sharedUsers.find((u) => u.id === id);
@@ -59,8 +61,10 @@ const deleteSharedUser = async (id) => {
 			userStore.sharedUsers = userStore.sharedUsers.filter((u) => u.id !== id);
 		} catch (error) {
 			console.error("Error deleting user:", error);
+			toast.error("Nastala chyba pri odstraňovaní používateľa"); // Show error toast
 		} finally {
 			user.isLoading = false;
+			toast.success("Používateľ bol úspešne odstránený"); // Show success toast
 		}
 	}
 };

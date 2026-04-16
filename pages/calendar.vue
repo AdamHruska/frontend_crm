@@ -1,7 +1,8 @@
 <script setup></script>
 
 <template>
-	<FullCalendar />
+	<!-- <FullCalendar /> -->
+	<FullCalendarSecond />
 </template>
 
 <style scoped>

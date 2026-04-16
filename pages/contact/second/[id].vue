@@ -864,7 +864,12 @@ const contactInitials = computed(() => {
 								<span v-else class="td-note">{{ row.miesto_stretnutia }}</span>
 							</td>
 
-							<td @click.stop v-if="author_id == user_id">
+							<td
+								@click.stop
+								v-if="
+									author_id == user_id || people[0]?.shared_author == user_id
+								"
+							>
 								<UDropdown :items="activity_items(row)" theme="light">
 									<button class="icon-btn">
 										<Icon

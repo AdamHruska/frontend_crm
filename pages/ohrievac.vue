@@ -293,7 +293,7 @@
 									<th
 										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
 									>
-										Počet odporučení
+										Počet odporúčaní
 									</th>
 								</tr>
 							</thead>
@@ -427,7 +427,7 @@
 									<th
 										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
 									>
-										Počet odporučení
+										Počet odporúčaní
 									</th>
 								</tr>
 							</thead>

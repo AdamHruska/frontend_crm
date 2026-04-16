@@ -34,6 +34,9 @@ const userStore = useUserStore();
 import { useRequestStore } from "#imports";
 const requestStore = useRequestStore();
 
+import { useToast } from "vue-toastification";
+const toast = useToast();
+
 // Use computed property for reactivity
 const seesMyCalendar = computed(() => requestStore.seesMyCalendar);
 
@@ -44,6 +47,7 @@ onMounted(async () => {
 
 const deleteSeesMine = async (id) => {
 	await requestStore.deleteRequestSeesMyCal(id);
+	toast.success("Zdieľanie kalendára bolo úspešne zrušené.");
 };
 </script>
 

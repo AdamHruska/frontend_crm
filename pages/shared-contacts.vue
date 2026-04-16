@@ -188,6 +188,9 @@ const deletePerson = async (id) => {
 token.value = sessionStorage.getItem("token");
 
 onMounted(async () => {
+	if (userStore.allUsers.length === 0) await userStore.fetchUsers();
+	console.log("All users:", userStore.allUsers);
+
 	try {
 		console.log("Fetching shared contacts...");
 
@@ -401,7 +404,7 @@ const columnsSecond = [
 		class: "w-[160px]",
 	},
 	{
-		key: "odporucitel",
+		key: "shared_author",
 		label: "Zdielané s",
 		class: "w-[160px]",
 	},
@@ -709,6 +712,11 @@ const fetchCallLists = async () => {
 const showDelegateForm = ref(false);
 
 const showShareContacts = ref(false);
+
+const getUserName = (userId) => {
+	const user = userStore.allUsers.find((u) => u.id === userId);
+	return user ? user.username : "Neznámy užívateľ";
+};
 </script>
 
 <template>
@@ -934,6 +942,10 @@ const showShareContacts = ref(false);
 					:checked="isSelected(row.id)"
 				/>
 			</div>
+		</template>
+
+		<template #shared_author-data="{ row }">
+			<div>{{ getUserName(row.shared_author) }}</div>
 		</template>
 
 		<template #poznamka-data="{ row }">

@@ -1868,9 +1868,43 @@ const isMounted = ref(false);
 								<span>Odhlásiť sa z Google účtu</span>
 								<img src="/public/google_icon.png" alt="logo" />
 							</button>
+
+							<div
+								class="bg-[#D1D5DB] px-2 py-2 rounded-md shadow flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3 flex flex-col text-center"
+							>
+								<h3 class="font-semibold">Microsoft Kalendáre</h3>
+								<div
+									v-if="!calendarListLoading"
+									v-for="calendar in calendarList"
+									:key="calendar.id"
+									@click="
+										userStore.userAddCalendarName(
+											calendar.name,
+											currentLoadedMonth,
+											currentLoadedYear,
+										)
+									"
+									class="w-full rounded-md py-1 cursor-pointer transition-colors"
+									:class="[
+										'p-2 rounded cursor-pointer',
+										Array.isArray(userStore.selected_calendar_names) &&
+										userStore.selected_calendar_names.includes(calendar.name)
+											? 'bg-green-500 text-white hover:bg-green-400'
+											: 'bg-gray-200 hover:bg-slate-100',
+									]"
+								>
+									{{ calendar.name }}
+								</div>
+								<div
+									v-if="calendarListLoading"
+									class="mt-3 font-bold text-base"
+								>
+									Načitavanie kalendárov...
+								</div>
+							</div>
 						</div>
 					</transition>
-					<div
+					<!-- <div
 						class="bg-[#D1D5DB] px-2 py-2 rounded-md shadow flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3 flex flex-col text-center"
 					>
 						<h3 class="font-semibold">Microsoft Kalendáre</h3>
@@ -1899,7 +1933,7 @@ const isMounted = ref(false);
 						<div v-if="calendarListLoading" class="mt-3 font-bold text-base">
 							Načitavanie kalendárov...
 						</div>
-					</div>
+					</div> -->
 					<!-- <button
 						class="bg-red-800 px-4 rounded-md shadow hover:bg-red-700 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
 						@click="toggleCreateMicrosoftEvent"

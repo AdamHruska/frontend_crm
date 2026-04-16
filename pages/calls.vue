@@ -286,6 +286,42 @@ const deleteCallList = async (id) => {
 	await callListStore.deleteCallList(id);
 	call_lists.value = callListStore.callLists;
 };
+
+const editingCallListId = ref(null);
+const editingCallListName = ref("");
+
+const startEditCallList = (callList, event) => {
+	event.stopPropagation();
+	editingCallListId.value = callList.id;
+	editingCallListName.value = callList.name;
+};
+
+const cancelEditCallList = () => {
+	editingCallListId.value = null;
+	editingCallListName.value = "";
+};
+
+const saveCallListName = async (id) => {
+	if (!editingCallListName.value.trim()) return;
+	try {
+		await axios.put(
+			`${config.public.apiUrl}call-lists/${id}`,
+			{ name: editingCallListName.value.trim() },
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+					"Content-Type": "application/json",
+				},
+			},
+		);
+		const list = call_lists.value.find((l) => l.id === id);
+		if (list) list.name = editingCallListName.value.trim();
+		callListStore.callLists = [...call_lists.value];
+	} catch (error) {
+		console.error("Failed to update call list name:", error);
+	}
+	cancelEditCallList();
+};
 </script>
 
 <template>
@@ -299,7 +335,7 @@ const deleteCallList = async (id) => {
 			<CallsSearchBar @updateResults="updateResults" :call_lists="call_lists" />
 
 			<div class="py-3">
-				<div
+				<!-- <div
 					v-for="call_list in call_lists"
 					:key="call_list.id"
 					:class="[
@@ -320,7 +356,65 @@ const deleteCallList = async (id) => {
 					>
 						X
 					</button>
+				</div> -->
+
+				<div
+					v-for="call_list in call_lists"
+					:key="call_list.id"
+					:class="[
+						'flex items-center gap-1 px-3 py-2 hover:bg-gray-100 rounded-md cursor-pointer',
+						call_list.id === callListStore.selectedCallList
+							? 'bg-gray-300 shadow-sm'
+							: '',
+					]"
+				>
+					<!-- Edit mode -->
+					<template v-if="editingCallListId === call_list.id">
+						<input
+							v-model="editingCallListName"
+							class="flex-1 min-w-0 text-sm border border-gray-300 rounded px-1 py-0.5 bg-white"
+							@keyup.enter="saveCallListName(call_list.id)"
+							@keyup.escape="cancelEditCallList"
+							@click.stop
+							autofocus
+						/>
+						<button
+							class="text-green-600 font-bold px-1 hover:text-green-800"
+							@click.stop="saveCallListName(call_list.id)"
+						>
+							✓
+						</button>
+						<button
+							class="text-gray-400 px-1 hover:text-gray-600"
+							@click.stop="cancelEditCallList"
+						>
+							✕
+						</button>
+					</template>
+
+					<!-- View mode -->
+					<template v-else>
+						<span
+							class="flex-1 min-w-0 truncate text-sm"
+							@click="getCallList(call_list.id)"
+							>{{ call_list.name }}</span
+						>
+						<button
+							class="text-gray-400 hover:text-gray-700 px-1 text-sm"
+							title="Premenovať"
+							@click="startEditCallList(call_list, $event)"
+						>
+							✎
+						</button>
+						<button
+							class="text-red-500 font-bold hover:text-red-700 px-1 text-sm"
+							@click.stop="deleteCallList(call_list.id)"
+						>
+							✕
+						</button>
+					</template>
 				</div>
+
 				<div v-if="filteredCallLists.length">
 					<h2>Search Results</h2>
 					<ul>
