@@ -2,6 +2,7 @@
 const config = useRuntimeConfig();
 const router = useRouter();
 import { Icon } from "@iconify/vue";
+
 import axios from "axios";
 const props = defineProps({
 	activityID: String,
@@ -44,6 +45,7 @@ const ineBool = ref(false);
 const miesto_stretnutia = ref("");
 const onlineMeeting = ref(false);
 const activity_creator = ref("");
+const activity_status = ref("");
 
 const officeAvailability = ref({});
 
@@ -220,6 +222,7 @@ onMounted(async () => {
 	miesto_stretnutia.value = response.data.activity.miesto_stretnutia;
 	onlineMeeting.value = response.data.activity.onlineMeeting;
 	originalOnlineMeetingValue.value = response.data.activity.onlineMeeting;
+	activity_status.value = response.data.activity.activity_status;
 
 	const responseContact = await axios.get(
 		`${config.public.apiUrl}contact/${response.data.activity.contact_id}/admin`,
@@ -299,6 +302,7 @@ const updateActivity = async () => {
 				send_notification_15: active.value?.includes(15) || false,
 				send_notification_30: active.value?.includes(30) || false,
 				send_notification_60: active.value?.includes(60) || false,
+				activity_status: activity_status.value,
 			},
 			{
 				headers: {
@@ -666,19 +670,25 @@ const setActive = (n) => {
 					<option value="Analýza osobných financí">
 						Analýza osobných financí
 					</option>
-					<option value="Servisná analýza">Servisná analýza</option>
+					<option value="Servisná analýza">Analýza servisná</option>
 					<option value="poradenstvo nové">Poradenstvo nové</option>
-					<option value="servisné poradenstvo">Servisné poradenstvo</option>
-					<option value="realizácia">realizácia</option>
-					<option value="konfirmačný servis">konfirmačný servis</option>
-					<option value="servis">servis</option>
-					<option value="bringer bonus">bringer bonus</option>
-					<option value="káva">káva</option>
+					<option value="servisné poradenstvo">Poradenstvo servisné</option>
+					<option value="realizácia nová">Realizácia nová</option>
+					<option value="realizácia servisná">Realizácia servisná</option>
+					<option value="welcome seminár">Welcome seminár</option>
+					<option value="basic 1">Basic 1</option>
+					<option value="basic 2">Basic 2</option>
+					<option value="basic 3">Basic 3</option>
+					<option value="basic 4">Basic 4</option>
+					<option value="Post info">Post info</option>
+					<option value="konfirmačný servis">Konfirmačný servis</option>
+					<option value="servis">Servis</option>
+					<option value="bringer bonus">Bringer bonus</option>
+					<option value="káva">Káva</option>
 					<option value="stretnutie na zistenie stavu">
-						stretnutie na zistenie stavu
+						Stretnutie na zistenie stavu
 					</option>
-					<option value="súkromné">súkromné</option>
-					<option value="lekár">lekár</option>
+					<option value="súkromné">Súkromné</option>
 					<option value="ine">Iné vypíšem sám</option>
 				</select>
 				<input
@@ -934,7 +944,14 @@ const setActive = (n) => {
 				</div>
 			</div>
 
-			<div class="flex justify-between px-12 pb-4">
+			<div
+				class="flex justify-between px-12 pb-4"
+				v-if="
+					aktivita == 'Telefonát' ||
+					aktivita == 'Telefonát klient' ||
+					aktivita == 'Telefonát nábor'
+				"
+			>
 				<!-- VOLANE -->
 				<label class="cursor-pointer flex flex-col items-center gap-4">
 					<span
@@ -990,6 +1007,58 @@ const setActive = (n) => {
 					</label>
 				</div>
 			</div>
+			<!-- tu pridat -->
+			<div class="flex justify-center gap-4 mb-6">
+				<button
+					class="status-btn"
+					:class="{ active: activity_status === 'questionmark' }"
+					title="Otáznik"
+					@click.prevent="activity_status = 'questionmark'"
+				>
+					<Icon icon="pepicons-pencil:question" width="18" />
+				</button>
+
+				<button
+					class="status-btn status-btn-green"
+					:class="{
+						active:
+							activity_status === 'check' || activity_status === 'accepted',
+					}"
+					title="Dokončené"
+					@click.prevent="activity_status = 'check'"
+				>
+					<Icon icon="fa6-solid:check" width="14" />
+				</button>
+
+				<button
+					class="status-btn status-btn-red"
+					:class="{ active: activity_status === 'discarded' }"
+					title="Zamietnuté"
+					@click.prevent="activity_status = 'discarded'"
+				>
+					<Icon icon="material-symbols:close" width="18" />
+				</button>
+
+				<template v-if="aktivita === 'Pohovor'">
+					<button
+						class="status-btn status-btn-blue"
+						:class="{ active: activity_status === 'accepted' }"
+						title="Prijaté"
+						@click.prevent="activity_status = 'accepted'"
+					>
+						<Icon icon="fa6-solid:thumbs-up" width="14" />
+					</button>
+
+					<button
+						class="status-btn status-btn-orange"
+						:class="{ active: activity_status === 'rejected' }"
+						title="Odmietnuté"
+						@click.prevent="activity_status = 'rejected'"
+					>
+						<Icon icon="fa6-solid:thumbs-down" width="14" />
+					</button>
+				</template>
+			</div>
 
 			<div class="relative z-0 w-full mb-2 group flex items-center">
 				<label class="text-sm text-gray-500">Vytvoriť notifikáciu</label>
@@ -1010,13 +1079,13 @@ const setActive = (n) => {
 					@click="updateActivity()"
 					class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
 				>
-					Update
+					Upraviť
 				</button>
 				<button
 					@click="deleteActivity()"
 					class="text-white bg-red-500 hover:bg-red-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center dark:bg-red-500 dark:hover:bg-red-60"
 				>
-					Delete
+					Vymazať
 				</button>
 			</div>
 
@@ -1044,5 +1113,31 @@ const setActive = (n) => {
 <style scoped>
 * {
 	text: black !important;
+}
+
+.status-btn {
+	padding: 8px;
+	border-radius: 6px;
+	background: #eee;
+}
+
+.status-btn.active {
+	background: #dbeafe;
+}
+
+.status-btn-green.active {
+	background: #bbf7d0;
+}
+
+.status-btn-red.active {
+	background: #fecaca;
+}
+
+.status-btn-blue.active {
+	background: #bfdbfe;
+}
+
+.status-btn-orange.active {
+	background: #fed7aa;
 }
 </style>

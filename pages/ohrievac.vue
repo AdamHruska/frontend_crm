@@ -227,25 +227,70 @@
 								{{ filteredNove.length }} klientov
 							</span>
 						</div>
-						<div class="flex items-center gap-4 text-xs text-slate-500">
-							<span class="flex items-center gap-1.5"
-								><span
-									class="w-2 h-2 rounded-full bg-emerald-500 inline-block"
-								></span
-								>Vykonané</span
+
+						<div class="flex items-center gap-6">
+							<!-- ── Filter checkbox ── -->
+							<label
+								class="flex items-center gap-2 cursor-pointer select-none group"
 							>
-							<span class="flex items-center gap-1.5"
-								><span
-									class="w-2 h-2 rounded-full bg-rose-500 inline-block"
-								></span
-								>Neprebehlo</span
-							>
-							<span class="flex items-center gap-1.5"
-								><span
-									class="w-2 h-2 rounded-full bg-amber-400 inline-block"
-								></span
-								>Dohodnuté</span
-							>
+								<div class="relative">
+									<input
+										type="checkbox"
+										v-model="hideDiscardedStretnutie"
+										class="sr-only"
+									/>
+									<div
+										class="w-4 h-4 rounded border-2 transition-all flex items-center justify-center"
+										:class="
+											hideDiscardedStretnutie
+												? 'bg-indigo-600 border-indigo-600'
+												: 'bg-white border-slate-300 group-hover:border-indigo-400'
+										"
+									>
+										<svg
+											v-if="hideDiscardedStretnutie"
+											class="w-2.5 h-2.5 text-white"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2.5"
+											viewBox="0 0 12 10"
+										>
+											<path
+												d="M1 5l3.5 3.5L11 1"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+											/>
+										</svg>
+									</div>
+								</div>
+								<span
+									class="text-xs font-medium text-slate-600 whitespace-nowrap"
+								>
+									Skryť zrušené 1. stretnutia
+								</span>
+							</label>
+
+							<!-- Legend -->
+							<div class="flex items-center gap-4 text-xs text-slate-500">
+								<span class="flex items-center gap-1.5"
+									><span
+										class="w-2 h-2 rounded-full bg-emerald-500 inline-block"
+									></span
+									>Vykonané</span
+								>
+								<span class="flex items-center gap-1.5"
+									><span
+										class="w-2 h-2 rounded-full bg-rose-500 inline-block"
+									></span
+									>Neprebehlo</span
+								>
+								<span class="flex items-center gap-1.5"
+									><span
+										class="w-2 h-2 rounded-full bg-amber-400 inline-block"
+									></span
+									>Dohodnuté</span
+								>
+							</div>
 						</div>
 					</div>
 
@@ -289,6 +334,11 @@
 										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
 									>
 										Realizácia
+									</th>
+									<th
+										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
+									>
+										Dni 1.str → real.
 									</th>
 									<th
 										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
@@ -357,6 +407,22 @@
 									</td>
 									<td class="px-4 py-3 text-center">
 										<span
+											v-if="daysBetween(row) !== null"
+											class="inline-block font-['DM_Mono'] text-sm font-medium px-2 py-0.5 rounded-full"
+											:class="
+												daysBetween(row) <= 30
+													? 'bg-emerald-50 text-emerald-700'
+													: daysBetween(row) <= 90
+														? 'bg-amber-50 text-amber-700'
+														: 'bg-rose-50 text-rose-700'
+											"
+										>
+											{{ daysBetween(row) }}d
+										</span>
+										<span v-else class="text-slate-300">—</span>
+									</td>
+									<td class="px-4 py-3 text-center">
+										<span
 											v-if="row.recommendationsByName !== null"
 											class="font-['DM_Mono'] text-slate-700 font-medium"
 											>{{ row.recommendationsByName }}</span
@@ -366,7 +432,7 @@
 								</tr>
 								<tr v-if="filteredNove.length === 0">
 									<td
-										colspan="7"
+										colspan="9"
 										class="px-4 py-8 text-center text-slate-400 text-sm"
 									>
 										Žiadni klienti v tomto období
@@ -521,8 +587,10 @@ const toast = useToast();
 
 const klienti = ref([]);
 const selectedTimUser = ref(null);
-
 const id = ref(null);
+
+// ── Filter state ──
+const hideDiscardedStretnutie = ref(false);
 
 function formatLocalDate(date) {
 	const year = date.getFullYear();
@@ -536,11 +604,8 @@ const today = new Date();
 const dateFrom = ref(
 	formatLocalDate(new Date(today.getFullYear(), today.getMonth(), 1)),
 );
-
 const dateTo = ref(formatLocalDate(today));
-
 const viewMode = ref("moje");
-
 const loadingState = ref(false);
 
 function userInitials(user) {
@@ -563,7 +628,6 @@ function switchToTim() {
 }
 
 function selectTimUser(user) {
-	// clicking the already-selected user deselects
 	if (selectedTimUser.value?.id === user.id) {
 		selectedTimUser.value = null;
 		klienti.value = [];
@@ -576,7 +640,6 @@ function selectTimUser(user) {
 
 const fetchData = async () => {
 	loadingState.value = true;
-
 	console.log("selected id", id.value);
 
 	const params = {
@@ -584,7 +647,6 @@ const fetchData = async () => {
 		to: dateTo.value,
 	};
 
-	// pass the selected team user's id when in tim mode
 	if (viewMode.value === "tim" && selectedTimUser.value) {
 		params.user_id = selectedTimUser.value.id;
 	} else {
@@ -593,9 +655,7 @@ const fetchData = async () => {
 
 	const res = await axios.get(`${config.public.apiUrl}monthly-overview`, {
 		params,
-		headers: {
-			Authorization: `Bearer ${authStore.token}`,
-		},
+		headers: { Authorization: `Bearer ${authStore.token}` },
 	});
 	klienti.value = res.data;
 	loadingState.value = false;
@@ -608,7 +668,6 @@ onMounted(async () => {
 });
 
 watch([dateFrom, dateTo], () => {
-	// only re-fetch if we're in moje, or in tim with a user selected
 	if (
 		viewMode.value === "moje" ||
 		(viewMode.value === "tim" && selectedTimUser.value)
@@ -617,13 +676,19 @@ watch([dateFrom, dateTo], () => {
 	}
 });
 
-const filteredNove = computed(() =>
-	klienti.value.filter((r) => r.typ === "nove"),
-);
+// ── Base computed lists ──
+const baseNove = computed(() => klienti.value.filter((r) => r.typ === "nove"));
 
 const filteredServisne = computed(() =>
 	klienti.value.filter((r) => r.typ === "servisne"),
 );
+
+// ── Nové with optional filter applied ──
+const filteredNove = computed(() => {
+	if (!hideDiscardedStretnutie.value) return baseNove.value;
+	// Hide rows where 1. stretnutie status is 'discarded'
+	return baseNove.value.filter((r) => r.prvStretnutieStatus !== "discarded");
+});
 
 function rowColorClass(row) {
 	if (row.status === "green") return "bg-emerald-50 hover:bg-emerald-100/70";
@@ -639,6 +704,24 @@ function rowDot(row) {
 	return "bg-slate-300";
 }
 
+/**
+ * Days between Prvé stretnutie and Realizácia.
+ * Returns null unless BOTH have activity_status === 'check'.
+ */
+function daysBetween(row) {
+	if (row.prvStretnutieStatus !== "check" || row.realizaciaStatus !== "check") {
+		return null;
+	}
+	const a = row.datumPrvStretnutie;
+	const b = row.datumRealizacia;
+	if (!a || !b) return null;
+
+	const diff = Math.abs(
+		new Date(b).setHours(0, 0, 0, 0) - new Date(a).setHours(0, 0, 0, 0),
+	);
+	return Math.round(diff / 86_400_000);
+}
+
 const summaryStats = computed(() => {
 	const mienAoF = filteredNove.value.reduce(
 		(sum, r) => sum + (r.mienAoF || 0),
@@ -648,6 +731,21 @@ const summaryStats = computed(() => {
 		(sum, r) => sum + (r.mienAoF || 0),
 		0,
 	);
-	return [{ label: "Nových klientov", value: mienAoF + mienAnalyza }];
+
+	// Average days 1. stretnutie → realizácia (only rows where both are 'check')
+	const daysArr = filteredNove.value.map(daysBetween).filter((d) => d !== null);
+
+	const avgDays =
+		daysArr.length > 0
+			? Math.round(daysArr.reduce((s, d) => s + d, 0) / daysArr.length)
+			: null;
+
+	return [
+		{ label: "Nových klientov", value: mienAoF + mienAnalyza },
+		{
+			label: "Ø dni 1.str → real.",
+			value: avgDays !== null ? `${avgDays}d` : "—",
+		},
+	];
 });
 </script>

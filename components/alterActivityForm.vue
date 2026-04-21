@@ -44,6 +44,7 @@ const ineBool = ref(false);
 const miesto_stretnutia = ref("");
 const onlineMeeting = ref(false);
 const activity_creator = ref("");
+const activity_status = ref("");
 
 const officeAvailability = ref({});
 
@@ -213,7 +214,7 @@ onMounted(async () => {
 	} else {
 		dohodnute.value = false;
 	}
-
+	activity_status.value = response.data.activity.activity_status;
 	ineBool.value = response.data.activity.ineBool;
 	miesto_stretnutia.value = response.data.activity.miesto_stretnutia;
 	onlineMeeting.value = response.data.activity.onlineMeeting;
@@ -302,6 +303,7 @@ const updateActivity = async () => {
 				send_notification_15: active.value?.includes(15) || false,
 				send_notification_30: active.value?.includes(30) || false,
 				send_notification_60: active.value?.includes(60) || false,
+				activity_status: activity_status.value,
 			},
 			{
 				headers: {
@@ -905,6 +907,58 @@ const setActive = (n) => {
 				</div>
 			</div>
 
+			<div class="flex justify-center gap-4 mb-6">
+				<button
+					class="status-btn"
+					:class="{ active: activity_status === 'questionmark' }"
+					title="Otáznik"
+					@click.prevent="activity_status = 'questionmark'"
+				>
+					<Icon icon="pepicons-pencil:question" width="18" />
+				</button>
+
+				<button
+					class="status-btn status-btn-green"
+					:class="{
+						active:
+							activity_status === 'check' || activity_status === 'accepted',
+					}"
+					title="Dokončené"
+					@click.prevent="activity_status = 'check'"
+				>
+					<Icon icon="fa6-solid:check" width="14" />
+				</button>
+
+				<button
+					class="status-btn status-btn-red"
+					:class="{ active: activity_status === 'discarded' }"
+					title="Zamietnuté"
+					@click.prevent="activity_status = 'discarded'"
+				>
+					<Icon icon="material-symbols:close" width="18" />
+				</button>
+
+				<template v-if="aktivita === 'Pohovor'">
+					<button
+						class="status-btn status-btn-blue"
+						:class="{ active: activity_status === 'accepted' }"
+						title="Prijaté"
+						@click.prevent="activity_status = 'accepted'"
+					>
+						<Icon icon="fa6-solid:thumbs-up" width="14" />
+					</button>
+
+					<button
+						class="status-btn status-btn-orange"
+						:class="{ active: activity_status === 'rejected' }"
+						title="Odmietnuté"
+						@click.prevent="activity_status = 'rejected'"
+					>
+						<Icon icon="fa6-solid:thumbs-down" width="14" />
+					</button>
+				</template>
+			</div>
+
 			<div class="relative z-0 w-full mb-2 group flex items-center">
 				<label class="text-sm text-gray-500">Vytvoriť notifikáciu</label>
 				<div class="flex justify-center items-center gap-4 ml-9">
@@ -948,5 +1002,31 @@ const setActive = (n) => {
 <style scoped>
 * {
 	text: black !important;
+}
+
+.status-btn {
+	padding: 8px;
+	border-radius: 6px;
+	background: #eee;
+}
+
+.status-btn.active {
+	background: #dbeafe;
+}
+
+.status-btn-green.active {
+	background: #bbf7d0;
+}
+
+.status-btn-red.active {
+	background: #fecaca;
+}
+
+.status-btn-blue.active {
+	background: #bfdbfe;
+}
+
+.status-btn-orange.active {
+	background: #fed7aa;
 }
 </style>

@@ -4,7 +4,6 @@
 		<div
 			class="flex flex-col h-screen w-16 overflow-hidden text-gray-400 bg-blue-800 fixed top-0 left-0 nav-shadow"
 			v-if="isAuthenticated"
-			style="z-index: 999"
 		>
 			<!-- Logo or Top Icon -->
 			<a class="flex items-center justify-center mt-3" href="/">
@@ -337,12 +336,6 @@
 			>
 				<NuxtLink
 					class="flex items-center justify-center w-16 h-16 mt-auto hover:bg-blue-700 mb-2 cursor-pointer hover:scale-[105%] transition-transform"
-					:class="{
-						'bg-blue-700 text-gray-200': activeTab === 'test',
-						'bg-red-600 hover:bg-red-700':
-							requestStore.viewTheirCalendarForApproval.length > 0 ||
-							requestStore.letThemViewMineTabulka.length > 0,
-					}"
 					to="/calendar-sharing"
 					@click="setActiveTab('test')"
 				>

@@ -213,6 +213,14 @@ const calendarOptions = ref({
 });
 
 async function handleEventDrop(dropInfo) {
+	// Ask for confirmation before updating the event
+	if (
+		!confirm(`Naozaj chcete aktualizovať udalosť "${dropInfo.event.title}"?`)
+	) {
+		dropInfo.revert();
+		return;
+	}
+
 	const officeStore = useOfficeStore();
 	const eventId = dropInfo.event.id;
 	const newStart = dropInfo.event.start;
@@ -2003,105 +2011,103 @@ const isMounted = ref(false);
 				</FullCalendar>
 			</div>
 		</div>
-	</div>
-</template>
 
-<style lang="css">
-.bg-white-force {
-	background-color: #fff !important;
-}
+		<style lang="css">
+			.bg-white-force {
+				background-color: #fff !important;
+			}
 
-h2 {
-	margin: 0;
-	font-size: 16px;
-}
+			h2 {
+				margin: 0;
+				font-size: 16px;
+			}
 
-ul {
-	margin: 0;
-	padding: 0 0 0 1.5em;
-}
+			ul {
+				margin: 0;
+				padding: 0 0 0 1.5em;
+			}
 
-li {
-	margin: 1.5em 0;
-	padding: 0;
-}
+			li {
+				margin: 1.5em 0;
+				padding: 0;
+			}
 
-b {
-	margin-right: 3px;
-}
+			b {
+				margin-right: 3px;
+			}
 
-.demo-app {
-	display: flex;
-	min-height: 100%;
-	font-family:
-		Arial,
-		Helvetica Neue,
-		Helvetica,
-		sans-serif;
-	font-size: 14px;
-	width: 100%;
-}
+			.demo-app {
+				display: flex;
+				min-height: 100%;
+				font-family:
+					Arial,
+					Helvetica Neue,
+					Helvetica,
+					sans-serif;
+				font-size: 14px;
+				width: 100%;
+			}
 
-.demo-app-sidebar {
-	width: 300px;
-	line-height: 1.5;
-	background: #eaf9ff;
-	border-right: 1px solid #d3e2e8;
-	flex-shrink: 0;
-}
+			.demo-app-sidebar {
+				width: 300px;
+				line-height: 1.5;
+				background: #eaf9ff;
+				border-right: 1px solid #d3e2e8;
+				flex-shrink: 0;
+			}
 
-.demo-app-sidebar-section {
-	padding: 1em;
-}
+			.demo-app-sidebar-section {
+				padding: 1em;
+			}
 
-.demo-app-main {
-	flex-grow: 1;
-	padding: 3em;
-	width: calc(100% - 300px); /* Calculate remaining width */
-	display: flex; /* Enable flexbox for this container */
-	justify-content: center; /* Center horizontally */
-}
+			.demo-app-main {
+				flex-grow: 1;
+				padding: 3em;
+				width: calc(100% - 300px); /* Calculate remaining width */
+				display: flex; /* Enable flexbox for this container */
+				justify-content: center; /* Center horizontally */
+			}
 
-.fc {
-	max-width: none;
-	width: 100%; /* Take full width of parent */
-	margin: 0;
-}
+			.fc {
+				max-width: none;
+				width: 100%; /* Take full width of parent */
+				margin: 0;
+			}
 
-.demo-app-calendar {
-	width: 100%;
-}
+			.demo-app-calendar {
+				width: 100%;
+			}
 
-.fc-view-harness {
-	width: 100% !important;
-}
+			.fc-view-harness {
+				width: 100% !important;
+			}
 
-.special-component {
-	background: linear-gradient(135deg, #ffdee9, #b5fffc);
-	color: #1a202c;
-	padding: 1rem;
-	border-radius: 8px;
-	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
+			.special-component {
+				background: linear-gradient(135deg, #ffdee9, #b5fffc);
+				color: #1a202c;
+				padding: 1rem;
+				border-radius: 8px;
+				box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+			}
 
-.fc-button {
-	background-color: #909090 !important;
-	color: black !important;
-	border: none !important;
-	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
-}
+			.fc-button {
+				background-color: #909090 !important;
+				color: black !important;
+				border: none !important;
+				box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+			}
 
-.fc-button:hover {
-	background-color: #505050 !important;
-	color: black !important;
-}
+			.fc-button:hover {
+				background-color: #505050 !important;
+				color: black !important;
+			}
 
-.fc-button-active {
-	background-color: rgb(37 99 235) !important;
-	color: black !important;
-}
+			.fc-button-active {
+				background-color: rgb(37 99 235) !important;
+				color: black !important;
+			}
 
-/*
+			/*
 .event-content-wrapper {
 	overflow: hidden;
 	display: flex;
@@ -2144,100 +2150,102 @@ b {
 }
 */
 
-.spinner {
-	position: absolute;
-	width: 9px;
-	height: 9px;
-}
+			.spinner {
+				position: absolute;
+				width: 9px;
+				height: 9px;
+			}
 
-.spinner div {
-	position: absolute;
-	width: 50%;
-	height: 150%;
-	background: #000000;
-	transform: rotate(calc(var(--rotation) * 1deg))
-		translate(0, calc(var(--translation) * 1%));
-	animation: spinner-fzua35 1s calc(var(--delay) * 1s) infinite ease;
-}
+			.spinner div {
+				position: absolute;
+				width: 50%;
+				height: 150%;
+				background: #000000;
+				transform: rotate(calc(var(--rotation) * 1deg))
+					translate(0, calc(var(--translation) * 1%));
+				animation: spinner-fzua35 1s calc(var(--delay) * 1s) infinite ease;
+			}
 
-.spinner div:nth-child(1) {
-	--delay: 0.1;
-	--rotation: 36;
-	--translation: 150;
-}
+			.spinner div:nth-child(1) {
+				--delay: 0.1;
+				--rotation: 36;
+				--translation: 150;
+			}
 
-.spinner div:nth-child(2) {
-	--delay: 0.2;
-	--rotation: 72;
-	--translation: 150;
-}
+			.spinner div:nth-child(2) {
+				--delay: 0.2;
+				--rotation: 72;
+				--translation: 150;
+			}
 
-.spinner div:nth-child(3) {
-	--delay: 0.3;
-	--rotation: 108;
-	--translation: 150;
-}
+			.spinner div:nth-child(3) {
+				--delay: 0.3;
+				--rotation: 108;
+				--translation: 150;
+			}
 
-.spinner div:nth-child(4) {
-	--delay: 0.4;
-	--rotation: 144;
-	--translation: 150;
-}
+			.spinner div:nth-child(4) {
+				--delay: 0.4;
+				--rotation: 144;
+				--translation: 150;
+			}
 
-.spinner div:nth-child(5) {
-	--delay: 0.5;
-	--rotation: 180;
-	--translation: 150;
-}
+			.spinner div:nth-child(5) {
+				--delay: 0.5;
+				--rotation: 180;
+				--translation: 150;
+			}
 
-.spinner div:nth-child(6) {
-	--delay: 0.6;
-	--rotation: 216;
-	--translation: 150;
-}
+			.spinner div:nth-child(6) {
+				--delay: 0.6;
+				--rotation: 216;
+				--translation: 150;
+			}
 
-.spinner div:nth-child(7) {
-	--delay: 0.7;
-	--rotation: 252;
-	--translation: 150;
-}
+			.spinner div:nth-child(7) {
+				--delay: 0.7;
+				--rotation: 252;
+				--translation: 150;
+			}
 
-.spinner div:nth-child(8) {
-	--delay: 0.8;
-	--rotation: 288;
-	--translation: 150;
-}
+			.spinner div:nth-child(8) {
+				--delay: 0.8;
+				--rotation: 288;
+				--translation: 150;
+			}
 
-.spinner div:nth-child(9) {
-	--delay: 0.9;
-	--rotation: 324;
-	--translation: 150;
-}
+			.spinner div:nth-child(9) {
+				--delay: 0.9;
+				--rotation: 324;
+				--translation: 150;
+			}
 
-.spinner div:nth-child(10) {
-	--delay: 1;
-	--rotation: 360;
-	--translation: 150;
-}
+			.spinner div:nth-child(10) {
+				--delay: 1;
+				--rotation: 360;
+				--translation: 150;
+			}
 
-@keyframes spinner-fzua35 {
-	0%,
-	10%,
-	20%,
-	30%,
-	50%,
-	60%,
-	70%,
-	80%,
-	90%,
-	100% {
-		transform: rotate(calc(var(--rotation) * 1deg))
-			translate(0, calc(var(--translation) * 1%));
-	}
+			@keyframes spinner-fzua35 {
+				0%,
+				10%,
+				20%,
+				30%,
+				50%,
+				60%,
+				70%,
+				80%,
+				90%,
+				100% {
+					transform: rotate(calc(var(--rotation) * 1deg))
+						translate(0, calc(var(--translation) * 1%));
+				}
 
-	50% {
-		transform: rotate(calc(var(--rotation) * 1deg))
-			translate(0, calc(var(--translation) * 1.5%));
-	}
-}
-</style>
+				50% {
+					transform: rotate(calc(var(--rotation) * 1deg))
+						translate(0, calc(var(--translation) * 1.5%));
+				}
+			}
+		</style>
+	</div>
+</template>

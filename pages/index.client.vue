@@ -628,37 +628,46 @@ const closeMenuOnOutsideClick = (e) => {
 
 					<div
 						v-if="showMenuModal"
-						class="absolute right-0 mt-2 w-60 bg-white shadow-xl rounded-lg border p-2 z-50"
+						class="absolute right-0 mt-2 w-60 bg-white rounded-xl border border-zinc-100 shadow-lg p-2 z-50 flex flex-col gap-1"
 					>
+						<!-- Save to phone -->
 						<div
 							@click="
 								syncAllToGoogle();
 								showMenuModal = false;
 							"
-							class="flex items-center gap-2 text-sm py-2 px-2 bg-slate-100 cursor-pointer rounded-md hover:bg-slate-200"
+							class="flex items-center gap-2.5 text-sm px-3 py-2.5 rounded-lg cursor-pointer font-medium text-zinc-600 bg-zinc-50 border border-zinc-200 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 transition-all"
 						>
 							Uložiť kontakty do telefónu
 						</div>
-						<hr class="my-1 border-gray-200" />
+
+						<hr class="border-zinc-100" />
+
+						<!-- Delete -->
 						<div
 							@click="
 								deleteAllFromGoogle();
 								showMenuModal = false;
 							"
-							class="flex items-center gap-2 text-sm py-2 px-2 cursor-pointer rounded-md hover:bg-slate-100 text-red-600"
+							class="flex items-center gap-2.5 text-sm px-3 py-2.5 rounded-lg cursor-pointer font-medium text-red-500 bg-red-50 border border-red-100 hover:bg-red-100 hover:border-red-200 hover:text-red-600 transition-all"
 						>
 							🗑️ Vymazať kontakty z telefónu
 						</div>
-						<hr class="my-1 border-gray-200" />
-						<div class="mt-2">
-							<ContactImportComponent class="" />
-						</div>
+
+						<hr class="border-zinc-100" />
+
+						<!-- Import -->
+						<ContactImportComponent />
+
+						<hr class="border-zinc-100" />
+
+						<!-- Show selected -->
 						<div
 							@click="
 								showSelectedContacts();
 								showMenuModal = false;
 							"
-							class="flex items-center gap-2 text-md py-[8px] px-2 mt-2 cursor-pointer rounded-md hover:bg-slate-100 bg-green-400"
+							class="flex items-center gap-2.5 text-sm px-3 py-2.5 rounded-lg cursor-pointer font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 hover:text-emerald-800 transition-all"
 						>
 							Zobraziť zakliknuté kontakty
 						</div>

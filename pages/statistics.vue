@@ -59,84 +59,6 @@
 
 	<div class="p-6">
 		<div class="mb-6">
-			<!-- ─── Custom multi-select dropdown ─── -->
-			<div class="relative mb-4 max-w-72" ref="dropdownRef">
-				<button
-					type="button"
-					class="w-full flex items-center justify-between border rounded p-2 bg-white shadow-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-					@click="dropdownOpen = !dropdownOpen"
-				>
-					<span class="truncate text-gray-700">{{ dropdownLabel }}</span>
-					<svg
-						class="w-4 h-4 ml-2 text-gray-400 flex-shrink-0 transition-transform"
-						:class="{ 'rotate-180': dropdownOpen }"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M19 9l-7 7-7-7"
-						/>
-					</svg>
-				</button>
-
-				<!-- Dropdown panel -->
-				<div
-					v-if="dropdownOpen"
-					class="absolute z-40 mt-1 w-full bg-white border rounded shadow-lg max-h-72 overflow-y-auto"
-				>
-					<!-- My stats option -->
-					<label
-						class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer border-b"
-					>
-						<input
-							type="checkbox"
-							:checked="includeMyStats"
-							@change="toggleMyStats"
-							class="rounded"
-						/>
-						<span class="text-sm font-medium">Moje štatistiky</span>
-					</label>
-
-					<!-- Each shared user -->
-					<label
-						v-for="user in sharedUsers"
-						:key="user.id"
-						class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer"
-					>
-						<input
-							type="checkbox"
-							:checked="selectedUserIds.includes(user.id)"
-							@change="toggleUser(user.id)"
-							class="rounded"
-						/>
-						<span class="text-sm">{{ user.name }}</span>
-					</label>
-
-					<!-- Select all -->
-					<div class="border-t px-3 py-2 flex gap-2">
-						<button
-							type="button"
-							class="text-xs text-blue-600 hover:underline"
-							@click="selectAll"
-						>
-							Vybrať všetkých
-						</button>
-						<span class="text-gray-300">|</span>
-						<button
-							type="button"
-							class="text-xs text-gray-500 hover:underline"
-							@click="clearAll"
-						>
-							Zrušiť výber
-						</button>
-					</div>
-				</div>
-			</div>
-
 			<h1 class="text-2xl font-bold mb-4">Štatistika aktivít</h1>
 
 			<!-- Date Range Picker -->
@@ -173,17 +95,83 @@
 						<option value="year">Rok</option>
 					</select>
 				</div>
+				<div>
+					<div class="relative w-72 mt-6" ref="dropdownRef">
+						<button
+							type="button"
+							class="w-full flex items-center justify-between border rounded p-2 bg-white shadow-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+							@click="dropdownOpen = !dropdownOpen"
+						>
+							<span class="truncate text-gray-700">{{ dropdownLabel }}</span>
+							<svg
+								class="w-4 h-4 ml-2 text-gray-400 flex-shrink-0 transition-transform"
+								:class="{ 'rotate-180': dropdownOpen }"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M19 9l-7 7-7-7"
+								/>
+							</svg>
+						</button>
+
+						<div
+							v-if="dropdownOpen"
+							class="absolute z-40 mt-1 w-full bg-white border rounded shadow-lg max-h-72 overflow-y-auto"
+						>
+							<label
+								class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer border-b"
+							>
+								<input
+									type="checkbox"
+									:checked="includeMyStats"
+									@change="toggleMyStats"
+									class="rounded"
+								/>
+								<span class="text-sm font-medium">Moje štatistiky</span>
+							</label>
+
+							<label
+								v-for="user in sharedUsers"
+								:key="user.id"
+								class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer"
+							>
+								<input
+									type="checkbox"
+									:checked="selectedUserIds.includes(user.id)"
+									@change="toggleUser(user.id)"
+									class="rounded"
+								/>
+								<span class="text-sm">{{ user.name }}</span>
+							</label>
+
+							<div class="border-t px-3 py-2 flex gap-2">
+								<button
+									type="button"
+									class="text-xs text-blue-600 hover:underline"
+									@click="selectAll"
+								>
+									Vybrať všetkých
+								</button>
+								<span class="text-gray-300">|</span>
+								<button
+									type="button"
+									class="text-xs text-gray-500 hover:underline"
+									@click="clearAll"
+								>
+									Zrušiť výber
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 
-			<!-- <select
-				v-model="selectedActivityType"
-				class="border rounded p-2 bg-white shadow-md"
-				@change="fetchData"
-			>
-				<option value="Telefonát klient">Telefonát klient</option>
-			</select> -->
-
-			<!-- Statistics Cards -->
+			<!-- Telefonát klient Statistics Cards -->
 			<div
 				class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 shadow-sm bg-white p-4"
 			>
@@ -403,7 +391,7 @@
 		<div class="p-2 bg-white font-semibold text-lg">Pohovory</div>
 
 		<div
-			class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6 shadow-sm bg-white p-4"
+			class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6 shadow-sm bg-white p-4"
 		>
 			<div
 				class="bg-blue-100 p-4 rounded"
@@ -437,13 +425,40 @@
 				<h3 class="font-bold">Zrealizované</h3>
 				<p class="text-2xl">{{ dataPohovory?.statistics?.realized || 0 }}</p>
 			</div>
+			<!-- Konfirmačný servis card: check + accepted -->
+			<div
+				class="bg-orange-100 p-4 rounded"
+				@mouseenter="(e) => showPohovoryFollower('konfirmacny_servis_all', e)"
+				@mouseleave="hideFollower"
+			>
+				<h3 class="font-bold">Konfirmačný servis</h3>
+				<p class="text-2xl">
+					{{ dataPohovory?.statistics?.konfirmacny_servis_all || 0 }}
+				</p>
+			</div>
+			<!-- Zaujatí card: pohovory accepted + konfirmačný servis accepted -->
 			<div
 				class="bg-red-100 p-4 rounded"
 				@mouseenter="(e) => showPohovoryFollower('accepted', e)"
 				@mouseleave="hideFollower"
 			>
 				<h3 class="font-bold">Zaujatí</h3>
-				<p class="text-2xl">{{ dataPohovory?.statistics?.accepted || 0 }}</p>
+				<p class="text-2xl">
+					{{ dataPohovory?.statistics?.accepted || 0 }}
+					<span class="text-sm font-normal text-gray-500 block">pohovory</span>
+				</p>
+				<p
+					class="text-2xl mt-2"
+					@mouseenter.stop="
+						(e) => showPohovoryFollower('konfirmacny_servis', e)
+					"
+					@mouseleave.stop="hideFollower"
+				>
+					{{ dataPohovory?.statistics?.konfirmacny_servis || 0 }}
+					<span class="text-sm font-normal text-gray-500 block"
+						>konf. servis</span
+					>
+				</p>
 			</div>
 		</div>
 
@@ -571,7 +586,7 @@
 					<tr
 						v-for="kanditat in zaujatiKandidati"
 						class="border-t cursor-pointer hover:bg-gray-50"
-						@click="goToContact(kanditat.id)"
+						@click="goToContact(kanditat.contact_id)"
 					>
 						<td class="p-3">{{ kanditat.meno }} {{ kanditat.priezvisko }}</td>
 					</tr>
@@ -583,7 +598,6 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
-import BarChart from "~/components/BarChart.vue";
 import axios from "axios";
 const config = useRuntimeConfig();
 
@@ -645,19 +659,16 @@ const onUserSelectionChange = () => {
 	fetchData();
 };
 
-// Close dropdown when clicking outside
 const handleClickOutside = (e) => {
 	if (dropdownRef.value && !dropdownRef.value.contains(e.target)) {
 		dropdownOpen.value = false;
 	}
 };
 
-// ─── Existing state ─────────────────────────────────────────────────────────
+// ─── State ──────────────────────────────────────────────────────────────────
 const isHoveringFollower = ref(false);
 let hideTimeout = null;
 
-const updateActivity = ref(false);
-const activityID = ref(null);
 const responseData = ref({});
 
 const sharedUsers = computed(() =>
@@ -672,9 +683,8 @@ const dateRange = ref({ from: "", to: "" });
 const selectedPeriod = ref("month");
 const selectedActivityType = ref("Telefonát klient");
 const statistics = ref({ called: 0, reached: 0, scheduled: 0 });
-const activities = ref([]);
 const loadingStateCalendar = ref(false);
-const dataPohovory = ref();
+const dataPohovory = ref(null);
 
 const mouseX = ref(0);
 const mouseY = ref(0);
@@ -712,9 +722,22 @@ const goToContact = (id) => {
 	router.push(`/contact/${id}`);
 };
 
-const formatDate = (date) => new Date(date).toLocaleDateString("sk-SK");
+const showPohovoryFollower = (key, event) => {
+	if (hideTimeout) clearTimeout(hideTimeout);
+	if (
+		!dataPohovory.value?.grouped_people?.[key] ||
+		dataPohovory.value.grouped_people[key].length === 0
+	) {
+		dataInFollower.value = [{ meno: "Žiadni ľudia", priezvisko: "" }];
+	} else {
+		dataInFollower.value = dataPohovory.value.grouped_people[key];
+	}
+	mouseX.value = event.clientX;
+	mouseY.value = event.clientY;
+	showFollower.value = true;
+};
 
-// ─── Fetch (now supports multiple user IDs, sums results) ───────────────────
+// ─── Fetch ──────────────────────────────────────────────────────────────────
 const fetchData = async () => {
 	loadingStateCalendar.value = true;
 	const fromDate = new Date(dateRange.value.from);
@@ -725,7 +748,6 @@ const fetchData = async () => {
 	const from_date = fromDate.toISOString().split("T")[0];
 	const to_date = toDate.toISOString().split("T")[0];
 
-	// Determine which user IDs to fetch. null = own stats.
 	const userIdList = [
 		...(includeMyStats.value ? [null] : []),
 		...selectedUserIds.value,
@@ -737,7 +759,6 @@ const fetchData = async () => {
 	}
 
 	try {
-		// Fetch all endpoints for every selected user in parallel
 		const allResults = await Promise.all(
 			userIdList.map((uid) =>
 				Promise.all([
@@ -790,8 +811,6 @@ const fetchData = async () => {
 			),
 		);
 
-		// ── Sum / merge results across users ──────────────────────────────────
-
 		// 1. telefonat-klient statistics
 		const sumStats = { called: 0, reached: 0, scheduled: 0 };
 		const mergedGrouped = { volane: [], dovolane: [], dohodnute: [] };
@@ -801,7 +820,6 @@ const fetchData = async () => {
 			sumStats.called += r.data.statistics?.called || 0;
 			sumStats.reached += r.data.statistics?.reached || 0;
 			sumStats.scheduled += r.data.statistics?.scheduled || 0;
-
 			if (r.data.grouped_activities?.volane)
 				mergedGrouped.volane.push(...r.data.grouped_activities.volane);
 			if (r.data.grouped_activities?.dovolane)
@@ -824,6 +842,9 @@ const fetchData = async () => {
 			scheduled: 0,
 			realized: 0,
 			accepted: 0,
+			rejected: 0,
+			konfirmacny_servis: 0,
+			konfirmacny_servis_all: 0,
 		};
 		const mergedPohovoryPeople = {
 			called: [],
@@ -831,16 +852,26 @@ const fetchData = async () => {
 			scheduled: [],
 			realized: [],
 			accepted: [],
+			rejected: [],
+			konfirmacny_servis: [],
+			konfirmacny_servis_all: [],
 		};
 
 		allResults.forEach(([, r]) => {
-			["called", "reached", "scheduled", "realized", "accepted"].forEach(
-				(k) => {
-					sumPohovory[k] += r.data.statistics?.[k] || 0;
-					if (r.data.grouped_people?.[k])
-						mergedPohovoryPeople[k].push(...r.data.grouped_people[k]);
-				},
-			);
+			[
+				"called",
+				"reached",
+				"scheduled",
+				"realized",
+				"accepted",
+				"rejected",
+				"konfirmacny_servis",
+				"konfirmacny_servis_all",
+			].forEach((k) => {
+				sumPohovory[k] += r.data.statistics?.[k] || 0;
+				if (r.data.grouped_people?.[k])
+					mergedPohovoryPeople[k].push(...r.data.grouped_people[k]);
+			});
 		});
 
 		dataPohovory.value = {
@@ -946,18 +977,6 @@ const updateDateRange = () => {
 		to: now.toISOString().split("T")[0],
 	};
 	fetchData();
-};
-
-const showPohovoryFollower = (key, event) => {
-	if (hideTimeout) clearTimeout(hideTimeout);
-	if (!dataPohovory.value?.grouped_people?.[key]) {
-		dataInFollower.value = [{ meno: "Žiadni ľudia", priezvisko: "" }];
-	} else {
-		dataInFollower.value = dataPohovory.value.grouped_people[key];
-	}
-	mouseX.value = event.clientX;
-	mouseY.value = event.clientY;
-	showFollower.value = true;
 };
 
 onMounted(async () => {

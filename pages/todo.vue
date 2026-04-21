@@ -64,6 +64,7 @@ const goToPreviousDay = async () => {
 	currentDate.value = newDate;
 	showingAllTodos.value = false;
 	showingTodosWithoutContact.value = false;
+	activeGroup.value = "today";
 	await loadTodosForCurrentDate();
 };
 
@@ -74,6 +75,7 @@ const goToNextDay = async () => {
 	currentDate.value = newDate;
 	showingAllTodos.value = false;
 	showingTodosWithoutContact.value = false;
+	activeGroup.value = "today";
 	await loadTodosForCurrentDate();
 };
 
@@ -82,6 +84,7 @@ const goToToday = async () => {
 	currentDate.value = new Date();
 	showingAllTodos.value = false;
 	showingTodosWithoutContact.value = false;
+	activeGroup.value = "today";
 	await loadTodosForCurrentDate();
 };
 
@@ -190,7 +193,7 @@ watch(
 			contact_name: todo.contact_name,
 		}));
 	},
-	{ deep: true, immediate: true }
+	{ deep: true, immediate: true },
 );
 
 onMounted(async () => {
@@ -211,7 +214,7 @@ onMounted(async () => {
 			headers: {
 				Authorization: `Bearer ${authStore.token}`,
 			},
-		}
+		},
 	);
 
 	yesterDayUncompletedActivities.value = yesterDay.data.activities;
@@ -220,7 +223,7 @@ onMounted(async () => {
 		yesterDayUncompletedActivities.value.map((activity) => {
 			// Find the corresponding contact
 			const contact = contactsStore.allContacts.find(
-				(contact) => contact.id === activity.contact_id
+				(contact) => contact.id === activity.contact_id,
 			);
 
 			// If contact is found, add meno and priezvisko to the activity
@@ -238,7 +241,7 @@ onMounted(async () => {
 
 	console.log(
 		"yesterday uncompleted activities with names",
-		yesterDayUncompletedActivities.value
+		yesterDayUncompletedActivities.value,
 	);
 
 	if (datepickerInput.value) {
@@ -267,12 +270,14 @@ onMounted(async () => {
 				currentDate.value = new Date(date);
 				showingAllTodos.value = false;
 				showingTodosWithoutContact.value = false;
+				activeGroup.value = "today";
 				await loadTodosForCurrentDate();
 			},
 		});
 	}
 
 	// Load todos for today initially
+	activeGroup.value = "today";
 	await loadTodosForCurrentDate();
 });
 
@@ -414,14 +419,14 @@ const addTodoWithoutContact = async () => {
 		try {
 			const createdTodo = await todoStore.createTodoWithoutContact(todoData);
 
-			todoItems.value.unshift({
-				id: createdTodo.id,
-				activity: createdTodo.activity_name,
-				dueDate: createdTodo.due_date,
-				assignedTo: null,
-				completed: createdTodo.is_completed ?? false,
-				updated_at: createdTodo.updated_at ?? null,
-			});
+			// todoItems.value.unshift({
+			// 	id: createdTodo.id,
+			// 	activity: createdTodo.activity_name,
+			// 	dueDate: createdTodo.due_date,
+			// 	assignedTo: null,
+			// 	completed: createdTodo.is_completed ?? false,
+			// 	updated_at: createdTodo.updated_at ?? null,
+			// });
 			// Reset form
 			newTodo.value = {
 				activity: "",
@@ -459,7 +464,7 @@ const deleteToDo = async (id) => {
 
 const router = useRouter();
 const goToContact = (id) => {
-	if (id) {
+	if (id && id !== 1) {
 		router.push(`/contact/${id}`);
 	}
 };
@@ -571,12 +576,12 @@ const changeActivityStatus = async (item, status) => {
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
 				},
-			}
+			},
 		);
 
 		yesterDayUncompletedActivities.value =
 			yesterDayUncompletedActivities.value.filter(
-				(activity) => activity.id !== item.id
+				(activity) => activity.id !== item.id,
 			);
 		toast.success("Status aktivity bol úspešne aktualizovaný!");
 	} catch (error) {
@@ -662,12 +667,12 @@ async function addFinancialAnalysisActivity(contactId, dateTimeStart) {
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
 				},
-			}
+			},
 		);
 
 		// Find the contact information to add to the activity
 		const contact = contactsStore.allContacts.find(
-			(contact) => contact.id === contactId
+			(contact) => contact.id === contactId,
 		);
 
 		// Create the activity object with contact information
@@ -685,7 +690,7 @@ async function addFinancialAnalysisActivity(contactId, dateTimeStart) {
 	} catch (error) {
 		console.error(
 			"Error creating activity:",
-			error.response?.data || error.message
+			error.response?.data || error.message,
 		);
 		throw error;
 	}
@@ -700,7 +705,7 @@ const handleConfirmEvent = async () => {
 			// Create the financial analysis activity
 			await addFinancialAnalysisActivity(
 				pendingFirstMeetingRow.value.contact_id,
-				pendingFirstMeetingRow.value.koniec
+				pendingFirstMeetingRow.value.koniec,
 			);
 
 			// Now update the status of the original meeting in the backend
@@ -713,7 +718,7 @@ const handleConfirmEvent = async () => {
 					headers: {
 						Authorization: `Bearer ${authStore.token}`,
 					},
-				}
+				},
 			);
 
 			// Refresh activities to show the new one
