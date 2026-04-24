@@ -82,8 +82,9 @@ watch(
 			poznamka.value = newVal.poznamka || "";
 			Investicny_dotaznik.value = newVal.Investicny_dotaznik || "";
 			selectedAuthorId.value = newVal.author_id || "";
+			console.log("selectedAuthorId", selectedAuthorId.value);
 			aktualnyPoradca.value = newVal.current_advisor || "";
-			isNew.value = newVal.isNew ?? false;
+			isNew.value = newVal.isNew == 1;
 			isContact.value = newVal.isContact ?? true;
 			isCoWorker.value = newVal.isCoWorker ?? false;
 		} else {
@@ -156,6 +157,10 @@ const alterPerson = async (id) => {
 	}
 	emit("alterPerson", response.data.contact);
 };
+
+const currentUser = computed(() => {
+	return userStore.user.username;
+});
 </script>
 
 <template>
@@ -210,20 +215,6 @@ const alterPerson = async (id) => {
 						</div>
 
 						<div class="flex gap-16 mb-9 relative">
-							<div class="flex-1">
-								<label
-									v-if="poradca"
-									class="text-gray-600 absolute top-[-22px] font-medium"
-									>Poradca</label
-								>
-								<input
-									v-model="poradca"
-									id="poradca"
-									type="text"
-									class="w-full"
-									placeholder="Poradca"
-								/>
-							</div>
 							<div class="flex-1">
 								<label
 									v-if="cislo"
@@ -346,7 +337,7 @@ const alterPerson = async (id) => {
 							/>
 						</div>
 
-						<div class="flex gap-16 mb-9">
+						<div class="flex gap-16 mb-9 mt-10">
 							<div
 								v-if="props.single_contact.author_id == userStore.user.id"
 								class="flex-1"
@@ -354,7 +345,7 @@ const alterPerson = async (id) => {
 								<label
 									for="author_id"
 									class="block text-gray-800 mb-2 font-medium"
-									>Zmeniť poradcu</label
+									>Zmeniť poradcu: {{ currentUser }}</label
 								>
 								<select
 									v-model="selectedAuthorId"
@@ -367,7 +358,7 @@ const alterPerson = async (id) => {
 								</select>
 							</div>
 
-							<div class="flex-1">
+							<!-- <div class="flex-1">
 								<label
 									v-if="zamestanie"
 									class="text-gray-600 absolute top-[-22px] font-medium"
@@ -380,53 +371,57 @@ const alterPerson = async (id) => {
 									class="w-full"
 									placeholder="Aktuálny poradca"
 								/>
-							</div>
-						</div>
-						<!-- Contact type row -->
-						<div class="flex items-center gap-8 mb-8">
-							<div class="flex items-center gap-3">
-								<label class="custom-check">
-									<input type="checkbox" v-model="isNew" />
-									<span class="check-box">
-										<svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-											<path
-												d="M1 4L3.5 6.5L9 1"
-												stroke="white"
-												stroke-width="1.8"
-												stroke-linecap="round"
-												stroke-linejoin="round"
-											/>
-										</svg>
-									</span>
-								</label>
-								<span class="text-sm text-gray-600 font-medium"
-									>Nový kontakt</span
-								>
-							</div>
+							</div> -->
 
-							<div class="flex items-center gap-3">
-								<span class="text-sm text-gray-600 font-medium">Typ:</span>
-								<div class="type-toggle">
-									<button
-										type="button"
-										:class="['toggle-btn', isContact ? 'active-contact' : '']"
-										@click="
-											isContact = true;
-											isCoWorker = false;
-										"
+							<!-- Contact type row -->
+							<div class="flex items-center gap-8 mb-8">
+								<div class="flex items-center gap-3">
+									<label class="custom-check">
+										<input type="checkbox" v-model="isNew" />
+										<span class="check-box">
+											<svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+												<path
+													d="M1 4L3.5 6.5L9 1"
+													stroke="white"
+													stroke-width="1.8"
+													stroke-linecap="round"
+													stroke-linejoin="round"
+												/>
+											</svg>
+										</span>
+									</label>
+									<span class="text-sm text-gray-600 font-medium"
+										>Nový kontakt</span
 									>
-										Klient
-									</button>
-									<button
-										type="button"
-										:class="['toggle-btn', isCoWorker ? 'active-coworker' : '']"
-										@click="
-											isCoWorker = true;
-											isContact = false;
-										"
-									>
-										Spolupracovník
-									</button>
+								</div>
+
+								<div class="flex items-center gap-3">
+									<span class="text-sm text-gray-600 font-medium">Typ:</span>
+									<div class="type-toggle">
+										<button
+											type="button"
+											:class="['toggle-btn', isContact ? 'active-contact' : '']"
+											@click="
+												isContact = true;
+												isCoWorker = false;
+											"
+										>
+											Klient
+										</button>
+										<button
+											type="button"
+											:class="[
+												'toggle-btn',
+												isCoWorker ? 'active-coworker' : '',
+											]"
+											@click="
+												isCoWorker = true;
+												isContact = false;
+											"
+										>
+											Spolupracovník
+										</button>
+									</div>
 								</div>
 							</div>
 						</div>

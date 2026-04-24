@@ -555,10 +555,23 @@ const changeDiscardActivityModal = () => {
 	showDiscardActivityModal.value = !showDiscardActivityModal.value;
 };
 
+const showNewNamesModal = ref(false);
+const newNamesModalContactId = ref(null);
+const changeNewNamesModal = (contactId = null) => {
+	showNewNamesModal.value = !showNewNamesModal.value;
+	if (contactId !== null) {
+		newNamesModalContactId.value = contactId;
+	}
+};
+
 const changeActivityStatus = async (item, status) => {
 	if (item.aktivita === "Prvé stretnutie" && status === "check") {
 		changeConfirmEventModal();
 		pendingFirstMeetingRow.value = item;
+	}
+
+	if (item.aktivita === "Analýza osobných financí" && status === "check") {
+		changeNewNamesModal(item.contact_id);
 	}
 
 	if (status === "discarded") {
@@ -813,6 +826,11 @@ const getNowForDatetimeLocal = () => {
 </script>
 
 <template>
+	<NewNamesModal
+		v-if="showNewNamesModal"
+		@close="changeNewNamesModal"
+		:contactId="newNamesModalContactId"
+	/>
 	<DiscardActivityModal
 		v-if="showDiscardActivityModal"
 		:activityData="currentActivity"

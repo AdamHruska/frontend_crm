@@ -176,7 +176,7 @@ const active = ref([]);
 onMounted(async () => {
 	officeStore.fetchOffices();
 	officeStore.fetchOfficesSharedWithMe();
-	userStore.fetchUser();
+	await userStore.fetchUser();
 
 	officeStore.getallOfficeActivites();
 
@@ -549,6 +549,44 @@ const setActive = (n) => {
 
 	console.log(active.value);
 };
+
+const deletingOfficeActivity = ref(false);
+
+const freeOffice = async () => {
+	if (!officeActivity.value) {
+		toast.error("Žiadna kancelárska aktivita sa nenašla");
+		return;
+	}
+
+	if (!confirm("Naozaj chcete uvoľniť kanceláriu?")) return;
+
+	deletingOfficeActivity.value = true;
+	try {
+		await axios.delete(
+			`${config.public.apiUrl}office-activities/${officeActivity.value.id}`,
+			{ headers: { Authorization: `Bearer ${authStore.token}` } },
+		);
+
+		// Clear miesto_stretnutia on the main activity too
+		await axios.put(
+			`${config.public.apiUrl}update-activities/${props.activityID}`,
+			{ miesto_stretnutia: "" },
+			{ headers: { Authorization: `Bearer ${authStore.token}` } },
+		);
+
+		officeActivity.value = null;
+		officeActivityId.value = null;
+		selectedOffice.value = { id: null, name: "Kancelárie" };
+		miesto_stretnutia.value = "";
+
+		toast.success("Kancelária bola úspešne uvoľnená");
+	} catch (error) {
+		console.error("Error freeing office:", error);
+		toast.error("Chyba pri uvoľňovaní kancelárie");
+	} finally {
+		deletingOfficeActivity.value = false;
+	}
+};
 </script>
 
 <template>
@@ -850,6 +888,19 @@ const setActive = (n) => {
 				</div>
 			</div>
 
+			<div class="flex justify-end mt-1" v-if="officeActivity">
+				<button
+					type="button"
+					@click="freeOffice"
+					:disabled="deletingOfficeActivity"
+					class="free-office-btn"
+				>
+					<Icon icon="material-symbols:lock-open" width="14" height="14" />
+					<span v-if="deletingOfficeActivity">Uvoľňujem...</span>
+					<span v-else>Uvoľniť kanceláriu</span>
+				</button>
+			</div>
+
 			<div class="flex justify-between px-12 pb-4" v-if="showVDD">
 				<!-- VOLANE -->
 				<label class="cursor-pointer flex flex-col items-center gap-4">
@@ -1028,5 +1079,21 @@ const setActive = (n) => {
 
 .status-btn-orange.active {
 	background: #fed7aa;
+}
+
+.free-office-btn {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 12px;
+	transition: all 0.2s ease;
+	padding: 8px 12px;
+	border-radius: 8px;
+	background-color: #cecbcb;
+	margin-bottom: 16px;
+}
+
+.free-office-btn:hover {
+	background-color: #b3b0b0;
 }
 </style>

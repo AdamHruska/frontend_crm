@@ -555,17 +555,7 @@ const checkDuplicity = async () => {
 					? `${existingNote}\n\n${duplicateNote}`
 					: duplicateNote;
 
-				people.value[0].poznamka = newNote;
-
-				try {
-					await axios.patch(
-						`${config.public.apiUrl}contact/${id}`,
-						{ poznamka: newNote },
-						{ headers: { Authorization: `Bearer ${authStore.token}` } },
-					);
-				} catch (saveError) {
-					console.error("Error saving note:", saveError);
-				}
+				//people.value[0].poznamka = newNote;
 			}
 		} else {
 			console.error("Chyba pri kontrole duplicity:", error);

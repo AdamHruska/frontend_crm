@@ -145,7 +145,7 @@ const fetchNeverCalledContacts = async (filterType = null) => {
 	await contactsStore.fetchContacts();
 
 	applyLocalFilter((person) => {
-		if (person.first_event !== 0 || person.isNew !== 1) return false;
+		if (person.first_event !== 0) return false;
 		if (filterType === "clients")
 			return person.isContact == 1 && person.isCoWorker == 0;
 		if (filterType === "coworkers")
@@ -240,6 +240,15 @@ const findPerson = async (id) => {
 const deletePerson = async (id) => {
 	await contactsStore.deleteContact(id);
 	people.value = contactsStore.contacts.data;
+};
+
+const confirmDeletePerson = async (id) => {
+	if (!confirm("Naozaj chcete odstranit tento kontakt?")) {
+		return;
+	}
+	await deletePerson(id).then(() => {
+		people.value = people.value.filter((person) => person.id !== id);
+	});
 };
 
 token.value = sessionStorage.getItem("token");
@@ -902,13 +911,7 @@ const closeMenuOnOutsideClick = (e) => {
 						class=""
 					>
 						<UButton
-							@click="
-								deletePerson(row.id).then(() => {
-									people.value = people.value.filter(
-										(person) => person.id !== row.id,
-									);
-								})
-							"
+							@click="confirmDeletePerson(row.id)"
 							icon="i-heroicons-trash-20-solid"
 							color="ffffff"
 							class="shadow-xl text-red-500 hover:bg-gray-300 hover:scale-110 transition-transform"

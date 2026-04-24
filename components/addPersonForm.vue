@@ -371,7 +371,7 @@ const TOTAL_COLS = 10;
 									<input
 										v-model="user.vek"
 										class="cell-input"
-										placeholder="1990"
+										placeholder="25"
 									/>
 								</td>
 								<td class="col-zamestanie">

@@ -1758,6 +1758,7 @@ const isMounted = ref(false);
 				<div
 					class="shadow-md rounded-lg bg-white p-4 b-grey-300 rounded-2xl mb-10"
 				>
+					<div>hehe</div>
 					<div class="demo-app-sidebar-section text-black">
 						<h2 class="font-semibold text-2xl text-center">Diár</h2>
 					</div>
@@ -1911,6 +1912,7 @@ const isMounted = ref(false);
 								</div>
 							</div>
 						</div>
+						skuska
 					</transition>
 					<!-- <div
 						class="bg-[#D1D5DB] px-2 py-2 rounded-md shadow flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3 flex flex-col text-center"

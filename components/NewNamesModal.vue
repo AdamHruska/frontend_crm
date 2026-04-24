@@ -17,6 +17,13 @@ onMounted(() => {
 	console.log("id", route.params.id);
 });
 
+const props = defineProps({
+	contactId: {
+		type: Number,
+		default: null,
+	},
+});
+
 const emit = defineEmits(["close"]);
 
 const updateEvent = async () => {
@@ -25,7 +32,7 @@ const updateEvent = async () => {
 			`${config.public.apiUrl}new-names-count`,
 			{
 				new_names: Number(namesNumber.value),
-				contact_id: route.params.id,
+				contact_id: props.contactId || route.params.id,
 			},
 			{
 				headers: {

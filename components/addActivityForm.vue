@@ -381,8 +381,17 @@ const addActivity = async () => {
 					{ headers: { Authorization: `Bearer ${authStore.token}` } },
 				);
 
+				// if (teamsResponse.data.joinUrl) {
+				// 	response.data.activity.miesto_stretnutia = teamsResponse.data.joinUrl;
+				// }
 				if (teamsResponse.data.joinUrl) {
-					response.data.activity.miesto_stretnutia = teamsResponse.data.joinUrl;
+					const officePart =
+						selectedOffice.value.name !== "Kancelárie"
+							? `${selectedOffice.value.name} - `
+							: "";
+					activityResponse.data.activity.miesto_stretnutia = `${officePart}${teamsResponse.data.joinUrl}`;
+					miesto_stretnutia.value =
+						activityResponse.data.activity.miesto_stretnutia;
 				}
 			} catch (error) {
 				console.error("Error creating Teams meeting:", error);
@@ -497,6 +506,7 @@ const toggleOffices = () => {
 const selectOffice = (office) => {
 	officeStore.setOfficeID = office.id;
 	selectedOffice.value = office;
+	miesto_stretnutia.value = office.name;
 	showOffices.value = false; // close dropdown after selection
 };
 
@@ -563,6 +573,57 @@ const setActive = (n) => {
 	}
 
 	console.log(active.value);
+};
+
+const officeActivityId = ref(null);
+const deletingOfficeActivity = ref(false);
+
+const findAndDeleteOfficeActivity = async () => {
+	if (!datum_cas.value || !koniec.value) {
+		toast.error("Najprv vyberte dátum a čas aktivity");
+		return;
+	}
+
+	deletingOfficeActivity.value = true;
+	try {
+		// Find the office activity
+		const findResponse = await axios.get(
+			`${config.public.apiUrl}find-office-activity`,
+			{
+				params: {
+					datum_cas: datum_cas.value,
+					koniec: koniec.value,
+				},
+				headers: { Authorization: `Bearer ${authStore.token}` },
+			},
+		);
+
+		if (!findResponse.data.found) {
+			toast.error("Žiadna kancelárska aktivita sa nenašla pre tento čas");
+			return;
+		}
+
+		const activityId = findResponse.data.activity.id;
+
+		await axios.delete(
+			`${config.public.apiUrl}office-activities/${activityId}`,
+			{
+				headers: { Authorization: `Bearer ${authStore.token}` },
+			},
+		);
+
+		// Reset office selection
+		selectedOffice.value = { id: null, name: "Kancelárie" };
+		officeStore.setOfficeID = null;
+		miesto_stretnutia.value = "";
+
+		toast.success("Kancelárska aktivita bola vymazaná");
+	} catch (error) {
+		console.error("Error deleting office activity:", error);
+		toast.error("Chyba pri mazaní kancelárskej aktivity");
+	} finally {
+		deletingOfficeActivity.value = false;
+	}
 };
 </script>
 

@@ -10,6 +10,7 @@ const router = useRouter();
 const first_name = ref("");
 const last_name = ref("");
 const email = ref("");
+const phone = ref("");
 const password = ref("");
 const password_confirmation = ref("");
 
@@ -39,6 +40,7 @@ const register = async () => {
 					first_name: first_name.value,
 					last_name: last_name.value,
 					email: email.value,
+					phone: phone.value,
 					password: password.value,
 				},
 				{
@@ -46,7 +48,7 @@ const register = async () => {
 						"Content-Type": "application/json",
 						Accept: "application/json",
 					},
-				}
+				},
 			);
 
 			if (response.status === 200 || response.status === 201) {
@@ -56,17 +58,17 @@ const register = async () => {
 				await login(email.value, password.value, rememberMe.value);
 			} else {
 				alert(
-					response.data.message || "Registration failed. Please try again."
+					response.data.message || "Registration failed. Please try again.",
 				);
 			}
 		} catch (error) {
 			alert(
 				error.response?.data?.message ||
-					"An error occurred during registration."
+					"An error occurred during registration.",
 			);
 			console.error(
 				"Error during registration:",
-				error.response ? error.response.data : error.message
+				error.response ? error.response.data : error.message,
 			);
 		}
 	} else {
@@ -86,7 +88,7 @@ const login = async (email, password, rememberMe) => {
 					"Content-Type": "application/json",
 					Accept: "application/json",
 				},
-			}
+			},
 		);
 
 		const token = response.data.authorization.token;
@@ -105,7 +107,7 @@ const login = async (email, password, rememberMe) => {
 		alert("Login failed. Please check your credentials.");
 		console.error(
 			"Error during login:",
-			error.response ? error.response.data : error.message
+			error.response ? error.response.data : error.message,
 		);
 	}
 	loading.value = false;
@@ -158,6 +160,19 @@ const rememberMe = ref(false);
 							name="email"
 							type="email"
 							autocomplete="email"
+							required
+							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+						/>
+					</div>
+					<div class="mb-4">
+						<label for="email" class="block text-sm font-medium text-black"
+							>Telefónne číslo</label
+						>
+						<input
+							type="tel"
+							v-model="phone"
+							id="phone"
+							name="phone"
 							required
 							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
 						/>
