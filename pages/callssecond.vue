@@ -602,11 +602,11 @@ body {
 .page-layout {
 	display: flex;
 	gap: 0;
-	height: 100vh;
+	min-height: 100vh;
 	padding: 16px;
 	gap: 14px;
 	background: var(--page-bg);
-	overflow: hidden;
+	overflow-x: hidden;
 }
 
 /* ─── Sidebar ─────────────────────────────────────────── */
@@ -619,6 +619,7 @@ body {
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
+	flex-shrink: 0;
 }
 
 .sidebar-header {
@@ -826,6 +827,7 @@ body {
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
+	min-width: 0;
 }
 
 .content-header {
@@ -1133,24 +1135,20 @@ tr.row-red:hover td {
 @media (max-width: 768px) {
 	.page-layout {
 		flex-direction: column;
-		height: auto;
-		overflow: auto;
-		padding: 10px;
-		gap: 10px;
+		overflow-x: hidden;
 	}
 
 	.sidebar {
 		width: 100%;
-		min-width: unset;
-		max-height: 280px;
+		min-width: 100%;
+		max-width: 100%;
+		position: relative;
+		left: 0;
+		transform: none;
 	}
 
 	.main-content {
-		min-height: 60vh;
-	}
-
-	.content-heading {
-		font-size: 0.95rem;
+		width: 100%;
 	}
 }
 </style>

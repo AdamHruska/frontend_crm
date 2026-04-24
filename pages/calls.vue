@@ -322,6 +322,12 @@ const saveCallListName = async (id) => {
 	}
 	cancelEditCallList();
 };
+
+const sidebarOpen = ref(false);
+
+const skuska = () => {
+	sidebarOpen.value = !sidebarOpen.value;
+};
 </script>
 
 <template>
@@ -329,8 +335,29 @@ const saveCallListName = async (id) => {
 		<loadigcomponent v-if="callListStore.loadingState" />
 		<loadigcomponent v-if="loadingState" />
 
+		<div class="top-[20px] left-0">
+			<UButton
+				icon="material-symbols-light:menu"
+				color="black"
+				variant="ghost"
+				@click="skuska()"
+				class="2xl:hidden block"
+				:class="!sidebarOpen ? 'block' : 'hidden'"
+			/>
+			<UButton
+				icon="material-symbols-light:close-small-outline-rounded"
+				color="black"
+				variant="ghost"
+				@click="skuska()"
+				class="2xl:hidden block"
+				:class="sidebarOpen ? 'block' : 'hidden'"
+			/>
+		</div>
+
 		<div
+			id="sidebar"
 			class="min-w-[280px] max-w-[280px] h-[calc(100vh-1.5rem)] bg-gr px-3 pt-5 mx-3 rounded-2xl my-3 ml-6 shadow-lg overflow-y-auto overflow-x-hidden"
+			:class="sidebarOpen ? 'block' : 'hidden 2xl:block'"
 		>
 			<CallsSearchBar @updateResults="updateResults" :call_lists="call_lists" />
 
