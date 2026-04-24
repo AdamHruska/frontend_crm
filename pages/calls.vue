@@ -335,22 +335,18 @@ const skuska = () => {
 		<loadigcomponent v-if="callListStore.loadingState" />
 		<loadigcomponent v-if="loadingState" />
 
-		<div class="top-[20px] left-0">
+		<div
+			class="button-container fixed top-2 left-2 z-50 flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200 shadow-md rounded-xl px-2 py-2"
+		>
 			<UButton
-				icon="material-symbols-light:menu"
+				:icon="
+					sidebarOpen
+						? 'material-symbols-light:close-small-outline-rounded'
+						: 'material-symbols-light:menu'
+				"
 				color="black"
 				variant="ghost"
 				@click="skuska()"
-				class="2xl:hidden block"
-				:class="!sidebarOpen ? 'block' : 'hidden'"
-			/>
-			<UButton
-				icon="material-symbols-light:close-small-outline-rounded"
-				color="black"
-				variant="ghost"
-				@click="skuska()"
-				class="2xl:hidden block"
-				:class="sidebarOpen ? 'block' : 'hidden'"
 			/>
 		</div>
 
