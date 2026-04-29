@@ -554,7 +554,7 @@ const showDiscardActivityModal = ref(false);
 const changeDiscardActivityModal = () => {
 	showDiscardActivityModal.value = !showDiscardActivityModal.value;
 };
-
+const selectedActivtyId = ref(null);
 const showNewNamesModal = ref(false);
 const newNamesModalContactId = ref(null);
 const changeNewNamesModal = (contactId = null) => {
@@ -571,6 +571,7 @@ const changeActivityStatus = async (item, status) => {
 	}
 
 	if (item.aktivita === "Analýza osobných financí" && status === "check") {
+		selectedActivtyId.value = item.id;
 		changeNewNamesModal(item.contact_id);
 	}
 
@@ -830,6 +831,7 @@ const getNowForDatetimeLocal = () => {
 		v-if="showNewNamesModal"
 		@close="changeNewNamesModal"
 		:contactId="newNamesModalContactId"
+		:activityId="selectedActivtyId"
 	/>
 	<DiscardActivityModal
 		v-if="showDiscardActivityModal"

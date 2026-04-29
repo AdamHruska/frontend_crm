@@ -1,5 +1,5 @@
 <template>
-	<Loadigcomponent v-if="loadingState" />
+	<Loadigcomponent v-if="ohrievacStore.loading" />
 	<div
 		class="min-h-screen bg-slate-50 text-slate-800 font-['DM_Sans',sans-serif]"
 	>
@@ -47,7 +47,8 @@
 					>
 						<input
 							type="date"
-							v-model="dateFrom"
+							:value="ohrievacStore.dateFrom"
+							@change="onDateFromChange"
 							class="bg-transparent text-sm text-slate-700 border-none outline-none"
 						/>
 						<svg
@@ -70,7 +71,8 @@
 					>
 						<input
 							type="date"
-							v-model="dateTo"
+							:value="ohrievacStore.dateTo"
+							@change="onDateToChange"
 							class="bg-transparent text-sm text-slate-700 border-none outline-none"
 						/>
 						<svg
@@ -236,19 +238,20 @@
 								<div class="relative">
 									<input
 										type="checkbox"
-										v-model="hideDiscardedStretnutie"
+										:checked="ohrievacStore.hideDiscardedStretnutie"
+										@change="onHideDiscardedChange"
 										class="sr-only"
 									/>
 									<div
 										class="w-4 h-4 rounded border-2 transition-all flex items-center justify-center"
 										:class="
-											hideDiscardedStretnutie
+											ohrievacStore.hideDiscardedStretnutie
 												? 'bg-indigo-600 border-indigo-600'
 												: 'bg-white border-slate-300 group-hover:border-indigo-400'
 										"
 									>
 										<svg
-											v-if="hideDiscardedStretnutie"
+											v-if="ohrievacStore.hideDiscardedStretnutie"
 											class="w-2.5 h-2.5 text-white"
 											fill="none"
 											stroke="currentColor"
@@ -582,31 +585,21 @@ import { useAuthStore } from "@/stores/authStore";
 const authStore = useAuthStore();
 authStore.loadToken();
 
+import { useOhrievacStore } from "@/stores/ohrievacStore";
+const ohrievacStore = useOhrievacStore();
+
 import { useToast } from "vue-toastification";
 const toast = useToast();
 
+// Local reactive state that doesn't need to be stored
 const klienti = ref([]);
 const selectedTimUser = ref(null);
-const id = ref(null);
-
-// ── Filter state ──
-const hideDiscardedStretnutie = ref(false);
-
-function formatLocalDate(date) {
-	const year = date.getFullYear();
-	const month = String(date.getMonth() + 1).padStart(2, "0");
-	const day = String(date.getDate()).padStart(2, "0");
-	return `${year}-${month}-${day}`;
-}
-
-const today = new Date();
-
-const dateFrom = ref(
-	formatLocalDate(new Date(today.getFullYear(), today.getMonth(), 1)),
-);
-const dateTo = ref(formatLocalDate(today));
 const viewMode = ref("moje");
-const loadingState = ref(false);
+
+// ── Current user id (resolved after mount) ──
+const currentUserId = computed(
+	() => selectedTimUser.value?.id ?? userStore.user?.id ?? null,
+);
 
 function userInitials(user) {
 	const f = user.first_name?.[0] ?? "";
@@ -614,11 +607,25 @@ function userInitials(user) {
 	return (f + l).toUpperCase() || "?";
 }
 
+// ── Date change handlers — invalidate cache then re-fetch ──
+function onDateFromChange(e) {
+	ohrievacStore.setDateFrom(e.target.value, currentUserId.value);
+	fetchIfNeeded();
+}
+
+function onDateToChange(e) {
+	ohrievacStore.setDateTo(e.target.value, currentUserId.value);
+	fetchIfNeeded();
+}
+
+function onHideDiscardedChange(e) {
+	ohrievacStore.setHideDiscarded(e.target.checked);
+}
+
 function switchToMoje() {
 	viewMode.value = "moje";
 	selectedTimUser.value = null;
-	id.value = userStore.user?.id ?? null;
-	fetchData();
+	fetchIfNeeded();
 }
 
 function switchToTim() {
@@ -634,61 +641,69 @@ function selectTimUser(user) {
 		return;
 	}
 	selectedTimUser.value = user;
-	id.value = user.id;
-	fetchData();
+	fetchIfNeeded();
 }
 
-const fetchData = async () => {
-	loadingState.value = true;
-	console.log("selected id", id.value);
+/**
+ * Fetch data only if not already cached for this userId + date range.
+ * Skips the network call and reads from store cache when available.
+ */
+const fetchIfNeeded = async () => {
+	const userId = currentUserId.value;
+	if (!userId) return;
 
-	const params = {
-		from: dateFrom.value,
-		to: dateTo.value,
-	};
+	const key = ohrievacStore.cacheKey(
+		userId,
+		ohrievacStore.dateFrom,
+		ohrievacStore.dateTo,
+	);
 
-	if (viewMode.value === "tim" && selectedTimUser.value) {
-		params.user_id = selectedTimUser.value.id;
-	} else {
-		params.user_id = userStore.user?.id;
+	// Return early — data already in cache
+	if (ohrievacStore.isCached(key)) {
+		klienti.value = ohrievacStore.getCached(key);
+		return;
 	}
 
-	const res = await axios.get(`${config.public.apiUrl}monthly-overview`, {
-		params,
-		headers: { Authorization: `Bearer ${authStore.token}` },
-	});
-	klienti.value = res.data;
-	loadingState.value = false;
+	// Cache miss — go to network
+	ohrievacStore.loading = true;
+	try {
+		const res = await axios.get(`${config.public.apiUrl}monthly-overview`, {
+			params: {
+				from: ohrievacStore.dateFrom,
+				to: ohrievacStore.dateTo,
+				user_id: userId,
+			},
+			headers: { Authorization: `Bearer ${authStore.token}` },
+		});
+		ohrievacStore.setCache(key, res.data);
+		klienti.value = res.data;
+	} catch (err) {
+		toast.error("Chyba pri načítaní dát");
+	} finally {
+		ohrievacStore.loading = false;
+	}
 };
 
 onMounted(async () => {
 	await userStore.fetchUser();
-	id.value = userStore.user?.id;
-	fetchData();
+	fetchIfNeeded();
 });
 
-watch([dateFrom, dateTo], () => {
-	if (
-		viewMode.value === "moje" ||
-		(viewMode.value === "tim" && selectedTimUser.value)
-	) {
-		fetchData();
-	}
-});
-
-// ── Base computed lists ──
+// ── Derived lists ──
 const baseNove = computed(() => klienti.value.filter((r) => r.typ === "nove"));
 
 const filteredServisne = computed(() =>
 	klienti.value.filter((r) => r.typ === "servisne"),
 );
 
-// ── Nové with optional filter applied ──
 const filteredNove = computed(() => {
-	if (!hideDiscardedStretnutie.value) return baseNove.value;
-	// Hide rows where 1. stretnutie status is 'discarded'
+	if (!ohrievacStore.hideDiscardedStretnutie) return baseNove.value;
 	return baseNove.value.filter((r) => r.prvStretnutieStatus !== "discarded");
 });
+
+const newContactsLength = computed(
+	() => klienti.value.filter((r) => r.typ === "nove").length,
+);
 
 function rowColorClass(row) {
 	if (row.status === "green") return "bg-emerald-50 hover:bg-emerald-100/70";
@@ -704,10 +719,6 @@ function rowDot(row) {
 	return "bg-slate-300";
 }
 
-/**
- * Days between Prvé stretnutie and Realizácia.
- * Returns null unless BOTH have activity_status === 'check'.
- */
 function daysBetween(row) {
 	if (row.prvStretnutieStatus !== "check" || row.realizaciaStatus !== "check") {
 		return null;
@@ -732,16 +743,16 @@ const summaryStats = computed(() => {
 		0,
 	);
 
-	// Average days 1. stretnutie → realizácia (only rows where both are 'check')
 	const daysArr = filteredNove.value.map(daysBetween).filter((d) => d !== null);
-
 	const avgDays =
 		daysArr.length > 0
 			? Math.round(daysArr.reduce((s, d) => s + d, 0) / daysArr.length)
 			: null;
 
 	return [
-		{ label: "Nových klientov", value: mienAoF + mienAnalyza },
+		{ label: "Počet mien v nových AOF", value: mienAoF + mienAnalyza },
+		{ label: "Počet nových kontaktov", value: newContactsLength.value },
+		{ label: "Počet dokončených kontaktov", value: daysArr.length },
 		{
 			label: "Ø dni 1.str → real.",
 			value: avgDays !== null ? `${avgDays}d` : "—",

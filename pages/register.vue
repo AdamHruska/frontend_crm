@@ -128,7 +128,9 @@ const rememberMe = ref(false);
 			<form class="mt-8 space-y-6">
 				<div class="rounded-md shadow-sm">
 					<div class="mb-4">
-						<label for="meno" class="block text-sm font-medium">Meno</label>
+						<label for="meno" class="block text-sm font-medium text-black"
+							>Meno</label
+						>
 						<input
 							type="text"
 							v-model="first_name"

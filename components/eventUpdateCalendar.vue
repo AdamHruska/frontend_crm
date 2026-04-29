@@ -63,27 +63,17 @@ const checkOfficeAvailability = (officeId, newDatum, newKoniec) => {
 
 	const overlappingActivity = officeStore.allOfficeActivities.find(
 		(activity) => {
-			// Only check activities for this specific office
 			if (activity.office_id !== officeId) return false;
-
 			const activityStart = new Date(activity.datum_cas);
 			const activityEnd = new Date(activity.koniec);
-
-			// Check if time ranges overlap
 			return newStart < activityEnd && activityStart < newEnd;
 		},
 	);
 
 	if (overlappingActivity) {
-		return {
-			isFree: false,
-			overlappingActivity: overlappingActivity,
-		};
+		return { isFree: false, overlappingActivity };
 	} else {
-		return {
-			isFree: true,
-			overlappingActivity: null,
-		};
+		return { isFree: true, overlappingActivity: null };
 	}
 };
 
@@ -94,11 +84,6 @@ watch(
 			officeAvailability.value = {};
 			return;
 		}
-
-		console.log("New datum_cas:", newDatum);
-		console.log("New koniec:", newKoniec);
-
-		// Check availability for all offices
 		const availability = {};
 		allOffices.value.forEach((office) => {
 			availability[office.id] = checkOfficeAvailability(
@@ -107,9 +92,7 @@ watch(
 				newKoniec,
 			);
 		});
-
 		officeAvailability.value = availability;
-		console.log("Office availability:", availability);
 	},
 	{ deep: true },
 );
@@ -125,20 +108,16 @@ const updateOfficeActivity = ref(false);
 
 watch(emailCount, (newCount, oldCount) => {
 	if (newCount > oldCount) {
-		// Add new empty email
 		emails.value.push("");
 	} else if (newCount < oldCount && newCount > 0) {
-		// Remove last email
 		emails.value.pop();
 	} else if (newCount === 0) {
-		// Reset to one empty email
 		emails.value = [""];
 	}
 });
 
 watch(onlineMeeting, (newValue) => {
 	if (newValue) {
-		// When online meeting is enabled, set the first email in array to the single email value
 		emails.value[0] = email.value;
 	}
 });
@@ -164,6 +143,36 @@ const officeActivity = ref(null);
 
 const active = ref([]);
 
+// ── Auto-release office when activity is discarded (future only) ──
+watch(activity_status, async (newStatus) => {
+	if (newStatus !== "discarded") return;
+	if (!officeActivity.value) return;
+
+	// Only act if the activity is in the future
+	const activityDate = new Date(datum_cas.value);
+	if (activityDate <= new Date()) return;
+
+	deletingOfficeActivity.value = true;
+	try {
+		await axios.delete(
+			`${config.public.apiUrl}office-activities/${officeActivity.value.id}`,
+			{ headers: { Authorization: `Bearer ${authStore.token}` } },
+		);
+
+		officeActivity.value = null;
+		officeActivityId.value = null;
+		selectedOffice.value = { id: null, name: "Kancelárie" };
+		miesto_stretnutia.value = "";
+
+		toast.info("Kancelária bola automaticky uvoľnená");
+	} catch (error) {
+		console.error("Error auto-releasing office:", error);
+		toast.error("Chyba pri automatickom uvoľňovaní kancelárie");
+	} finally {
+		deletingOfficeActivity.value = false;
+	}
+});
+
 onMounted(async () => {
 	officeStore.fetchOffices();
 	officeStore.fetchOfficesSharedWithMe();
@@ -172,9 +181,6 @@ onMounted(async () => {
 	officeStore.getallOfficeActivites();
 
 	await contactsStore.fetchContacts();
-	console.log("kontakty", contactsStore.contacts);
-
-	console.log("Office Activity ID:", officeActivityId.value);
 
 	const response2 = await axios.get(`${config.public.apiUrl}all-contacts`, {
 		headers: {
@@ -202,7 +208,6 @@ onMounted(async () => {
 	if (response.data.activity.send_notification_60) {
 		active.value.push(60);
 	}
-	console.log("New Contact from Store:", active.value);
 
 	activity_creator.value = response.data.activity.created_id;
 	aktivita.value = response.data.activity.aktivita;
@@ -220,8 +225,8 @@ onMounted(async () => {
 
 	ineBool.value = response.data.activity.ineBool;
 	miesto_stretnutia.value = response.data.activity.miesto_stretnutia;
-	onlineMeeting.value = response.data.activity.onlineMeeting;
-	originalOnlineMeetingValue.value = response.data.activity.onlineMeeting;
+	onlineMeeting.value = response.data.activity.online_meeting == 1;
+	originalOnlineMeetingValue.value = response.data.activity.online_meeting == 1;
 	activity_status.value = response.data.activity.activity_status;
 
 	const responseContact = await axios.get(
@@ -233,7 +238,6 @@ onMounted(async () => {
 		},
 	);
 	contact.value = responseContact.data.contact;
-	console.log("Contact v evente:", contact.value);
 
 	if (contact.value.email === null) {
 		emailBool.value = false;
@@ -258,8 +262,6 @@ onMounted(async () => {
 	} else {
 		doesOfficeActivityExist.value = false;
 	}
-	console.log("Ci existuje office event", officeActivityId.value.office.name);
-	//console.log("skuska id:", extractMicrosoftEventId(miesto_stretnutia.value));
 });
 
 const emit = defineEmits(["cancelAddActivity", "activityAdded", "alterEvents"]);
@@ -277,7 +279,6 @@ const updateActivity = async () => {
 	changeLoading();
 	event.preventDefault();
 
-	// Validate email if online meeting is checked and contact doesn't have an email
 	if (onlineMeeting.value && !emailBool.value && !email.value) {
 		alert("Pre online stretnutie je potrebné zadať email kontaktu");
 		changeLoading();
@@ -311,19 +312,11 @@ const updateActivity = async () => {
 			},
 		);
 
-		// Update email if necessary - only if onlineMeeting is checked and there's a new email to add
 		if (onlineMeeting.value && !emailBool.value && emails.value[0]) {
-			console.log("Adding email to contact:", emails.value[0]);
 			await axios.patch(
 				`${config.public.apiUrl}contact/${contact.value.id}/email`,
-				{
-					email: emails.value[0],
-				},
-				{
-					headers: {
-						Authorization: `Bearer ${authStore.token}`,
-					},
-				},
+				{ email: emails.value[0] },
+				{ headers: { Authorization: `Bearer ${authStore.token}` } },
 			);
 		}
 
@@ -332,7 +325,6 @@ const updateActivity = async () => {
 				let teamsResponse;
 
 				if (!originalOnlineMeetingValue.value) {
-					// Create new Teams meeting
 					teamsResponse = await axios.post(
 						`${config.public.apiUrl}create-teams-meeting`,
 						{
@@ -343,23 +335,17 @@ const updateActivity = async () => {
 						},
 						{ headers: { Authorization: `Bearer ${authStore.token}` } },
 					);
-
-					console.log("Teams meeting created:", teamsResponse.data);
 				} else {
-					// Update existing Teams meeting participants
 					teamsResponse = await axios.post(
 						`${config.public.apiUrl}update-teams-meeting`,
 						{
 							activityId: props.activityID,
-							additionalEmails: validEmails, // send all emails here too
+							additionalEmails: validEmails,
 						},
 						{ headers: { Authorization: `Bearer ${authStore.token}` } },
 					);
-
-					console.log("Teams meeting updated:", teamsResponse.data);
 				}
 
-				// Update the activity with the meeting URL if needed
 				if (teamsResponse.data.joinUrl) {
 					response.data.activity.miesto_stretnutia = teamsResponse.data.joinUrl;
 					await axios.put(
@@ -368,26 +354,12 @@ const updateActivity = async () => {
 							...response.data.activity,
 							miesto_stretnutia: teamsResponse.data.joinUrl,
 						},
-						{
-							headers: {
-								Authorization: `Bearer ${authStore.token}`,
-							},
-						},
+						{ headers: { Authorization: `Bearer ${authStore.token}` } },
 					);
 				}
 
-				//tu upravit office aktivitu
-				// const owner_id = userStore.user.id;
-				// const officeActivity = officeStore.findActivityId({
-				// 	datum_cas,
-				// 	koniec,
-				// 	owner_id,
-				// });
-				// console.log("Office Activity ID pred upravou:", officeActivity)
-
 				const datumCasDate = new Date(datum_cas.value);
 				datumCasDate.setHours(datumCasDate.getHours() + 2);
-
 				const koniecDate = new Date(koniec.value);
 				koniecDate.setHours(koniecDate.getHours() + 2);
 
@@ -403,22 +375,10 @@ const updateActivity = async () => {
 
 				await officeStore.updateActivity(newActivity);
 
-				//zmena kancelarie
-
 				toast.success(
 					!originalOnlineMeetingValue.value
 						? "Online stretnutie bolo úspešne vytvorené"
 						: "Online stretnutie bolo úspešne aktualizované",
-					{
-						position: "top-right",
-						timeout: 5000,
-						closeOnClick: true,
-						pauseOnHover: true,
-						draggable: true,
-						draggablePercent: 60,
-						showCloseButtonOnHover: false,
-						hideProgressBar: false,
-					},
 				);
 			} catch (error) {
 				console.error(
@@ -427,16 +387,6 @@ const updateActivity = async () => {
 				);
 				toast.error(
 					"Chyba pri vytváraní alebo aktualizovaní online stretnutia",
-					{
-						position: "top-right",
-						timeout: 5000,
-						closeOnClick: true,
-						pauseOnHover: true,
-						draggable: true,
-						draggablePercent: 60,
-						showCloseButtonOnHover: false,
-						hideProgressBar: false,
-					},
 				);
 			}
 		}
@@ -455,45 +405,17 @@ const updateActivity = async () => {
 			);
 		}
 
-		// if (selectOffice.value !== "Kancelárie") {
-		// 	//tu spravit office aktivitu
-
-		// 	const updatedActivity = {
-		// 		id: props.eventData.id,
-		// 		aktivita:
-		// 			aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
-		// 		datum_cas: new Date(datum_cas.value).toISOString(),
-		// 		koniec: new Date(koniec.value).toISOString(),
-		// 		poznamka: poznamka.value,
-		// 	};
-		// 	await officeStore.updateActivity(updatedActivity);
-		// }
-
-		// Display success message
-		toast.success("Aktivita bola úspešne aktualizovaná", {
-			position: "top-right",
-			timeout: 5000,
-			closeOnClick: true,
-			pauseOnHover: true,
-			draggable: true,
-			draggablePercent: 60,
-			showCloseButtonOnHover: false,
-			hideProgressBar: false,
-		});
+		toast.success("Aktivita bola úspešne aktualizovaná");
 
 		const activityIndex = calendarStore.activities.findIndex(
 			(activity) => activity.id === response.data.activity.id,
 		);
-
-		// If the activity is found, replace it with the updated activity
 		if (activityIndex !== -1) {
 			calendarStore.activities.splice(activityIndex, 1, response.data.activity);
 		}
 
 		emit("activityAdded", response.data.activity);
 		emit("alterEvents", response.data.activity);
-
-		// Close the form
 		emit("cancelAddActivity");
 		changeLoading();
 		cancelActivity();
@@ -502,16 +424,6 @@ const updateActivity = async () => {
 		toast.error(
 			"Nastala chyba pri aktualizácii aktivity: " +
 				(error.response?.data?.error || error.message),
-			{
-				position: "top-right",
-				timeout: 5000,
-				closeOnClick: true,
-				pauseOnHover: true,
-				draggable: true,
-				draggablePercent: 60,
-				showCloseButtonOnHover: false,
-				hideProgressBar: false,
-			},
 		);
 		changeLoading();
 	}
@@ -519,9 +431,7 @@ const updateActivity = async () => {
 
 const deleteActivity = async () => {
 	event.preventDefault();
-
 	await officeStore.deleteActivity(officeActivityId.value);
-
 	await calendarStore.deleteActivity(props.activityID);
 	emit("cancelAddActivity");
 	emit("alterEvents", null);
@@ -529,36 +439,26 @@ const deleteActivity = async () => {
 
 function extractMicrosoftEventId(teamsLink) {
 	if (!teamsLink) return null;
-
-	// Decode the URL-encoded string
 	const decodedLink = decodeURIComponent(teamsLink);
-
-	// Extract the meeting ID part
 	const match = decodedLink.match(/meetup-join\/(.+?)\//);
 	if (!match) return null;
-
 	const fullMeetingId = match[1];
-
-	// The actual event ID is the Base64 part between "meeting_" and "@thread"
 	const base64IdMatch = fullMeetingId.match(/meeting_(.+?)@thread/);
 	if (!base64IdMatch) return null;
-
-	return base64IdMatch[1]; // Returns "NjA4NDJhYmMtODgyOS00N2VkLThmMGItYjEwMTVjNGYzMTJk"
+	return base64IdMatch[1];
 }
+
 const redirectToContact = () => {
 	router.push(`/contact/${contact.value.id}`);
 };
 
 const loading = ref(false);
-
 const changeLoading = () => {
 	loading.value = !loading.value;
 };
 
 watch(dovolane, (newValue) => {
-	if (newValue) {
-		volane.value = true;
-	}
+	if (newValue) volane.value = true;
 });
 
 watch(dohodnute, (newValue) => {
@@ -578,9 +478,8 @@ const isValidUrl = (url) => {
 };
 
 const filteredContacts = (index) => {
-	const searchText = emails.value[index] || ""; // fallback if null/undefined
+	const searchText = emails.value[index] || "";
 	if (!searchText) return [];
-
 	return contacts.value.filter((contact) =>
 		[contact.meno, contact.priezvisko, contact.email].some((field) =>
 			(field || "").toLowerCase().includes(searchText.toLowerCase()),
@@ -589,7 +488,7 @@ const filteredContacts = (index) => {
 };
 
 const showOffices = ref(false);
-const selectedOffice = ref({ id: null, name: "Kancelárie" }); // default text
+const selectedOffice = ref({ id: null, name: "Kancelárie" });
 
 const toggleOffices = () => {
 	showOffices.value = !showOffices.value;
@@ -598,8 +497,7 @@ const toggleOffices = () => {
 const selectOffice = (office) => {
 	officeStore.setOfficeID = office.id;
 	selectedOffice.value = office;
-	console.log("Selected Office ID:", selectedOffice.value);
-	showOffices.value = false; // close dropdown after selection
+	showOffices.value = false;
 	updateOfficeActivity.value = true;
 };
 
@@ -609,8 +507,6 @@ const setActive = (n) => {
 	} else {
 		active.value.push(n);
 	}
-
-	console.log(active.value);
 };
 
 const deletingOfficeActivity = ref(false);
@@ -620,7 +516,6 @@ const freeOffice = async () => {
 		toast.error("Žiadna kancelárska aktivita sa nenašla");
 		return;
 	}
-
 	if (!confirm("Naozaj chcete uvoľniť kanceláriu?")) return;
 
 	deletingOfficeActivity.value = true;
@@ -630,7 +525,6 @@ const freeOffice = async () => {
 			{ headers: { Authorization: `Bearer ${authStore.token}` } },
 		);
 
-		// Clear miesto_stretnutia on the main activity too
 		await axios.put(
 			`${config.public.apiUrl}update-activities/${props.activityID}`,
 			{ miesto_stretnutia: "" },
@@ -748,7 +642,6 @@ const freeOffice = async () => {
 				>
 				<select
 					v-model="importance"
-					id="floating_aktivita"
 					class="w-full bg-gray-200 text-white rounded-lg p-1 py-2 mt-1 !text-black"
 				>
 					<option value="low">Nízka</option>
@@ -769,7 +662,6 @@ const freeOffice = async () => {
 					v-model="onlineMeeting"
 					type="checkbox"
 					class="bg-slate-700 rounded-lg text-white pl-2 focus:outline-blue-500 mr-4"
-					value="true"
 				/>
 				<label
 					class="!text-black text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
@@ -778,7 +670,6 @@ const freeOffice = async () => {
 			</div>
 
 			<div class="flex gap-3 mb-6 items-center">
-				<!-- Add Email Button -->
 				<div
 					@click="emailCount++"
 					class="cursor-pointer transition-all duration-200 hover:scale-110"
@@ -791,8 +682,6 @@ const freeOffice = async () => {
 						height="24"
 					/>
 				</div>
-
-				<!-- Remove Email Button (only shows when emailCount > 1) -->
 				<div
 					@click="emailCount--"
 					class="cursor-pointer transition-all duration-200 hover:scale-110"
@@ -891,13 +780,11 @@ const freeOffice = async () => {
 				>
 			</div>
 
-			<!-- Miesto stretnutia section -->
 			<div class="relative z-0 w-full mb-5 group" v-if="!onlineMeeting">
 				<label
 					class="text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
 					>Miesto stretnutia</label
 				>
-
 				<div
 					v-if="miesto_stretnutia && isValidUrl(miesto_stretnutia)"
 					class="mt-3"
@@ -927,7 +814,6 @@ const freeOffice = async () => {
 			</div>
 
 			<div class="relative z-0 w-full mb-5 group">
-				<!-- Dropdown button -->
 				<div
 					@click="toggleOffices"
 					class="flex justify-between w-full cursor-pointer p-2 bg-gray-200 rounded-lg text-black"
@@ -947,7 +833,6 @@ const freeOffice = async () => {
 						/>
 					</svg>
 				</div>
-
 				<div
 					v-if="showOffices"
 					class="w-full bg-gray-200 rounded-lg !text-black flex flex-col mt-1 max-h-[150px] overflow-y-auto"
@@ -1002,7 +887,6 @@ const freeOffice = async () => {
 					aktivita == 'Telefonát nábor'
 				"
 			>
-				<!-- VOLANE -->
 				<label class="cursor-pointer flex flex-col items-center gap-4">
 					<span
 						class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300 !text-black"
@@ -1018,9 +902,7 @@ const freeOffice = async () => {
 						class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"
 					></div>
 				</label>
-
 				<div>
-					<!-- VOLANE -->
 					<label class="cursor-pointer flex flex-col items-center gap-4">
 						<span
 							class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300 !text-black"
@@ -1037,12 +919,10 @@ const freeOffice = async () => {
 						></div>
 					</label>
 				</div>
-
 				<div>
-					<!-- VOLANE -->
 					<label class="cursor-pointer flex flex-col items-center gap-4">
 						<span
-							class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300 !text-black !text-black"
+							class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300 !text-black"
 							>Dohodnuté</span
 						>
 						<input
@@ -1057,7 +937,7 @@ const freeOffice = async () => {
 					</label>
 				</div>
 			</div>
-			<!-- tu pridat -->
+
 			<div class="flex justify-center gap-4 mb-6">
 				<button
 					class="status-btn"
@@ -1067,7 +947,6 @@ const freeOffice = async () => {
 				>
 					<Icon icon="pepicons-pencil:question" width="18" />
 				</button>
-
 				<button
 					class="status-btn status-btn-green"
 					:class="{
@@ -1079,7 +958,6 @@ const freeOffice = async () => {
 				>
 					<Icon icon="fa6-solid:check" width="14" />
 				</button>
-
 				<button
 					class="status-btn status-btn-red"
 					:class="{ active: activity_status === 'discarded' }"
@@ -1088,7 +966,6 @@ const freeOffice = async () => {
 				>
 					<Icon icon="material-symbols:close" width="18" />
 				</button>
-
 				<template v-if="aktivita === 'Pohovor'">
 					<button
 						class="status-btn status-btn-blue"
@@ -1098,7 +975,6 @@ const freeOffice = async () => {
 					>
 						<Icon icon="fa6-solid:thumbs-up" width="14" />
 					</button>
-
 					<button
 						class="status-btn status-btn-orange"
 						:class="{ active: activity_status === 'rejected' }"
@@ -1138,24 +1014,6 @@ const freeOffice = async () => {
 					Vymazať
 				</button>
 			</div>
-
-			<!-- <div
-				v-if="userStore.user.id == activity_creator"
-				class="flex justify-center items-center mt-3 gap-6"
-			>
-				<button
-					@click="updateActivity()"
-					class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-				>
-					Update
-				</button>
-				<button
-					@click="deleteActivity()"
-					class="text-white bg-red-500 hover:bg-red-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center dark:bg-red-500 dark:hover:bg-red-60"
-				>
-					Delete
-				</button>
-			</div> -->
 		</form>
 	</div>
 </template>
@@ -1164,33 +1022,26 @@ const freeOffice = async () => {
 * {
 	text: black !important;
 }
-
 .status-btn {
 	padding: 8px;
 	border-radius: 6px;
 	background: #eee;
 }
-
 .status-btn.active {
 	background: #dbeafe;
 }
-
 .status-btn-green.active {
 	background: #bbf7d0;
 }
-
 .status-btn-red.active {
 	background: #fecaca;
 }
-
 .status-btn-blue.active {
 	background: #bfdbfe;
 }
-
 .status-btn-orange.active {
 	background: #fed7aa;
 }
-
 .free-office-btn {
 	display: flex;
 	align-items: center;
@@ -1202,7 +1053,6 @@ const freeOffice = async () => {
 	background-color: #cecbcb;
 	margin-bottom: 16px;
 }
-
 .free-office-btn:hover {
 	background-color: #b3b0b0;
 }

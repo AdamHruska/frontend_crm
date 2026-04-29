@@ -340,6 +340,8 @@ const changeCallListBool = () => {
 const pendingFirstMeetingRow = ref(null);
 const currentActivity = ref(null);
 
+const selectedActivityId = ref(null);
+
 const changeActivityStatus = async (row, status) => {
 	const originalStatus = row.activity_status;
 	try {
@@ -356,6 +358,11 @@ const changeActivityStatus = async (row, status) => {
 			(row.aktivita === "Analýza osobných financí" && status === "check") ||
 			(row.aktivita === "Servisná analýza" && status === "check")
 		) {
+			selectedActivityId.value = row.id;
+			console.log(
+				"Selected activity ID for new names:",
+				selectedActivityId.value,
+			);
 			changeShowNewNamesModal();
 		}
 		row.activity_status = status;
@@ -668,7 +675,11 @@ const contactInitials = computed(() => {
 		@closeDiscardActivity="closeDiscardActivityModal"
 		@activityUpdated="handleActivityUpdate"
 	/>
-	<NewNamesModal v-if="showNewNamesModal" @close="changeShowNewNamesModal" />
+	<NewNamesModal
+		v-if="showNewNamesModal"
+		@close="changeShowNewNamesModal"
+		:activityId="selectedActivityId"
+	/>
 	<ConfirmEventModal
 		v-if="showConfirmEvent"
 		@close="changeConfirmEventModal"

@@ -1,4 +1,3 @@
-// Collapsible menu state const showEventMenu = ref(false);
 <script setup>
 const end_date = ref("");
 const emit = defineEmits(["deleteSharedEventsId"]);
@@ -26,12 +25,11 @@ const router = useRouter();
 const user = ref({});
 const sharedIDs = ref([]);
 
-import { ref } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import FullCalendar from "@fullcalendar/vue3";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import { _backgroundColor } from "#tailwind-config/theme";
 import { toRaw } from "vue";
 import { useToast } from "vue-toastification";
 const toast = useToast();
@@ -45,26 +43,26 @@ const showMicrosoftEvents = ref(false);
 const calendarRef = ref(null);
 
 const pastelColors = [
-	"#FFB3BA",
-	"#FFDFBA",
-	"#FFFFBA",
-	"#BAFFC9",
-	"#FFD7BA",
-	"#FFB3E6",
-	"#C9FFE5",
-	"#FFE4BA",
-	"#FFCCE5",
-	"#D4F0C9",
-	"#FFC6D9",
-	"#FFEAA7",
+	"#FFB3BA", // koralovo ružová
+	"#FFDFBA", // broskyňová
+	"#FFFFBA", // svetlo žltá
+	"#BAFFC9", // mätovo zelená
+	"#FFD7BA", // marhuľová
+	"#FFB3E6", // svetlo ružová
+	"#C9FFE5", // aqua zelená
+	"#FFE4BA", // vanilková
+	"#FFCCE5", // bubble gum ružová
+	"#D4F0C9", // limetková zelená
+	"#FFC6D9", // lososová ružová
+	"#FFEAA7", // pastelovo žltá
 ];
 
+// Collapsible menu state for account/calendar actions
 const showEventMenu = ref(false);
-// Mobile sidebar state
-const sidebarOpen = ref(false);
 
 const toggleUpdateActivity = () => {
 	if (updateActivity.value === true) {
+		// location.reload();
 	}
 	updateActivity.value = !updateActivity.value;
 };
@@ -78,15 +76,13 @@ const events = ref([]);
 const currentLoadedMonth = ref(null);
 const currentLoadedYear = ref(null);
 
+// Helper to fetch and merge all event types for a given month/year
 async function fetchAndMergeAllEvents(month, year) {
 	if (calendarStore.activities.length === 0) {
 		await calendarStore.fetchActivities();
 	}
 	rawData.value = calendarStore.activities;
 	const localEvents = transformData(rawData.value);
-	const sharedEvents = transformData(
-		flattenActivities(calendarStore.shared_activities),
-	);
 
 	const [googleEvents, microsoftEvents] = await Promise.all([
 		calendarStore.fetchGoogleEvents(month, year),
@@ -95,12 +91,7 @@ async function fetchAndMergeAllEvents(month, year) {
 			: Promise.resolve([]),
 	]);
 
-	events.value = [
-		...localEvents,
-		...sharedEvents,
-		...googleEvents,
-		...microsoftEvents,
-	];
+	events.value = [...localEvents, ...googleEvents, ...microsoftEvents];
 
 	calendarOptions.value = {
 		...calendarOptions.value,
@@ -169,6 +160,13 @@ const calendarOptions = ref({
 });
 
 async function handleEventDrop(dropInfo) {
+	if (
+		!confirm(`Naozaj chcete aktualizovať udalosť "${dropInfo.event.title}"?`)
+	) {
+		dropInfo.revert();
+		return;
+	}
+
 	const officeStore = useOfficeStore();
 	const eventId = dropInfo.event.id;
 	const newStart = dropInfo.event.start;
@@ -250,6 +248,8 @@ async function updateEventInBackend(eventId, formattedStart, formattedEnd) {
 		koniec: formattedEnd,
 	};
 
+	console.log("Updating event in backend:", updatedEvent);
+
 	try {
 		const response = await axios.put(
 			`${config.public.apiUrl}update-activities/${eventId}`,
@@ -262,6 +262,7 @@ async function updateEventInBackend(eventId, formattedStart, formattedEnd) {
 			},
 		);
 
+		console.log("Backend update response:", response.data);
 		if (response.data.status !== 200) {
 			toast.error("Failed to update event: ");
 		} else {
@@ -313,7 +314,9 @@ async function updateEventEndInBackend(eventId, newEnd) {
 	try {
 		const response = await axios.put(
 			`${config.public.apiUrl}update-activity-end/${eventId}`,
-			{ koniec: newEnd },
+			{
+				koniec: newEnd,
+			},
 			{
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
@@ -324,12 +327,15 @@ async function updateEventEndInBackend(eventId, newEnd) {
 
 		if (response.data.status === "success") {
 			const updatedEvent = response.data.activity;
+
 			rawData.value = rawData.value.map((event) =>
 				event.id == eventId ? updatedEvent : event,
 			);
+
 			calendarStore.activities = calendarStore.activities.map((event) =>
 				event.id == eventId ? updatedEvent : event,
 			);
+
 			toast.success("Event end time updated successfully");
 		} else {
 			toast.error("Failed to update event: " + response.data.message);
@@ -391,25 +397,28 @@ const calendarListLoading = ref(false);
 
 onMounted(async () => {
 	await userStore.userGetCalendarNames();
+
 	try {
 		calendarListLoading.value = true;
 		const response = await axios.get(
 			`${config.public.apiUrl}microsoft/calendars`,
-			{ headers: { Authorization: `Bearer ${authStore.token}` } },
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+				},
+			},
 		);
 		calendarList.value = response.data.calendars;
 	} catch (error) {
-		console.error("Error during Microsoft login callback:", error);
+		console.error("Error fetching Microsoft calendars:", error);
 	} finally {
 		calendarListLoading.value = false;
 	}
 
+	// Fetch contacts only (shared activities now loaded per-user below)
 	await Promise.all([
 		contactsStore.contacts.data.length === 0
 			? contactsStore.fetchContacts()
-			: Promise.resolve(),
-		calendarStore.shared_activities.length === 0
-			? calendarStore.fetchSharedActivities()
 			: Promise.resolve(),
 	]);
 
@@ -418,12 +427,21 @@ onMounted(async () => {
 	currentLoadedMonth.value = now.getMonth() + 1;
 	currentLoadedYear.value = now.getFullYear();
 
+	// ✅ Load shared users' DB + Microsoft events using the new endpoint
+	if (userStore.user.confirmed_share_user_id) {
+		const confirmedIds = Object.values(userStore.user.confirmed_share_user_id);
+		for (const sharedUserId of confirmedIds) {
+			await addSharedEventsId(sharedUserId);
+		}
+	}
+
 	if (calendarRef.value) {
 		setTimeout(() => {
 			calendarRef.value.getApi().refetchEvents();
 		}, 100);
 	}
 
+	// Set up event listener for deleteSharedEvents
 	eventBus.on("deleteSharedEvents", ({ userId }) => {
 		events.value = events.value.filter((event) => event.user_id !== userId);
 		calendarOptions.value = {
@@ -441,8 +459,10 @@ onMounted(async () => {
 				`${config.public.apiUrl}auth/callback`,
 				{ code },
 			);
+
 			const { access_token, refresh_token } = response.data;
 			const rememberMe = sessionStorage.getItem("rememberMe") === "true";
+
 			if (rememberMe) {
 				localStorage.setItem("microsoft_access_token", access_token);
 				localStorage.setItem("microsoft_refresh_token", refresh_token);
@@ -450,6 +470,7 @@ onMounted(async () => {
 				sessionStorage.setItem("microsoft_access_token", access_token);
 				sessionStorage.setItem("microsoft_refresh_token", refresh_token);
 			}
+
 			sessionStorage.removeItem("rememberMe");
 			window.location.href = "/calendar";
 		} catch (error) {
@@ -458,6 +479,7 @@ onMounted(async () => {
 	}
 
 	const googleStatus = urlParams.get("google");
+
 	if (googleStatus === "success") {
 		toast.success("Prihlásenie cez Google úspešné!");
 		window.history.replaceState({}, document.title, "/calendar");
@@ -476,25 +498,35 @@ const toDisabledColor = (color, factor = 0.5) => {
 	if (color.startsWith("rgb")) {
 		const nums = color.match(/\d+/g).map(Number);
 		const avg = (nums[0] + nums[1] + nums[2]) / 3;
+
 		const r = Math.round(nums[0] + (avg - nums[0]) * factor);
 		const g = Math.round(nums[1] + (avg - nums[1]) * factor);
 		const b = Math.round(nums[2] + (avg - nums[2]) * factor);
+
 		return `rgb(${r}, ${g}, ${b})`;
 	}
+
 	if (color.startsWith("#")) {
 		const bigint = parseInt(color.slice(1), 16);
 		const r = (bigint >> 16) & 255;
 		const g = (bigint >> 8) & 255;
 		const b = bigint & 255;
 		const avg = (r + g + b) / 3;
-		return `rgb(${Math.round(r + (avg - r) * factor)},${Math.round(g + (avg - g) * factor)},${Math.round(b + (avg - b) * factor)})`;
+
+		return `rgb(
+			${Math.round(r + (avg - r) * factor)},
+			${Math.round(g + (avg - g) * factor)},
+			${Math.round(b + (avg - b) * factor)}
+		)`;
 	}
+
 	return color;
 };
 
 const transformData = (data) => {
 	return data.map((item) => {
 		let farba;
+
 		if (item.created_id === userStore.user.id) {
 			farba = "rgb(37 99 235)";
 		} else {
@@ -505,13 +537,17 @@ const transformData = (data) => {
 			}
 			farba = calendarStore.userColors[item.created_id];
 		}
+
 		if (item.activity_status === "discarded") {
 			farba = toDisabledColor(farba, 0.6);
 		}
+
 		const formattedStart = item.datumCas.replace(" ", "T");
+
 		const contact = item.contact_id
 			? contactsStore.contacts.data?.find((c) => c.id === item.contact_id)
 			: null;
+
 		return {
 			id: item.id,
 			title: item.aktivita,
@@ -531,6 +567,7 @@ const transformData = (data) => {
 };
 
 let eventGuid = 0;
+
 const currentEvents = ref([]);
 
 const handleWeekendsToggle = () => {
@@ -594,6 +631,7 @@ const flattenActivities = (activitiesObject) => {
 };
 
 const deleteSharedEventsId = (userId) => {
+	console.log("test delete eventov sa vykonal");
 	events.value = events.value.filter((event) => event.user_id !== userId);
 	calendarOptions.value = {
 		...calendarOptions.value,
@@ -601,6 +639,7 @@ const deleteSharedEventsId = (userId) => {
 	};
 };
 
+// ✅ Updated: calls new /with-microsoft endpoint to get both DB + Outlook events
 const addSharedEventsId = async (userId) => {
 	loadingStateCalendar.value = true;
 	const userIdString = String(userId);
@@ -612,8 +651,12 @@ const addSharedEventsId = async (userId) => {
 	) {
 		try {
 			const response = await axios.get(
-				`${config.public.apiUrl}get-activities-by-creator/${userId}`,
+				`${config.public.apiUrl}get-activities-by-creator/${userId}/with-microsoft`,
 				{
+					params: {
+						month: currentLoadedMonth.value ?? new Date().getMonth() + 1,
+						year: currentLoadedYear.value ?? new Date().getFullYear(),
+					},
 					headers: {
 						Authorization: `Bearer ${authStore.token}`,
 						"Content-Type": "application/json",
@@ -621,24 +664,69 @@ const addSharedEventsId = async (userId) => {
 				},
 			);
 
-			if (response && response.data && response.data.activities) {
-				const sharedEvents = transformData(
-					flattenActivities(response.data.activities),
-				);
-				const rawActivities = toRaw(calendarStore.shared_activities);
-				const currentActivities = Array.isArray(rawActivities)
-					? rawActivities
-					: Object.values(rawActivities)[0] || [];
-				calendarStore.shared_activities = [
-					...currentActivities,
-					...response.data.activities,
-				];
-				events.value = [...events.value, ...sharedEvents];
-				calendarOptions.value.events = events.value;
+			if (response && response.data) {
+				// Handle DB activities
+				if (response.data.activities?.length) {
+					const sharedEvents = transformData(response.data.activities);
+
+					const rawActivities = toRaw(calendarStore.shared_activities);
+					const currentActivities = Array.isArray(rawActivities)
+						? rawActivities
+						: Object.values(rawActivities)[0] || [];
+
+					calendarStore.shared_activities = [
+						...currentActivities,
+						...response.data.activities,
+					];
+
+					events.value = [...events.value, ...sharedEvents];
+				}
+
+				// Handle Microsoft Outlook events from shared user
+				if (response.data.microsoft_events?.length) {
+					const sharedMicrosoftEvents = response.data.microsoft_events.map(
+						(event) => {
+							// Use same pastel color logic as transformData
+							if (!calendarStore.userColors[event.created_id]) {
+								const userIds = Object.keys(calendarStore.userColors).length;
+								calendarStore.userColors[event.created_id] =
+									pastelColors[userIds % pastelColors.length];
+							}
+							const color = calendarStore.userColors[event.created_id];
+
+							return {
+								id: event.microsoft_id,
+								title: event.subject || "Bez názvu",
+								start: event.start,
+								end: event.end,
+								allDay: event.isAllDay ?? false,
+								backgroundColor: color,
+								borderColor: color,
+								user_id: event.created_id,
+								extendedProps: {
+									source: "microsoft",
+									location: event.location,
+									link: event.joinUrl,
+									note: event.note,
+									organizer: event.organizer,
+									attendees: event.attendees,
+									calendar: event.calendar,
+									importance: "normal",
+								},
+							};
+						},
+					);
+
+					events.value = [...events.value, ...sharedMicrosoftEvents];
+				}
+
+				calendarOptions.value = {
+					...calendarOptions.value,
+					events: [...events.value],
+				};
 			}
 		} catch (error) {
-			console.error("Error adding share ID:", error);
-			error.value = "Error adding share ID";
+			console.error("Error loading shared user events:", error);
 		}
 	}
 
@@ -656,7 +744,9 @@ const recentEvents = computed(() => {
 			const eventStart = new Date(event.start);
 			return eventStart >= twoHoursAgo && eventStart <= endOfDay;
 		})
-		.sort((a, b) => new Date(a.start) - new Date(b.start));
+		.sort((a, b) => {
+			return new Date(a.start) - new Date(b.start);
+		});
 });
 
 const formatDate = (dateString) => {
@@ -672,19 +762,23 @@ const displayUpdateEvent = (event) => {
 const alterEvents = (updatedEvent) => {
 	if (updatedEvent === null) {
 		events.value = events.value.filter((event) => event.id != activityID.value);
+
 		rawData.value = rawData.value.filter(
 			(event) => event.id !== activityID.value,
 		);
+
 		calendarOptions.value = {
 			...calendarOptions.value,
 			events: [...events.value],
 		};
+
 		updateActivity.value = false;
 		activityID.value = "";
 	} else {
 		rawData.value = rawData.value.map((event) =>
 			event.id === updatedEvent.id ? updatedEvent : event,
 		);
+
 		events.value = events.value.map((event) => {
 			if (event.id === updatedEvent.id) {
 				return {
@@ -705,10 +799,12 @@ const alterEvents = (updatedEvent) => {
 			}
 			return event;
 		});
+
 		calendarOptions.value = {
 			...calendarOptions.value,
 			events: [...events.value],
 		};
+
 		updateActivity.value = false;
 		activityID.value = "";
 	}
@@ -716,12 +812,16 @@ const alterEvents = (updatedEvent) => {
 
 const addNewEvent = (newEvent) => {
 	rawData.value.push(newEvent);
+
 	const [transformedEvent] = transformData([newEvent]);
+
 	events.value = [...events.value, transformedEvent];
+
 	calendarOptions.value = {
 		...calendarOptions.value,
 		events: [...events.value],
 	};
+
 	addActivity.value = false;
 	toggleAddActivity();
 };
@@ -731,10 +831,12 @@ function handleDateSelect(selectInfo) {
 	toggleAddActivity();
 	let calendarApi = selectInfo.view.calendar;
 	end_date.value = selectInfo.startStr;
+
 	calendarApi.unselect();
 }
 
 const loadingStateCalendar = ref(false);
+
 const areMicrosofEventsShown = ref(false);
 
 async function fetchMicrosoftEvents(month, year) {
@@ -745,10 +847,7 @@ async function fetchMicrosoftEvents(month, year) {
 	}
 	rawData.value = calendarStore.activities;
 
-	const sharedACT = transformData(
-		flattenActivities(calendarStore.shared_activities),
-	);
-	const localEvents = [...transformData(rawData.value), ...sharedACT];
+	const localEvents = transformData(rawData.value);
 
 	const newMicrosoftEvents = await calendarStore.fetchMicrosoftEvents(
 		month,
@@ -759,11 +858,20 @@ async function fetchMicrosoftEvents(month, year) {
 		(event) => event.extendedProps?.source === "google",
 	);
 
+	// Preserve shared user events (both DB and Microsoft) that were already loaded
+	const existingSharedEvents = events.value.filter(
+		(event) =>
+			event.user_id !== userStore.user.id &&
+			event.extendedProps?.source !== "google",
+	);
+
 	events.value = [
 		...localEvents,
 		...existingGoogleEvents,
+		...existingSharedEvents,
 		...newMicrosoftEvents,
 	];
+
 	calendarOptions.value = {
 		...calendarOptions.value,
 		events: [...events.value],
@@ -775,10 +883,13 @@ async function fetchMicrosoftEvents(month, year) {
 
 async function fetchGoogleEventsForMonth(month, year) {
 	const newGoogleEvents = await calendarStore.fetchGoogleEvents(month, year);
+
 	const nonGoogleEvents = events.value.filter(
 		(event) => event.extendedProps?.source !== "google",
 	);
+
 	events.value = [...nonGoogleEvents, ...newGoogleEvents];
+
 	calendarOptions.value = {
 		...calendarOptions.value,
 		events: [...events.value],
@@ -792,7 +903,9 @@ const fetchGoogleEvents = async () => {
 		const response = await axios.get(
 			`${config.public.apiUrl}google/calendar/events`,
 			{
-				params: { userId: userStore.user.id },
+				params: {
+					userId: userStore.user.id,
+				},
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
 					"Content-Type": "application/json",
@@ -820,11 +933,14 @@ const fetchGoogleEvents = async () => {
 		const nonGoogleEvents = events.value.filter(
 			(e) => e.extendedProps?.source !== "google",
 		);
+
 		events.value = [...nonGoogleEvents, ...googleEvents];
+
 		calendarOptions.value = {
 			...calendarOptions.value,
 			events: [...events.value],
 		};
+
 		toast.success(`Načítaných ${googleEvents.length} Google udalostí`);
 	} catch (error) {
 		console.error("Error fetching Google events:", error);
@@ -843,7 +959,11 @@ const loginWithGoogle = () => {
 		return;
 	}
 
-	const state = JSON.stringify({ userId, csrf: authStore.csrfToken });
+	const state = JSON.stringify({
+		userId,
+		csrf: authStore.csrfToken,
+	});
+
 	const params = new URLSearchParams({
 		client_id: clientId,
 		response_type: "code",
@@ -862,6 +982,7 @@ const logoutWithGoogle = async (userId) => {
 		const response = await $fetch(`/api/google/logout?userId=${userId}`, {
 			method: "POST",
 		});
+
 		if (response.success) {
 			alert("Successfully logged out from Google.");
 			window.location.href = "/calendar";
@@ -877,9 +998,11 @@ const logoutWithGoogle = async (userId) => {
 const loginWithMicrosoft = () => {
 	const config = useRuntimeConfig();
 	const authStore = useAuthStore();
+
 	const clientId = config.public.AZURE_CLIENT_ID;
 	const redirectUriRaw = config.public.AZURE_REDIRECT_URI;
 	const scope = config.public.AZURE_SCOPE;
+
 	const userId = userStore.user.id;
 
 	if (!userId) {
@@ -887,8 +1010,17 @@ const loginWithMicrosoft = () => {
 		return;
 	}
 
-	const state = JSON.stringify({ userId, csrf: authStore.csrfToken });
-	const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUriRaw)}&scope=${encodeURIComponent(scope)}&response_mode=query&state=${encodeURIComponent(state)}`;
+	const state = JSON.stringify({
+		userId: userId,
+		csrf: authStore.csrfToken,
+	});
+
+	const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(
+		redirectUriRaw,
+	)}&scope=${encodeURIComponent(
+		scope,
+	)}&response_mode=query&state=${encodeURIComponent(state)}`;
+
 	window.location.href = authUrl;
 };
 
@@ -904,6 +1036,8 @@ const logoutWithMicrosoft = async () => {
 				},
 			},
 		);
+
+		console.log(response.data.message);
 		toast.success("Successfully logged out from Microsoft");
 		return response.data;
 	} catch (error) {
@@ -922,7 +1056,7 @@ const toggleCreateMicrosoftEvent = () => {
 };
 
 const handleMicrosoftEventCreated = (newEvent) => {
-	fetchMicrosoftEvents();
+	fetchMicrosoftEvents(currentLoadedMonth.value, currentLoadedYear.value);
 };
 
 const deleteMicrosoftEvent = async (eventId) => {
@@ -950,13 +1084,16 @@ const deleteMicrosoftEvent = async (eventId) => {
 
 		if (response.status === 200) {
 			events.value = events.value.filter((event) => event.id !== eventId);
+
 			calendarOptions.value = {
 				...calendarOptions.value,
 				events: [...events.value],
 			};
+
 			if (showMicrosoftEvents.value) {
 				toggleMicrosoftEvents();
 			}
+
 			alert("Microsoft event deleted successfully");
 		}
 	} catch (error) {
@@ -969,23 +1106,12 @@ const deleteMicrosoftEvent = async (eventId) => {
 
 const isLoggedInWithMicrosoft = ref(false);
 
-const checkAuth = async () => {
-	try {
-		const response = await this.$axios.get("/api/check-auth");
-		if (response.data.authenticated) {
-		} else {
-			this.loginWithMicrosoft();
-		}
-	} catch (error) {
-		this.loginWithMicrosoft();
-	}
-};
-
 const toggleMyActivities = () => {
 	const userId = useUserStore().user.id;
 
 	if (!calendarStore.showOnlyMine) {
 		calendarStore.originalEvents = [...events.value];
+
 		events.value = calendarStore.originalEvents.filter(
 			(event) => event.user_id !== userId,
 		);
@@ -1025,11 +1151,9 @@ const isMounted = ref(false);
 </script>
 
 <template>
-	<div class="calendar-layout">
-		<!-- Loading overlay -->
+	<div class="h-screen">
 		<loadigcomponent v-if="calendarStore.loadingState" />
 
-		<!-- Modals -->
 		<AddActivityCalendar
 			v-if="addActivity"
 			@cancelAddActivity="toggleAddActivity"
@@ -1062,185 +1186,123 @@ const isMounted = ref(false);
 			@eventCreated="handleMicrosoftEventCreated"
 		/>
 
-		<!-- Mobile header bar -->
-		<header class="mobile-topbar">
-			<button
-				class="mobile-menu-btn"
-				@click="sidebarOpen = !sidebarOpen"
-				aria-label="Toggle sidebar"
-			>
-				<span class="hamburger-line"></span>
-				<span class="hamburger-line"></span>
-				<span class="hamburger-line"></span>
-			</button>
-			<span class="mobile-title">Diár</span>
-		</header>
-
-		<!-- Sidebar backdrop (mobile) -->
-		<div
-			v-if="sidebarOpen"
-			class="sidebar-backdrop"
-			@click="sidebarOpen = false"
-		></div>
-
-		<!-- Sidebar -->
-		<aside class="sidebar" :class="{ 'sidebar--open': sidebarOpen }">
-			<div class="sidebar-header">
-				<h1 class="sidebar-title">Diár</h1>
-				<button
-					class="sidebar-close"
-					@click="sidebarOpen = false"
-					aria-label="Close sidebar"
+		<div class="demo-app bg-white">
+			<div class="demo-app-sidebar bg-white-force">
+				<div
+					class="shadow-md rounded-lg bg-white p-4 b-grey-300 rounded-2xl mb-10"
 				>
-					✕
-				</button>
-			</div>
-
-			<!-- Weekends toggle -->
-			<div class="sidebar-section">
-				<label class="toggle-label">
-					<span class="toggle-track">
-						<input
-							type="checkbox"
-							:checked="calendarOptions.weekends"
-							@change="handleWeekendsToggle"
-							class="toggle-input"
-						/>
-						<span class="toggle-thumb"></span>
-					</span>
-					<span class="toggle-text">Zobraziť víkendy</span>
-				</label>
-			</div>
-
-			<!-- Recent events -->
-			<div class="sidebar-section" v-if="recentEvents.length > 0">
-				<h3 class="section-label">Dnešné udalosti</h3>
-				<ul class="recent-events-list">
-					<li
-						v-for="event in recentEvents"
-						:key="event.id"
-						@click="displayUpdateEvent(event)"
-						class="recent-event-item"
-					>
-						<span class="event-dot"></span>
-						<div class="event-info">
-							<span class="event-item-title">{{ event.title }}</span>
-							<span class="event-item-time">{{
-								formatDate(event.startStr)
-							}}</span>
-						</div>
-					</li>
-				</ul>
-			</div>
-			<div class="sidebar-section" v-else>
-				<h3 class="section-label">Dnešné udalosti</h3>
-				<p class="empty-state">Žiadne nadchádzajúce udalosti</p>
-			</div>
-
-			<!-- Calendar sharing -->
-			<div class="sidebar-section">
-				<CalendarSharing
-					@deleteSharedEventsId="deleteSharedEventsId"
-					@addSharedEventsId="addSharedEventsId"
-					@toggleMyActivities="toggleMyActivities"
-				/>
-			</div>
-
-			<!-- Account & Calendars collapsible -->
-			<div class="sidebar-section">
-				<button
-					class="collapsible-btn"
-					@click="showEventMenu = !showEventMenu"
-					:class="{ 'collapsible-btn--active': showEventMenu }"
-				>
-					<span>Účty a kalendáre</span>
-					<svg
-						class="chevron"
-						:class="{ 'chevron--rotated': showEventMenu }"
-						width="16"
-						height="16"
-						viewBox="0 0 16 16"
-						fill="none"
-					>
-						<path
-							d="M4 6l4 4 4-4"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						/>
-					</svg>
-				</button>
-
-				<transition name="slide-down">
-					<div v-if="showEventMenu" class="account-menu">
-						<!-- Google section -->
-						<div class="account-group">
-							<p class="account-group-label">
-								<img
-									src="/public/google_icon.png"
-									alt="Google"
-									class="provider-icon"
-								/>
-								Google
-							</p>
-							<button class="action-btn" @click="fetchGoogleEvents">
-								Zobraziť Google udalosti
-							</button>
-							<button class="action-btn" @click="loginWithGoogle">
-								Prihlásiť sa
-							</button>
-							<button
-								class="action-btn action-btn--danger"
-								@click="logoutWithGoogle"
+					<div class="demo-app-sidebar-section text-black">
+						<h2 class="font-semibold text-2xl text-center">Diár</h2>
+					</div>
+					<div class="demo-app-sidebar-section text-black">
+						<label class="text-lg">
+							<input
+								type="checkbox"
+								:checked="calendarOptions.weekends"
+								@change="handleWeekendsToggle"
+							/>
+							Zobraziť víkendy
+						</label>
+					</div>
+					<div class="demo-app-sidebar-section text-black rounded-b-[30px]">
+						<h2 class="underline">Recent Events:</h2>
+						<ul class="">
+							<li
+								v-for="event in recentEvents"
+								:key="event.id"
+								@click="displayUpdateEvent(event)"
+								class="cursor-pointer hover:bg-blue-50 rounded text-black text-sm flex items-center justify-center"
 							>
-								Odhlásiť sa
-							</button>
-						</div>
-
-						<!-- Microsoft section -->
-						<div class="account-group">
-							<p class="account-group-label">
-								<img
-									src="/public/icons8-microsoft-48.png"
-									alt="Microsoft"
-									class="provider-icon"
-								/>
-								Microsoft
-							</p>
+								<b>{{ formatDate(event.startStr) }}</b>
+								<i>{{ event.title }}</i>
+							</li>
+						</ul>
+					</div>
+				</div>
+				<div class="shadow pb-4 rounded-b-lg">
+					<CalendarSharing
+						class="mt-4"
+						@deleteSharedEventsId="deleteSharedEventsId"
+						@addSharedEventsId="addSharedEventsId"
+						@toggleMyActivities="toggleMyActivities"
+					/>
+				</div>
+				<div class="flex flex-col items-center py-6 shadow-lg rounded-b-lg">
+					<button
+						class="bg-blue-200 px-4 py-2 rounded-md shadow hover:bg-blue-300 mb-3 font-semibold"
+						@click="showEventMenu = !showEventMenu"
+					>
+						{{
+							showEventMenu
+								? "Skryť menu"
+								: "Zobraziť menu pre účty a kalendáre"
+						}}
+					</button>
+					<transition name="fade">
+						<div v-if="showEventMenu" class="w-full flex flex-col items-center">
 							<button
-								class="action-btn"
+								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+								@click="fetchGoogleEvents"
+							>
+								<span>Zobraziť Google udalosti</span>
+								<img src="/public/google_icon.png" alt="logo" />
+							</button>
+
+							<button
+								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+								@click="loginWithGoogle"
+							>
+								<span>Prihlásiť sa pomocou Google</span>
+								<img src="/public/google_icon.png" alt="logo" />
+							</button>
+
+							<button
+								v-if="showMicrosoftEventsOnCalendar"
+								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
 								@click="toggleMicrosoftEventsVisibility"
 							>
-								{{
-									showMicrosoftEventsOnCalendar
-										? "Skryť udalosti"
-										: "Zobraziť udalosti"
-								}}
+								<span>Skryť microsoft eventy</span>
+								<img src="/public/icons8-microsoft-48.png" alt="logo" />
 							</button>
+							<button
+								v-else
+								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+								@click="toggleMicrosoftEventsVisibility"
+							>
+								<span>Zobraziť microsoft eventy</span>
+								<img src="/public/icons8-microsoft-48.png" alt="logo" />
+							</button>
+
 							<button
 								v-if="!isLoggedInWithMicrosoft"
-								class="action-btn"
+								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
 								@click="loginWithMicrosoft"
 							>
-								Prihlásiť sa
+								<span>Prihlásiť pomocou Microsoft</span>
+								<img src="/public/icons8-microsoft-48.png" alt="logo" />
 							</button>
 							<button
-								class="action-btn action-btn--danger"
+								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
 								@click="logoutWithMicrosoft"
 							>
-								Odhlásiť sa
+								<span>Odhlásiť sa z Microsoft účtu</span>
+								<img src="/public/icons8-microsoft-48.png" alt="logo" />
 							</button>
-						</div>
 
-						<!-- Microsoft calendars -->
-						<div class="calendar-list-section">
-							<p class="account-group-label">Kalendáre</p>
-							<div v-if="calendarListLoading" class="loading-text">
-								Načítavanie…
-							</div>
-							<div v-else class="calendar-chips">
+							<button
+								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+								@click="logoutWithGoogle"
+							>
+								<span>Odhlásiť sa z Google účtu</span>
+								<img src="/public/google_icon.png" alt="logo" />
+							</button>
+
+							<div
+								class="bg-[#D1D5DB] px-2 py-2 rounded-md shadow flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3 flex flex-col text-center"
+							>
+								<h3 class="font-semibold">Microsoft Kalendáre</h3>
 								<div
+									v-if="!calendarListLoading"
 									v-for="calendar in calendarList"
 									:key="calendar.id"
 									@click="
@@ -1250,734 +1312,245 @@ const isMounted = ref(false);
 											currentLoadedYear,
 										)
 									"
-									class="calendar-chip"
-									:class="{
-										'calendar-chip--active':
-											Array.isArray(userStore.selected_calendar_names) &&
-											userStore.selected_calendar_names.includes(calendar.name),
-									}"
+									class="w-full rounded-md py-1 cursor-pointer transition-colors"
+									:class="[
+										'p-2 rounded cursor-pointer',
+										Array.isArray(userStore.selected_calendar_names) &&
+										userStore.selected_calendar_names.includes(calendar.name)
+											? 'bg-green-500 text-white hover:bg-green-400'
+											: 'bg-gray-200 hover:bg-slate-100',
+									]"
 								>
 									{{ calendar.name }}
 								</div>
+								<div
+									v-if="calendarListLoading"
+									class="mt-3 font-bold text-base"
+								>
+									Načitavanie kalendárov...
+								</div>
 							</div>
 						</div>
-					</div>
-				</transition>
-			</div>
-		</aside>
-
-		<!-- Main calendar area -->
-		<main class="calendar-main">
-			<!-- Microsoft loading indicator -->
-			<transition name="fade">
-				<div
-					v-if="calendarStore.microsoftLoadingState"
-					class="ms-loading-badge"
-				>
-					<div class="mini-spinner"></div>
-					<span>Načítava Microsoft kalendár…</span>
+					</transition>
 				</div>
-			</transition>
-
-			<FullCalendar
-				ref="calendarRef"
-				class="fc-wrapper"
-				:options="calendarOptions"
+			</div>
+			<div
+				class="absolute top-5 left-1/2 z-50"
+				v-if="calendarStore.microsoftLoadingState"
 			>
-				<template v-slot:eventContent="arg">
-					<div class="event-pill">
-						<span class="event-pill-time">{{ arg.timeText }}</span>
-						<span class="event-pill-title">{{ arg.event.title }}</span>
-						<span
-							v-if="
-								arg.event.extendedProps.firstName ||
-								arg.event.extendedProps.lastName
-							"
-							class="event-pill-contact"
-						>
-							{{ arg.event.extendedProps.firstName }}
-							{{ arg.event.extendedProps.lastName }}
-						</span>
+				<div class="relative flex items-center gap-4">
+					<div class="spinner -translate-x-10">
+						<div></div>
+						<div></div>
+						<div></div>
+						<div></div>
+						<div></div>
+						<div></div>
+						<div></div>
+						<div></div>
+						<div></div>
+						<div></div>
 					</div>
-				</template>
-			</FullCalendar>
-		</main>
+					<div class="">Načítava si microsoft kalendár...</div>
+				</div>
+			</div>
+			<div class="demo-app-main bg-white text-black">
+				<FullCalendar
+					ref="calendarRef"
+					class="demo-app-calendar"
+					:options="calendarOptions"
+				>
+					<template v-slot:eventContent="arg">
+						<div class="event-content-wrapper">
+							<div class="event-time">
+								<b>{{ arg.timeText }}</b>
+							</div>
+							<div class="event-title">{{ arg.event.title }}</div>
+							<div class="">
+								<div>
+									{{ arg.event.extendedProps.firstName }}
+									{{ arg.event.extendedProps.lastName }}
+								</div>
+							</div>
+						</div>
+					</template>
+				</FullCalendar>
+			</div>
+		</div>
 	</div>
 </template>
 
 <style lang="css">
-/* ────────────────────────────────────────────
-   Design tokens
-──────────────────────────────────────────── */
-:root {
-	--sidebar-width: 280px;
-	--topbar-height: 52px;
-
-	--color-bg: #f5f6fa;
-	--color-surface: #ffffff;
-	--color-surface-2: #f0f2f8;
-	--color-border: #e2e5ef;
-	--color-primary: rgb(37, 99, 235);
-	--color-primary-light: #eff4ff;
-	--color-danger: #ef4444;
-	--color-danger-light: #fef2f2;
-	--color-text: #1e2433;
-	--color-text-muted: #6b7594;
-	--color-google: #4285f4;
-	--color-ms: #00a1f1;
-
-	--radius-sm: 6px;
-	--radius-md: 10px;
-	--radius-lg: 16px;
-
-	--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-	--shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
-	--shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.13);
-
-	--font-body: "DM Sans", system-ui, sans-serif;
-	--transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+.bg-white-force {
+	background-color: #fff !important;
 }
 
-/* ────────────────────────────────────────────
-   Layout shell
-──────────────────────────────────────────── */
-.calendar-layout {
-	display: flex;
-	height: 100dvh;
-	background: var(--color-bg);
-	font-family: var(--font-body);
-	color: var(--color-text);
-	overflow: hidden;
-}
-
-/* ────────────────────────────────────────────
-   Mobile top bar (hidden on desktop)
-──────────────────────────────────────────── */
-.mobile-topbar {
-	display: none;
-	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
-	height: var(--topbar-height);
-	background: var(--color-surface);
-	border-bottom: 1px solid var(--color-border);
-	align-items: center;
-	gap: 12px;
-	padding: 0 16px;
-	z-index: 200;
-	box-shadow: var(--shadow-sm);
-}
-
-.mobile-menu-btn {
-	display: flex;
-	flex-direction: column;
-	gap: 5px;
-	background: none;
-	border: none;
-	cursor: pointer;
-	padding: 4px;
-}
-
-.hamburger-line {
-	display: block;
-	width: 22px;
-	height: 2px;
-	background: var(--color-text);
-	border-radius: 2px;
-	transition: var(--transition);
-}
-
-.mobile-title {
-	font-size: 17px;
-	font-weight: 600;
-	letter-spacing: -0.3px;
-}
-
-/* ────────────────────────────────────────────
-   Sidebar backdrop (mobile only)
-──────────────────────────────────────────── */
-.sidebar-backdrop {
-	display: none;
-	position: fixed;
-	inset: 0;
-	background: rgba(0, 0, 0, 0.35);
-	backdrop-filter: blur(2px);
-	z-index: 249;
-}
-
-/* ────────────────────────────────────────────
-   Sidebar
-──────────────────────────────────────────── */
-.sidebar {
-	width: var(--sidebar-width);
-	flex-shrink: 0;
-	background: var(--color-surface);
-	border-right: 1px solid var(--color-border);
-	display: flex;
-	flex-direction: column;
-	overflow-y: auto;
-	overflow-x: hidden;
-	z-index: 250;
-	transition: transform var(--transition);
-}
-
-.sidebar-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 20px 20px 12px;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.sidebar-title {
-	font-size: 20px;
-	font-weight: 700;
-	letter-spacing: -0.5px;
+h2 {
 	margin: 0;
+	font-size: 16px;
 }
 
-.sidebar-close {
-	display: none;
-	background: none;
-	border: none;
-	font-size: 18px;
-	cursor: pointer;
-	color: var(--color-text-muted);
-	padding: 4px 8px;
-	border-radius: var(--radius-sm);
-	transition: background var(--transition);
-}
-
-.sidebar-close:hover {
-	background: var(--color-surface-2);
-}
-
-.sidebar-section {
-	padding: 14px 16px;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.section-label {
-	font-size: 11px;
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.8px;
-	color: var(--color-text-muted);
-	margin: 0 0 10px;
-}
-
-/* ────────────────────────────────────────────
-   Toggle switch
-──────────────────────────────────────────── */
-.toggle-label {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	cursor: pointer;
-}
-
-.toggle-track {
-	position: relative;
-	width: 40px;
-	height: 22px;
-	background: var(--color-border);
-	border-radius: 99px;
-	transition: background var(--transition);
-	flex-shrink: 0;
-}
-
-.toggle-input {
-	position: absolute;
-	opacity: 0;
-	width: 0;
-	height: 0;
-}
-
-.toggle-thumb {
-	position: absolute;
-	top: 3px;
-	left: 3px;
-	width: 16px;
-	height: 16px;
-	background: white;
-	border-radius: 50%;
-	box-shadow: var(--shadow-sm);
-	transition: transform var(--transition);
-}
-
-.toggle-input:checked ~ .toggle-thumb {
-	transform: translateX(18px);
-}
-
-.toggle-track:has(.toggle-input:checked) {
-	background: var(--color-primary);
-}
-
-.toggle-text {
-	font-size: 14px;
-	font-weight: 500;
-}
-
-/* ────────────────────────────────────────────
-   Recent events
-──────────────────────────────────────────── */
-.recent-events-list {
-	list-style: none;
+ul {
 	margin: 0;
+	padding: 0 0 0 1.5em;
+}
+
+li {
+	margin: 1.5em 0;
 	padding: 0;
+}
+
+b {
+	margin-right: 3px;
+}
+
+.demo-app {
 	display: flex;
-	flex-direction: column;
-	gap: 6px;
+	min-height: 100%;
+	font-family:
+		Arial,
+		Helvetica Neue,
+		Helvetica,
+		sans-serif;
+	font-size: 14px;
+	width: 100%;
 }
 
-.recent-event-item {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	padding: 8px 10px;
-	border-radius: var(--radius-md);
-	cursor: pointer;
-	transition: background var(--transition);
-}
-
-.recent-event-item:hover {
-	background: var(--color-primary-light);
-}
-
-.event-dot {
-	width: 8px;
-	height: 8px;
-	border-radius: 50%;
-	background: var(--color-primary);
+.demo-app-sidebar {
+	width: 300px;
+	line-height: 1.5;
+	background: #eaf9ff;
+	border-right: 1px solid #d3e2e8;
 	flex-shrink: 0;
 }
 
-.event-info {
+.demo-app-sidebar-section {
+	padding: 1em;
+}
+
+.demo-app-main {
+	flex-grow: 1;
+	padding: 3em;
+	width: calc(100% - 300px);
 	display: flex;
-	flex-direction: column;
-	gap: 1px;
-	min-width: 0;
+	justify-content: center;
 }
 
-.event-item-title {
-	font-size: 13px;
-	font-weight: 600;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.event-item-time {
-	font-size: 11px;
-	color: var(--color-text-muted);
-}
-
-.empty-state {
-	font-size: 13px;
-	color: var(--color-text-muted);
-	margin: 0;
-	font-style: italic;
-}
-
-/* ────────────────────────────────────────────
-   Collapsible button
-──────────────────────────────────────────── */
-.collapsible-btn {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	width: 100%;
-	background: var(--color-surface-2);
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-md);
-	padding: 10px 14px;
-	font-size: 13px;
-	font-weight: 600;
-	color: var(--color-text);
-	cursor: pointer;
-	transition: background var(--transition);
-}
-
-.collapsible-btn:hover,
-.collapsible-btn--active {
-	background: var(--color-primary-light);
-	border-color: var(--color-primary);
-	color: var(--color-primary);
-}
-
-.chevron {
-	transition: transform var(--transition);
-}
-
-.chevron--rotated {
-	transform: rotate(180deg);
-}
-
-/* ────────────────────────────────────────────
-   Account menu
-──────────────────────────────────────────── */
-.account-menu {
-	margin-top: 10px;
-	display: flex;
-	flex-direction: column;
-	gap: 14px;
-}
-
-.account-group {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-}
-
-.account-group-label {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	font-size: 11px;
-	font-weight: 700;
-	text-transform: uppercase;
-	letter-spacing: 0.7px;
-	color: var(--color-text-muted);
-	margin: 0 0 4px;
-}
-
-.provider-icon {
-	width: 14px;
-	height: 14px;
-	object-fit: contain;
-}
-
-.action-btn {
-	width: 100%;
-	padding: 8px 12px;
-	border-radius: var(--radius-sm);
-	font-size: 13px;
-	font-weight: 500;
-	text-align: left;
-	cursor: pointer;
-	background: var(--color-surface-2);
-	border: 1px solid var(--color-border);
-	color: var(--color-text);
-	transition:
-		background var(--transition),
-		border-color var(--transition);
-}
-
-.action-btn:hover {
-	background: var(--color-primary-light);
-	border-color: var(--color-primary);
-	color: var(--color-primary);
-}
-
-.action-btn--danger {
-	color: var(--color-danger);
-}
-
-.action-btn--danger:hover {
-	background: var(--color-danger-light);
-	border-color: var(--color-danger);
-	color: var(--color-danger);
-}
-
-/* Calendar chips */
-.calendar-list-section {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-}
-
-.loading-text {
-	font-size: 13px;
-	color: var(--color-text-muted);
-	font-style: italic;
-}
-
-.calendar-chips {
-	display: flex;
-	flex-direction: column;
-	gap: 5px;
-}
-
-.calendar-chip {
-	padding: 7px 12px;
-	border-radius: var(--radius-sm);
-	font-size: 13px;
-	font-weight: 500;
-	cursor: pointer;
-	background: var(--color-surface-2);
-	border: 1px solid var(--color-border);
-	transition: all var(--transition);
-}
-
-.calendar-chip:hover {
-	border-color: var(--color-primary);
-}
-
-.calendar-chip--active {
-	background: #d1fae5;
-	border-color: #10b981;
-	color: #065f46;
-	font-weight: 600;
-}
-
-/* ────────────────────────────────────────────
-   Main calendar
-──────────────────────────────────────────── */
-.calendar-main {
-	flex: 1;
-	min-width: 0;
-	display: flex;
-	flex-direction: column;
-	overflow: hidden;
-	position: relative;
-	padding: 20px;
-	background: var(--color-bg);
-}
-
-.fc-wrapper {
-	flex: 1;
-	min-height: 0;
-	background: var(--color-surface);
-	border-radius: var(--radius-lg);
-	box-shadow: var(--shadow-md);
-	overflow: hidden;
-}
-
-/* ────────────────────────────────────────────
-   Microsoft loading badge
-──────────────────────────────────────────── */
-.ms-loading-badge {
-	position: absolute;
-	top: 28px;
-	left: 50%;
-	transform: translateX(-50%);
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	background: var(--color-surface);
-	border: 1px solid var(--color-border);
-	border-radius: 99px;
-	padding: 8px 16px;
-	font-size: 13px;
-	font-weight: 500;
-	box-shadow: var(--shadow-md);
-	z-index: 100;
-	white-space: nowrap;
-}
-
-.mini-spinner {
-	width: 14px;
-	height: 14px;
-	border: 2px solid var(--color-border);
-	border-top-color: var(--color-primary);
-	border-radius: 50%;
-	animation: spin 0.7s linear infinite;
-}
-
-@keyframes spin {
-	to {
-		transform: rotate(360deg);
-	}
-}
-
-/* ────────────────────────────────────────────
-   Event pill (event content slot)
-──────────────────────────────────────────── */
-.event-pill {
-	display: flex;
-	flex-direction: column;
-	gap: 1px;
-	padding: 1px 3px;
-	overflow: hidden;
-	width: 100%;
-}
-
-.event-pill-time {
-	font-size: 10px;
-	font-weight: 700;
-	opacity: 0.85;
-	white-space: nowrap;
-}
-
-.event-pill-title {
-	font-size: 12px;
-	font-weight: 600;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.event-pill-contact {
-	font-size: 10px;
-	opacity: 0.75;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-/* ────────────────────────────────────────────
-   FullCalendar overrides
-──────────────────────────────────────────── */
 .fc {
-	height: 100% !important;
-	font-family: var(--font-body) !important;
+	max-width: none;
+	width: 100%;
+	margin: 0;
 }
 
-.fc-toolbar-title {
-	font-size: 16px !important;
-	font-weight: 700 !important;
-	letter-spacing: -0.3px;
+.demo-app-calendar {
+	width: 100%;
+}
+
+.fc-view-harness {
+	width: 100% !important;
 }
 
 .fc-button {
-	background: var(--color-surface-2) !important;
-	color: var(--color-text) !important;
-	border: 1px solid var(--color-border) !important;
-	box-shadow: none !important;
-	font-family: var(--font-body) !important;
-	font-size: 13px !important;
-	font-weight: 500 !important;
-	border-radius: var(--radius-sm) !important;
-	padding: 5px 12px !important;
-	transition: background var(--transition) !important;
+	background-color: #909090 !important;
+	color: black !important;
+	border: none !important;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }
 
 .fc-button:hover {
-	background: var(--color-primary-light) !important;
-	color: var(--color-primary) !important;
-	border-color: var(--color-primary) !important;
+	background-color: #505050 !important;
+	color: black !important;
 }
 
-.fc-button-active,
-.fc-button-primary:not(:disabled).fc-button-active {
-	background: var(--color-primary) !important;
-	color: #fff !important;
-	border-color: var(--color-primary) !important;
+.fc-button-active {
+	background-color: rgb(37 99 235) !important;
+	color: black !important;
 }
 
-.fc-today-button:disabled {
-	opacity: 0.5 !important;
+.spinner {
+	position: absolute;
+	width: 9px;
+	height: 9px;
 }
 
-.fc-col-header-cell {
-	font-weight: 600 !important;
-	font-size: 12px !important;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
+.spinner div {
+	position: absolute;
+	width: 50%;
+	height: 150%;
+	background: #000000;
+	transform: rotate(calc(var(--rotation) * 1deg))
+		translate(0, calc(var(--translation) * 1%));
+	animation: spinner-fzua35 1s calc(var(--delay) * 1s) infinite ease;
 }
 
-.fc-timegrid-slot-label {
-	font-size: 11px !important;
-	color: var(--color-text-muted) !important;
+.spinner div:nth-child(1) {
+	--delay: 0.1;
+	--rotation: 36;
+	--translation: 150;
+}
+.spinner div:nth-child(2) {
+	--delay: 0.2;
+	--rotation: 72;
+	--translation: 150;
+}
+.spinner div:nth-child(3) {
+	--delay: 0.3;
+	--rotation: 108;
+	--translation: 150;
+}
+.spinner div:nth-child(4) {
+	--delay: 0.4;
+	--rotation: 144;
+	--translation: 150;
+}
+.spinner div:nth-child(5) {
+	--delay: 0.5;
+	--rotation: 180;
+	--translation: 150;
+}
+.spinner div:nth-child(6) {
+	--delay: 0.6;
+	--rotation: 216;
+	--translation: 150;
+}
+.spinner div:nth-child(7) {
+	--delay: 0.7;
+	--rotation: 252;
+	--translation: 150;
+}
+.spinner div:nth-child(8) {
+	--delay: 0.8;
+	--rotation: 288;
+	--translation: 150;
+}
+.spinner div:nth-child(9) {
+	--delay: 0.9;
+	--rotation: 324;
+	--translation: 150;
+}
+.spinner div:nth-child(10) {
+	--delay: 1;
+	--rotation: 360;
+	--translation: 150;
 }
 
-.fc-daygrid-day-number,
-.fc-col-header-cell-cushion {
-	color: var(--color-text) !important;
-	text-decoration: none !important;
-}
-
-.fc-day-today {
-	background: var(--color-primary-light) !important;
-}
-
-.fc-now-indicator-line {
-	border-color: var(--color-primary) !important;
-	border-width: 2px !important;
-}
-
-.fc-event {
-	border-radius: 5px !important;
-	border-width: 0 0 0 3px !important;
-	font-size: 12px !important;
-}
-
-/* ────────────────────────────────────────────
-   Transitions
-──────────────────────────────────────────── */
-.fade-enter-active,
-.fade-leave-active {
-	transition: opacity 200ms ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-	opacity: 0;
-}
-
-.slide-down-enter-active {
-	transition: all 220ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-.slide-down-leave-active {
-	transition: all 180ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-.slide-down-enter-from,
-.slide-down-leave-to {
-	opacity: 0;
-	transform: translateY(-8px);
-}
-
-/* ────────────────────────────────────────────
-   Responsive — tablet / mobile
-──────────────────────────────────────────── */
-@media (max-width: 768px) {
-	.calendar-layout {
-		flex-direction: column;
-		padding-top: var(--topbar-height);
+@keyframes spinner-fzua35 {
+	0%,
+	10%,
+	20%,
+	30%,
+	50%,
+	60%,
+	70%,
+	80%,
+	90%,
+	100% {
+		transform: rotate(calc(var(--rotation) * 1deg))
+			translate(0, calc(var(--translation) * 1%));
 	}
-
-	.mobile-topbar {
-		display: flex;
-	}
-
-	.sidebar-backdrop {
-		display: block;
-	}
-
-	.sidebar {
-		position: fixed;
-		top: 0;
-		left: 0;
-		height: 100dvh;
-		transform: translateX(-100%);
-		box-shadow: var(--shadow-lg);
-	}
-
-	.sidebar--open {
-		transform: translateX(0);
-	}
-
-	.sidebar-close {
-		display: block;
-	}
-
-	.calendar-main {
-		padding: 10px;
-	}
-
-	.fc-toolbar-title {
-		font-size: 14px !important;
-	}
-
-	.fc-button {
-		font-size: 11px !important;
-		padding: 4px 8px !important;
-	}
-
-	.ms-loading-badge {
-		font-size: 12px;
-		padding: 6px 12px;
-	}
-}
-
-@media (max-width: 480px) {
-	.calendar-main {
-		padding: 6px;
-	}
-
-	.fc-header-toolbar {
-		flex-wrap: wrap;
-		gap: 6px;
+	50% {
+		transform: rotate(calc(var(--rotation) * 1deg))
+			translate(0, calc(var(--translation) * 1.5%));
 	}
 }
 </style>

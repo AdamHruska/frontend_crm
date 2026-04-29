@@ -22,6 +22,11 @@ const props = defineProps({
 		type: Number,
 		default: null,
 	},
+
+	activityId: {
+		type: Number,
+		default: null,
+	},
 });
 
 const emit = defineEmits(["close"]);
@@ -32,7 +37,7 @@ const updateEvent = async () => {
 			`${config.public.apiUrl}new-names-count`,
 			{
 				new_names: Number(namesNumber.value),
-				contact_id: props.contactId || route.params.id,
+				activity_id: props.activityId,
 			},
 			{
 				headers: {
