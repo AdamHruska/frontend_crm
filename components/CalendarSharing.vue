@@ -257,23 +257,40 @@ const handleSearch = async () => {
 // 	});
 // });
 
+// const filteredUsers = computed(() => {
+// 	// Add null checks for userStore.user and confirmed_share_user_id
+// 	const confirmedIds = userStore.user?.confirmed_share_user_id
+// 		? Object.values(userStore.user.confirmed_share_user_id).map(String)
+// 		: [];
+
+// 	if (!searchInput.value) {
+// 		return users.value.filter((user) => confirmedIds.includes(String(user.id)));
+// 	}
+
+// 	const normalizedSearchInput = searchInput.value.toLowerCase();
+// 	return users.value.filter((user) => {
+// 		const userFullName = `${user.first_name} ${user.last_name}`.toLowerCase();
+// 		return (
+// 			userFullName.includes(normalizedSearchInput) &&
+// 			confirmedIds.includes(String(user.id))
+// 		);
+// 	});
+// });
+
 const filteredUsers = computed(() => {
-	// Add null checks for userStore.user and confirmed_share_user_id
-	const confirmedIds = userStore.user?.confirmed_share_user_id
-		? Object.values(userStore.user.confirmed_share_user_id).map(String)
-		: [];
+	// Use shared users directly from store
+	const sharedUsers = userStore.sharedUsers || [];
 
 	if (!searchInput.value) {
-		return users.value.filter((user) => confirmedIds.includes(String(user.id)));
+		return sharedUsers;
 	}
 
 	const normalizedSearchInput = searchInput.value.toLowerCase();
-	return users.value.filter((user) => {
+
+	return sharedUsers.filter((user) => {
 		const userFullName = `${user.first_name} ${user.last_name}`.toLowerCase();
-		return (
-			userFullName.includes(normalizedSearchInput) &&
-			confirmedIds.includes(String(user.id))
-		);
+
+		return userFullName.includes(normalizedSearchInput);
 	});
 });
 
@@ -293,26 +310,26 @@ const handleCheckboxChange = async (userId, isChecked) => {
 	try {
 		if (isChecked) {
 			emit("addSharedEventsId", userId);
-			await axios.post(
-				`${config.public.apiUrl}add-share-id/${userId}`,
-				{},
-				{
-					headers: {
-						Authorization: `Bearer ${authStore.token}`,
-					},
-				},
-			);
+			// await axios.post(
+			// 	`${config.public.apiUrl}add-share-id/${userId}`,
+			// 	{},
+			// 	{
+			// 		headers: {
+			// 			Authorization: `Bearer ${authStore.token}`,
+			// 		},
+			// 	},
+			// );
 		} else {
 			emit("deleteSharedEventsId", userId);
-			await axios.post(
-				`${config.public.apiUrl}null-share-id/${userId}`,
-				{},
-				{
-					headers: {
-						Authorization: `Bearer ${authStore.token}`,
-					},
-				},
-			);
+			// await axios.post(
+			// 	`${config.public.apiUrl}null-share-id/${userId}`,
+			// 	{},
+			// 	{
+			// 		headers: {
+			// 			Authorization: `Bearer ${authStore.token}`,
+			// 		},
+			// 	},
+			// );
 		}
 
 		// Refresh users after change
