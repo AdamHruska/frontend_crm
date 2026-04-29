@@ -631,13 +631,37 @@ const flattenActivities = (activitiesObject) => {
 };
 
 const deleteSharedEventsId = (userId) => {
-	console.log("test delete eventov sa vykonal");
-	events.value = events.value.filter((event) => event.user_id !== userId);
+	// Remove shared DB events + shared Microsoft events for this unchecked user
+	events.value = events.value.filter(
+		(event) => String(event.user_id) !== String(userId),
+	);
+
+	// Remove from shared activities store too
+	calendarStore.shared_activities = calendarStore.shared_activities.filter(
+		(activity) => String(activity.created_id) !== String(userId),
+	);
+
+	// Update calendar immediately
 	calendarOptions.value = {
 		...calendarOptions.value,
 		events: [...events.value],
 	};
+
+	// Force FullCalendar rerender
+	if (calendarRef.value) {
+		calendarRef.value.getApi().removeAllEvents();
+		calendarRef.value.getApi().addEventSource(events.value);
+	}
 };
+
+// const deleteSharedEventsId = (userId) => {
+// 	console.log("test delete eventov sa vykonal");
+// 	events.value = events.value.filter((event) => event.user_id !== userId);
+// 	calendarOptions.value = {
+// 		...calendarOptions.value,
+// 		events: [...events.value],
+// 	};
+// };
 
 // ✅ Updated: calls new /with-microsoft endpoint to get both DB + Outlook events
 const addSharedEventsId = async (userId) => {
@@ -1152,7 +1176,9 @@ const isMounted = ref(false);
 
 <template>
 	<div class="h-screen">
-		<loadigcomponent v-if="calendarStore.loadingState" />
+		<loadigcomponent
+			v-if="calendarStore.loadingState || loadingStateCalendar.value"
+		/>
 
 		<AddActivityCalendar
 			v-if="addActivity"
