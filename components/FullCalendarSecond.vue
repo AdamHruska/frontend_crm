@@ -428,12 +428,12 @@ onMounted(async () => {
 	currentLoadedYear.value = now.getFullYear();
 
 	// ✅ Load shared users' DB + Microsoft events using the new endpoint
-	if (userStore.user.confirmed_share_user_id) {
-		const confirmedIds = Object.values(userStore.user.confirmed_share_user_id);
-		for (const sharedUserId of confirmedIds) {
-			await addSharedEventsId(sharedUserId);
-		}
-	}
+	// if (userStore.user.confirmed_share_user_id) {
+	// 	const confirmedIds = Object.values(userStore.user.confirmed_share_user_id);
+	// 	for (const sharedUserId of confirmedIds) {
+	// 		await addSharedEventsId(sharedUserId);
+	// 	}
+	// }
 
 	if (calendarRef.value) {
 		setTimeout(() => {

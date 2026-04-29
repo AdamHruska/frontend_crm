@@ -300,7 +300,7 @@ const handleCheckboxChange = async (userId, isChecked) => {
 					headers: {
 						Authorization: `Bearer ${authStore.token}`,
 					},
-				}
+				},
 			);
 		} else {
 			emit("deleteSharedEventsId", userId);
@@ -311,7 +311,7 @@ const handleCheckboxChange = async (userId, isChecked) => {
 					headers: {
 						Authorization: `Bearer ${authStore.token}`,
 					},
-				}
+				},
 			);
 		}
 
@@ -369,7 +369,9 @@ const checkedUsers = computed(() => {
 	height: 20px;
 	display: inline-block;
 	position: relative;
-	transition: background-color 0.2s ease, border-color 0.2s ease;
+	transition:
+		background-color 0.2s ease,
+		border-color 0.2s ease;
 }
 
 /* Style checkbox when checked */
