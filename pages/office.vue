@@ -31,7 +31,7 @@
 	<div class="w-full h-[2px] bg-slate-500"></div>
 
 	<div class="mt-8 mx-8 max-h-fit">
-		<OfficeCalendar />
+		<OfficeCalendar :ownerId="selectedOfficeOwnerId" />
 	</div>
 
 	<div class="mt-8">
@@ -300,10 +300,18 @@ const userStore = useUserStore();
 
 const selectedOfficeName = computed(() => {
 	const office = allOffices.value.find(
-		(office) => office.id === officeStore.defaultOfficeId,
+		(office) => office.id === officeStore.setOfficeID,
 	);
 
 	return office ? office.name : null;
+});
+
+const selectedOfficeOwnerId = computed(() => {
+	const office = allOffices.value.find(
+		(office) => office.id === officeStore.setOfficeID,
+	);
+
+	return office ? office.creator_id : null;
 });
 
 const sharedWithUsers = ref([]);
@@ -383,10 +391,9 @@ const handleOfficeEdited = () => {
 };
 
 const showOfficeActivities = async (officeId) => {
-	//setOfficeID.value = officeId;
 	officeStore.setOfficeID = officeId;
-	//console.log("Selected Office ID:", officeStore.setOfficeID);
-	officeStore.getOfficeActivities(officeId);
+
+	await officeStore.getOfficeActivities(officeId);
 };
 
 const handleRevokeAccess = async (userId, officeId) => {

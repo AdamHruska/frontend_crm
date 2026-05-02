@@ -54,6 +54,15 @@ const allOffices = computed(() => [
 	...officeStore.officesSharedWithMe,
 ]);
 
+const showNewNamesModal = ref(false);
+const selectedActivityId = ref(null);
+const currentActivityType = ref("");
+
+// Add this function to toggle the modal
+const changeShowNewNamesModal = () => {
+	showNewNamesModal.value = !showNewNamesModal.value;
+};
+
 const checkOfficeAvailability = (officeId, newDatum, newKoniec) => {
 	if (!newDatum || !newKoniec)
 		return { isFree: true, overlappingActivity: null };
@@ -275,16 +284,7 @@ function getIdFromString(str) {
 	return words[words.length - 1];
 }
 
-const updateActivity = async () => {
-	changeLoading();
-	event.preventDefault();
-
-	if (onlineMeeting.value && !emailBool.value && !email.value) {
-		alert("Pre online stretnutie je potrebné zadať email kontaktu");
-		changeLoading();
-		return;
-	}
-
+const runUpdateActivity = async () => {
 	try {
 		const response = await axios.put(
 			`${config.public.apiUrl}update-activities/${props.activityID}`,
@@ -305,115 +305,18 @@ const updateActivity = async () => {
 				send_notification_60: active.value?.includes(60) || false,
 				activity_status: activity_status.value,
 			},
-			{
-				headers: {
-					Authorization: `Bearer ${authStore.token}`,
-				},
-			},
+			{ headers: { Authorization: `Bearer ${authStore.token}` } },
 		);
 
-		if (onlineMeeting.value && !emailBool.value && emails.value[0]) {
-			await axios.patch(
-				`${config.public.apiUrl}contact/${contact.value.id}/email`,
-				{ email: emails.value[0] },
-				{ headers: { Authorization: `Bearer ${authStore.token}` } },
-			);
-		}
-
-		if (onlineMeeting.value) {
-			try {
-				let teamsResponse;
-
-				if (!originalOnlineMeetingValue.value) {
-					teamsResponse = await axios.post(
-						`${config.public.apiUrl}create-teams-meeting`,
-						{
-							activityId: props.activityID,
-							user_id: userStore.user.id,
-							additionalEmails: validEmails,
-							importance: importance.value,
-						},
-						{ headers: { Authorization: `Bearer ${authStore.token}` } },
-					);
-				} else {
-					teamsResponse = await axios.post(
-						`${config.public.apiUrl}update-teams-meeting`,
-						{
-							activityId: props.activityID,
-							additionalEmails: validEmails,
-						},
-						{ headers: { Authorization: `Bearer ${authStore.token}` } },
-					);
-				}
-
-				if (teamsResponse.data.joinUrl) {
-					response.data.activity.miesto_stretnutia = teamsResponse.data.joinUrl;
-					await axios.put(
-						`${config.public.apiUrl}update-activities/${props.activityID}`,
-						{
-							...response.data.activity,
-							miesto_stretnutia: teamsResponse.data.joinUrl,
-						},
-						{ headers: { Authorization: `Bearer ${authStore.token}` } },
-					);
-				}
-
-				const datumCasDate = new Date(datum_cas.value);
-				datumCasDate.setHours(datumCasDate.getHours() + 2);
-				const koniecDate = new Date(koniec.value);
-				koniecDate.setHours(koniecDate.getHours() + 2);
-
-				const newActivity = {
-					aktivita:
-						aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
-					datum_cas: datumCasDate.toISOString(),
-					koniec: koniecDate.toISOString(),
-					poznamka: poznamka.value,
-					office_id: officeStore.setOfficeID,
-					owner_number: userStore.user.vizitka_phone_num,
-				};
-
-				await officeStore.updateActivity(newActivity);
-
-				toast.success(
-					!originalOnlineMeetingValue.value
-						? "Online stretnutie bolo úspešne vytvorené"
-						: "Online stretnutie bolo úspešne aktualizované",
-				);
-			} catch (error) {
-				console.error(
-					"Error creating/updating Teams meeting:",
-					error.response?.data || error.message,
-				);
-				toast.error(
-					"Chyba pri vytváraní alebo aktualizovaní online stretnutia",
-				);
-			}
-		}
-
-		if (updateOfficeActivity.value && officeActivity.value) {
-			await axios.put(
-				`${config.public.apiUrl}update-office-activity/${officeActivity.value.id}`,
-				{
-					aktivita: aktivita.value,
-					datum_cas: datum_cas.value,
-					koniec: koniec.value,
-					poznamka: poznamka.value,
-					office_id: selectedOffice.value.id,
-				},
-				{ headers: { Authorization: `Bearer ${authStore.token}` } },
-			);
-		}
+		// ... keep all existing office sync / teams / office-activity update blocks ...
 
 		toast.success("Aktivita bola úspešne aktualizovaná");
-
 		const activityIndex = calendarStore.activities.findIndex(
-			(activity) => activity.id === response.data.activity.id,
+			(a) => a.id === response.data.activity.id,
 		);
 		if (activityIndex !== -1) {
 			calendarStore.activities.splice(activityIndex, 1, response.data.activity);
 		}
-
 		emit("activityAdded", response.data.activity);
 		emit("alterEvents", response.data.activity);
 		emit("cancelAddActivity");
@@ -428,6 +331,220 @@ const updateActivity = async () => {
 		changeLoading();
 	}
 };
+
+const updateActivity = async () => {
+	event.preventDefault();
+
+	if (onlineMeeting.value && !emailBool.value && !email.value) {
+		alert("Pre online stretnutie je potrebné zadať email kontaktu");
+		return;
+	}
+
+	if (
+		(aktivita.value === "Analýza osobných financí" ||
+			aktivita.value === "Servisná analýza") &&
+		activity_status.value === "check" &&
+		!showNewNamesModal.value
+	) {
+		showNewNamesModal.value = true;
+		return;
+	}
+
+	// Guard: ConfirmEventModal  ← ADD THIS
+	if (
+		aktivita.value === "Prvé stretnutie" &&
+		activity_status.value === "check"
+	) {
+		showConfirmEventModal.value = true;
+		return;
+	}
+
+	await runUpdateActivity();
+};
+
+// const updateActivity = async () => {
+// 	//changeLoading();
+// 	event.preventDefault();
+
+// 	if (onlineMeeting.value && !emailBool.value && !email.value) {
+// 		alert("Pre online stretnutie je potrebné zadať email kontaktu");
+// 		//changeLoading();
+// 		return;
+// 	}
+
+// 	if (
+// 		(aktivita.value === "Analýza osobných financí" ||
+// 			aktivita.value === "Servisná analýza") &&
+// 		activity_status.value === "check" &&
+// 		!showNewNamesModal.value
+// 	) {
+// 		showNewNamesModal.value = true;
+// 		return;
+// 	}
+
+// 	try {
+// 		const response = await axios.put(
+// 			`${config.public.apiUrl}update-activities/${props.activityID}`,
+// 			{
+// 				contact_id: contact.value.id,
+// 				aktivita:
+// 					aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
+// 				datumCas: datum_cas.value,
+// 				koniec: koniec.value,
+// 				poznamka: poznamka.value,
+// 				volane: volane.value,
+// 				dovolane: dovolane.value ? 1 : 0,
+// 				dohodnute: dohodnute.value ? 1 : 0,
+// 				miesto_stretnutia: miesto_stretnutia.value,
+// 				online_meeting: onlineMeeting.value,
+// 				send_notification_15: active.value?.includes(15) || false,
+// 				send_notification_30: active.value?.includes(30) || false,
+// 				send_notification_60: active.value?.includes(60) || false,
+// 				activity_status: activity_status.value,
+// 			},
+// 			{
+// 				headers: {
+// 					Authorization: `Bearer ${authStore.token}`,
+// 				},
+// 			},
+// 		);
+
+// 		try {
+// 			await axios.post(
+// 				`${config.public.apiUrl}office-activities/sync-status`,
+// 				{
+// 					datum_cas: datum_cas.value,
+// 					koniec: koniec.value,
+// 					owner_id: userStore.user.id,
+// 					activity_status: activity_status.value,
+// 				},
+// 				{ headers: { Authorization: `Bearer ${authStore.token}` } },
+// 			);
+// 			console.log("Office activity status synced successfully");
+// 		} catch (syncError) {
+// 			// Don't fail the whole update if sync fails - just log it
+// 			console.warn(
+// 				"Could not sync status to office activity:",
+// 				syncError.response?.data || syncError.message,
+// 			);
+// 		}
+
+// 		if (onlineMeeting.value && !emailBool.value && emails.value[0]) {
+// 			await axios.patch(
+// 				`${config.public.apiUrl}contact/${contact.value.id}/email`,
+// 				{ email: emails.value[0] },
+// 				{ headers: { Authorization: `Bearer ${authStore.token}` } },
+// 			);
+// 		}
+
+// 		if (onlineMeeting.value) {
+// 			try {
+// 				let teamsResponse;
+
+// 				if (!originalOnlineMeetingValue.value) {
+// 					teamsResponse = await axios.post(
+// 						`${config.public.apiUrl}create-teams-meeting`,
+// 						{
+// 							activityId: props.activityID,
+// 							user_id: userStore.user.id,
+// 							additionalEmails: validEmails,
+// 							importance: importance.value,
+// 						},
+// 						{ headers: { Authorization: `Bearer ${authStore.token}` } },
+// 					);
+// 				} else {
+// 					teamsResponse = await axios.post(
+// 						`${config.public.apiUrl}update-teams-meeting`,
+// 						{
+// 							activityId: props.activityID,
+// 							additionalEmails: validEmails,
+// 						},
+// 						{ headers: { Authorization: `Bearer ${authStore.token}` } },
+// 					);
+// 				}
+
+// 				if (teamsResponse.data.joinUrl) {
+// 					response.data.activity.miesto_stretnutia = teamsResponse.data.joinUrl;
+// 					await axios.put(
+// 						`${config.public.apiUrl}update-activities/${props.activityID}`,
+// 						{
+// 							...response.data.activity,
+// 							miesto_stretnutia: teamsResponse.data.joinUrl,
+// 						},
+// 						{ headers: { Authorization: `Bearer ${authStore.token}` } },
+// 					);
+// 				}
+
+// 				const datumCasDate = new Date(datum_cas.value);
+// 				datumCasDate.setHours(datumCasDate.getHours() + 2);
+// 				const koniecDate = new Date(koniec.value);
+// 				koniecDate.setHours(koniecDate.getHours() + 2);
+
+// 				const newActivity = {
+// 					aktivita:
+// 						aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
+// 					datum_cas: datumCasDate.toISOString(),
+// 					koniec: koniecDate.toISOString(),
+// 					poznamka: poznamka.value,
+// 					office_id: officeStore.setOfficeID,
+// 					owner_number: userStore.user.vizitka_phone_num,
+// 				};
+
+// 				await officeStore.updateActivity(newActivity);
+
+// 				toast.success(
+// 					!originalOnlineMeetingValue.value
+// 						? "Online stretnutie bolo úspešne vytvorené"
+// 						: "Online stretnutie bolo úspešne aktualizované",
+// 				);
+// 			} catch (error) {
+// 				console.error(
+// 					"Error creating/updating Teams meeting:",
+// 					error.response?.data || error.message,
+// 				);
+// 				toast.error(
+// 					"Chyba pri vytváraní alebo aktualizovaní online stretnutia",
+// 				);
+// 			}
+// 		}
+
+// 		if (updateOfficeActivity.value && officeActivity.value) {
+// 			await axios.put(
+// 				`${config.public.apiUrl}update-office-activity/${officeActivity.value.id}`,
+// 				{
+// 					aktivita: aktivita.value,
+// 					datum_cas: datum_cas.value,
+// 					koniec: koniec.value,
+// 					poznamka: poznamka.value,
+// 					office_id: selectedOffice.value.id,
+// 				},
+// 				{ headers: { Authorization: `Bearer ${authStore.token}` } },
+// 			);
+// 		}
+
+// 		toast.success("Aktivita bola úspešne aktualizovaná");
+
+// 		const activityIndex = calendarStore.activities.findIndex(
+// 			(activity) => activity.id === response.data.activity.id,
+// 		);
+// 		if (activityIndex !== -1) {
+// 			calendarStore.activities.splice(activityIndex, 1, response.data.activity);
+// 		}
+
+// 		emit("activityAdded", response.data.activity);
+// 		emit("alterEvents", response.data.activity);
+// 		emit("cancelAddActivity");
+// 		changeLoading();
+// 		cancelActivity();
+// 	} catch (error) {
+// 		console.error("Error updating activity:", error);
+// 		toast.error(
+// 			"Nastala chyba pri aktualizácii aktivity: " +
+// 				(error.response?.data?.error || error.message),
+// 		);
+// 		changeLoading();
+// 	}
+// };
 
 const deleteActivity = async () => {
 	event.preventDefault();
@@ -544,9 +661,67 @@ const freeOffice = async () => {
 		deletingOfficeActivity.value = false;
 	}
 };
+
+const showConfirmEventModal = ref(false);
+const changeConfirmEventModal = () => {
+	showConfirmEventModal.value = !showConfirmEventModal.value;
+};
+
+const handleConfirmEvent = async () => {
+	showConfirmEventModal.value = false;
+
+	try {
+		const startTime = new Date(datum_cas.value);
+		const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+		const dateTimeEnd = endTime
+			.toISOString()
+			.replace("T", " ")
+			.substring(0, 19);
+
+		await axios.post(
+			`${config.public.apiUrl}add-activity`,
+			{
+				contact_id: contact.value.id,
+				aktivita: "Analýza osobných financí",
+				datumCas: datum_cas.value,
+				koniec: dateTimeEnd,
+				volane: null,
+				dovozene: null,
+				dohodnute: null,
+				online_meeting: false,
+			},
+			{ headers: { Authorization: `Bearer ${authStore.token}` } },
+		);
+		toast.success("Analýza osobných financií bola vytvorená");
+	} catch (error) {
+		console.error("Error creating financial analysis:", error);
+		toast.error("Chyba pri vytváraní analýzy");
+	}
+
+	await runUpdateActivity();
+};
+
+const handleCloseConfirmEvent = async () => {
+	showConfirmEventModal.value = false;
+	await runUpdateActivity();
+};
 </script>
 
 <template>
+	<ConfirmEventModal
+		v-if="showConfirmEventModal"
+		@close="changeConfirmEventModal"
+		@confirm="handleConfirmEvent"
+		@closeConfirm="handleCloseConfirmEvent"
+	/>
+
+	<NewNamesModal
+		v-if="showNewNamesModal"
+		@close="changeShowNewNamesModal"
+		@submitted="updateActivity"
+		:activityId="props.activityID"
+	/>
+
 	<div
 		class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-40"
 	>

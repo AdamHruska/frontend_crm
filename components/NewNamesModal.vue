@@ -29,7 +29,7 @@ const props = defineProps({
 	},
 });
 
-const emit = defineEmits(["close"]);
+const emit = defineEmits(["close", "submitted"]);
 
 const updateEvent = async () => {
 	try {
@@ -47,6 +47,7 @@ const updateEvent = async () => {
 		);
 
 		toast.success("Úspešne uložené");
+		emit("submitted");
 		emit("close");
 	} catch (err) {
 		console.error(err);
