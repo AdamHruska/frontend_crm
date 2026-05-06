@@ -686,6 +686,9 @@ const fetchIfNeeded = async () => {
 
 onMounted(async () => {
 	await userStore.fetchUser();
+	// Invalidate cache so we always fetch fresh data on mount
+	const userId = currentUserId.value;
+	if (userId) ohrievacStore.invalidateUser(userId);
 	fetchIfNeeded();
 });
 

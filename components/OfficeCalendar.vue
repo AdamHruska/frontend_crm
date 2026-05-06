@@ -47,32 +47,73 @@ const getCurrentMonthRange = () => {
 };
 
 // Computed stats based on office activities for current month only
+// const activityStats = computed(() => {
+// 	const activities = officeStore.officeActivities || [];
+// 	const { startOfMonth, endOfMonth } = getCurrentMonthRange();
+
+// 	// Filter activities for current month
+// 	const currentMonthActivities = activities.filter((activity) => {
+// 		const activityDate = new Date(activity.datum_cas);
+// 		return activityDate >= startOfMonth && activityDate <= endOfMonth;
+// 	});
+
+// 	const total = currentMonthActivities.length;
+// 	const check = currentMonthActivities.filter(
+// 		(a) => a.activity_status === "check" || a.activity_status === "accepted",
+// 	).length;
+// 	const discarded = currentMonthActivities.filter(
+// 		(a) => a.activity_status === "discarded",
+// 	).length;
+// 	const questionmark = currentMonthActivities.filter(
+// 		(a) => a.activity_status === "questionmark",
+// 	).length;
+
+// 	return {
+// 		total,
+// 		check,
+// 		discarded,
+// 		questionmark,
+// 	};
+// });
+
 const activityStats = computed(() => {
 	const activities = officeStore.officeActivities || [];
 	const { startOfMonth, endOfMonth } = getCurrentMonthRange();
 
-	// Filter activities for current month
+	// Filter current month activities
 	const currentMonthActivities = activities.filter((activity) => {
 		const activityDate = new Date(activity.datum_cas);
 		return activityDate >= startOfMonth && activityDate <= endOfMonth;
 	});
 
 	const total = currentMonthActivities.length;
+
 	const check = currentMonthActivities.filter(
 		(a) => a.activity_status === "check" || a.activity_status === "accepted",
 	).length;
+
 	const discarded = currentMonthActivities.filter(
 		(a) => a.activity_status === "discarded",
 	).length;
+
 	const questionmark = currentMonthActivities.filter(
 		(a) => a.activity_status === "questionmark",
 	).length;
+
+	// Count activity types
+	const activityTypes = {};
+
+	currentMonthActivities.forEach((activity) => {
+		const type = activity.aktivita || "Neznáme";
+		activityTypes[type] = (activityTypes[type] || 0) + 1;
+	});
 
 	return {
 		total,
 		check,
 		discarded,
 		questionmark,
+		activityTypes,
 	};
 });
 
@@ -196,6 +237,35 @@ const closeForm = () => {
 
 <template>
 	<!-- Statistics Section -->
+
+	<!-- new event form -->
+	<OfficeEventForm
+		v-if="selectedDate"
+		:startDate="selectedDate"
+		@closeForm="closeForm"
+	/>
+
+	<!-- edit event form -->
+	<OfficeEventForm
+		v-if="selectedEvent"
+		:eventData="selectedEvent"
+		@closeForm="closeForm"
+	/>
+
+	<FullCalendar :options="mergedOptions">
+		<template #eventContent="arg">
+			<div class="event-content-wrapper">
+				<div class="event-time">
+					<b>{{ arg.timeText }}</b>
+				</div>
+				<div class="event-title">{{ arg.event.title }}</div>
+				<div class="event-owner text-xs text-gray-600">
+					{{ arg.event.extendedProps.owner }}
+				</div>
+			</div>
+		</template>
+	</FullCalendar>
+
 	<div
 		class="stats-container mb-6 p-4 bg-white rounded-lg shadow-md"
 		v-if="props.ownerId == userStore.user?.id"
@@ -283,35 +353,38 @@ const closeForm = () => {
 				></div>
 			</div>
 		</div>
-	</div>
 
-	<!-- new event form -->
-	<OfficeEventForm
-		v-if="selectedDate"
-		:startDate="selectedDate"
-		@closeForm="closeForm"
-	/>
+		<!-- Activity Types Breakdown -->
+		<div v-if="Object.keys(activityStats.activityTypes).length" class="mt-6">
+			<h4 class="text-md font-semibold mb-3">Typy aktivít</h4>
 
-	<!-- edit event form -->
-	<OfficeEventForm
-		v-if="selectedEvent"
-		:eventData="selectedEvent"
-		@closeForm="closeForm"
-	/>
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+				<div
+					v-for="(count, type) in activityStats.activityTypes"
+					:key="type"
+					class="bg-slate-50 border border-slate-200 rounded-lg p-3"
+				>
+					<div class="flex justify-between items-center">
+						<span class="font-medium text-gray-700">{{ type }}</span>
+						<span class="text-blue-600 font-bold">{{ count }}</span>
+					</div>
 
-	<FullCalendar :options="mergedOptions">
-		<template #eventContent="arg">
-			<div class="event-content-wrapper">
-				<div class="event-time">
-					<b>{{ arg.timeText }}</b>
-				</div>
-				<div class="event-title">{{ arg.event.title }}</div>
-				<div class="event-owner text-xs text-gray-600">
-					{{ arg.event.extendedProps.owner }}
+					<div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+						<div
+							class="bg-blue-500 h-2 rounded-full"
+							:style="{
+								width: `${(count / activityStats.total) * 100}%`,
+							}"
+						></div>
+					</div>
+
+					<div class="text-xs text-gray-500 mt-1">
+						{{ Math.round((count / activityStats.total) * 100) }}%
+					</div>
 				</div>
 			</div>
-		</template>
-	</FullCalendar>
+		</div>
+	</div>
 </template>
 
 <style scoped>

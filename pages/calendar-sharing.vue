@@ -15,14 +15,71 @@ const autoCreateOutlookEvent = ref(false);
 
 const showHistory = ref(false);
 
+const mailSender = ref('asistent');
+
 const menoRef = ref('');
 const poziciaRef = ref('');
 const emailRef = ref('');
 const telRef = ref('');
 const textRef = ref('');
+const icsLinkRef = ref('');
+
+const updateMailSender = async () => {
+  try {
+    const response = await axios.patch(
+      `${config.public.apiUrl}user/mail-sender`,
+      { mail_sender: mailSender.value },
+      {
+        headers: {
+          Authorization: `Bearer ${authStore.token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (response.data.success) {
+      userStore.user.mail_sender = mailSender.value;
+      toast.success(
+        `Odosielateľ mailov nastavený na: ${
+          mailSender.value === 'asistent' ? 'Asistent' : 'Môj Microsoft'
+        }`
+      );
+    }
+  } catch (error) {
+    console.error(error);
+    toast.error("Nastala chyba pri aktualizácii nastavenia mailov!");
+  }
+};
+
+const updateIcsLink = async () => {
+  try {
+    const response = await axios.post(
+      `${config.public.apiUrl}user/ics-link`,
+      {
+        ics_link: icsLinkRef.value,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${authStore.token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (response.data.success) {
+      toast.success("ICS link updated successfully!");
+      userStore.user.ics_link = response.data.ics_link;
+    }
+  } catch (error) {
+    console.error(error);
+    toast.error("Failed to update ICS link!");
+  }
+};
+
 
 onMounted(async () => {
 	await userStore.fetchUser();
+	mailSender.value = userStore.user.mail_sender || 'asistent';
 	autoCreateOutlookEvent.value = userStore.user.auto_create_outlook_event === 1 || 
 	                                 userStore.user.auto_create_outlook_event === true;
 
@@ -55,6 +112,7 @@ onMounted(async () => {
   emailRef.value = userStore.user.vizitka_email;
   telRef.value = userStore.user.vizitka_phone_num;
 	textRef.value = userStore.user.vizitka_body;
+	icsLinkRef.value = userStore.user.ics_link || '';
 });
 
 const menoComputed = computed(() => userStore.user.vizitka_name);
@@ -273,6 +331,55 @@ const toggleAutoCreateOutlookEvent = async () => {
         	@change="toggleAutoCreateOutlookEvent"
     			>
 				</div>
+
+				<div class="flex items-center gap-4 ml-4 my-6">
+  <span class="font-semibold text-lg">Posielať maily:</span>
+  <div class="flex items-center gap-6">
+    <label class="flex items-center gap-2 cursor-pointer">
+      <input
+        type="radio"
+        name="mailSender"
+        value="asistent"
+        v-model="mailSender"
+        @change="updateMailSender"
+        class="w-4 h-4 accent-blue-600"
+      />
+      <span>Asistent</span>
+    </label>
+    <label class="flex items-center gap-2 cursor-pointer">
+      <input
+        type="radio"
+        name="mailSender"
+        value="microsoft"
+        v-model="mailSender"
+        @change="updateMailSender"
+        class="w-4 h-4 accent-blue-600"
+      />
+      <span>Môj Microsoft</span>
+    </label>
+  </div>
+</div>
+
+				<div class="bg-white p-4 rounded-md shadow-md mt-4">
+  <h3 class="font-semibold text-xl mb-4">Outlook ICS Calendar</h3>
+
+		<div class="flex flex-col gap-2">
+			<label>ICS Link:</label>
+			<input
+				v-model="icsLinkRef"
+				type="text"
+				placeholder="https://outlook.office365.com/.../calendar.ics"
+				class="bg-white rounded-md border border-blue-500 pl-1 w-full"
+			/>
+		</div>
+
+		<button
+			class="bg-blue-600 px-2 py-1 rounded-md mt-3 text-white hover:bg-blue-700"
+			@click="updateIcsLink"
+		>
+			Uložiť ICS link
+		</button>
+	</div>
 
 				<span class="float-right">9.2.2026 aktuálna verzia</span>
 		</div>

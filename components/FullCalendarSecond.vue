@@ -1,4 +1,5 @@
 <script setup>
+import ICAL from "ical.js";
 const end_date = ref("");
 const emit = defineEmits(["deleteSharedEventsId"]);
 import eventBus from "@/eventBus";
@@ -24,6 +25,77 @@ const router = useRouter();
 
 const user = ref({});
 const sharedIDs = ref([]);
+
+const icsEvents = ref([]);
+const icsLoading = ref(false);
+
+function parseIcsToEvents(icsText, userId) {
+	try {
+		const jcalData = ICAL.parse(icsText);
+		const comp = new ICAL.Component(jcalData);
+		const vevents = comp.getAllSubcomponents("vevent");
+
+		return vevents.map((vevent) => {
+			const event = new ICAL.Event(vevent);
+			const color = "#9333EA"; // Outlook blue for ICS events
+
+			return {
+				id: `ics-${event.uid}`,
+				title: event.summary || "Bez názvu",
+				start: event.startDate.toJSDate().toISOString(),
+				end: event.endDate?.toJSDate().toISOString() ?? null,
+				allDay: event.startDate.isDate,
+				backgroundColor: color,
+				borderColor: color,
+				user_id: userId,
+				extendedProps: {
+					source: "ics",
+					location: event.location || "",
+					note: event.description || "",
+					organizer: event.organizer || null,
+				},
+			};
+		});
+	} catch (err) {
+		console.error("Failed to parse ICS data:", err);
+		return [];
+	}
+}
+
+async function fetchIcsEvents() {
+	const icsLink = userStore.user?.ics_link;
+
+	if (!icsLink) return;
+
+	icsLoading.value = true;
+	try {
+		// Proxy through your backend to avoid CORS
+		const response = await axios.get(`${config.public.apiUrl}proxy-ics`, {
+			params: { url: icsLink },
+			headers: { Authorization: `Bearer ${authStore.token}` },
+		});
+
+		const parsed = parseIcsToEvents(response.data, userStore.user.id);
+		icsEvents.value = parsed;
+
+		// Merge into calendar
+		const nonIcsEvents = events.value.filter(
+			(e) => e.extendedProps?.source !== "ics",
+		);
+		events.value = [...nonIcsEvents, ...parsed];
+		calendarOptions.value = {
+			...calendarOptions.value,
+			events: [...events.value],
+		};
+
+		toast.success(`Načítaných ${parsed.length} ICS udalostí`);
+	} catch (err) {
+		console.error("Error fetching ICS events:", err);
+		toast.error("Nepodarilo sa načítať ICS udalosti.");
+	} finally {
+		icsLoading.value = false;
+	}
+}
 
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import FullCalendar from "@fullcalendar/vue3";
@@ -91,7 +163,18 @@ async function fetchAndMergeAllEvents(month, year) {
 			: Promise.resolve([]),
 	]);
 
-	events.value = [...localEvents, ...googleEvents, ...microsoftEvents];
+	// events.value = [...localEvents, ...googleEvents, ...microsoftEvents];
+
+	const existingIcsEvents = events.value.filter(
+		(event) => event.extendedProps?.source === "ics",
+	);
+
+	events.value = [
+		...localEvents,
+		...googleEvents,
+		...microsoftEvents,
+		...existingIcsEvents,
+	];
 
 	calendarOptions.value = {
 		...calendarOptions.value,
@@ -396,8 +479,11 @@ const calendarList = ref([]);
 const calendarListLoading = ref(false);
 
 onMounted(async () => {
+	await userStore.fetchUser();
+	await fetchIcsEvents();
 	await userStore.userGetCalendarNames();
 
+	console.log("isc_link value:", userStore.user.ics_link);
 	try {
 		calendarListLoading.value = true;
 		const response = await axios.get(
@@ -426,6 +512,14 @@ onMounted(async () => {
 	await fetchAndMergeAllEvents(now.getMonth() + 1, now.getFullYear());
 	currentLoadedMonth.value = now.getMonth() + 1;
 	currentLoadedYear.value = now.getFullYear();
+
+	// await userStore.fetchUser();
+	// await fetchIcsEvents();
+
+	console.log("Loaded user:", userStore.user);
+	console.log("ICS LINK:", userStore.user?.ics_link);
+
+	// await fetchIcsEvents();
 
 	// ✅ Load shared users' DB + Microsoft events using the new endpoint
 	// if (userStore.user.confirmed_share_user_id) {
@@ -1179,6 +1273,30 @@ const isMounted = ref(false);
 		<loadigcomponent
 			v-if="calendarStore.loadingState || loadingStateCalendar.value"
 		/>
+
+		<!-- ICS Loading Banner -->
+		<div
+			class="absolute top-5 left-1/2 -translate-x-1/2 z-50"
+			v-if="icsLoading"
+		>
+			<div class="flex items-center gap-3 px-5 py-2">
+				<div class="spinner">
+					<div></div>
+					<div></div>
+					<div></div>
+					<div></div>
+					<div></div>
+					<div></div>
+					<div></div>
+					<div></div>
+					<div></div>
+					<div></div>
+				</div>
+				<span class="ml-8 font-medium text-sm"
+					>Načítavajú sa ICS udalosti...</span
+				>
+			</div>
+		</div>
 
 		<AddActivityCalendar
 			v-if="addActivity"
