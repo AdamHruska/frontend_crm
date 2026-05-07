@@ -69,16 +69,22 @@ async function fetchIcsEvents() {
 
 	icsLoading.value = true;
 	try {
-		// Proxy through your backend to avoid CORS
 		const response = await axios.get(`${config.public.apiUrl}proxy-ics`, {
 			params: { url: icsLink },
 			headers: { Authorization: `Bearer ${authStore.token}` },
 		});
 
+		// Extract calendar name from the ICS data
+		let calendarName = "";
+		try {
+			const jcalData = ICAL.parse(response.data);
+			const comp = new ICAL.Component(jcalData);
+			calendarName = comp.getFirstPropertyValue("x-wr-calname") || "";
+		} catch (e) {}
+
 		const parsed = parseIcsToEvents(response.data, userStore.user.id);
 		icsEvents.value = parsed;
 
-		// Merge into calendar
 		const nonIcsEvents = events.value.filter(
 			(e) => e.extendedProps?.source !== "ics",
 		);
