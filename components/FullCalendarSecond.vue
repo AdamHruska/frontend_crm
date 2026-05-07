@@ -88,7 +88,8 @@ async function fetchIcsEvents() {
 			events: [...events.value],
 		};
 
-		toast.success(`Načítaných ${parsed.length} ICS udalostí`);
+		const calendarLabel = calendarName ? ` z kalendára "${calendarName}"` : "";
+		toast.success(`Načítaných ${parsed.length} ICS udalostí${calendarLabel}`);
 	} catch (err) {
 		console.error("Error fetching ICS events:", err);
 		toast.error("Nepodarilo sa načítať ICS udalosti.");
