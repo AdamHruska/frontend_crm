@@ -333,7 +333,7 @@ const toggleAutoCreateOutlookEvent = async () => {
 				</div>
 
 				<div class="flex items-center gap-4 ml-4 my-6">
-  <span class="font-semibold text-lg">Posielať maily:</span>
+  <span class="font-semibold text-lg">Posielať pozvánky ba online udalosti z mailu:</span>
   <div class="flex items-center gap-6">
     <label class="flex items-center gap-2 cursor-pointer">
       <input
