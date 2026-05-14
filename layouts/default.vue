@@ -236,6 +236,27 @@
 						/>
 					</NuxtLink>
 				</UTooltip>
+
+				<UTooltip
+					text="Kategórie"
+					:ui="{ background: '!bg-white', color: '' }"
+					class=""
+				>
+					<NuxtLink
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
+						:class="{
+							'bg-blue-700 text-gray-200': activeTab === 'kategorie',
+						}"
+						to="/category"
+						@click="setActiveTab('kategorie')"
+					>
+						<Icon
+							icon="fluent:task-list-square-ltr-16-regular"
+							style="font-size: 36px"
+							class="text-white"
+						/>
+					</NuxtLink>
+				</UTooltip>
 			</div>
 
 			<!-- Admin Navigation Items -->

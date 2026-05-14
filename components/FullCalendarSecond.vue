@@ -29,7 +29,32 @@ const sharedIDs = ref([]);
 const icsEvents = ref([]);
 const icsLoading = ref(false);
 
-function parseIcsToEvents(icsText, userId) {
+const selectedIcsCalendars = ref([]);
+const availableIcsCalendars = ref([]);
+
+const showIcsCalendarDropdown = ref(false);
+
+const getIcsCalendarColor = (calendarName) => {
+	const index = availableIcsCalendars.value.indexOf(calendarName);
+
+	if (index === -1) return "#9333EA";
+
+	return icsCalendarColors[index % icsCalendarColors.length];
+};
+
+const icsCalendarColors = [
+	"#9333EA", // first calendar = purple
+	"#16A34A", // green
+	"#DC2626", // red
+	"#F59E0B", // orange
+	"#DB2777", // pink
+	"#0891B2", // cyan
+	"#7C3AED", // violet
+	"#65A30D", // lime
+	"#EA580C", // amber
+];
+
+function parseIcsToEvents(icsText, userId, color = "#9333EA") {
 	try {
 		const jcalData = ICAL.parse(icsText);
 		const comp = new ICAL.Component(jcalData);
@@ -37,10 +62,9 @@ function parseIcsToEvents(icsText, userId) {
 
 		return vevents.map((vevent) => {
 			const event = new ICAL.Event(vevent);
-			const color = "#9333EA"; // Outlook blue for ICS events
 
 			return {
-				id: `ics-${event.uid}`,
+				id: `ics-${event.uid}-${Math.random().toString(36).substr(2, 5)}`,
 				title: event.summary || "Bez názvu",
 				start: event.startDate.toJSDate().toISOString(),
 				end: event.endDate?.toJSDate().toISOString() ?? null,
@@ -53,6 +77,7 @@ function parseIcsToEvents(icsText, userId) {
 					location: event.location || "",
 					note: event.description || "",
 					organizer: event.organizer || null,
+					calendar: "",
 				},
 			};
 		});
@@ -63,39 +88,68 @@ function parseIcsToEvents(icsText, userId) {
 }
 
 async function fetchIcsEvents() {
-	const icsLink = userStore.user?.ics_link;
-
-	if (!icsLink) return;
-
 	icsLoading.value = true;
+
 	try {
-		const response = await axios.get(`${config.public.apiUrl}proxy-ics`, {
-			params: { url: icsLink },
-			headers: { Authorization: `Bearer ${authStore.token}` },
+		const response = await axios.get(`${config.public.apiUrl}proxy-ics-all`, {
+			headers: {
+				Authorization: `Bearer ${authStore.token}`,
+			},
 		});
 
-		// Extract calendar name from the ICS data
-		let calendarName = "";
-		try {
-			const jcalData = ICAL.parse(response.data);
-			const comp = new ICAL.Component(jcalData);
-			calendarName = comp.getFirstPropertyValue("x-wr-calname") || "";
-		} catch (e) {}
+		let allParsedEvents = [];
+		const loadedCalendarNames = [];
 
-		const parsed = parseIcsToEvents(response.data, userStore.user.id);
-		icsEvents.value = parsed;
+		availableIcsCalendars.value = response.data.map(
+			(calendar) => calendar.calendar_name,
+		);
+
+		// First load = all selected
+		if (selectedIcsCalendars.value.length === 0) {
+			selectedIcsCalendars.value = [...availableIcsCalendars.value];
+		}
+
+		response.data.forEach((calendar, index) => {
+			// Skip unchecked calendars
+			if (!selectedIcsCalendars.value.includes(calendar.calendar_name)) {
+				return;
+			}
+
+			const color = icsCalendarColors[index % icsCalendarColors.length];
+
+			const parsed = parseIcsToEvents(
+				calendar.ics_data,
+				userStore.user.id,
+				color,
+			);
+
+			parsed.forEach((event) => {
+				event.extendedProps.calendar = calendar.calendar_name;
+			});
+
+			if (parsed.length > 0) {
+				loadedCalendarNames.push(calendar.calendar_name);
+			}
+
+			allParsedEvents.push(...parsed);
+		});
+
+		icsEvents.value = allParsedEvents;
 
 		const nonIcsEvents = events.value.filter(
 			(e) => e.extendedProps?.source !== "ics",
 		);
-		events.value = [...nonIcsEvents, ...parsed];
+
+		events.value = [...nonIcsEvents, ...allParsedEvents];
+
 		calendarOptions.value = {
 			...calendarOptions.value,
 			events: [...events.value],
 		};
 
-		const calendarLabel = calendarName ? ` z kalendára "${calendarName}"` : "";
-		toast.success(`Načítaných ${parsed.length} ICS udalostí${calendarLabel}`);
+		toast.success(
+			`Načítaných ${allParsedEvents.length} ICS udalostí z kalendárov: ${loadedCalendarNames.join(", ")}`,
+		);
 	} catch (err) {
 		console.error("Error fetching ICS events:", err);
 		toast.error("Nepodarilo sa načítať ICS udalosti.");
@@ -103,6 +157,75 @@ async function fetchIcsEvents() {
 		icsLoading.value = false;
 	}
 }
+
+const toggleIcsCalendar = async (calendarName) => {
+	if (selectedIcsCalendars.value.includes(calendarName)) {
+		selectedIcsCalendars.value = selectedIcsCalendars.value.filter(
+			(name) => name !== calendarName,
+		);
+	} else {
+		selectedIcsCalendars.value.push(calendarName);
+	}
+
+	await fetchIcsEvents();
+};
+
+// async function fetchIcsEvents() {
+// 	icsLoading.value = true;
+
+// 	try {
+// 		const response = await axios.get(`${config.public.apiUrl}proxy-ics-all`, {
+// 			headers: {
+// 				Authorization: `Bearer ${authStore.token}`,
+// 			},
+// 		});
+
+// 		let allParsedEvents = [];
+// 		const loadedCalendarNames = [];
+
+// 		response.data.forEach((calendar, index) => {
+// 			const color = icsCalendarColors[index % icsCalendarColors.length];
+
+// 			const parsed = parseIcsToEvents(
+// 				calendar.ics_data,
+// 				userStore.user.id,
+// 				color,
+// 			);
+
+// 			parsed.forEach((event) => {
+// 				event.extendedProps.calendar = calendar.calendar_name;
+// 			});
+
+// 			if (parsed.length > 0) {
+// 				loadedCalendarNames.push(calendar.calendar_name);
+// 			}
+
+// 			allParsedEvents.push(...parsed);
+// 		});
+
+// 		icsEvents.value = allParsedEvents;
+
+// 		const nonIcsEvents = events.value.filter(
+// 			(e) => e.extendedProps?.source !== "ics",
+// 		);
+
+// 		events.value = [...nonIcsEvents, ...allParsedEvents];
+
+// 		calendarOptions.value = {
+// 			...calendarOptions.value,
+// 			events: [...events.value],
+// 		};
+
+// 		toast.success(
+// 			`Načítaných ${allParsedEvents.length} ICS udalostí z kalendárov: ${loadedCalendarNames.join(", ")}`,
+// 		);
+// 	} catch (err) {
+// 		console.error("Error fetching ICS events:", err);
+// 		toast.error("Nepodarilo sa načítať ICS udalosti.");
+// 	} finally {
+// 		icsLoading.value = false;
+// 	}
+// }
 
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import FullCalendar from "@fullcalendar/vue3";
@@ -1380,7 +1503,7 @@ const isMounted = ref(false);
 				</div>
 				<div class="flex flex-col items-center py-6 shadow-lg rounded-b-lg">
 					<button
-						class="bg-blue-200 px-4 py-2 rounded-md shadow hover:bg-blue-300 mb-3 font-semibold"
+						class="bg-blue-200 px-4 py-4 rounded-md shadow hover:bg-blue-300 mb-3 font-semibold"
 						@click="showEventMenu = !showEventMenu"
 					>
 						{{
@@ -1483,6 +1606,45 @@ const isMounted = ref(false);
 							</div>
 						</div>
 					</transition>
+
+					<div class="bg-[#D1D5DB] px-2 py-2 rounded-md shadow mt-3 w-[270px]">
+						<button
+							class="w-full bg-gray-300 hover:bg-gray-400 rounded-md py-2 font-semibold"
+							@click="showIcsCalendarDropdown = !showIcsCalendarDropdown"
+						>
+							{{
+								showIcsCalendarDropdown
+									? "Skryť ICS Kalendáre"
+									: "Zobraziť ICS Kalendáre"
+							}}
+						</button>
+
+						<transition name="fade">
+							<div v-if="showIcsCalendarDropdown" class="mt-3">
+								<div
+									v-for="calendar in availableIcsCalendars"
+									:key="calendar"
+									@click="toggleIcsCalendar(calendar)"
+									class="w-full rounded-md py-2 px-2 cursor-pointer transition-colors mb-2 text-center font-medium"
+									:style="
+										selectedIcsCalendars.includes(calendar)
+											? {
+													backgroundColor: getIcsCalendarColor(calendar),
+													color: 'white',
+												}
+											: {}
+									"
+									:class="
+										selectedIcsCalendars.includes(calendar)
+											? ''
+											: 'bg-gray-200 hover:bg-slate-100'
+									"
+								>
+									{{ calendar }}
+								</div>
+							</div>
+						</transition>
+					</div>
 				</div>
 			</div>
 			<div
@@ -1703,5 +1865,24 @@ b {
 		transform: rotate(calc(var(--rotation) * 1deg))
 			translate(0, calc(var(--translation) * 1.5%));
 	}
+}
+
+.fade-enter-active,
+.fade-leave-active {
+	transition: all 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+	opacity: 0;
+	max-height: 0;
+	transform: translateY(-10px);
+}
+
+.fade-enter-to,
+.fade-leave-from {
+	opacity: 1;
+	max-height: 500px;
+	transform: translateY(0);
 }
 </style>

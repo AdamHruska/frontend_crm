@@ -8,6 +8,7 @@ import { useToast } from "vue-toastification";
 export const useTodosStore = defineStore("todos", {
 	state: () => ({
 		todos: [],
+		todosHistory: [],
 		todosByDate: [],
 		todosByContact: [],
 		loadingState: false,
@@ -42,6 +43,35 @@ export const useTodosStore = defineStore("todos", {
 			this.loadingState = false;
 		},
 
+		async fetchTodosHistory() {
+			this.loadingState = true;
+			const authStore = useAuthStore();
+			const token = authStore.token;
+
+			if (!token) {
+				console.error("Token not found. Please log in.");
+				return;
+			}
+
+			try {
+				const response = await axios.get(
+					`${config.public.apiUrl}todos/history`,
+					{
+						headers: {
+							Authorization: `Bearer ${authStore.token}`,
+						},
+					},
+				);
+				this.todosHistory = response.data.data;
+				console.log("Todos history fetched successfully:", this.todosHistory);
+			} catch (error) {
+				console.error("Error fetching todos history:", error.response || error);
+				const toast = useToast();
+				toast.error("Nepodarilo sa načítať históriu úloh");
+			}
+			this.loadingState = false;
+		},
+
 		// Create a new todo
 		async createTodo(todoData) {
 			const toast = useToast();
@@ -67,7 +97,7 @@ export const useTodosStore = defineStore("todos", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 
 				if (response.status === 201) {
@@ -116,7 +146,7 @@ export const useTodosStore = defineStore("todos", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 
 				if (response.status === 200) {
@@ -162,17 +192,17 @@ export const useTodosStore = defineStore("todos", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 
 				if (response.status === 200) {
 					// Remove the todo from all arrays
 					this.todos = this.todos.filter((todo) => todo.id !== todoId);
 					this.todosByDate = this.todosByDate.filter(
-						(todo) => todo.id !== todoId
+						(todo) => todo.id !== todoId,
 					);
 					this.todosByContact = this.todosByContact.filter(
-						(todo) => todo.id !== todoId
+						(todo) => todo.id !== todoId,
 					);
 
 					toast.success("Úloha bola úspešne zmazaná");
@@ -205,7 +235,7 @@ export const useTodosStore = defineStore("todos", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 				this.todosByDate = response.data.data;
 				this.selectedDate = date;
@@ -235,14 +265,14 @@ export const useTodosStore = defineStore("todos", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 				this.todosByContact = response.data.data;
 				this.selectedContactId = contactId;
 			} catch (error) {
 				console.error(
 					"Error fetching todos by contact:",
-					error.response || error
+					error.response || error,
 				);
 				const toast = useToast();
 				toast.error("Nepodarilo sa načítať úlohy pre vybraný kontakt");
@@ -270,7 +300,7 @@ export const useTodosStore = defineStore("todos", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 
 				if (response.status === 200) {
@@ -285,7 +315,7 @@ export const useTodosStore = defineStore("todos", {
 			} catch (error) {
 				console.error(
 					"Error toggling todo completion:",
-					error.response || error
+					error.response || error,
 				);
 				toast.error("Nepodarilo sa zmeniť stav úlohy");
 				return false;
@@ -311,7 +341,7 @@ export const useTodosStore = defineStore("todos", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 				return response.data.data;
 			} catch (error) {
@@ -327,7 +357,7 @@ export const useTodosStore = defineStore("todos", {
 		updateTodoInStore(updatedTodo) {
 			// Update in main todos array
 			const mainIndex = this.todos.findIndex(
-				(todo) => todo.id === updatedTodo.id
+				(todo) => todo.id === updatedTodo.id,
 			);
 			if (mainIndex !== -1) {
 				this.todos[mainIndex] = { ...updatedTodo };
@@ -335,7 +365,7 @@ export const useTodosStore = defineStore("todos", {
 
 			// Update in todosByDate array
 			const dateIndex = this.todosByDate.findIndex(
-				(todo) => todo.id === updatedTodo.id
+				(todo) => todo.id === updatedTodo.id,
 			);
 			if (dateIndex !== -1) {
 				this.todosByDate[dateIndex] = { ...updatedTodo };
@@ -343,7 +373,7 @@ export const useTodosStore = defineStore("todos", {
 
 			// Update in todosByContact array
 			const contactIndex = this.todosByContact.findIndex(
-				(todo) => todo.id === updatedTodo.id
+				(todo) => todo.id === updatedTodo.id,
 			);
 			if (contactIndex !== -1) {
 				this.todosByContact[contactIndex] = { ...updatedTodo };
@@ -382,7 +412,7 @@ export const useTodosStore = defineStore("todos", {
 					return response.data;
 				} else {
 					throw new Error(
-						response.message || "Failed to fetch todos without contact"
+						response.message || "Failed to fetch todos without contact",
 					);
 				}
 			} catch (error) {
@@ -406,7 +436,7 @@ export const useTodosStore = defineStore("todos", {
 							Authorization: `Bearer ${authStore.token}`,
 							"Content-Type": "application/json",
 						},
-					}
+					},
 				);
 
 				if (response.data.success) {
@@ -445,14 +475,14 @@ export const useTodosStore = defineStore("todos", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 				this.todosByDate = response.data.data;
 				this.selectedDate = null;
 			} catch (error) {
 				console.error(
 					"Error fetching past uncompleted todos:",
-					error.response || error
+					error.response || error,
 				);
 				const toast = useToast();
 				toast.error("Nepodarilo sa načítať nedokončené úlohy z minulosti");
@@ -477,14 +507,14 @@ export const useTodosStore = defineStore("todos", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 				this.todosByDate = response.data.data;
 				this.selectedDate = null;
 			} catch (error) {
 				console.error(
 					"Error fetching past uncompleted todos:",
-					error.response || error
+					error.response || error,
 				);
 				const toast = useToast();
 				toast.error("Nepodarilo sa načítať nedokončené úlohy z minulosti");
@@ -517,7 +547,7 @@ export const useTodosStore = defineStore("todos", {
 		getOverdueTodos: (state) => {
 			const today = new Date().toISOString().split("T")[0];
 			return state.todos.filter(
-				(todo) => !todo.is_completed && todo.due_date < today
+				(todo) => !todo.is_completed && todo.due_date < today,
 			);
 		},
 

@@ -37,25 +37,32 @@ const changeAddActivityBool = () => {
 	AddActivityBool.value = !AddActivityBool.value;
 };
 
-const activities_todo = ref([]);
+const showShareContactsForm = ref(false);
 
-watch(
-	() => todoStore.todos,
-	(newTodos) => {
-		activities_todo.value = newTodos
-			.filter((todo) => todo.contact_id == id)
-			.map((todo, index) => ({
-				id: todo.id || index,
-				activity: todo.activity_name,
-				dueDate: todo.due_date.split("+")[0].replace("T", " ").slice(0, -3),
-				updated_at: todo.is_completed
+const openShareContactsForm = () => {
+	showShareContactsForm.value = true;
+};
+
+const closeShareContactsForm = () => {
+	showShareContactsForm.value = false;
+};
+
+const activities_todo = computed(() => {
+	return (todoStore.todosHistory || [])
+		.filter((todo) => todo.contact_id == id)
+		.map((todo) => ({
+			id: todo.id,
+			activity: todo.activity_name,
+			dueDate: todo.due_date
+				? todo.due_date.split("+")[0].replace("T", " ").slice(0, -3)
+				: "",
+			updated_at:
+				todo.is_completed && todo.updated_at
 					? todo.updated_at.split("+")[0].replace("T", " ").slice(0, -3)
 					: null,
-				completed: todo.is_completed,
-			}));
-	},
-	{ deep: true, immediate: true },
-);
+			completed: todo.is_completed,
+		}));
+});
 
 const delegatedUser = computed(() => {
 	const user = userStore.allUsers.find(
@@ -73,7 +80,7 @@ const closeMenuOnOutsideClick = (e) => {
 	}
 };
 
-onMounted(() => {
+onMounted(async () => {
 	document.addEventListener("click", closeMenuOnOutsideClick);
 	console.log("users", userStore.allUsers);
 });
@@ -98,8 +105,8 @@ onBeforeMount(async () => {
 	const person = await findPerson(id);
 	console.log("Person details:", person);
 	await findActivities(id);
-	await todoStore.fetchTodos();
-	activities_todo.value = todoStore.todos
+	await todoStore.fetchTodosHistory();
+	activities_todo.value = todoStore.todosHistory
 		.filter((todo) => todo.contact_id == id)
 		.map((todo) => ({
 			id: todo.id,
@@ -723,6 +730,15 @@ const contactInitials = computed(() => {
 		@cancelAddActivity="alterActivity"
 	/>
 
+	<ShareContactsForm
+		v-if="showShareContactsForm"
+		:selected="people"
+		@cancelShareContacts="closeShareContactsForm"
+		@refreshCallLists="findPerson(id)"
+		@uncheckAll="() => {}"
+		@cancelDelegateForm="closeShareContactsForm"
+	/>
+
 	<!-- Page -->
 	<div class="page-wrapper">
 		<!-- ── Top Header Bar ── -->
@@ -835,6 +851,17 @@ const contactInitials = computed(() => {
 							"
 						>
 							📋 Pridať do call listu
+						</button>
+
+						<!-- Sharing -->
+						<button
+							class="dropdown-item dropdown-item-green !pl-6"
+							@click="
+								openShareContactsForm();
+								actionsMenuOpen = false;
+							"
+						>
+							Zdielanie kontaktu
 						</button>
 					</div>
 				</div>

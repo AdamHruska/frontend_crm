@@ -24,6 +24,81 @@ const telRef = ref('');
 const textRef = ref('');
 const icsLinkRef = ref('');
 
+
+const icsCalendars = ref([]);
+const newCalendarName = ref('');
+const newIcsLink = ref('');
+
+const fetchIcsCalendars = async () => {
+  try {
+    const response = await axios.get(
+      `${config.public.apiUrl}ics-calendars`,
+      {
+        headers: {
+          Authorization: `Bearer ${authStore.token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    icsCalendars.value = response.data;
+  } catch (error) {
+    console.error(error);
+    toast.error("Nepodarilo sa načítať ICS kalendáre!");
+  }
+};
+
+
+// ADD NEW ICS CALENDAR
+const addIcsCalendar = async () => {
+  try {
+    const response = await axios.post(
+      `${config.public.apiUrl}ics-calendars`,
+      {
+        calendar_name: newCalendarName.value,
+        ics_link: newIcsLink.value,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${authStore.token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    toast.success("ICS kalendár bol pridaný!");
+    newCalendarName.value = '';
+    newIcsLink.value = '';
+
+    await fetchIcsCalendars();
+  } catch (error) {
+    console.error(error);
+    toast.error("Nepodarilo sa pridať ICS kalendár!");
+  }
+};
+
+
+// DELETE ICS CALENDAR
+const deleteIcsCalendar = async (id) => {
+  try {
+    await axios.delete(
+      `${config.public.apiUrl}ics-calendars/${id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${authStore.token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    toast.success("ICS kalendár bol odstránený!");
+    await fetchIcsCalendars();
+  } catch (error) {
+    console.error(error);
+    toast.error("Nepodarilo sa odstrániť ICS kalendár!");
+  }
+};
+
 const updateMailSender = async () => {
   try {
     const response = await axios.patch(
@@ -113,6 +188,8 @@ onMounted(async () => {
   telRef.value = userStore.user.vizitka_phone_num;
 	textRef.value = userStore.user.vizitka_body;
 	icsLinkRef.value = userStore.user.ics_link || '';
+
+	await fetchIcsCalendars();
 });
 
 const menoComputed = computed(() => userStore.user.vizitka_name);
@@ -305,7 +382,7 @@ const toggleAutoCreateOutlookEvent = async () => {
         </h1>
    
    
-        <table class="w-[400px] text-md bg-white shadow-md rounded mb-4 ml-4 shadow">
+        <table class="w-[400px] text-md bg-white  rounded mb-4 ml-4 ">
             <tbody>
                 <tr class="border-b bg-gray-300 ">
                     <th class="text-left p-3 px-5">Zariadenie</th>
@@ -360,26 +437,77 @@ const toggleAutoCreateOutlookEvent = async () => {
   </div>
 </div>
 
-				<div class="bg-white p-4 rounded-md shadow-md mt-4">
-  <h3 class="font-semibold text-xl mb-4">Outlook ICS Calendar</h3>
 
-		<div class="flex flex-col gap-2">
-			<label>ICS Link:</label>
-			<input
-				v-model="icsLinkRef"
-				type="text"
-				placeholder="https://outlook.office365.com/.../calendar.ics"
-				class="bg-white rounded-md border border-blue-500 pl-1 w-full"
-			/>
-		</div>
 
-		<button
-			class="bg-blue-600 px-2 py-1 rounded-md mt-3 text-white hover:bg-blue-700"
-			@click="updateIcsLink"
-		>
-			Uložiť ICS link
-		</button>
-	</div>
+	<div class="bg-white p-4 mt-4">
+  <h3 class="font-semibold text-xl mb-4">Outlook ICS Kalendáre</h3>
+
+  <div class="flex flex-col gap-3 mb-6">
+    <div>
+      <label>Názov kalendára:</label>
+      <input
+        v-model="newCalendarName"
+        type="text"
+        placeholder="Napr. Firemný kalendár"
+        class="bg-white rounded-md border border-blue-500 pl-1 w-full"
+      />
+    </div>
+
+    <div>
+      <label>ICS Link:</label>
+      <input
+        v-model="newIcsLink"
+        type="text"
+        placeholder="https://outlook.office365.com/.../calendar.ics"
+        class="bg-white rounded-md border border-blue-500 pl-1 w-full"
+      />
+    </div>
+
+    <button
+      class="bg-blue-600 px-3 py-2 rounded-md text-white hover:bg-blue-700 w-fit"
+      @click="addIcsCalendar"
+    >
+      Pridať ICS kalendár
+    </button>
+  </div>
+
+  <div v-if="icsCalendars.length > 0">
+    <h4 class="font-semibold mb-2">Vaše kalendáre:</h4>
+
+    <table class="w-full text-sm border rounded-md">
+      <thead>
+        <tr class="bg-gray-200">
+          <th class="p-2 text-left">Názov</th>
+          <th class="p-2 text-left">ICS Link</th>
+          <th class="p-2 text-right">Akcie</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr
+          v-for="calendar in icsCalendars"
+          :key="calendar.id"
+          class="border-b"
+        >
+          <td class="p-2">{{ calendar.calendar_name }}</td>
+          <td class="p-2 break-all">{{ calendar.ics_link }}</td>
+          <td class="p-2 text-right">
+            <button
+              class="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded"
+              @click="deleteIcsCalendar(calendar.id)"
+            >
+              Vymazať
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div v-else class="text-gray-500">
+    Zatiaľ nemáte pridané žiadne ICS kalendáre.
+  </div>
+</div>
 
 				<span class="float-right">9.2.2026 aktuálna verzia</span>
 		</div>

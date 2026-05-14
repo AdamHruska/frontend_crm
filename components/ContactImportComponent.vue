@@ -17,6 +17,15 @@
 						@click="closeModal"
 					/>
 				</div>
+				<div class="flex gap-4 mb-4">
+					<div class="mt-1">Odporúčateľ:</div>
+					<input
+						type="text"
+						v-model="odporucatel"
+						placeholder="(voliteľné)"
+						class="bg-white mb-4 border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					/>
+				</div>
 				<h1 class="heading">Importovať kontakty z CSV súboru</h1>
 				<div class="form-section">
 					<input
@@ -99,6 +108,8 @@ const config = useRuntimeConfig();
 import { useAuthStore } from "@/stores/authStore";
 const authStore = useAuthStore();
 
+const odporucatel = ref("");
+
 const loading = ref(false);
 const selectedFile = ref(null);
 const isOpen = ref(false);
@@ -129,6 +140,11 @@ const uploadFile = async () => {
 	const formData = new FormData();
 	formData.append("file", selectedFile.value);
 
+	// 👇 pridaj toto
+	if (odporucatel.value) {
+		formData.append("odporucitel", odporucatel.value);
+	}
+
 	try {
 		const response = await axios.post(
 			`${config.public.apiUrl}import-contacts`,
@@ -141,7 +157,6 @@ const uploadFile = async () => {
 		);
 
 		importResult.value = response.data;
-		console.log(importResult.value);
 		closeModal();
 		showDuplicates.value = true;
 	} catch (error) {

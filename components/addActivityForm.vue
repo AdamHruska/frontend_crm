@@ -389,9 +389,8 @@ const addActivity = async () => {
 						selectedOffice.value.name !== "Kancelárie"
 							? `${selectedOffice.value.name} - `
 							: "";
-					activityResponse.data.activity.miesto_stretnutia = `${officePart}${teamsResponse.data.joinUrl}`;
-					miesto_stretnutia.value =
-						activityResponse.data.activity.miesto_stretnutia;
+					response.data.activity.miesto_stretnutia = `${officePart}${teamsResponse.data.joinUrl}`;
+					miesto_stretnutia.value = response.data.activity.miesto_stretnutia;
 				}
 			} catch (error) {
 				console.error("Error creating Teams meeting:", error);
@@ -431,9 +430,27 @@ const addActivity = async () => {
 		}
 
 		calendarStore.activities.push(response.data.activity);
-
 		emit("activityAdded", response.data.activity);
-		emit("cancelAddActivity");
+
+		// Toast podľa toho či bol online meeting
+		const successMsg = onlineMeeting.value
+			? "Online stretnutie bolo úspešne pridané"
+			: "Aktivita bola úspešne pridaná";
+
+		toast.success(successMsg, {
+			position: "top-right",
+			timeout: 5000,
+			closeOnClick: true,
+			pauseOnHover: true,
+			draggable: true,
+			draggablePercent: 60,
+			showCloseButtonOnHover: false,
+			hideProgressBar: false,
+		});
+
+		setTimeout(() => {
+			emit("cancelAddActivity");
+		}, 400);
 	} catch (error) {
 		console.error("Error adding activity:", error);
 		toast.error("Chyba pri pridávaní aktivity", {
@@ -686,6 +703,8 @@ const findAndDeleteOfficeActivity = async () => {
 					<option value="servis">Servis</option>
 					<option value="bringer bonus">Bringer bonus</option>
 					<option value="káva">Káva</option>
+					<option value="porada">Porada</option>
+					<option value="vzdelávanie">Vzdelávanie</option>
 					<option value="stretnutie na zistenie stavu">
 						Stretnutie na zistenie stavu
 					</option>
@@ -771,7 +790,7 @@ const findAndDeleteOfficeActivity = async () => {
 				</div>
 			</div>
 
-			<div class="max-h-[550px] overflow-y-auto">
+			<div class="max-h-[550px] overflow-visible">
 				<div
 					class="relative w-full mb-2 group"
 					v-for="(email, index) in emails.slice(1)"

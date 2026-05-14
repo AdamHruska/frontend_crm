@@ -21,6 +21,7 @@ const props = defineProps({
 
 const aktivita = ref("");
 const datum_cas = ref("");
+const minDateTime = ref("");
 
 onMounted(async () => {
 	// Set default datetime to current date and time
@@ -32,6 +33,8 @@ onMounted(async () => {
 	const minutes = String(now.getMinutes()).padStart(2, "0");
 
 	datum_cas.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+	// Set minimum datetime to today at 00:00
+	minDateTime.value = `${year}-${month}-${day}T00:00`;
 	console.log(
 		"meno kotaktu:",
 		props.contact[0].meno,
@@ -127,6 +130,7 @@ const formatDateTime = (dateTimeString) => {
 					type="datetime-local"
 					name="datum_cas"
 					v-model="datum_cas"
+					:min="minDateTime"
 					id="floating_datum_cas"
 					required
 					class="w-full p-3 text-sm text-black bg-white border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"

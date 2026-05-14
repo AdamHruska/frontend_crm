@@ -11,9 +11,27 @@ const password = ref("");
 const rememberMe = ref(false); // Add this line to track remember me state
 const loading = ref(false);
 
+const lockoutSeconds = ref(0);
+let countdownTimer = null;
+
+const startCountdown = (seconds) => {
+	lockoutSeconds.value = seconds;
+	clearInterval(countdownTimer);
+	countdownTimer = setInterval(() => {
+		lockoutSeconds.value--;
+		if (lockoutSeconds.value <= 0) {
+			clearInterval(countdownTimer);
+			lockoutSeconds.value = 0;
+		}
+	}, 1000);
+};
+
 const login = async (email, password, rememberMe) => {
+	if (lockoutSeconds.value > 0) return; // block submit during lockout
+
 	loading.value = true;
 	event.preventDefault();
+
 	if (email && password) {
 		try {
 			const response = await axios.post(
@@ -25,45 +43,42 @@ const login = async (email, password, rememberMe) => {
 						Accept: "application/json",
 						"Access-Control-Allow-Origin": "*",
 					},
-				}
+				},
 			);
-			console.log("Login response:", response.data.message);
 			const token = response.data.authorization.token;
 			authStore.setToken(token);
 
-			// Store token based on remember me preference
 			if (rememberMe) {
 				localStorage.setItem("auth_token", token);
 			} else {
 				sessionStorage.setItem("auth_token", token);
 			}
 
-			if (email == "admin@admin.com") {
+			if (email === "admin@admin.com") {
 				router.push("/users");
 			} else {
 				router.push("/");
 			}
 		} catch (error) {
-			if (error.response?.status === 403) {
+			if (error.response?.status === 429) {
+				const seconds = error.response.data.retry_after ?? 60;
+				startCountdown(seconds);
+				toast.error(`Príliš veľa pokusov. Skúste znova o ${seconds} sekúnd.`);
+			} else if (error.response?.status === 403) {
 				toast.error("Váš účet nie je aktívny. Kontaktujte administrátora.");
-				loading.value = false;
-				return;
 			} else {
-				toast.error("Nesprávny email alebo heslo");
+				const attemptsLeft = error.response?.data?.attempts_left;
+				const msg =
+					attemptsLeft > 0
+						? `Nesprávny email alebo heslo. Zostáva ${attemptsLeft} pokus${attemptsLeft === 1 ? "" : "ov"}.`
+						: "Nesprávny email alebo heslo.";
+				toast.error(msg);
 			}
 		}
 	} else {
-		toast.error("Vyplňte všetky polia", {
-			position: "top-center",
-			timeout: 5000,
-			closeOnClick: true,
-			pauseOnHover: true,
-			draggable: true,
-			draggablePercent: 60,
-			showCloseButtonOnHover: false,
-			hideProgressBar: false,
-		});
+		toast.error("Vyplňte všetky polia");
 	}
+
 	loading.value = false;
 };
 
@@ -138,7 +153,10 @@ onMounted(() => {
 						@click="login(email, password, rememberMe)"
 						class="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-8"
 					>
-						Prihlásiť
+						<span v-if="lockoutSeconds > 0"
+							>Počkajte {{ lockoutSeconds }}s...</span
+						>
+						<span v-else>Prihlásiť</span>
 					</button>
 					<nuxt-link
 						class="font-small font-semibold text-blue-600 hover:text-blue-500 float-right mt-1"

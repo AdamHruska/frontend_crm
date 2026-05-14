@@ -475,6 +475,22 @@ const addActivity = async () => {
 		}
 
 		calendarStore.activities.push(activityResponse.data.activity);
+
+		const successMsg = onlineMeeting.value
+			? "Online stretnutie bolo úspešne pridané"
+			: "Aktivita bola úspešne pridaná";
+
+		toast.success(successMsg, {
+			position: "top-right",
+			timeout: 5000,
+			closeOnClick: true,
+			pauseOnHover: true,
+			draggable: true,
+			draggablePercent: 60,
+			showCloseButtonOnHover: false,
+			hideProgressBar: false,
+		});
+
 		emit("activityAdded", activityResponse.data.activity);
 		emit("addNewEvent", activityResponse.data.activity);
 		emit("cancelAddActivity");
@@ -706,6 +722,8 @@ const findAndDeleteOfficeActivity = async () => {
 					<option value="konfirmačný servis">Konfirmačný servis</option>
 					<option value="servis">Servis</option>
 					<option value="bringer bonus">Bringer bonus</option>
+					<option value="porada">Porada</option>
+					<option value="vzdelávanie">Vzdelávanie</option>
 					<option value="káva">Káva</option>
 					<option value="stretnutie na zistenie stavu">
 						Stretnutie na zistenie stavu
@@ -793,7 +811,7 @@ const findAndDeleteOfficeActivity = async () => {
 				</div>
 			</div>
 
-			<div class="max-h-[150px] overflow-y-auto">
+			<div class="max-h-[150px] overflow-visible">
 				<div
 					class="relative z-20 w-full mb-2 group"
 					v-for="(email, index) in emails.slice(1)"
