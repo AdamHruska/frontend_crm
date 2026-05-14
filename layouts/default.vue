@@ -247,7 +247,7 @@
 						:class="{
 							'bg-blue-700 text-gray-200': activeTab === 'kategorie',
 						}"
-						to="/category"
+						to="/categorySecond"
 						@click="setActiveTab('kategorie')"
 					>
 						<Icon
