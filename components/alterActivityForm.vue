@@ -143,7 +143,6 @@ watch(activity_status, async (newStatus) => {
 	if (newStatus !== "discarded") return;
 	if (!officeActivity.value) return;
 
-	// Only act if the activity is in the future
 	const activityDate = new Date(datum_cas.value);
 	if (activityDate <= new Date()) return;
 
@@ -244,53 +243,30 @@ function getIdFromString(str) {
 	return words[words.length - 1];
 }
 
-// Replace the existing updateActivity with:
-
-// const runUpdateActivity = async () => {
-// 	changeLoading();
-// 	try {
-// 		const response = await axios.put(
-// 			`${config.public.apiUrl}update-activities/${props.activityID}`,
-// 			{
-// 				contact_id: contact.value.id,
-// 				aktivita:
-// 					aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
-// 				datumCas: datum_cas.value,
-// 				koniec: koniec.value,
-// 				poznamka: poznamka.value,
-// 				volane: volane.value,
-// 				dovolane: dovolane.value,
-// 				dohodnute: dohodnute.value ? 1 : 0,
-// 				miesto_stretnutia: miesto_stretnutia.value,
-// 				online_meeting: onlineMeeting.value,
-// 				send_notification_15: active.value?.includes(15) || false,
-// 				send_notification_30: active.value?.includes(30) || false,
-// 				send_notification_60: active.value?.includes(60) || false,
-// 				activity_status: activity_status.value,
-// 			},
-// 			{ headers: { Authorization: `Bearer ${authStore.token}` } },
-// 		);
-
-// 		// ... (keep all the existing try/catch blocks for office sync, teams, etc.)
-
-// 		toast.success("Aktivita bola úspešne aktualizovaná");
-// 		emit("activityAdded", response.data.activity);
-// 		emit("alterEvents", response.data.activity);
-// 		changeLoading();
-// 		cancelActivity();
-// 	} catch (error) {
-// 		console.error("Error updating activity:", error);
-// 		toast.error(
-// 			"Nastala chyba pri aktualizácii aktivity: " +
-// 				(error.response?.data?.error || error.message),
-// 		);
-// 		changeLoading();
-// 	}
-// };
-
 const runUpdateActivity = async () => {
 	changeLoading();
 	try {
+		// ── Cancel Teams meeting if online meeting was just disabled ──
+		if (originalOnlineMeetingValue.value && !onlineMeeting.value) {
+			try {
+				miesto_stretnutia.value = "";
+				await axios.post(
+					`${config.public.apiUrl}cancel-teams-meeting`,
+					{
+						activityId: props.activityID,
+						user_id: userStore.user.id,
+					},
+					{ headers: { Authorization: `Bearer ${authStore.token}` } },
+				);
+				toast.success(
+					"Online stretnutie bolo zrušené a kontakt bol notifikovaný",
+				);
+			} catch (error) {
+				console.error("Error cancelling Teams meeting:", error);
+				toast.error("Chyba pri rušení online stretnutia");
+			}
+		}
+
 		const response = await axios.put(
 			`${config.public.apiUrl}update-activities/${props.activityID}`,
 			{
@@ -344,7 +320,6 @@ const runUpdateActivity = async () => {
 				let teamsResponse;
 
 				if (!originalOnlineMeetingValue.value) {
-					// Nový online meeting - vytvor
 					teamsResponse = await axios.post(
 						`${config.public.apiUrl}create-teams-meeting`,
 						{
@@ -356,7 +331,6 @@ const runUpdateActivity = async () => {
 					);
 					toast.success("Online stretnutie bolo úspešne vytvorené");
 				} else {
-					// Existujúci online meeting - aktualizuj
 					teamsResponse = await axios.post(
 						`${config.public.apiUrl}update-teams-meeting`,
 						{ activityId: props.activityID },
@@ -380,8 +354,6 @@ const runUpdateActivity = async () => {
 			}
 		}
 
-		// Update office activity if changed
-		// Create or update office activity
 		// Create or update office activity
 		if (updateOfficeActivity.value && selectedOffice.value.id) {
 			const toUtc = (localStr) => {
@@ -432,6 +404,9 @@ const runUpdateActivity = async () => {
 		emit("activityAdded", response.data.activity);
 		emit("alterEvents", response.data.activity);
 
+		// Update so re-editing in same session doesn't re-trigger cancellation
+		originalOnlineMeetingValue.value = onlineMeeting.value;
+
 		setTimeout(() => {
 			changeLoading();
 			cancelActivity();
@@ -465,7 +440,7 @@ const updateActivity = async () => {
 		return;
 	}
 
-	// Guard: ConfirmEventModal  ← THIS IS THE KEY ADDITION
+	// Guard: ConfirmEventModal
 	if (
 		aktivita.value === "Prvé stretnutie" &&
 		activity_status.value === "check"
@@ -476,171 +451,6 @@ const updateActivity = async () => {
 
 	await runUpdateActivity();
 };
-
-// const updateActivity = async () => {
-// 	//changeLoading();
-// 	event.preventDefault();
-
-// 	if (onlineMeeting.value && !emailBool.value && !email.value) {
-// 		alert("Pre online stretnutie je potrebné zadať email kontaktu");
-// 		changeLoading();
-// 		return;
-// 	}
-
-// 	if (
-// 		(aktivita.value === "Analýza osobných financí" ||
-// 			aktivita.value === "Servisná analýza") &&
-// 		activity_status.value === "check" &&
-// 		!showNewNamesModal.value
-// 	) {
-// 		showNewNamesModal.value = true;
-// 		return;
-// 	}
-
-// 	if (
-// 		aktivita.value === "Prvé stretnutie" &&
-// 		activity_status.value === "check"
-// 	) {
-// 		showConfirmEventModal.value = true;
-// 		return;
-// 	}
-
-// 	changeLoading();
-// 	try {
-// 		const response = await axios.put(
-// 			`${config.public.apiUrl}update-activities/${props.activityID}`,
-// 			{
-// 				contact_id: contact.value.id,
-// 				aktivita:
-// 					aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
-// 				datumCas: datum_cas.value,
-// 				koniec: koniec.value,
-// 				poznamka: poznamka.value,
-// 				volane: volane.value,
-// 				dovolane: dovolane.value,
-// 				dohodnute: dohodnute.value ? 1 : 0,
-// 				miesto_stretnutia: miesto_stretnutia.value,
-// 				online_meeting: onlineMeeting.value,
-// 				send_notification_15: active.value?.includes(15) || false,
-// 				send_notification_30: active.value?.includes(30) || false,
-// 				send_notification_60: active.value?.includes(60) || false,
-// 				activity_status: activity_status.value,
-// 			},
-// 			{ headers: { Authorization: `Bearer ${authStore.token}` } },
-// 		);
-
-// 		try {
-// 			await axios.post(
-// 				`${config.public.apiUrl}office-activities/sync-status`,
-// 				{
-// 					datum_cas: datum_cas.value,
-// 					koniec: koniec.value,
-// 					owner_id: userStore.user.id,
-// 					activity_status: activity_status.value,
-// 				},
-// 				{ headers: { Authorization: `Bearer ${authStore.token}` } },
-// 			);
-// 			console.log("Office activity status synced successfully");
-// 		} catch (syncError) {
-// 			// Don't fail the whole update if sync fails - just log it
-// 			console.warn(
-// 				"Could not sync status to office activity:",
-// 				syncError.response?.data || syncError.message,
-// 			);
-// 		}
-
-// 		if (onlineMeeting.value && !emailBool.value && email.value) {
-// 			await axios.patch(
-// 				`${config.public.apiUrl}contact/${contact.value.id}/email`,
-// 				{ email: email.value },
-// 				{ headers: { Authorization: `Bearer ${authStore.token}` } },
-// 			);
-// 		}
-
-// 		if (onlineMeeting.value && !originalOnlineMeetingValue.value) {
-// 			try {
-// 				const teamsResponse = await axios.post(
-// 					`${config.public.apiUrl}create-teams-meeting`,
-// 					{
-// 						activityId: props.activityID,
-// 						importance: importance.value,
-// 						user_id: userStore.user.id,
-// 					},
-// 					{ headers: { Authorization: `Bearer ${authStore.token}` } },
-// 				);
-
-// 				if (teamsResponse.data.joinUrl) {
-// 					response.data.activity.miesto_stretnutia = teamsResponse.data.joinUrl;
-// 					await axios.put(
-// 						`${config.public.apiUrl}update-activities/${props.activityID}`,
-// 						{
-// 							...response.data.activity,
-// 							miesto_stretnutia: teamsResponse.data.joinUrl,
-// 						},
-// 						{ headers: { Authorization: `Bearer ${authStore.token}` } },
-// 					);
-// 				}
-
-// 				const datumCasDate = new Date(datum_cas.value);
-// 				const koniecDate = new Date(koniec.value);
-// 				const newActivity = {
-// 					aktivita:
-// 						aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
-// 					datum_cas: datumCasDate.toISOString(),
-// 					koniec: koniecDate.toISOString(),
-// 					poznamka: poznamka.value,
-// 					office_id: officeStore.setOfficeID,
-// 					owner_number: userStore.user.vizitka_phone_num,
-// 				};
-
-// 				await officeStore.updateActivity(newActivity);
-
-// 				toast.success("Online stretnutie bolo úspešne vytvorené");
-// 			} catch (error) {
-// 				console.error(
-// 					"Error creating Teams meeting:",
-// 					error.response?.data || error.message,
-// 				);
-// 				toast.error("Chyba pri vytváraní online stretnutia");
-// 			}
-// 		}
-
-// 		if (updateOfficeActivity.value && officeActivity.value) {
-// 			await axios.put(
-// 				`${config.public.apiUrl}update-office-activity/${officeActivity.value.id}`,
-// 				{
-// 					aktivita: aktivita.value,
-// 					datum_cas: datum_cas.value,
-// 					koniec: koniec.value,
-// 					poznamka: poznamka.value,
-// 					office_id: selectedOffice.value.id,
-// 				},
-// 				{ headers: { Authorization: `Bearer ${authStore.token}` } },
-// 			);
-// 		}
-
-// 		toast.success("Aktivita bola úspešne aktualizovaná");
-
-// 		const activityIndex = calendarStore.activities.findIndex(
-// 			(activity) => activity.id === response.data.activity.id,
-// 		);
-// 		if (activityIndex !== -1) {
-// 			calendarStore.activities.splice(activityIndex, 1, response.data.activity);
-// 		}
-
-// 		emit("activityAdded", response.data.activity);
-// 		emit("alterEvents", response.data.activity);
-// 		changeLoading();
-// 		cancelActivity();
-// 	} catch (error) {
-// 		console.error("Error updating activity:", error);
-// 		toast.error(
-// 			"Nastala chyba pri aktualizácii aktivity: " +
-// 				(error.response?.data?.error || error.message),
-// 		);
-// 		changeLoading();
-// 	}
-// };
 
 const deleteActivity = async () => {
 	event.preventDefault();
@@ -753,7 +563,6 @@ const showNewNamesModal = ref(false);
 const selectedActivityId = ref(null);
 const currentActivityType = ref("");
 
-// Add this function to toggle the modal
 const changeShowNewNamesModal = () => {
 	showNewNamesModal.value = !showNewNamesModal.value;
 };
@@ -765,14 +574,10 @@ const changeConfirmEventModal = () => {
 	showConfirmEventModal.value = !showConfirmEventModal.value;
 };
 
-// In <script setup>, after changeConfirmEventModal()
-
 const handleConfirmEvent = async () => {
-	// User chose "Áno" → proceed with update AND create financial analysis
 	showConfirmEventModal.value = false;
 
 	try {
-		// Add financial analysis activity
 		const startTime = new Date(datum_cas.value);
 		const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
 		const dateTimeEnd = endTime
@@ -799,12 +604,10 @@ const handleConfirmEvent = async () => {
 		toast.error("Chyba pri vytváraní analýzy");
 	}
 
-	// Now run the actual update
 	await runUpdateActivity();
 };
 
 const handleCloseConfirmEvent = async () => {
-	// User chose "Nie" → just save without creating financial analysis
 	showConfirmEventModal.value = false;
 	await runUpdateActivity();
 };
