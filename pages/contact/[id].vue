@@ -80,7 +80,15 @@ const closeMenuOnOutsideClick = (e) => {
 	}
 };
 
+const debugAssistantToken = async () => {
+	const response = await axios.get(`${config.public.apiUrl}debug-assistant`, {
+		headers: { Authorization: `Bearer ${authStore.token}` },
+	});
+	console.log("Assistant token debug:", response.data);
+};
+
 onMounted(async () => {
+	console.log("debug", await debugAssistantToken());
 	document.addEventListener("click", closeMenuOnOutsideClick);
 	console.log("users", userStore.allUsers);
 });
