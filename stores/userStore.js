@@ -23,6 +23,7 @@ export const useUserStore = defineStore("user", {
 		vizitka_email: "",
 		vizitka_phone_num: "",
 		allSharedUsers: [],
+		transitiveSharedUsers: [],
 	}),
 
 	actions: {
@@ -33,6 +34,47 @@ export const useUserStore = defineStore("user", {
 			const exists = this.sharedUsers.some((u) => u.id === user.id);
 			if (!exists) {
 				this.sharedUsers.push(user);
+			}
+		},
+
+		// In userStore actions:
+		async fetchTransitiveSharedUsers(transitiveIds, viaUserId) {
+			if (!transitiveIds?.length) return;
+
+			const config = useRuntimeConfig();
+			const authStore = useAuthStore();
+
+			// Build set of IDs already shown (direct shared + self + already transitive)
+			const existingIds = new Set([
+				...(this.sharedUsers || []).map((u) => String(u.id)),
+				...(this.transitiveSharedUsers || []).map((u) => String(u.id)),
+				String(this.user?.id),
+			]);
+
+			try {
+				const response = await axios.get(`${config.public.apiUrl}get-users`, {
+					headers: { Authorization: `Bearer ${authStore.token}` },
+				});
+
+				const allUsers = response.data.users || [];
+				const transitiveIdsAsStrings = transitiveIds.map(String);
+
+				for (const u of allUsers) {
+					if (
+						transitiveIdsAsStrings.includes(String(u.id)) &&
+						!existingIds.has(String(u.id))
+					) {
+						this.transitiveSharedUsers.push({
+							...u,
+							checked: false,
+							isTransitive: true,
+							viaUserId: viaUserId,
+						});
+						existingIds.add(String(u.id)); // prevent duplicates if called again
+					}
+				}
+			} catch (err) {
+				console.error("Failed to fetch transitive shared users:", err);
 			}
 		},
 

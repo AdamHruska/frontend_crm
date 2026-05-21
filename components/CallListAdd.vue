@@ -37,8 +37,8 @@ const props = defineProps({
 });
 
 const author_id = ref("");
-onMounted(() => {
-	userStore.fetchUser();
+onMounted(async () => {
+	await userStore.fetchUser();
 	author_id.value = userStore.user.id;
 
 	console.log("author_id", author_id.value);
@@ -46,14 +46,15 @@ onMounted(() => {
 
 const filteredCallLists = computed(() => {
 	return props.callListNames.filter((list) =>
-		list.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+		list.name.toLowerCase().includes(searchQuery.value.toLowerCase()),
 	);
 });
 
 // Find exact match for the search query
 const exactMatch = computed(() => {
 	return props.callListNames.find(
-		(list) => list.name.toLowerCase() === searchQuery.value.toLowerCase().trim()
+		(list) =>
+			list.name.toLowerCase() === searchQuery.value.toLowerCase().trim(),
 	);
 });
 
@@ -71,25 +72,15 @@ const handleSubmit = (e) => {
 };
 
 const createCallList = async () => {
-	// Check if there's an exact match first
 	if (exactMatch.value) {
-		// If exact match exists, add to existing call list
 		await addToCallList(exactMatch.value);
 		return;
 	}
 
-	// Handle both cases: single ID or array of objects
 	const contactIds = Array.isArray(props.selected)
-		? props.selected.map((person) => person.id) // If array, extract IDs
-		: [props.selected]; // If single ID, wrap in array
+		? props.selected.map((person) => person.id)
+		: [props.selected];
 
-	const callList = {
-		author_id: author_id.value,
-		name: searchQuery.value.trim(),
-		contact_ids: contactIds, // Always an array
-	};
-
-	console.log("Call list payload:", callList);
 	loadingState.value = true;
 
 	try {
@@ -105,10 +96,15 @@ const createCallList = async () => {
 					Authorization: `Bearer ${authStore.token}`,
 					"Content-Type": "application/json",
 				},
-			}
+			},
 		);
 
-		callListStore.callLists.push(response.data);
+		// Refetch all call lists so the store and parent prop are fully in sync
+		const updated = await axios.get(`${config.public.apiUrl}call-lists`, {
+			headers: { Authorization: `Bearer ${authStore.token}` },
+		});
+		callListStore.callLists = updated.data;
+
 		emits("refreshCallLists");
 		emits("cancleCallListForm", response.status);
 	} catch (error) {
@@ -122,49 +118,33 @@ const createCallList = async () => {
 const addToCallList = async (callList) => {
 	loadingState.value = true;
 
-	// Handle both cases: single ID or array of objects
 	const newContactIds = Array.isArray(props.selected)
 		? props.selected.map((person) => person.id)
 		: [props.selected];
 
 	try {
-		// Parse existing IDs (handle SQL array format)
-		const oldContactIds = JSON.parse(callList.contact_ids.replace(/'/g, '"'));
-
-		// Merge old and new IDs, removing duplicates
-		const mergedIds = [...new Set([...oldContactIds, ...newContactIds])];
-
-		// Update call list
 		await axios.put(
 			`${config.public.apiUrl}call-lists/${callList.id}`,
 			{
 				author_id: props.user_id,
 				name: callList.name,
-				contact_ids: mergedIds,
+				contact_ids: newContactIds, // just send new ones, backend merges
 			},
 			{
 				headers: {
 					Authorization: `Bearer ${authStore.token}`,
 					"Content-Type": "application/json",
 				},
-			}
+			},
 		);
 
-		// Fetch updated call list
-		const callListResponse = await axios.post(
-			`${config.public.apiUrl}call-list`,
-			{ ids: mergedIds },
-			{
-				headers: {
-					Authorization: `Bearer ${authStore.token}`,
-					"Content-Type": "application/json",
-				},
-			}
-		);
+		const updated = await axios.get(`${config.public.apiUrl}call-lists`, {
+			headers: { Authorization: `Bearer ${authStore.token}` },
+		});
+		callListStore.callLists = updated.data;
 
-		callListStore.selectedCallListPeople = callListResponse.data.contacts;
 		emits("refreshCallLists");
-		emits("cancleCallListForm", 200); // Success status
+		emits("cancleCallListForm", 200);
 	} catch (error) {
 		console.error("Error updating call list:", error);
 	} finally {

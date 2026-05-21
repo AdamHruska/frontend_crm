@@ -95,7 +95,7 @@
 					</div>
 				</div>
 
-				<!-- Contacts table -->
+				<!-- New contact input rows ONLY (no existing contacts shown) -->
 				<div class="contacts-table-wrap">
 					<table class="contacts-table">
 						<thead>
@@ -103,46 +103,14 @@
 								<th>Meno</th>
 								<th>Priezvisko</th>
 								<th>Telefón</th>
-								<th>Email</th>
 								<th>Vek</th>
 								<th>Zamestnanie</th>
 								<th>Adresa</th>
-								<th>Poznámka</th>
+								<th class="col-poznamka">Poznámka</th>
 								<th></th>
 							</tr>
 						</thead>
 						<tbody>
-							<!-- Existing contacts -->
-							<tr
-								v-for="contact in category.contacts"
-								:key="contact.id"
-								class="contact-row existing-row"
-							>
-								<td>{{ contact.meno }}</td>
-								<td>{{ contact.priezvisko }}</td>
-								<td>{{ contact.cislo || "—" }}</td>
-								<td>{{ contact.email || "—" }}</td>
-								<td>
-									{{
-										contact.rok_narodenia
-											? new Date().getFullYear() - contact.rok_narodenia
-											: "—"
-									}}
-								</td>
-								<td>{{ contact.zamestanie || "—" }}</td>
-								<td>{{ contact.adresa || "—" }}</td>
-								<td>{{ contact.poznamka || "—" }}</td>
-								<td>
-									<button
-										class="row-remove-btn"
-										title="Odobrať z kategórie"
-										@click="removeContactFromCategory(category.id, contact.id)"
-									>
-										×
-									</button>
-								</td>
-							</tr>
-
 							<!-- New contact input rows -->
 							<tr
 								v-for="(row, idx) in category.newRows"
@@ -175,14 +143,6 @@
 								</td>
 								<td>
 									<input
-										v-model="row.email"
-										class="row-input"
-										placeholder="email@..."
-										@input="onRowInput(category, idx)"
-									/>
-								</td>
-								<td>
-									<input
 										v-model="row.vek"
 										class="row-input"
 										placeholder="30"
@@ -206,10 +166,10 @@
 										@input="onRowInput(category, idx)"
 									/>
 								</td>
-								<td>
+								<td class="col-poznamka">
 									<input
 										v-model="row.poznamka"
-										class="row-input"
+										class="row-input row-input--wide"
 										placeholder="Poznámka"
 										@input="onRowInput(category, idx)"
 									/>
@@ -342,7 +302,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import axios from "axios";
 import { useUserStore } from "#imports";
 
@@ -361,6 +321,48 @@ const advisors = ref([]);
 // ── Global save state ─────────────────────────────────────
 const globalSaving = ref(false);
 const globalSaveError = ref("");
+
+// ── LocalStorage helpers ──────────────────────────────────
+const LS_KEY = "categories_draft_rows";
+
+const saveDraftToLocalStorage = () => {
+	try {
+		const draft = {};
+		for (const cat of categories.value) {
+			const filledOrPartial = cat.newRows.filter((r) =>
+				Object.values(r).some((v) => String(v).trim() !== ""),
+			);
+			if (filledOrPartial.length > 0) {
+				draft[cat.id] = filledOrPartial;
+			}
+		}
+		if (Object.keys(draft).length > 0) {
+			localStorage.setItem(LS_KEY, JSON.stringify(draft));
+		} else {
+			localStorage.removeItem(LS_KEY);
+		}
+	} catch (e) {
+		console.warn("Could not save draft to localStorage:", e);
+	}
+};
+
+const loadDraftFromLocalStorage = () => {
+	try {
+		const raw = localStorage.getItem(LS_KEY);
+		if (!raw) return {};
+		return JSON.parse(raw);
+	} catch {
+		return {};
+	}
+};
+
+const clearDraftFromLocalStorage = () => {
+	try {
+		localStorage.removeItem(LS_KEY);
+	} catch {
+		// ignore
+	}
+};
 
 const fetchAdvisors = async () => {
 	try {
@@ -413,7 +415,6 @@ const emptyRow = () => ({
 	meno: "",
 	priezvisko: "",
 	cislo: "",
-	email: "",
 	vek: "",
 	zamestanie: "",
 	adresa: "",
@@ -429,20 +430,26 @@ const hasAnyFilledRows = computed(() =>
 );
 
 const onRowInput = (cat, idx) => {
+	// Auto-add new row when last row gets content
 	if (idx === cat.newRows.length - 1) {
 		const row = cat.newRows[idx];
 		const hasContent = Object.values(row).some((v) => String(v).trim() !== "");
 		if (hasContent) cat.newRows.push(emptyRow());
 	}
+	// Persist draft to localStorage after every input
+	saveDraftToLocalStorage();
 };
 
 const removeNewRow = (cat, idx) => {
 	cat.newRows.splice(idx, 1);
+	saveDraftToLocalStorage();
 };
 
 // ── Fetch ─────────────────────────────────────────────────
 const fetchCategories = async () => {
 	loading.value = true;
+	const savedDraft = loadDraftFromLocalStorage();
+
 	try {
 		const res = await axios.get(`${config.public.apiUrl}categories`, {
 			headers: headers.value,
@@ -459,7 +466,21 @@ const fetchCategories = async () => {
 				} catch {
 					cat.contacts = [];
 				}
-				cat.newRows = [emptyRow()];
+
+				// Restore draft rows from localStorage if any, otherwise start fresh
+				if (savedDraft[cat.id] && savedDraft[cat.id].length > 0) {
+					// Ensure there's always a blank row at the end
+					const restoredRows = savedDraft[cat.id];
+					const lastRow = restoredRows[restoredRows.length - 1];
+					const lastIsEmpty = Object.values(lastRow).every(
+						(v) => String(v).trim() === "",
+					);
+					if (!lastIsEmpty) restoredRows.push(emptyRow());
+					cat.newRows = restoredRows;
+				} else {
+					cat.newRows = [emptyRow()];
+				}
+
 				cat.saving = false;
 				cat.saveError = "";
 			}),
@@ -482,7 +503,7 @@ const saveNewContacts = async (cat) => {
 
 	for (const row of rowsToSave) {
 		const res = await axios.post(
-			`${config.public.apiUrl}post-create-category-contact`, // ← new endpoint
+			`${config.public.apiUrl}post-create-category-contact`,
 			{
 				meno: row.meno,
 				priezvisko: row.priezvisko,
@@ -493,34 +514,104 @@ const saveNewContacts = async (cat) => {
 				zamestanie: row.zamestanie || null,
 				adresa: row.adresa || null,
 				poznamka: row.poznamka || null,
+				category_name: cat.name,
 				owner_id: selectedAdvisor.value || null,
 			},
 			{ headers: headers.value },
 		);
 
 		const created = res.data.contact;
+		const dupType = res.data.duplicate_type;
+		const ownerName = res.data.owner_name;
 
-		// Show toast if duplicate
 		if (res.data.duplicate) {
-			showToast(
-				`Kontakt ${created.meno} ${created.priezvisko} už existuje v databáze poradcu: ${res.data.owner_name}. Informácie boli doplnené.`,
-				"info",
-			);
+			if (dupType === "other_advisor") {
+				// Číslo existuje u úplne iného poradcu — kontakt napriek tomu uložený
+				showToast(
+					`Kontakt ${created.meno} ${created.priezvisko} už má iný poradca: ${ownerName}. Kontakt bol napriek tomu uložený do databázy.`,
+					"warning",
+				);
+			} else if (dupType === "target_advisor") {
+				// Existoval u vybraného (iného) poradcu
+				showToast(
+					`Kontakt ${created.meno} ${created.priezvisko} už existuje u poradcu. Poznámka doplnená a kontakt uložený aj tebe.`,
+					"info",
+				);
+			} else {
+				// Existoval u mňa
+				showToast(
+					`Kontakt ${created.meno} ${created.priezvisko} už existuje – poznámka bola doplnená.`,
+					"info",
+				);
+			}
 		} else {
 			showToast(
 				`Kontakt ${created.meno} ${created.priezvisko} bol úspešne pridaný.`,
 				"success",
 			);
 		}
+
+		// Prirad kontakt ku kategorii
 		await axios.post(
 			`${config.public.apiUrl}categories/${cat.id}/contacts`,
 			{ contact_id: created.id },
 			{ headers: headers.value },
 		);
+
 		cat.contacts = [...(cat.contacts ?? []), created];
 	}
+
 	cat.newRows = [emptyRow()];
 };
+
+// ── Save new contacts for a single category ───────────────
+// const saveNewContacts = async (cat) => {
+// 	cat.saveError = "";
+// 	const rowsToSave = cat.newRows.filter(
+// 		(r) => r.meno.trim() && r.priezvisko.trim(),
+// 	);
+// 	if (!rowsToSave.length) return;
+
+// 	for (const row of rowsToSave) {
+// 		const res = await axios.post(
+// 			`${config.public.apiUrl}post-create-category-contact`,
+// 			{
+// 				meno: row.meno,
+// 				priezvisko: row.priezvisko,
+// 				cislo: row.cislo || null,
+// 				odporucitel: globalOdporucitel.value || null,
+// 				vek: row.vek || null,
+// 				zamestanie: row.zamestanie || null,
+// 				adresa: row.adresa || null,
+// 				poznamka: row.poznamka || null,
+// 				category_name: cat.name,
+// 				owner_id: selectedAdvisor.value || null,
+// 			},
+// 			{ headers: headers.value },
+// 		);
+
+// 		const created = res.data.contact;
+
+// 		if (res.data.duplicate) {
+// 			showToast(
+// 				`Kontakt ${created.meno} ${created.priezvisko} už existuje v databáze poradcu: ${res.data.owner_name}. Informácie boli doplnené.`,
+// 				"info",
+// 			);
+// 		} else {
+// 			showToast(
+// 				`Kontakt ${created.meno} ${created.priezvisko} bol úspešne pridaný.`,
+// 				"success",
+// 			);
+// 		}
+// 		await axios.post(
+// 			`${config.public.apiUrl}categories/${cat.id}/contacts`,
+// 			{ contact_id: created.id },
+// 			{ headers: headers.value },
+// 		);
+// 		cat.contacts = [...(cat.contacts ?? []), created];
+// 	}
+// 	cat.newRows = [emptyRow()];
+// };
 
 // ── Save all categories at once ───────────────────────────
 const saveAllNewContacts = async () => {
@@ -531,6 +622,8 @@ const saveAllNewContacts = async () => {
 		for (const cat of catsWithRows) {
 			await saveNewContacts(cat);
 		}
+		// Clear localStorage draft after successful save
+		clearDraftFromLocalStorage();
 	} catch (err) {
 		globalSaveError.value =
 			err.response?.status === 409
@@ -603,10 +696,14 @@ const saveCategory = async () => {
 };
 
 // ── Delete ────────────────────────────────────────────────
-const confirmDelete = (cat) => {
+const confirmDelete = async (cat) => {
+	const ok = window.confirm("Naozaj chcete odstrániť túto kategóriu?");
+	if (!ok) return;
+
 	deletingCategory.value = cat;
-	showDeleteModal.value = true;
+	await deleteCategory();
 };
+
 const deleteCategory = async () => {
 	deletingFlag.value = true;
 	try {
@@ -623,7 +720,7 @@ const deleteCategory = async () => {
 	}
 };
 
-const toast = ref(null); // { message, type: 'info'|'error'|'success' }
+const toast = ref(null);
 let toastTimer = null;
 
 const showToast = (message, type = "info") => {
@@ -648,7 +745,6 @@ onMounted(async () => {
 		name: u.first_name ? `${u.first_name} ${u.last_name}` : u.email,
 	}));
 
-	// Default to the currently logged-in user
 	if (userStore.user) {
 		selectedAdvisor.value = userStore.user.id;
 	}
@@ -665,6 +761,12 @@ onMounted(async () => {
 	background: #f4f6fb;
 	color: #111827;
 	font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+.toast--warning {
+	background: #fef9c3;
+	color: #854d0e;
+	border: 1px solid #fde047;
 }
 
 /* ── Header ─────────────────────────────────────────────── */
@@ -868,14 +970,33 @@ onMounted(async () => {
 	letter-spacing: 0.05em;
 	white-space: nowrap;
 }
+/* Wider poznámka column */
+/* Telefón narrower */
+.contacts-table th:nth-child(3),
+.contacts-table td:nth-child(3) {
+	width: 120px;
+	min-width: 120px;
+}
+
+/* Vek much narrower */
+.contacts-table th:nth-child(4),
+.contacts-table td:nth-child(4) {
+	width: 70px;
+	min-width: 70px;
+}
+
+/* Wider poznámka column */
+.contacts-table th.col-poznamka,
+.contacts-table td.col-poznamka {
+	width: 32%;
+	min-width: 320px;
+}
+
 .contact-row td {
 	padding: 0.5rem 0.85rem;
 	border-bottom: 1px solid #f3f4f6;
 	vertical-align: middle;
 	color: #374151;
-}
-.existing-row:hover td {
-	background: #fafbff;
 }
 .new-row td {
 	background: #f9fafb;
@@ -907,6 +1028,10 @@ onMounted(async () => {
 }
 .row-input::placeholder {
 	color: #d1d5db;
+}
+/* Wide variant for poznámka */
+.row-input--wide {
+	min-width: 200px;
 }
 
 .row-remove-btn {

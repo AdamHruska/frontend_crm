@@ -203,19 +203,24 @@ const ids_from_call_list = ref([]);
 
 const getCallList = async (id) => {
 	loadingState.value = true;
+	people.value = []; // clear immediately so stale data never shows
+	callListStore.selectedCallListPeople = []; // clear store too
+
 	callListStore.getCallListById(id);
 	callListStore.setSelectedCallList(id);
-	console.log("singleCallList", callListStore.singleCallList);
 
 	try {
 		let contactIds;
-
 		try {
-			contactIds = JSON.parse(callListStore.singleCallList.contact_ids);
-			console.log("Parsed contact IDs:", contactIds);
+			const raw = callListStore.singleCallList.contact_ids;
+			contactIds = typeof raw === "string" ? JSON.parse(raw) : raw;
+			console.log("Sending these IDs to backend:", contactIds);
 		} catch (error) {
 			console.error("Failed to parse contact IDs:", error.message);
+			loadingState.value = false;
+			return;
 		}
+
 		const callListResponse = await axios.post(
 			`${config.public.apiUrl}call-list`,
 			{ ids: contactIds },
@@ -228,15 +233,11 @@ const getCallList = async (id) => {
 		);
 
 		if (callListResponse.data.contacts) {
-			people.value = [...callListResponse.data.contacts];
+			callListStore.selectedCallListPeople = callListResponse.data.contacts;
 
-			people.value = people.value.map((person) => {
-				console.log("person.first_event", person.last_activity);
+			people.value = callListResponse.data.contacts.map((person) => {
 				let cssClass = "";
-				console.log("person.first_event", person.last_activity);
-				if (person.first_event === 0) {
-					cssClass += "bg-green-200 ";
-				}
+				if (person.first_event === 0) cssClass += "bg-green-200 ";
 
 				if (person.last_activity && callListStore.singleCallList.created_at) {
 					const lastActivityDate = new Date(person.last_activity);
@@ -245,31 +246,91 @@ const getCallList = async (id) => {
 					);
 
 					if (lastActivityDate < callListCreatedDate) {
-						// Žltá - staršia aktivita ako vytvorenie call listu
 						cssClass += "bg-yellow-200 ";
 					} else if (lastActivityDate > callListCreatedDate) {
-						// Červená - novšia aktivita ako vytvorenie call listu
 						cssClass += "bg-red-200 ";
 					}
 				}
 
-				return {
-					...person,
-					class: cssClass.trim(),
-				};
+				return { ...person, class: cssClass.trim() };
 			});
-			callListStore.selectedCallListPeople = callListResponse.data.contacts;
-			console.log("Received contacts:", callListStore.selectedCallListPeople);
 		}
 	} catch (error) {
-		if (error.response) {
-			console.error("Server response error:", error.response.data);
-		} else {
-			console.error("Error fetching contacts:", error);
-		}
+		console.error("Error fetching contacts:", error);
 	}
+
 	loadingState.value = false;
 };
+
+// const getCallList = async (id) => {
+// 	loadingState.value = true;
+// 	callListStore.getCallListById(id);
+// 	callListStore.setSelectedCallList(id);
+// 	console.log("singleCallList", callListStore.singleCallList);
+
+// 	try {
+// 		let contactIds;
+
+// 		try {
+// 			contactIds = JSON.parse(callListStore.singleCallList.contact_ids);
+// 			console.log("Parsed contact IDs:", contactIds);
+// 		} catch (error) {
+// 			console.error("Failed to parse contact IDs:", error.message);
+// 		}
+// 		const callListResponse = await axios.post(
+// 			`${config.public.apiUrl}call-list`,
+// 			{ ids: contactIds },
+// 			{
+// 				headers: {
+// 					Authorization: `Bearer ${authStore.token}`,
+// 					"Content-Type": "application/json",
+// 				},
+// 			},
+// 		);
+
+// 		if (callListResponse.data.contacts) {
+// 			people.value = [...callListResponse.data.contacts];
+
+// 			people.value = people.value.map((person) => {
+// 				console.log("person.first_event", person.last_activity);
+// 				let cssClass = "";
+// 				console.log("person.first_event", person.last_activity);
+// 				if (person.first_event === 0) {
+// 					cssClass += "bg-green-200 ";
+// 				}
+
+// 				if (person.last_activity && callListStore.singleCallList.created_at) {
+// 					const lastActivityDate = new Date(person.last_activity);
+// 					const callListCreatedDate = new Date(
+// 						callListStore.singleCallList.created_at,
+// 					);
+
+// 					if (lastActivityDate < callListCreatedDate) {
+// 						// Žltá - staršia aktivita ako vytvorenie call listu
+// 						cssClass += "bg-yellow-200 ";
+// 					} else if (lastActivityDate > callListCreatedDate) {
+// 						// Červená - novšia aktivita ako vytvorenie call listu
+// 						cssClass += "bg-red-200 ";
+// 					}
+// 				}
+
+// 				return {
+// 					...person,
+// 					class: cssClass.trim(),
+// 				};
+// 			});
+// 			callListStore.selectedCallListPeople = callListResponse.data.contacts;
+// 			console.log("Received contacts:", callListStore.selectedCallListPeople);
+// 		}
+// 	} catch (error) {
+// 		if (error.response) {
+// 			console.error("Server response error:", error.response.data);
+// 		} else {
+// 			console.error("Error fetching contacts:", error);
+// 		}
+// 	}
+// 	loadingState.value = false;
+// };
 
 // const deleteCallList = async (id) => {
 // 	await callListStore.deleteCallList(id);

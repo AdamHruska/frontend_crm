@@ -48,10 +48,13 @@
 						:id="'checkbox' + user.id"
 						type="checkbox"
 						class="peer mr-3 w-5 h-5 cursor-pointer checkbox-custom"
-						@change="handleCheckboxChange(user.id, user.checked)"
+						@change="handleCheckboxChange(user, user.checked)"
 					/>
 					<label :for="'checkbox' + user.id" class="cursor-pointer">
 						{{ user.first_name }} {{ user.last_name }}
+						<span v-if="user.isTransitive" class="text-xs text-gray-400 ml-1"
+							>(zdieľaný)</span
+						>
 					</label>
 				</div>
 			</li>
@@ -87,10 +90,14 @@
 					:id="'checkbox' + user.id"
 					type="checkbox"
 					class="peer w-5 h-5 cursor-pointer checkbox-custom"
-					@change="handleCheckboxChange(user.id, user.checked)"
+					@change="handleCheckboxChange(user, user.checked)"
 				/>
-				<div>{{ user.first_name }} {{ user.last_name }}</div>
-
+				<div>
+					{{ user.first_name }} {{ user.last_name }}
+					<span v-if="user.isTransitive" class="text-xs text-gray-400"
+						>(zdieľaný)</span
+					>
+				</div>
 				<div
 					class="h-5 w-5 rounded"
 					:style="{ backgroundColor: getUserColor(user.id, index) }"
@@ -278,20 +285,19 @@ const handleSearch = async () => {
 // });
 
 const filteredUsers = computed(() => {
-	// Use shared users directly from store
-	const sharedUsers = userStore.sharedUsers || [];
+	const directUsers = (userStore.sharedUsers || []).map((u) => ({
+		...u,
+		isTransitive: false,
+	}));
+	const transitiveUsers = userStore.transitiveSharedUsers || [];
+	const allUsers = [...directUsers, ...transitiveUsers];
 
-	if (!searchInput.value) {
-		return sharedUsers;
-	}
+	if (!searchInput.value) return allUsers;
 
-	const normalizedSearchInput = searchInput.value.toLowerCase();
-
-	return sharedUsers.filter((user) => {
-		const userFullName = `${user.first_name} ${user.last_name}`.toLowerCase();
-
-		return userFullName.includes(normalizedSearchInput);
-	});
+	const q = searchInput.value.toLowerCase();
+	return allUsers.filter((u) =>
+		`${u.first_name} ${u.last_name}`.toLowerCase().includes(q),
+	);
 });
 
 onMounted(async () => {
@@ -303,40 +309,15 @@ onMounted(async () => {
 	}
 });
 
-const handleCheckboxChange = async (userId, isChecked) => {
-	console.log("Checkbox changed for user:", userId, isChecked);
+const handleCheckboxChange = async (user, isChecked) => {
 	loading.value = true;
-
 	try {
 		if (isChecked) {
-			emit("addSharedEventsId", userId);
-			// await axios.post(
-			// 	`${config.public.apiUrl}add-share-id/${userId}`,
-			// 	{},
-			// 	{
-			// 		headers: {
-			// 			Authorization: `Bearer ${authStore.token}`,
-			// 		},
-			// 	},
-			// );
+			emit("addSharedEventsId", user.id, user.isTransitive ?? false);
 		} else {
-			emit("deleteSharedEventsId", userId);
-			// await axios.post(
-			// 	`${config.public.apiUrl}null-share-id/${userId}`,
-			// 	{},
-			// 	{
-			// 		headers: {
-			// 			Authorization: `Bearer ${authStore.token}`,
-			// 		},
-			// 	},
-			// );
+			emit("deleteSharedEventsId", user.id);
 		}
-
-		// Refresh users after change
-		//await handleSearch();
-
-		const user = users.value.find((u) => u.id === userId);
-		if (user) user.checked = isChecked;
+		user.checked = isChecked;
 	} catch (error) {
 		console.error("Error updating share ID:", error);
 	} finally {
@@ -370,7 +351,11 @@ onMounted(() => {
 });
 
 const checkedUsers = computed(() => {
-	return users.value.filter((user) => user.checked);
+	const directChecked = users.value.filter((u) => u.checked);
+	const transitiveChecked = (userStore.transitiveSharedUsers || []).filter(
+		(u) => u.checked,
+	);
+	return [...directChecked, ...transitiveChecked];
 });
 </script>
 
