@@ -61,33 +61,21 @@ const checkOfficeAvailability = (officeId, newDatum, newKoniec) => {
 	if (!newDatum || !newKoniec)
 		return { isFree: true, overlappingActivity: null };
 
-	const newStart = new Date(newDatum);
-	const newEnd = new Date(newKoniec);
+	const newStart = new Date(newDatum.replace(" ", "T"));
+	const newEnd = new Date(newKoniec.replace(" ", "T"));
 
 	const overlappingActivity = officeStore.allOfficeActivities.find(
 		(activity) => {
-			// Only check activities for this specific office
 			if (activity.office_id !== officeId) return false;
-
-			const activityStart = new Date(activity.datum_cas);
-			const activityEnd = new Date(activity.koniec);
-
-			// Check if time ranges overlap
+			const activityStart = new Date(activity.datum_cas.replace(" ", "T"));
+			const activityEnd = new Date(activity.koniec.replace(" ", "T"));
 			return newStart < activityEnd && activityStart < newEnd;
 		},
 	);
 
-	if (overlappingActivity) {
-		return {
-			isFree: false,
-			overlappingActivity: overlappingActivity,
-		};
-	} else {
-		return {
-			isFree: true,
-			overlappingActivity: null,
-		};
-	}
+	return overlappingActivity
+		? { isFree: false, overlappingActivity }
+		: { isFree: true, overlappingActivity: null };
 };
 
 watch(
@@ -256,7 +244,6 @@ const emails = ref([""]);
 const addActivity = async () => {
 	event.preventDefault();
 
-	// Validate email for online meetings
 	if (onlineMeeting.value) {
 		const hasEmail =
 			emailBool.value || (email.value && email.value.trim() !== "");
@@ -271,7 +258,7 @@ const addActivity = async () => {
 				showCloseButtonOnHover: false,
 				hideProgressBar: false,
 			});
-			return; // Stop execution if validation fails
+			return;
 		}
 	}
 
@@ -290,8 +277,6 @@ const addActivity = async () => {
 			aktivita.value === "Telefonát nábor"
 		) {
 			volane.value = true;
-			//dovolane.value = true;
-			//dohodnute.value = true;
 		}
 
 		if (selectedOffice.value.name !== "Kancelárie") {
@@ -339,33 +324,11 @@ const addActivity = async () => {
 			location.reload();
 		}
 
-		// Update email if needed
 		if (!emailBool.value && onlineMeeting.value && email.value) {
 			await axios.patch(
 				`${config.public.apiUrl}contact/${props.contact_id}/email`,
-				{
-					email: email.value,
-				},
-				{
-					headers: {
-						Authorization: `Bearer ${authStore.token}`,
-					},
-				},
-			);
-		}
-
-		if (onlineMeeting.value && !emailBool.value && emails.value[0]) {
-			console.log("Adding email to contact:", emails.value[0]);
-			await axios.patch(
-				`${config.public.apiUrl}contact/${id.value}/email`,
-				{
-					email: emails.value[0],
-				},
-				{
-					headers: {
-						Authorization: `Bearer ${authStore.token}`,
-					},
-				},
+				{ email: email.value },
+				{ headers: { Authorization: `Bearer ${authStore.token}` } },
 			);
 		}
 
@@ -381,9 +344,6 @@ const addActivity = async () => {
 					{ headers: { Authorization: `Bearer ${authStore.token}` } },
 				);
 
-				// if (teamsResponse.data.joinUrl) {
-				// 	response.data.activity.miesto_stretnutia = teamsResponse.data.joinUrl;
-				// }
 				if (teamsResponse.data.joinUrl) {
 					const officePart =
 						selectedOffice.value.name !== "Kancelárie"
@@ -408,19 +368,12 @@ const addActivity = async () => {
 		}
 
 		if (selectedOffice.value.name !== "Kancelárie") {
-			//tu spravit office aktivitu
-
-			const datumCasDate = new Date(datum_cas.value);
-			datumCasDate.setHours(datumCasDate.getHours());
-
-			const koniecDate = new Date(koniec.value);
-			koniecDate.setHours(koniecDate.getHours());
+			const toLocalString = (localStr) => localStr.replace("T", " ") + ":00";
 
 			const newActivity = {
-				aktivita:
-					aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
-				datum_cas: datumCasDate.toISOString(),
-				koniec: koniecDate.toISOString(),
+				aktivita: aktivita.value,
+				datum_cas: toLocalString(datum_cas.value),
+				koniec: toLocalString(koniec.value),
 				poznamka: poznamka.value,
 				office_id: officeStore.setOfficeID,
 				owner_number: userStore.user.vizitka_phone_num,
@@ -430,9 +383,7 @@ const addActivity = async () => {
 		}
 
 		calendarStore.activities.push(response.data.activity);
-		emit("activityAdded", response.data.activity);
 
-		// Toast podľa toho či bol online meeting
 		const successMsg = onlineMeeting.value
 			? "Online stretnutie bolo úspešne pridané"
 			: "Aktivita bola úspešne pridaná";
@@ -447,6 +398,8 @@ const addActivity = async () => {
 			showCloseButtonOnHover: false,
 			hideProgressBar: false,
 		});
+
+		emit("activityAdded", response.data.activity);
 
 		setTimeout(() => {
 			emit("cancelAddActivity");
@@ -465,6 +418,219 @@ const addActivity = async () => {
 		});
 	}
 };
+
+// const addActivity = async () => {
+// 	event.preventDefault();
+
+// 	// Validate email for online meetings
+// 	if (onlineMeeting.value) {
+// 		const hasEmail =
+// 			emailBool.value || (email.value && email.value.trim() !== "");
+// 		if (!hasEmail) {
+// 			toast.error("Pre online stretnutie je potrebné zadať email", {
+// 				position: "top-right",
+// 				timeout: 5000,
+// 				closeOnClick: true,
+// 				pauseOnHover: true,
+// 				draggable: true,
+// 				draggablePercent: 60,
+// 				showCloseButtonOnHover: false,
+// 				hideProgressBar: false,
+// 			});
+// 			return; // Stop execution if validation fails
+// 		}
+// 	}
+
+// 	if (aktivita.value === "ine") {
+// 		aktivita.value = ina_aktivita.value;
+// 	}
+
+// 	if (onlineMeeting.value) {
+// 		miesto_stretnutia.value =
+// 			"Online Meeting " + (email.value || contact.value[0].email);
+// 	}
+
+// 	try {
+// 		if (
+// 			aktivita.value === "Telefonát klient" ||
+// 			aktivita.value === "Telefonát nábor"
+// 		) {
+// 			volane.value = true;
+// 			//dovolane.value = true;
+// 			//dohodnute.value = true;
+// 		}
+
+// 		if (selectedOffice.value.name !== "Kancelárie") {
+// 			miesto_stretnutia.value = selectedOffice.value.name;
+// 		}
+
+// 		const response = await axios.post(
+// 			`${config.public.apiUrl}add-activity`,
+// 			{
+// 				contact_id: props.contact_id,
+// 				aktivita: aktivita.value,
+// 				datumCas: datum_cas.value,
+// 				koniec: koniec.value,
+// 				poznamka: poznamka.value,
+// 				volane: volane.value,
+// 				dovolane: dovolane.value,
+// 				dohodnute: dohodnute.value,
+// 				online_meeting: onlineMeeting.value,
+// 				miesto_stretnutia: miesto_stretnutia.value,
+// 				send_notification_15: active.value?.includes(15) || false,
+// 				send_notification_30: active.value?.includes(30) || false,
+// 				send_notification_60: active.value?.includes(60) || false,
+// 			},
+// 			{
+// 				headers: {
+// 					Authorization: `Bearer ${authStore.token}`,
+// 				},
+// 			},
+// 		);
+
+// 		if (response.data.status === 201) {
+// 			toast.success("Aktivita bola úspešne pridaná", {
+// 				position: "top-right",
+// 				timeout: 5000,
+// 				closeOnClick: true,
+// 				pauseOnHover: true,
+// 				draggable: true,
+// 				draggablePercent: 60,
+// 				showCloseButtonOnHover: false,
+// 				hideProgressBar: false,
+// 			});
+// 		}
+
+// 		if (response.data.activity.aktivita === "Pohovor") {
+// 			location.reload();
+// 		}
+
+// 		// Update email if needed
+// 		if (!emailBool.value && onlineMeeting.value && email.value) {
+// 			await axios.patch(
+// 				`${config.public.apiUrl}contact/${props.contact_id}/email`,
+// 				{
+// 					email: email.value,
+// 				},
+// 				{
+// 					headers: {
+// 						Authorization: `Bearer ${authStore.token}`,
+// 					},
+// 				},
+// 			);
+// 		}
+
+// 		if (onlineMeeting.value && !emailBool.value && emails.value[0]) {
+// 			console.log("Adding email to contact:", emails.value[0]);
+// 			await axios.patch(
+// 				`${config.public.apiUrl}contact/${id.value}/email`,
+// 				{
+// 					email: emails.value[0],
+// 				},
+// 				{
+// 					headers: {
+// 						Authorization: `Bearer ${authStore.token}`,
+// 					},
+// 				},
+// 			);
+// 		}
+
+// 		if (onlineMeeting.value) {
+// 			try {
+// 				const teamsResponse = await axios.post(
+// 					`${config.public.apiUrl}create-teams-meeting`,
+// 					{
+// 						activityId: response.data.activity.id,
+// 						user_id: userStore.user.id,
+// 						importance: importance.value,
+// 					},
+// 					{ headers: { Authorization: `Bearer ${authStore.token}` } },
+// 				);
+
+// 				// if (teamsResponse.data.joinUrl) {
+// 				// 	response.data.activity.miesto_stretnutia = teamsResponse.data.joinUrl;
+// 				// }
+// 				if (teamsResponse.data.joinUrl) {
+// 					const officePart =
+// 						selectedOffice.value.name !== "Kancelárie"
+// 							? `${selectedOffice.value.name} - `
+// 							: "";
+// 					response.data.activity.miesto_stretnutia = `${officePart}${teamsResponse.data.joinUrl}`;
+// 					miesto_stretnutia.value = response.data.activity.miesto_stretnutia;
+// 				}
+// 			} catch (error) {
+// 				console.error("Error creating Teams meeting:", error);
+// 				toast.error("Chyba pri vytváraní online stretnutia", {
+// 					position: "top-right",
+// 					timeout: 5000,
+// 					closeOnClick: true,
+// 					pauseOnHover: true,
+// 					draggable: true,
+// 					draggablePercent: 60,
+// 					showCloseButtonOnHover: false,
+// 					hideProgressBar: false,
+// 				});
+// 			}
+// 		}
+
+// 		if (selectedOffice.value.name !== "Kancelárie") {
+// 			//tu spravit office aktivitu
+
+// 			const datumCasDate = new Date(datum_cas.value);
+// 			datumCasDate.setHours(datumCasDate.getHours());
+
+// 			const koniecDate = new Date(koniec.value);
+// 			koniecDate.setHours(koniecDate.getHours());
+
+// 			const newActivity = {
+// 				aktivita:
+// 					aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
+// 				datum_cas: datumCasDate.toISOString(),
+// 				koniec: koniecDate.toISOString(),
+// 				poznamka: poznamka.value,
+// 				office_id: officeStore.setOfficeID,
+// 				owner_number: userStore.user.vizitka_phone_num,
+// 			};
+
+// 			await officeStore.storeActivity(newActivity);
+// 		}
+
+// 		calendarStore.activities.push(response.data.activity);
+// 		emit("activityAdded", response.data.activity);
+
+// 		// Toast podľa toho či bol online meeting
+// 		const successMsg = onlineMeeting.value
+// 			? "Online stretnutie bolo úspešne pridané"
+// 			: "Aktivita bola úspešne pridaná";
+
+// 		toast.success(successMsg, {
+// 			position: "top-right",
+// 			timeout: 5000,
+// 			closeOnClick: true,
+// 			pauseOnHover: true,
+// 			draggable: true,
+// 			draggablePercent: 60,
+// 			showCloseButtonOnHover: false,
+// 			hideProgressBar: false,
+// 		});
+
+// 		setTimeout(() => {
+// 			emit("cancelAddActivity");
+// 		}, 400);
+// 	} catch (error) {
+// 		console.error("Error adding activity:", error);
+// 		toast.error("Chyba pri pridávaní aktivity", {
+// 			position: "top-right",
+// 			timeout: 5000,
+// 			closeOnClick: true,
+// 			pauseOnHover: true,
+// 			draggable: true,
+// 			draggablePercent: 60,
+// 			showCloseButtonOnHover: false,
+// 			hideProgressBar: false,
+// 		});
+// 	}
+// };
 
 watch(dovolane, (newValue) => {
 	if (newValue) {

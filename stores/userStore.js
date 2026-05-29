@@ -24,10 +24,59 @@ export const useUserStore = defineStore("user", {
 		vizitka_phone_num: "",
 		allSharedUsers: [],
 		transitiveSharedUsers: [],
+		allSharedUsers: [],
 	}),
 
 	actions: {
 		// Explicitly define as an action
+		async fetchSharedUsersTree() {
+			const config = useRuntimeConfig();
+			const authStore = useAuthStore();
+
+			try {
+				const response = await axios.get(
+					`${config.public.apiUrl}get-shared-users-tree`,
+					{
+						headers: {
+							Authorization: `Bearer ${authStore.token}`,
+						},
+					},
+				);
+
+				console.log("Fetched shared users tree:", response.data);
+
+				const directUsers = (response.data.direct_users || []).map((user) => ({
+					...user,
+					checked: false,
+					isTransitive: false,
+				}));
+
+				const transitiveUsers = [];
+
+				directUsers.forEach((directUser) => {
+					(directUser.transitive_users || []).forEach((transitiveUser) => {
+						transitiveUsers.push({
+							...transitiveUser,
+							checked: false,
+							isTransitive: true,
+						});
+					});
+				});
+
+				// direct shared users
+				this.sharedUsers = directUsers;
+
+				// transitive shared users
+				this.transitiveSharedUsers = transitiveUsers;
+
+				this.allSharedUsers = [...directUsers, ...transitiveUsers];
+
+				console.log("sharedUsers:", this.sharedUsers);
+				console.log("transitiveSharedUsers:", this.transitiveSharedUsers);
+			} catch (error) {
+				console.error("Error fetching shared users tree:", error);
+			}
+		},
 
 		addSharedUser(user) {
 			// Check if user already exists in sharedUsers

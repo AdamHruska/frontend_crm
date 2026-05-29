@@ -294,6 +294,94 @@ const toggleAutoCreateOutlookEvent = async () => {
     }
 };
 
+const loginWithGoogle = () => {
+	const clientId = config.public.GOOGLE_CLIENT_ID;
+	const redirectUri = config.public.GOOGLE_REDIRECT_URI;
+	const scope = config.public.GOOGLE_SCOPE;
+	const userId = userStore.user.id;
+
+	if (!userId) {
+		console.error("No user logged in");
+		return;
+	}
+
+	const state = JSON.stringify({
+		userId,
+		csrf: authStore.csrfToken,
+	});
+
+	const params = new URLSearchParams({
+		client_id: clientId,
+		response_type: "code",
+		redirect_uri: redirectUri,
+		scope,
+		access_type: "offline",
+		prompt: "consent",
+		state,
+	});
+
+	window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+};
+
+const logoutWithGoogle = async () => {
+	try {
+		const response = await $fetch(`/api/google/logout?userId=${userStore.user.id}`, {
+			method: "POST",
+		});
+
+		if (response.success) {
+			toast.success("Odhlásenie z Google úspešné!");
+		} else {
+			toast.error("Nepodarilo sa odhlásiť z Google.");
+		}
+	} catch (error) {
+		console.error(error);
+		toast.error("Nastala chyba pri odhlasovaní z Google.");
+	}
+};
+
+const loginWithMicrosoft = () => {
+	const clientId = config.public.AZURE_CLIENT_ID;
+	const redirectUriRaw = config.public.AZURE_REDIRECT_URI;
+	const scope = config.public.AZURE_SCOPE;
+	const userId = userStore.user.id;
+
+	if (!userId) {
+		console.error("No user logged in");
+		return;
+	}
+
+	const state = JSON.stringify({
+		userId,
+		csrf: authStore.csrfToken,
+	});
+
+	const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUriRaw)}&scope=${encodeURIComponent(scope)}&response_mode=query&state=${encodeURIComponent(state)}`;
+
+	window.location.href = authUrl;
+};
+
+const logoutWithMicrosoft = async () => {
+	try {
+		const response = await axios.post(
+			`${config.public.apiUrl}microsoft/logout`,
+			{},
+			{
+				headers: {
+					Authorization: `Bearer ${authStore.token}`,
+					"Content-Type": "application/json",
+				},
+			},
+		);
+
+		toast.success("Odhlásenie z Microsoft úspešné!");
+		location.reload();
+	} catch (error) {
+		console.error("Microsoft logout failed:", error);
+		toast.error("Nastala chyba pri odhlasovaní z Microsoft.");
+	}
+};
+
 </script>
 
 <template>
@@ -507,6 +595,53 @@ const toggleAutoCreateOutlookEvent = async () => {
   <div v-else class="text-gray-500">
     Zatiaľ nemáte pridané žiadne ICS kalendáre.
   </div>
+</div>
+
+<!-- Google & Microsoft účty -->
+<div class="bg-white p-4 mt-8 rounded-md shadow-md ml-4 max-w-[500px]">
+    <h3 class="font-semibold text-xl mb-4">Prepojené účty</h3>
+
+    <div class="flex flex-col gap-3">
+        <div class="border-b pb-3">
+            <p class="font-semibold text-sm text-gray-500 mb-2">Google</p>
+            <div class="flex gap-3">
+                <button
+                    class="flex items-center gap-2 px-4 py-2 rounded-md bg-gray-100 hover:bg-gray-200 border text-sm font-medium"
+                    @click="loginWithGoogle"
+                >
+                    <img src="/public/google_icon.png" class="w-5 h-5" alt="Google" />
+                    Prihlásiť sa
+                </button>
+                <button
+                    class="flex items-center gap-2 px-4 py-2 rounded-md bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-sm font-medium"
+                    @click="logoutWithGoogle"
+                >
+                    <img src="/public/google_icon.png" class="w-5 h-5" alt="Google" />
+                    Odhlásiť sa
+                </button>
+            </div>
+        </div>
+
+        <div class="pt-1">
+            <p class="font-semibold text-sm text-gray-500 mb-2">Microsoft</p>
+            <div class="flex gap-3">
+                <button
+                    class="flex items-center gap-2 px-4 py-2 rounded-md bg-gray-100 hover:bg-gray-200 border text-sm font-medium"
+                    @click="loginWithMicrosoft"
+                >
+                    <img src="/public/icons8-microsoft-48.png" class="w-5 h-5" alt="Microsoft" />
+                    Prihlásiť sa
+                </button>
+                <button
+                    class="flex items-center gap-2 px-4 py-2 rounded-md bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-sm font-medium"
+                    @click="logoutWithMicrosoft"
+                >
+                    <img src="/public/icons8-microsoft-48.png" class="w-5 h-5" alt="Microsoft" />
+                    Odhlásiť sa
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 				<span class="float-right">9.2.2026 aktuálna verzia</span>

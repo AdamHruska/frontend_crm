@@ -146,7 +146,15 @@
 									@change="toggleUser(user.id)"
 									class="rounded"
 								/>
-								<span class="text-sm">{{ user.name }}</span>
+								<span class="text-sm">
+									{{ user.name }}
+									<span
+										v-if="user.isTransitive"
+										class="text-xs text-gray-400 ml-1"
+									>
+										(zdieľaný)
+									</span>
+								</span>
 							</label>
 
 							<div class="border-t px-3 py-2 flex gap-2">
@@ -377,8 +385,29 @@
 						<div class="item-left"></div>
 						<div class="item-right">
 							<div class="right-count green">
-								Počet nových kontaktov:
-								{{ responseData?.new_contacts?.length || 0 }}
+								Počet nových kontaktov na lienta:
+								{{
+									responseData?.new_contacts?.filter((c) => c.isContact)
+										.length || 0
+								}}
+							</div>
+							<div
+								class="right-count green"
+								style="margin-top: 8px"
+								@mouseenter.stop="
+									(e) =>
+										showVolaneFollower(
+											responseData.new_contacts?.filter((c) => c.isCoWorker),
+											e,
+										)
+								"
+								@mouseleave.stop="hideFollower"
+							>
+								Počet nových kontaktov na spolupracovníka:
+								{{
+									responseData?.new_contacts?.filter((c) => c.isCoWorker)
+										.length || 0
+								}}
 							</div>
 						</div>
 					</div>
@@ -671,12 +700,21 @@ let hideTimeout = null;
 
 const responseData = ref({});
 
-const sharedUsers = computed(() =>
-	userStore.sharedUsers.map((u) => ({
+const sharedUsers = computed(() => {
+	const directUsers = (userStore.sharedUsers || []).map((u) => ({
 		id: u.id,
 		name: u.username || `${u.first_name} ${u.last_name}`,
-	})),
-);
+		isTransitive: false,
+	}));
+
+	const transitiveUsers = (userStore.transitiveSharedUsers || []).map((u) => ({
+		id: u.id,
+		name: u.username || `${u.first_name} ${u.last_name}`,
+		isTransitive: true,
+	}));
+
+	return [...directUsers, ...transitiveUsers];
+});
 
 const zaujatiKandidati = ref([]);
 const dateRange = ref({ from: "", to: "" });
@@ -981,8 +1019,9 @@ const updateDateRange = () => {
 
 onMounted(async () => {
 	updateDateRange();
-	await userStore.fetchSharedCalendarUsers();
+	await userStore.fetchSharedUsersTree();
 	document.addEventListener("click", handleClickOutside);
+	console.log("Mounted and data fetched", userStore.allSharedUsers);
 });
 
 onBeforeUnmount(() => {

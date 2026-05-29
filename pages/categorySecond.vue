@@ -740,10 +740,12 @@ onMounted(async () => {
 		await userStore.fetchAllUsersAdmin();
 	}
 
-	advisors.value = userStore.allUsersAdmin.map((u) => ({
-		id: u.id,
-		name: u.first_name ? `${u.first_name} ${u.last_name}` : u.email,
-	}));
+	advisors.value = userStore.allUsersAdmin
+		.filter((u) => u.hidden === 0)
+		.map((u) => ({
+			id: u.id,
+			name: u.first_name ? `${u.first_name} ${u.last_name}` : u.email,
+		}));
 
 	if (userStore.user) {
 		selectedAdvisor.value = userStore.user.id;

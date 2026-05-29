@@ -73,7 +73,8 @@ onMounted(async () => {
 	try {
 		await userStore.fetchUser();
 		//await userStore.fetchUsers();
-		userStore.getSharedUsers();
+		//userStore.getSharedUsers();
+		await userStore.fetchSharedUsersTree();
 	} catch (error) {
 		console.error("Error initializing shared users:", error);
 	}

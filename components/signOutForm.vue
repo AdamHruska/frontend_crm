@@ -8,6 +8,7 @@ import { useAuthStore } from "@/stores/authStore";
 const authStore = useAuthStore();
 const { useUserStore } = await import("@/stores/userStore");
 const userStore = useUserStore();
+import { useCalendarstore } from "#imports";
 
 function cancelSignOut() {
 	emit("cancelSignOut");
@@ -25,29 +26,23 @@ async function confirmSignOut() {
 }
 
 const logout = async () => {
+	const calendarStore = useCalendarstore();
+	calendarStore.clearIcsRefreshInterval(); // ← stops the background refresh
+
 	try {
 		await axios.post(
 			`${config.public.apiUrl}logout`,
 			{},
 			{
-				headers: {
-					Authorization: `Bearer ${authStore.token}`,
-				},
-			}
+				headers: { Authorization: `Bearer ${authStore.token}` },
+			},
 		);
-		resetAllStores(); // Clears all Pinia stores
-		// Clear auth store
+		resetAllStores();
 		authStore.clearToken();
-
-		// Remove tokens from both storage types
 		localStorage.removeItem("auth_token");
 		sessionStorage.removeItem("auth_token");
-
-		console.log("Successfully logged out");
 	} catch (error) {
 		console.error("Logout error:", error);
-
-		// Even if the API call fails, we should still clear local storage
 		authStore.clearToken();
 		localStorage.removeItem("auth_token");
 		sessionStorage.removeItem("auth_token");

@@ -19,7 +19,7 @@ export const useAuthStore = defineStore("auth", {
 		// Action to clear the token (logout)
 		clearToken() {
 			this.token = null;
-			sessionStorage.removeItem("token"); // Clear the token from sessionStorage
+			sessionStorage.removeItem("token");
 		},
 
 		// Action to load the token from sessionStorage when the app initializes

@@ -6,6 +6,9 @@ const contactsStore = useContactsStore();
 import { useUserStore } from "@/stores/userStore";
 const userStore = useUserStore();
 
+import { useCalendarstore } from "#imports";
+const calendarStore = useCalendarstore();
+
 import { Icon } from "@iconify/vue";
 import axios from "axios";
 import { format } from "date-fns";
@@ -283,6 +286,14 @@ onMounted(async () => {
 	});
 
 	callListNames.value = callListNames.value.data;
+
+	calendarStore
+		.fetchAndCacheIcsEvents(
+			config.public.apiUrl,
+			authStore.token,
+			userStore.user?.id,
+		)
+		.catch(() => {}); // silent fail — this is just a prefetch
 });
 
 const handleSearchResults = async (results) => {

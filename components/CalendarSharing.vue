@@ -1,7 +1,33 @@
 <template>
 	<div class="font-[sans-serif] w-[180px] mx-auto" ref="dropdownContainer">
 		<loadigcomponent v-if="loading" />
+
+		<div
+			v-if="loading"
+			class="flex items-center gap-2 mb-1 text-xs text-gray-500"
+		>
+			<svg
+				class="animate-spin h-3 w-3 text-blue-500"
+				xmlns="http://www.w3.org/2000/svg"
+				fill="none"
+				viewBox="0 0 24 24"
+			>
+				<circle
+					class="opacity-25"
+					cx="12"
+					cy="12"
+					r="10"
+					stroke="currentColor"
+					stroke-width="4"
+				/>
+
+				<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+			</svg>
+
+			<span>Načítava...</span>
+		</div>
 		<!-- Button to toggle dropdown -->
+
 		<button
 			type="button"
 			@click="toggleDropdown"
@@ -302,7 +328,10 @@ const filteredUsers = computed(() => {
 
 onMounted(async () => {
 	try {
+		await userStore.fetchSharedUsersTree();
+
 		await handleSearch();
+
 		console.log("Initial search completed");
 	} catch (err) {
 		console.error("Error during mount:", err);

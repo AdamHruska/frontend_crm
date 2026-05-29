@@ -57,23 +57,21 @@ const checkOfficeAvailability = (officeId, newDatum, newKoniec) => {
 	if (!newDatum || !newKoniec)
 		return { isFree: true, overlappingActivity: null };
 
-	const newStart = new Date(newDatum);
-	const newEnd = new Date(newKoniec);
+	const newStart = new Date(newDatum.replace(" ", "T"));
+	const newEnd = new Date(newKoniec.replace(" ", "T"));
 
 	const overlappingActivity = officeStore.allOfficeActivities.find(
 		(activity) => {
 			if (activity.office_id !== officeId) return false;
-			const activityStart = new Date(activity.datum_cas);
-			const activityEnd = new Date(activity.koniec);
+			const activityStart = new Date(activity.datum_cas.replace(" ", "T"));
+			const activityEnd = new Date(activity.koniec.replace(" ", "T"));
 			return newStart < activityEnd && activityStart < newEnd;
 		},
 	);
 
-	if (overlappingActivity) {
-		return { isFree: false, overlappingActivity };
-	} else {
-		return { isFree: true, overlappingActivity: null };
-	}
+	return overlappingActivity
+		? { isFree: false, overlappingActivity }
+		: { isFree: true, overlappingActivity: null };
 };
 
 watch(
@@ -356,10 +354,19 @@ const runUpdateActivity = async () => {
 
 		// Create or update office activity
 		if (updateOfficeActivity.value && selectedOffice.value.id) {
-			const toUtc = (localStr) => {
-				const d = new Date(localStr);
-				d.setHours(d.getHours() - 0);
-				return d.toISOString().slice(0, 19).replace("T", " ");
+			// const toUtc = (localStr) => {
+			// 	const d = new Date(localStr);
+			// 	d.setHours(d.getHours() - 0);
+			// 	return d.toISOString().slice(0, 19).replace("T", " ");
+			// };
+			const toLocalString = (localStr) => {
+				if (!localStr) return localStr;
+				// Already "yyyy-MM-dd HH:mm:ss" format
+				if (localStr.includes(" ")) {
+					return localStr.substring(0, 19);
+				}
+				// "yyyy-MM-ddTHH:mm" from datetime-local input
+				return localStr.replace("T", " ") + ":00";
 			};
 
 			if (officeActivity.value) {
@@ -367,8 +374,8 @@ const runUpdateActivity = async () => {
 					`${config.public.apiUrl}update-office-activity/${officeActivity.value.id}`,
 					{
 						aktivita: aktivita.value,
-						datum_cas: toUtc(datum_cas.value),
-						koniec: toUtc(koniec.value),
+						datum_cas: toLocalString(datum_cas.value),
+						koniec: toLocalString(koniec.value),
 						poznamka: poznamka.value,
 						office_id: selectedOffice.value.id,
 					},
@@ -379,8 +386,8 @@ const runUpdateActivity = async () => {
 					`${config.public.apiUrl}create-office-activity`,
 					{
 						aktivita: aktivita.value,
-						datum_cas: toUtc(datum_cas.value),
-						koniec: toUtc(koniec.value),
+						datum_cas: toLocalString(datum_cas.value),
+						koniec: toLocalString(koniec.value),
 						poznamka: poznamka.value,
 						office_id: selectedOffice.value.id,
 						owner_number: userStore.user.vizitka_phone_num,

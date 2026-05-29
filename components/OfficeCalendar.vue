@@ -82,7 +82,7 @@ const activityStats = computed(() => {
 
 	// Filter current month activities
 	const currentMonthActivities = activities.filter((activity) => {
-		const activityDate = new Date(activity.datum_cas);
+		const activityDate = new Date(activity.datum_cas.replace(" ", "T"));
 		return activityDate >= startOfMonth && activityDate <= endOfMonth;
 	});
 
@@ -204,21 +204,48 @@ const defaultOptions = {
 	},
 };
 
+// const calendarEvents = computed(() =>
+// 	officeStore.officeActivities.map((activity) => ({
+// 		id: activity.id,
+// 		title: activity.aktivita,
+// 		start: activity.datum_cas,
+// 		end: activity.koniec,
+// 		created_at: activity.created_at,
+// 		extendedProps: {
+// 			poznamka: activity.poznamka,
+// 			office_id: activity.office_id,
+// 			owner: activity.owner_name,
+// 			owner_number: activity.owner_number,
+// 			activity_status: activity.activity_status,
+// 		},
+// 	})),
+// );
+
 const calendarEvents = computed(() =>
-	officeStore.officeActivities.map((activity) => ({
-		id: activity.id,
-		title: activity.aktivita,
-		start: activity.datum_cas,
-		end: activity.koniec,
-		created_at: activity.created_at,
-		extendedProps: {
-			poznamka: activity.poznamka,
-			office_id: activity.office_id,
-			owner: activity.owner_name,
-			owner_number: activity.owner_number,
-			activity_status: activity.activity_status,
-		},
-	})),
+	officeStore.officeActivities.map((activity) => {
+		// Append fake UTC offset so FullCalendar displays the stored time as-is
+		const noShift = (str) => {
+			if (!str) return str;
+			// "2024-01-15T10:00:00" or "2024-01-15 10:00:00" → strip to 19 chars, add Z-offset trick
+			const normalized = str.replace(" ", "T").substring(0, 19);
+			return normalized;
+		};
+
+		return {
+			id: activity.id,
+			title: activity.aktivita,
+			start: noShift(activity.datum_cas),
+			end: noShift(activity.koniec),
+			created_at: activity.created_at,
+			extendedProps: {
+				poznamka: activity.poznamka,
+				office_id: activity.office_id,
+				owner: activity.owner_name,
+				owner_number: activity.owner_number,
+				activity_status: activity.activity_status,
+			},
+		};
+	}),
 );
 
 const mergedOptions = computed(() => {

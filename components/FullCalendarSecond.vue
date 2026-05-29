@@ -21,6 +21,8 @@ authStore.loadToken();
 const token = ref("");
 token.value = sessionStorage.getItem("token");
 
+const loadingSharedUser = ref(false);
+
 const router = useRouter();
 
 const user = ref({});
@@ -86,14 +88,30 @@ function parseIcsToEvents(icsText, userId, color = "#DB2777") {
 	}
 }
 
-async function fetchIcsEvents() {
+const icsRefreshInterval = ref(null);
+
+async function fetchIcsEvents(forceRefresh = false) {
+	console.log("[ICS] fetchIcsEvents called, forceRefresh:", forceRefresh);
+	if (!forceRefresh && calendarStore.isIcsCacheValid()) {
+		console.log("[ICS] Using cache, skipping fetch");
+		const cachedEvents = calendarStore.icsEventCache;
+		const nonIcsEvents = events.value.filter(
+			(e) => e.extendedProps?.source !== "ics",
+		);
+		events.value = [...nonIcsEvents, ...cachedEvents];
+		calendarOptions.value = {
+			...calendarOptions.value,
+			events: [...events.value],
+		};
+		return;
+	}
+
+	console.log("[ICS] Making API request...");
 	icsLoading.value = true;
 
 	try {
 		const response = await axios.get(`${config.public.apiUrl}proxy-ics-all`, {
-			headers: {
-				Authorization: `Bearer ${authStore.token}`,
-			},
+			headers: { Authorization: `Bearer ${authStore.token}` },
 		});
 
 		let allParsedEvents = [];
@@ -103,19 +121,14 @@ async function fetchIcsEvents() {
 			(calendar) => calendar.calendar_name,
 		);
 
-		// First load = all selected
 		if (selectedIcsCalendars.value.length === 0) {
 			selectedIcsCalendars.value = [...availableIcsCalendars.value];
 		}
 
 		response.data.forEach((calendar, index) => {
-			// Skip unchecked calendars
-			if (!selectedIcsCalendars.value.includes(calendar.calendar_name)) {
-				return;
-			}
+			if (!selectedIcsCalendars.value.includes(calendar.calendar_name)) return;
 
 			const color = icsCalendarColors[index % icsCalendarColors.length];
-
 			const parsed = parseIcsToEvents(
 				calendar.ics_data,
 				userStore.user.id,
@@ -133,12 +146,14 @@ async function fetchIcsEvents() {
 			allParsedEvents.push(...parsed);
 		});
 
+		// Save to cache
+		calendarStore.setIcsCache(allParsedEvents);
+
 		icsEvents.value = allParsedEvents;
 
 		const nonIcsEvents = events.value.filter(
 			(e) => e.extendedProps?.source !== "ics",
 		);
-
 		events.value = [...nonIcsEvents, ...allParsedEvents];
 
 		calendarOptions.value = {
@@ -146,9 +161,11 @@ async function fetchIcsEvents() {
 			events: [...events.value],
 		};
 
-		toast.success(
-			`Načítaných ${allParsedEvents.length} ICS udalostí z kalendárov: ${loadedCalendarNames.join(", ")}`,
-		);
+		if (loadedCalendarNames.length > 0) {
+			toast.success(
+				`Načítaných ${allParsedEvents.length} ICS udalostí z kalendárov: ${loadedCalendarNames.join(", ")}`,
+			);
+		}
 	} catch (err) {
 		console.error("Error fetching ICS events:", err);
 		toast.error("Nepodarilo sa načítať ICS udalosti.");
@@ -156,6 +173,164 @@ async function fetchIcsEvents() {
 		icsLoading.value = false;
 	}
 }
+
+// async function fetchIcsEvents(forceRefresh = false) {
+// 	// Return cached events if still valid
+// 	if (!forceRefresh && calendarStore.isIcsCacheValid()) {
+// 		const cachedEvents = calendarStore.icsEventCache;
+
+// 		const nonIcsEvents = events.value.filter(
+// 			(e) => e.extendedProps?.source !== "ics",
+// 		);
+// 		events.value = [...nonIcsEvents, ...cachedEvents];
+// 		calendarOptions.value = {
+// 			...calendarOptions.value,
+// 			events: [...events.value],
+// 		};
+// 		return;
+// 	}
+
+// 	icsLoading.value = true;
+
+// 	try {
+// 		const response = await axios.get(`${config.public.apiUrl}proxy-ics-all`, {
+// 			headers: {
+// 				Authorization: `Bearer ${authStore.token}`,
+// 			},
+// 		});
+
+// 		let allParsedEvents = [];
+// 		const loadedCalendarNames = [];
+
+// 		availableIcsCalendars.value = response.data.map(
+// 			(calendar) => calendar.calendar_name,
+// 		);
+
+// 		if (selectedIcsCalendars.value.length === 0) {
+// 			selectedIcsCalendars.value = [...availableIcsCalendars.value];
+// 		}
+
+// 		response.data.forEach((calendar, index) => {
+// 			if (!selectedIcsCalendars.value.includes(calendar.calendar_name)) {
+// 				return;
+// 			}
+
+// 			const color = icsCalendarColors[index % icsCalendarColors.length];
+// 			const parsed = parseIcsToEvents(
+// 				calendar.ics_data,
+// 				userStore.user.id,
+// 				color,
+// 			);
+
+// 			parsed.forEach((event) => {
+// 				event.extendedProps.calendar = calendar.calendar_name;
+// 			});
+
+// 			if (parsed.length > 0) {
+// 				loadedCalendarNames.push(calendar.calendar_name);
+// 			}
+
+// 			allParsedEvents.push(...parsed);
+// 		});
+
+// 		// Store in cache
+// 		calendarStore.setIcsCache(allParsedEvents);
+
+// 		icsEvents.value = allParsedEvents;
+
+// 		const nonIcsEvents = events.value.filter(
+// 			(e) => e.extendedProps?.source !== "ics",
+// 		);
+// 		events.value = [...nonIcsEvents, ...allParsedEvents];
+
+// 		calendarOptions.value = {
+// 			...calendarOptions.value,
+// 			events: [...events.value],
+// 		};
+
+// 		if (loadedCalendarNames.length > 0) {
+// 			toast.success(
+// 				`Načítaných ${allParsedEvents.length} ICS udalostí z kalendárov: ${loadedCalendarNames.join(", ")}`,
+// 			);
+// 		}
+// 	} catch (err) {
+// 		console.error("Error fetching ICS events:", err);
+// 		toast.error("Nepodarilo sa načítať ICS udalosti.");
+// 	} finally {
+// 		icsLoading.value = false;
+// 	}
+// }
+
+// async function fetchIcsEvents() {
+// 	icsLoading.value = true;
+
+// 	try {
+// 		const response = await axios.get(`${config.public.apiUrl}proxy-ics-all`, {
+// 			headers: {
+// 				Authorization: `Bearer ${authStore.token}`,
+// 			},
+// 		});
+
+// 		let allParsedEvents = [];
+// 		const loadedCalendarNames = [];
+
+// 		availableIcsCalendars.value = response.data.map(
+// 			(calendar) => calendar.calendar_name,
+// 		);
+
+// 		// First load = all selected
+// 		if (selectedIcsCalendars.value.length === 0) {
+// 			selectedIcsCalendars.value = [...availableIcsCalendars.value];
+// 		}
+
+// 		response.data.forEach((calendar, index) => {
+// 			// Skip unchecked calendars
+// 			if (!selectedIcsCalendars.value.includes(calendar.calendar_name)) {
+// 				return;
+// 			}
+
+// 			const color = icsCalendarColors[index % icsCalendarColors.length];
+
+// 			const parsed = parseIcsToEvents(
+// 				calendar.ics_data,
+// 				userStore.user.id,
+// 				color,
+// 			);
+
+// 			parsed.forEach((event) => {
+// 				event.extendedProps.calendar = calendar.calendar_name;
+// 			});
+
+// 			if (parsed.length > 0) {
+// 				loadedCalendarNames.push(calendar.calendar_name);
+// 			}
+
+// 			allParsedEvents.push(...parsed);
+// 		});
+
+// 		icsEvents.value = allParsedEvents;
+
+// 		const nonIcsEvents = events.value.filter(
+// 			(e) => e.extendedProps?.source !== "ics",
+// 		);
+
+// 		events.value = [...nonIcsEvents, ...allParsedEvents];
+
+// 		calendarOptions.value = {
+// 			...calendarOptions.value,
+// 			events: [...events.value],
+// 		};
+
+// 		toast.success(
+// 			`Načítaných ${allParsedEvents.length} ICS udalostí z kalendárov: ${loadedCalendarNames.join(", ")}`,
+// 		);
+// 	} catch (err) {
+// 		console.error("Error fetching ICS events:", err);
+// 		toast.error("Nepodarilo sa načítať ICS udalosti.");
+// 	} finally {
+// 		icsLoading.value = false;
+// 	}
+// }
 
 const toggleIcsCalendar = async (calendarName) => {
 	if (selectedIcsCalendars.value.includes(calendarName)) {
@@ -165,9 +340,20 @@ const toggleIcsCalendar = async (calendarName) => {
 	} else {
 		selectedIcsCalendars.value.push(calendarName);
 	}
-
-	await fetchIcsEvents();
+	await fetchIcsEvents(true);
 };
+
+// const toggleIcsCalendar = async (calendarName) => {
+// 	if (selectedIcsCalendars.value.includes(calendarName)) {
+// 		selectedIcsCalendars.value = selectedIcsCalendars.value.filter(
+// 			(name) => name !== calendarName,
+// 		);
+// 	} else {
+// 		selectedIcsCalendars.value.push(calendarName);
+// 	}
+
+// 	await fetchIcsEvents();
+// };
 
 // async function fetchIcsEvents() {
 // 	icsLoading.value = true;
@@ -611,6 +797,26 @@ onMounted(async () => {
 	await userStore.fetchUser();
 
 	await fetchIcsEvents();
+
+	if (!calendarStore.icsRefreshInterval) {
+		calendarStore.setIcsRefreshInterval(
+			setInterval(
+				async () => {
+					console.log(
+						"[ICS] Auto-refresh triggered at",
+						new Date().toLocaleTimeString(),
+					);
+					await fetchIcsEvents(true);
+					console.log(
+						"[ICS] Auto-refresh complete at",
+						new Date().toLocaleTimeString(),
+					);
+				},
+				5 * 60 * 1000,
+			),
+		);
+	}
+
 	await userStore.userGetCalendarNames();
 
 	console.log("isc_link value:", userStore.user.ics_link);
@@ -892,13 +1098,14 @@ const deleteSharedEventsId = (userId) => {
 // ✅ Updated: calls new /with-microsoft endpoint to get both DB + Outlook events
 
 const addSharedEventsId = async (userId, isTransitive = false) => {
+	loadingSharedUser.value = true;
 	const userIdString = String(userId);
 
-	// Prevent loading the same user twice
-	if (loadedSharedUserIds.value.has(userIdString)) return;
+	if (loadedSharedUserIds.value.has(userIdString)) {
+		loadingSharedUser.value = false;
+		return;
+	}
 	loadedSharedUserIds.value.add(userIdString);
-
-	loadingStateCalendar.value = true;
 
 	try {
 		const response = await axios.get(
@@ -917,7 +1124,6 @@ const addSharedEventsId = async (userId, isTransitive = false) => {
 		);
 
 		if (response?.data) {
-			// Handle DB activities
 			if (response.data.activities?.length) {
 				const sharedEvents = transformData(response.data.activities);
 
@@ -934,7 +1140,6 @@ const addSharedEventsId = async (userId, isTransitive = false) => {
 				events.value = [...events.value, ...sharedEvents];
 			}
 
-			// Handle Microsoft events
 			if (response.data.microsoft_events?.length) {
 				const sharedMicrosoftEvents = response.data.microsoft_events.map(
 					(event) => {
@@ -986,20 +1191,121 @@ const addSharedEventsId = async (userId, isTransitive = false) => {
 	} catch (error) {
 		console.error("Error loading shared user events:", error);
 	} finally {
-		loadingStateCalendar.value = false;
+		loadingSharedUser.value = false;
 	}
 };
 
+// const addSharedEventsId = async (userId, isTransitive = false) => {
+// 	loadingStateCalendar.value = true;
+// 	const userIdString = String(userId);
+
+// 	// Prevent loading the same user twice
+// 	if (loadedSharedUserIds.value.has(userIdString)) return;
+// 	loadedSharedUserIds.value.add(userIdString);
+
+// 	loadingStateCalendar.value = true;
+
+// 	try {
+// 		const response = await axios.get(
+// 			`${config.public.apiUrl}get-activities-by-creator/${userId}/with-microsoft`,
+// 			{
+// 				params: {
+// 					month: currentLoadedMonth.value ?? new Date().getMonth() + 1,
+// 					year: currentLoadedYear.value ?? new Date().getFullYear(),
+// 					transitive: isTransitive,
+// 				},
+// 				headers: {
+// 					Authorization: `Bearer ${authStore.token}`,
+// 					"Content-Type": "application/json",
+// 				},
+// 			},
+// 		);
+
+// 		if (response?.data) {
+// 			// Handle DB activities
+// 			if (response.data.activities?.length) {
+// 				const sharedEvents = transformData(response.data.activities);
+
+// 				const rawActivities = toRaw(calendarStore.shared_activities);
+// 				const currentActivities = Array.isArray(rawActivities)
+// 					? rawActivities
+// 					: Object.values(rawActivities)[0] || [];
+
+// 				calendarStore.shared_activities = [
+// 					...currentActivities,
+// 					...response.data.activities,
+// 				];
+
+// 				events.value = [...events.value, ...sharedEvents];
+// 			}
+
+// 			// Handle Microsoft events
+// 			if (response.data.microsoft_events?.length) {
+// 				const sharedMicrosoftEvents = response.data.microsoft_events.map(
+// 					(event) => {
+// 						if (!calendarStore.userColors[event.created_id]) {
+// 							const userIds = Object.keys(calendarStore.userColors).length;
+// 							calendarStore.userColors[event.created_id] =
+// 								pastelColors[userIds % pastelColors.length];
+// 						}
+// 						const color = calendarStore.userColors[event.created_id];
+
+// 						return {
+// 							id: event.microsoft_id,
+// 							title: event.subject || "Bez názvu",
+// 							start: event.start,
+// 							end: event.end,
+// 							allDay: event.isAllDay ?? false,
+// 							backgroundColor: color,
+// 							borderColor: color,
+// 							user_id: event.created_id,
+// 							extendedProps: {
+// 								source: "microsoft",
+// 								location: event.location,
+// 								link: event.joinUrl,
+// 								note: event.note,
+// 								organizer: event.organizer,
+// 								attendees: event.attendees,
+// 								calendar: event.calendar,
+// 								importance: "normal",
+// 							},
+// 						};
+// 					},
+// 				);
+
+// 				events.value = [...events.value, ...sharedMicrosoftEvents];
+// 			}
+
+// 			calendarOptions.value = {
+// 				...calendarOptions.value,
+// 				events: [...events.value],
+// 			};
+
+// 			if (response.data.confirmed_share_user_id?.length) {
+// 				await userStore.fetchTransitiveSharedUsers(
+// 					response.data.confirmed_share_user_id,
+// 					userId,
+// 				);
+// 			}
+// 		}
+// 	} catch (error) {
+// 		console.error("Error loading shared user events:", error);
+// 	} finally {
+// 		loadingStateCalendar.value = false;
+// 	}
+// };
+
 const recentEvents = computed(() => {
 	const now = new Date();
-	const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
-	const endOfDay = new Date(now);
+
+	const endOfDay = new Date();
 	endOfDay.setHours(23, 59, 59, 999);
 
 	return currentEvents.value
 		.filter((event) => {
 			const eventStart = new Date(event.start);
-			return eventStart >= twoHoursAgo && eventStart <= endOfDay;
+
+			return eventStart >= now && eventStart <= endOfDay;
 		})
 		.sort((a, b) => {
 			return new Date(a.start) - new Date(b.start);
@@ -1364,18 +1670,37 @@ const deleteMicrosoftEvent = async (eventId) => {
 
 const isLoggedInWithMicrosoft = ref(false);
 
-const toggleMyActivities = () => {
-	const userId = useUserStore().user.id;
+const toggleMyActivities = (isChecked) => {
+	const userId = userStore.user.id;
 
-	if (!calendarStore.showOnlyMine) {
+	if (!isChecked) {
+		// Hide — save current events and filter out all mine
 		calendarStore.originalEvents = [...events.value];
 
-		events.value = calendarStore.originalEvents.filter(
-			(event) => event.user_id !== userId,
-		);
+		events.value = calendarStore.originalEvents.filter((event) => {
+			// Hide my DB and shared DB events by user_id
+			if (String(event.user_id) === String(userId)) return false;
+
+			// Hide my Microsoft events
+			if (
+				event.extendedProps?.source === "microsoft" &&
+				String(event.user_id) === String(userId)
+			)
+				return false;
+
+			// Hide my Google events
+			if (event.extendedProps?.source === "google") return false;
+
+			// Hide my ICS events
+			if (event.extendedProps?.source === "ics") return false;
+
+			return true;
+		});
+
 		toast.success("Boli skryté vaše aktivity.");
 		calendarStore.showOnlyMine = true;
 	} else {
+		// Restore all saved events
 		events.value = [...calendarStore.originalEvents];
 		toast.success("Boli obnovené vaše aktivity.");
 		calendarStore.showOnlyMine = false;
@@ -1386,6 +1711,29 @@ const toggleMyActivities = () => {
 		events: [...events.value],
 	};
 };
+
+// const toggleMyActivities = () => {
+// 	const userId = useUserStore().user.id;
+
+// 	if (!calendarStore.showOnlyMine) {
+// 		calendarStore.originalEvents = [...events.value];
+
+// 		events.value = calendarStore.originalEvents.filter(
+// 			(event) => event.user_id !== userId,
+// 		);
+// 		toast.success("Boli skryté vaše aktivity.");
+// 		calendarStore.showOnlyMine = true;
+// 	} else {
+// 		events.value = [...calendarStore.originalEvents];
+// 		toast.success("Boli obnovené vaše aktivity.");
+// 		calendarStore.showOnlyMine = false;
+// 	}
+
+// 	calendarOptions.value = {
+// 		...calendarOptions.value,
+// 		events: [...events.value],
+// 	};
+// };
 
 const showMicrosoftEventsOnCalendar = ref(true);
 
@@ -1413,6 +1761,29 @@ const isMounted = ref(false);
 		<loadigcomponent
 			v-if="calendarStore.loadingState || loadingStateCalendar.value"
 		/>
+
+		<div
+			v-if="loadingSharedUser"
+			class="fixed top-6 left-1/2 z-50 flex items-center gap-3 bg-white border border-gray-200 rounded-xl shadow-lg px-4 py-2.5 text-sm text-gray-700 pointer-events-none"
+		>
+			<svg
+				class="animate-spin h-4 w-4 text-blue-500 shrink-0"
+				xmlns="http://www.w3.org/2000/svg"
+				fill="none"
+				viewBox="0 0 24 24"
+			>
+				<circle
+					class="opacity-25"
+					cx="12"
+					cy="12"
+					r="10"
+					stroke="currentColor"
+					stroke-width="4"
+				/>
+				<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+			</svg>
+			Načítavajú sa zdieľané udalosti...
+		</div>
 
 		<!-- ICS Loading Banner -->
 		<div
@@ -1489,7 +1860,7 @@ const isMounted = ref(false);
 						</label>
 					</div>
 					<div class="demo-app-sidebar-section text-black rounded-b-[30px]">
-						<h2 class="underline">Recent Events:</h2>
+						<h2 class="underline">Nasledujúce udalosti:</h2>
 						<ul class="">
 							<li
 								v-for="event in recentEvents"
@@ -1532,13 +1903,13 @@ const isMounted = ref(false);
 								<img src="/public/google_icon.png" alt="logo" />
 							</button>
 
-							<button
+							<!-- <button
 								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
 								@click="loginWithGoogle"
 							>
 								<span>Prihlásiť sa pomocou Google</span>
 								<img src="/public/google_icon.png" alt="logo" />
-							</button>
+							</button> -->
 
 							<button
 								v-if="showMicrosoftEventsOnCalendar"
@@ -1558,28 +1929,38 @@ const isMounted = ref(false);
 							</button>
 
 							<button
+								v-if="showMicrosoftEventsOnCalendar"
+								class="bg-blue-500 px-4 rounded-md shadow hover:bg-blue-600 flex items-center gap-2 cursor-pointer w-[240px] py-4 mt-3"
+								@click="fetchIcsEvents(true)"
+								:disabled="icsLoading"
+							>
+								<span v-if="icsLoading">Načítavam...</span>
+								<span v-else>🔄 Obnoviť ICS udalosti</span>
+							</button>
+
+							<!-- <button
 								v-if="!isLoggedInWithMicrosoft"
 								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
 								@click="loginWithMicrosoft"
 							>
 								<span>Prihlásiť pomocou Microsoft</span>
 								<img src="/public/icons8-microsoft-48.png" alt="logo" />
-							</button>
-							<button
+							</button> -->
+							<!-- <button
 								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
 								@click="logoutWithMicrosoft"
 							>
 								<span>Odhlásiť sa z Microsoft účtu</span>
 								<img src="/public/icons8-microsoft-48.png" alt="logo" />
-							</button>
+							</button> -->
 
-							<button
+							<!-- <button
 								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
 								@click="logoutWithGoogle"
 							>
 								<span>Odhlásiť sa z Google účtu</span>
 								<img src="/public/google_icon.png" alt="logo" />
-							</button>
+							</button> -->
 
 							<div
 								class="bg-[#D1D5DB] px-2 py-2 rounded-md shadow flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3 flex flex-col text-center"

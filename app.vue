@@ -46,7 +46,8 @@ onMounted(async () => {
 		await userStore.fetchUsers();
 	}
 
-	await userStore.getSharedUsers();
+	// await userStore.getSharedUsers();
+	await userStore.fetchSharedUsersTree();
 
 	// Initialize OneSignal after user is authenticated
 	initializeOneSignal();
@@ -59,7 +60,7 @@ watch(
 		if (!isLoading.value) {
 			await checkAuth();
 		}
-	}
+	},
 );
 
 // Watch for auth store changes
@@ -67,7 +68,7 @@ watch(
 	() => authStore.token,
 	(newToken) => {
 		isAuthenticated.value = !!newToken;
-	}
+	},
 );
 
 // OneSignal initialization function
@@ -116,7 +117,7 @@ const initializeOneSignal = () => {
 						if (event.current && event.current.id) {
 							await savePlayerIdToBackend(event.current.id);
 						}
-					}
+					},
 				);
 
 				// Save existing subscription if user is authenticated

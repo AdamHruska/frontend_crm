@@ -40,7 +40,7 @@ export const useOfficeStore = defineStore("office", {
 				const sharedIds = Object.values(this.usersSharedWithIDs);
 				await userStore.fetchUsers();
 				this.sharedUsers = userStore.allUsers.filter((user) =>
-					sharedIds.includes(user.id)
+					sharedIds.includes(user.id),
 				);
 				console.log("usersSharedWith:", this.sharedUsers);
 			} catch (error) {
@@ -59,15 +59,15 @@ export const useOfficeStore = defineStore("office", {
 				await axios.post(
 					`${config.public.apiUrl}offices/${userId}/remove-shared-with`,
 					{ user_ids: [userId], office_id: officeId },
-					{ headers: { Authorization: `Bearer ${authStore.token}` } }
+					{ headers: { Authorization: `Bearer ${authStore.token}` } },
 				);
 				this.usersSharedWithIDs = this.usersSharedWithIDs.filter(
-					(id) => id !== userId
+					(id) => id !== userId,
 				);
 
 				// ✅ remove the user object from sharedUsers
 				this.sharedUsers = this.sharedUsers.filter(
-					(user) => user.id !== userId
+					(user) => user.id !== userId,
 				);
 				this.loadingState = false;
 			} catch (error) {
@@ -87,7 +87,7 @@ export const useOfficeStore = defineStore("office", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 
 				this.officesSharedWithMe = response.data.offices;
@@ -114,7 +114,7 @@ export const useOfficeStore = defineStore("office", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 
 				if (!this.usersSharedWithIDs.includes(userId)) {
@@ -144,7 +144,7 @@ export const useOfficeStore = defineStore("office", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 				console.log("Added office:", response.data);
 				console.log("Current offices before adding:", this.offices);
@@ -168,7 +168,7 @@ export const useOfficeStore = defineStore("office", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 				console.log("Updated office:", response.data);
 
@@ -218,7 +218,7 @@ export const useOfficeStore = defineStore("office", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 				this.officeActivities.push(activityData);
 			} catch (error) {
@@ -245,11 +245,11 @@ export const useOfficeStore = defineStore("office", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 
 				const index = this.officeActivities.findIndex(
-					(a) => Number(a.id) === Number(activityData.id)
+					(a) => Number(a.id) === Number(activityData.id),
 				);
 
 				if (index !== -1) {
@@ -275,12 +275,12 @@ export const useOfficeStore = defineStore("office", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 
 				// odstrániť aktivitu zo store
 				this.officeActivities = this.officeActivities.filter(
-					(a) => a.id !== id
+					(a) => a.id !== id,
 				);
 			} catch (error) {
 				console.error("Error deleting office activity:", error);
@@ -296,14 +296,9 @@ export const useOfficeStore = defineStore("office", {
 			try {
 				const response = await axios.get(
 					`${config.public.apiUrl}get-office-activities/${id}`,
-					{
-						headers: {
-							Authorization: `Bearer ${authStore.token}`,
-						},
-					}
+					{ headers: { Authorization: `Bearer ${authStore.token}` } },
 				);
 				this.officeActivities = response.data;
-				console.log("Fetched office activities:", this.officeActivities);
 			} catch (error) {
 				console.error("Error fetching office activities:", error);
 			} finally {
@@ -325,7 +320,7 @@ export const useOfficeStore = defineStore("office", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 
 				//console.log("Found activity ID:", response.data.activity_id);
@@ -350,7 +345,7 @@ export const useOfficeStore = defineStore("office", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 				console.log("Fetched offices admin:", response.data);
 				this.officesAdmin = Array.isArray(response.data)
@@ -366,22 +361,15 @@ export const useOfficeStore = defineStore("office", {
 		async getallOfficeActivites() {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
-			const userStore = useUserStore();
 			this.loadingState = true;
-
 			try {
 				const response = await axios.get(
 					`${config.public.apiUrl}get-all-activities`,
-					{
-						headers: {
-							Authorization: `Bearer ${authStore.token}`,
-						},
-					}
+					{ headers: { Authorization: `Bearer ${authStore.token}` } },
 				);
 				this.allOfficeActivities = response.data.activities;
-				console.log("Fetched all office activities:", response.data.activities);
 			} catch (error) {
-				console.error("Error adding user to office share:", error);
+				console.error("Error fetching all office activities:", error);
 			} finally {
 				this.loadingState = false;
 			}
@@ -415,7 +403,7 @@ export const useOfficeStore = defineStore("office", {
 					{},
 					{
 						headers: { Authorization: `Bearer ${authStore.token}` },
-					}
+					},
 				);
 				this.defaultOfficeId = id;
 			} catch (error) {

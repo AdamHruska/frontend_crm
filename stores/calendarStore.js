@@ -1,5 +1,6 @@
 // stores/calendarStore.js
 import { defineStore } from "pinia";
+import ICAL from "ical.js";
 
 import axios from "axios";
 import { useAuthStore } from "@/stores/authStore";
@@ -19,8 +20,144 @@ export const useCalendarstore = defineStore("calendar", {
 		microsoftEventCache: {}, // Format: {"2025-4": [...events]}
 		googleEventCache: {},
 		userColors: {},
+		icsEventCache: null,
+		icsLastFetched: null,
+		icsRefreshInterval: null,
+		ICS_CACHE_DURATION: 5 * 60 * 1000, // 5 minutes in milliseconds
 	}),
 	actions: {
+		setIcsRefreshInterval(intervalId) {
+			this.icsRefreshInterval = intervalId;
+		},
+
+		clearIcsRefreshInterval() {
+			if (this.icsRefreshInterval) {
+				clearInterval(this.icsRefreshInterval);
+				this.icsRefreshInterval = null;
+			}
+		},
+		startIcsBackgroundRefresh(apiUrl, token, userId, selectedCalendars = []) {
+			// Avoid duplicate intervals
+			if (this.icsRefreshInterval) return;
+
+			this.icsRefreshInterval = setInterval(async () => {
+				this.clearIcsCache();
+				await this.fetchAndCacheIcsEvents(
+					apiUrl,
+					token,
+					userId,
+					selectedCalendars,
+				);
+				console.log(
+					"[ICS] Background refresh complete at",
+					new Date().toLocaleTimeString(),
+				);
+			}, this.ICS_CACHE_DURATION);
+		},
+
+		stopIcsBackgroundRefresh() {
+			if (this.icsRefreshInterval) {
+				clearInterval(this.icsRefreshInterval);
+				this.icsRefreshInterval = null;
+			}
+		},
+		async fetchAndCacheIcsEvents(
+			apiUrl,
+			token,
+			userId,
+			selectedCalendars = [],
+		) {
+			if (this.isIcsCacheValid()) {
+				return this.icsEventCache;
+			}
+
+			const icsCalendarColors = [
+				"#16A34A",
+				"#DC2626",
+				"#F59E0B",
+				"#DB2777",
+				"#0891B2",
+				"#7C3AED",
+				"#65A30D",
+				"#EA580C",
+			];
+
+			try {
+				const response = await axios.get(`${apiUrl}proxy-ics-all`, {
+					headers: { Authorization: `Bearer ${token}` },
+				});
+
+				const availableCalendars = response.data.map((c) => c.calendar_name);
+				const activeCalendars =
+					selectedCalendars.length > 0 ? selectedCalendars : availableCalendars;
+
+				let allParsedEvents = [];
+
+				response.data.forEach((calendar, index) => {
+					if (!activeCalendars.includes(calendar.calendar_name)) return;
+
+					const color = icsCalendarColors[index % icsCalendarColors.length];
+
+					try {
+						const jcalData = ICAL.parse(calendar.ics_data);
+						const comp = new ICAL.Component(jcalData);
+						const vevents = comp.getAllSubcomponents("vevent");
+
+						const parsed = vevents.map((vevent) => {
+							const event = new ICAL.Event(vevent);
+							return {
+								id: `ics-${event.uid}-${Math.random().toString(36).substr(2, 5)}`,
+								title: event.summary || "Bez názvu",
+								start: event.startDate.toJSDate().toISOString(),
+								end: event.endDate?.toJSDate().toISOString() ?? null,
+								allDay: event.startDate.isDate,
+								backgroundColor: color,
+								borderColor: color,
+								user_id: userId,
+								extendedProps: {
+									source: "ics",
+									location: event.location || "",
+									note: event.description || "",
+									organizer: event.organizer || null,
+									calendar: calendar.calendar_name,
+								},
+							};
+						});
+
+						allParsedEvents.push(...parsed);
+					} catch (err) {
+						console.error(
+							`Failed to parse ICS for ${calendar.calendar_name}:`,
+							err,
+						);
+					}
+				});
+
+				this.setIcsCache(allParsedEvents);
+				return allParsedEvents;
+			} catch (err) {
+				console.error("Error fetching ICS events:", err);
+				return [];
+			}
+		},
+		isIcsCacheValid() {
+			return (
+				this.icsEventCache !== null &&
+				this.icsLastFetched !== null &&
+				Date.now() - this.icsLastFetched < this.ICS_CACHE_DURATION
+			);
+		},
+
+		setIcsCache(events) {
+			this.icsEventCache = events;
+			this.icsLastFetched = Date.now();
+		},
+
+		clearIcsCache() {
+			this.icsEventCache = null;
+			this.icsLastFetched = null;
+		},
+
 		async fetchActivities() {
 			this.loadingState = true;
 			const config = useRuntimeConfig();
