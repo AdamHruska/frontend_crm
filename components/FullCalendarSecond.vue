@@ -1006,6 +1006,48 @@ const handleWeekendsToggle = () => {
 
 const selectedMicrosoftEvent = ref(null);
 
+// function handleEventClick(clickInfo) {
+// 	activityID.value = clickInfo.event._def.publicId;
+// 	eventType.value =
+// 		clickInfo.event.extendedProps.source === "microsoft"
+// 			? "microsoft"
+// 			: clickInfo.event.extendedProps.source === "google"
+// 				? "google"
+// 				: "regular";
+
+// 	if (eventType.value === "microsoft") {
+// 		selectedMicrosoftEvent.value = {
+// 			id: clickInfo.event.id,
+// 			title: clickInfo.event.title,
+// 			start: clickInfo.event.start,
+// 			end: clickInfo.event.end,
+// 			location:
+// 				clickInfo.event.extendedProps.location || "Nebola zadaná lokalita",
+// 			link: clickInfo.event.extendedProps.link || "",
+// 			organizer: clickInfo.event.extendedProps.organizer,
+// 			attendees: clickInfo.event.extendedProps.attendees,
+// 			allDay: clickInfo.event.allDay,
+// 			note: clickInfo.event.extendedProps.note || "Žiadna poznámka",
+// 			importance: clickInfo.event.extendedProps.importance || "normal",
+// 		};
+// 		toggleMicrosoftEvents();
+// 	} else if (eventType.value === "google") {
+// 		selectedMicrosoftEvent.value = {
+// 			id: clickInfo.event.id,
+// 			title: clickInfo.event.title,
+// 			start: clickInfo.event.start,
+// 			end: clickInfo.event.end,
+// 			note: clickInfo.event.extendedProps.description || "Žiadna poznámka",
+// 			organizer: clickInfo.event.extendedProps.organizer || null,
+// 			attendees: clickInfo.event.extendedProps.attendees || [],
+// 			calendar: clickInfo.event.extendedProps.calendar || "",
+// 		};
+// 		toggleMicrosoftEvents();
+// 	} else {
+// 		toggleUpdateActivity();
+// 	}
+// }
+
 function handleEventClick(clickInfo) {
 	activityID.value = clickInfo.event._def.publicId;
 	eventType.value =
@@ -1013,36 +1055,26 @@ function handleEventClick(clickInfo) {
 			? "microsoft"
 			: clickInfo.event.extendedProps.source === "google"
 				? "google"
-				: "regular";
+				: clickInfo.event.extendedProps.source === "ics"
+					? "ics" // ← add this
+					: "regular";
 
 	if (eventType.value === "microsoft") {
-		selectedMicrosoftEvent.value = {
-			id: clickInfo.event.id,
-			title: clickInfo.event.title,
-			start: clickInfo.event.start,
-			end: clickInfo.event.end,
-			location:
-				clickInfo.event.extendedProps.location || "Nebola zadaná lokalita",
-			link: clickInfo.event.extendedProps.link || "",
-			organizer: clickInfo.event.extendedProps.organizer,
-			attendees: clickInfo.event.extendedProps.attendees,
-			allDay: clickInfo.event.allDay,
-			note: clickInfo.event.extendedProps.note || "Žiadna poznámka",
-			importance: clickInfo.event.extendedProps.importance || "normal",
-		};
-		toggleMicrosoftEvents();
+		// ... existing microsoft code unchanged
 	} else if (eventType.value === "google") {
+		// ... existing google code unchanged
+	} else if (eventType.value === "ics") {
+		// ← add this block
 		selectedMicrosoftEvent.value = {
 			id: clickInfo.event.id,
 			title: clickInfo.event.title,
 			start: clickInfo.event.start,
 			end: clickInfo.event.end,
-			note: clickInfo.event.extendedProps.description || "Žiadna poznámka",
-			organizer: clickInfo.event.extendedProps.organizer || null,
-			attendees: clickInfo.event.extendedProps.attendees || [],
+			note: clickInfo.event.extendedProps.note || "",
+			location: clickInfo.event.extendedProps.location || "",
 			calendar: clickInfo.event.extendedProps.calendar || "",
 		};
-		toggleMicrosoftEvents();
+		toggleMicrosoftEvents(); // reuse the same detail modal
 	} else {
 		toggleUpdateActivity();
 	}
@@ -1809,14 +1841,30 @@ const isMounted = ref(false);
 			</div>
 		</div>
 
-		<AddActivityCalendar
+		<!-- <AddActivityCalendar
+			v-if="addActivity"
+			@cancelAddActivity="toggleAddActivity"
+			@addNewEvent="addNewEvent"
+			:end_date="end_date"
+		/> -->
+
+		<AddActivityCalendarSecond
 			v-if="addActivity"
 			@cancelAddActivity="toggleAddActivity"
 			@addNewEvent="addNewEvent"
 			:end_date="end_date"
 		/>
 
-		<EventUpdateCalendar
+		<!-- <EventUpdateCalendar
+			:activityID="activityID"
+			:eventType="eventType"
+			v-if="updateActivity"
+			@cancelAddActivity="toggleUpdateActivity"
+			@alterEvents="alterEvents"
+			:user.value="user"
+		/> -->
+
+		<EventUpdateCalendarSecond
 			:activityID="activityID"
 			:eventType="eventType"
 			v-if="updateActivity"

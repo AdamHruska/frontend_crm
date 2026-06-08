@@ -144,7 +144,6 @@ watch([aktivita, datum_cas], ([newAktivita, newDatumCas]) => {
 
 const active = ref([]);
 
-// ── Auto-release office when activity is discarded (future only) ──
 watch(activity_status, async (newStatus) => {
 	if (newStatus !== "discarded") return;
 	if (!officeActivity.value) return;
@@ -252,16 +251,12 @@ function getIdFromString(str) {
 const runUpdateActivity = async () => {
 	changeLoading();
 	try {
-		// ── Cancel Teams meeting if online meeting was just disabled ──
 		if (originalOnlineMeetingValue.value && !onlineMeeting.value) {
 			try {
 				miesto_stretnutia.value = "";
 				await axios.post(
 					`${config.public.apiUrl}cancel-teams-meeting`,
-					{
-						activityId: props.activityID,
-						user_id: userStore.user.id,
-					},
+					{ activityId: props.activityID, user_id: userStore.user.id },
 					{ headers: { Authorization: `Bearer ${authStore.token}` } },
 				);
 				toast.success(
@@ -295,7 +290,6 @@ const runUpdateActivity = async () => {
 			{ headers: { Authorization: `Bearer ${authStore.token}` } },
 		);
 
-		// Sync office activity status
 		try {
 			await axios.post(
 				`${config.public.apiUrl}office-activities/sync-status`,
@@ -311,7 +305,6 @@ const runUpdateActivity = async () => {
 			console.warn("Could not sync office activity status:", syncError.message);
 		}
 
-		// Update email if needed
 		if (onlineMeeting.value && !emailBool.value && email.value) {
 			await axios.patch(
 				`${config.public.apiUrl}contact/${contact.value.id}/email`,
@@ -320,11 +313,9 @@ const runUpdateActivity = async () => {
 			);
 		}
 
-		// Teams meeting - create if newly enabled, update if already existed
 		if (onlineMeeting.value) {
 			try {
 				let teamsResponse;
-
 				if (!originalOnlineMeetingValue.value) {
 					teamsResponse = await axios.post(
 						`${config.public.apiUrl}create-teams-meeting`,
@@ -344,7 +335,6 @@ const runUpdateActivity = async () => {
 					);
 					toast.success("Online stretnutie bolo úspešne aktualizované");
 				}
-
 				if (teamsResponse.data.joinUrl) {
 					response.data.activity.miesto_stretnutia = teamsResponse.data.joinUrl;
 					miesto_stretnutia.value = teamsResponse.data.joinUrl;
@@ -360,20 +350,10 @@ const runUpdateActivity = async () => {
 			}
 		}
 
-		// Create or update office activity
 		if (updateOfficeActivity.value && selectedOffice.value.id) {
-			// const toUtc = (localStr) => {
-			// 	const d = new Date(localStr);
-			// 	d.setHours(d.getHours() - 0);
-			// 	return d.toISOString().slice(0, 19).replace("T", " ");
-			// };
 			const toLocalString = (localStr) => {
 				if (!localStr) return localStr;
-				// Already "yyyy-MM-dd HH:mm:ss" format
-				if (localStr.includes(" ")) {
-					return localStr.substring(0, 19);
-				}
-				// "yyyy-MM-ddTHH:mm" from datetime-local input
+				if (localStr.includes(" ")) return localStr.substring(0, 19);
 				return localStr.replace("T", " ") + ":00";
 			};
 
@@ -419,7 +399,6 @@ const runUpdateActivity = async () => {
 		emit("activityAdded", response.data.activity);
 		emit("alterEvents", response.data.activity);
 
-		// Update so re-editing in same session doesn't re-trigger cancellation
 		originalOnlineMeetingValue.value = onlineMeeting.value;
 
 		setTimeout(() => {
@@ -444,7 +423,6 @@ const updateActivity = async () => {
 		return;
 	}
 
-	// Guard: NewNamesModal
 	if (
 		(aktivita.value === "Analýza osobných financí" ||
 			aktivita.value === "Servisná analýza") &&
@@ -455,7 +433,6 @@ const updateActivity = async () => {
 		return;
 	}
 
-	// Guard: ConfirmEventModal
 	if (
 		aktivita.value === "Prvé stretnutie" &&
 		activity_status.value === "check"
@@ -653,466 +630,423 @@ const handleCloseConfirmEvent = async () => {
 		@submitted="updateActivity"
 		:activityId="props.activityID"
 	/>
+
 	<div
 		class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-40"
 	>
 		<div class="absolute inset-0 bg-gray bg-opacity-50 backdrop-blur-sm"></div>
 		<loadigcomponent v-if="loading" />
 		<form
-			class="relative bg-white bg-white p-6 rounded-lg shadow-lg max-w-md w-full z-10 max-h-[100%] overflow-y-auto"
+			class="relative bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full z-10 max-h-[100vh] overflow-y-auto"
 		>
 			<div class="cursor-pointer" @click="cancelActivity()">
 				<Icon icon="fa6-solid:xmark" class="absolute top-4 right-6" />
 			</div>
-			<div>
-				<div
-					class="flex gap-3 my-4 cursor-pointer hover:bg-gray-200 p-2 border-b-2 border-black"
-					v-if="contact.meno || contact.priezvisko"
-					@click="redirectToContact"
-				>
-					<div>Kontakt:</div>
-					<div>{{ contact.meno }}</div>
-					<div>{{ contact.priezvisko }}</div>
-				</div>
 
-				<div v-if="onlineMeeting">
-					<label
-						class="text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+			<!-- Contact bar -->
+			<div
+				class="flex gap-3 my-4 cursor-pointer hover:bg-gray-200 p-2 border-b-2 border-black"
+				v-if="contact.meno || contact.priezvisko"
+				@click="redirectToContact"
+			>
+				<div>Kontakt:</div>
+				<div>{{ contact.meno }}</div>
+				<div>{{ contact.priezvisko }}</div>
+			</div>
+
+			<!-- Email for online meeting -->
+			<div v-if="onlineMeeting" class="mb-4">
+				<label class="text-sm text-gray-500">
+					{{ emailBool ? "Email kontaktu:" : "Pridať email ku kontaktu:" }}
+				</label>
+				<input
+					v-model="email"
+					type="email"
+					class="w-full mt-2 p-1 bg-gray-200 rounded-lg !text-black pl-2 focus:outline-blue-500"
+					placeholder="Zadajte email ..."
+					required
+				/>
+			</div>
+
+			<!-- ═══ TWO-COLUMN GRID ═══ -->
+			<div class="form-grid">
+				<!-- col 1: Aktivita -->
+				<div class="relative z-0 w-full group">
+					<label class="text-sm text-gray-500">Aktivita</label>
+					<select
+						v-model="aktivita"
+						class="w-full bg-gray-200 rounded-lg p-1 py-2 mt-1 !text-black"
 					>
-						{{ emailBool ? "Email kontaktu:" : "Pridať email ku kontaktu:" }}
-					</label>
+						<option value="Telefonát klient">Telefonát klient</option>
+						<option value="Telefonát nábor">Telefonát nábor</option>
+						<option value="Telefonát">Telefonát</option>
+						<option value="Pohovor">Pohovor</option>
+						<option value="Prvé stretnutie">Prvé stretnutie</option>
+						<option value="Analýza osobných financí">
+							Analýza osobných financí
+						</option>
+						<option value="Servisná analýza">Analýza servisná</option>
+						<option value="poradenstvo nové">Poradenstvo nové</option>
+						<option value="servisné poradenstvo">Poradenstvo servisné</option>
+						<option value="realizácia nová">Realizácia nová</option>
+						<option value="realizácia servisná">Realizácia servisná</option>
+						<option value="konfirmačný servis">Konfirmačný servis</option>
+						<option value="servis">Servis</option>
+						<option value="bringer bonus">Bringer bonus</option>
+						<option value="porada">Porada</option>
+						<option value="vzdelávanie">Vzdelávanie</option>
+						<option value="káva">Káva</option>
+						<option value="stretnutie na zistenie stavu">
+							Stretnutie na zistenie stavu
+						</option>
+						<option value="súkromné">Súkromné</option>
+						<option value="lekár">Lekár</option>
+						<option value="ine">Iné vypíšem sám</option>
+					</select>
 					<input
-						v-model="email"
-						type="email"
-						class="w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500 !text-black"
-						placeholder="Zadajte email ..."
-						required
+						v-model="ina_aktivita"
+						type="text"
+						v-if="ineBool"
+						class="w-full mt-2 p-1 bg-gray-200 rounded-lg !text-black pl-2 focus:outline-blue-500"
+						placeholder="Zadajte aktivitu ..."
 					/>
 				</div>
-			</div>
 
-			<div class="relative z-0 w-full mb-5 mt-2 group">
-				<label
-					class="text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
-					>Aktivita</label
-				>
-				<select
-					v-model="aktivita"
-					class="w-full bg-gray-200 text-white rounded-lg p-1 py-2 mt-1 !text-black"
-				>
-					<option value="Telefonát klient">Telefonát klient</option>
-					<option value="Telefonát nábor">Telefonát nábor</option>
-					<option value="Telefonát">Telefonát</option>
-					<option value="Pohovor">Pohovor</option>
-					<option value="Prvé stretnutie">Prvé stretnutie</option>
-					<option value="Analýza osobných financí">
-						Analýza osobných financí
-					</option>
-					<option value="Servisná analýza">Analýza servisná</option>
-					<option value="poradenstvo nové">Poradenstvo nové</option>
-					<option value="servisné poradenstvo">Poradenstvo servisné</option>
-					<option value="realizácia nová">Realizácia nová</option>
-					<option value="realizácia servisná">Realizácia servisná</option>
-					<option value="konfirmačný servis">Konfirmačný servis</option>
-					<option value="servis">Servis</option>
-					<option value="bringer bonus">Bringer bonus</option>
-					<option value="porada">Porada</option>
-					<option value="vzdelávanie">Vzdelávanie</option>
-					<option value="káva">Káva</option>
-					<option value="stretnutie na zistenie stavu">
-						Stretnutie na zistenie stavu
-					</option>
-					<option value="súkromné">Súkromné</option>
-					<option value="lekár">Lekár</option>
-					<option value="ine">Iné vypíšem sám</option>
-				</select>
-				<input
-					v-model="ina_aktivita"
-					type="text"
-					v-if="ineBool"
-					class="w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500 !text-black"
-					placeholder="Zadajte aktivitu ..."
-				/>
-			</div>
+				<!-- col 2: Status buttons -->
+				<div class="relative z-0 w-full group">
+					<label class="text-sm text-gray-500 block mb-2">Stav aktivity</label>
+					<div class="flex flex-wrap gap-2">
+						<button
+							class="status-btn"
+							:class="{ active: activity_status === 'questionmark' }"
+							title="Otáznik"
+							@click.prevent="activity_status = 'questionmark'"
+						>
+							<Icon icon="pepicons-pencil:question" width="18" />
+						</button>
+						<button
+							class="status-btn status-btn-green"
+							:class="{
+								active:
+									activity_status === 'check' || activity_status === 'accepted',
+							}"
+							title="Dokončené"
+							@click.prevent="activity_status = 'check'"
+						>
+							<Icon icon="fa6-solid:check" width="14" />
+						</button>
+						<button
+							class="status-btn status-btn-red"
+							:class="{ active: activity_status === 'discarded' }"
+							title="Zamietnuté"
+							@click.prevent="activity_status = 'discarded'"
+						>
+							<Icon icon="material-symbols:close" width="18" />
+						</button>
+						<template v-if="aktivita === 'Pohovor'">
+							<button
+								class="status-btn status-btn-blue"
+								:class="{ active: activity_status === 'accepted' }"
+								title="Prijaté"
+								@click.prevent="activity_status = 'accepted'"
+							>
+								<Icon icon="fa6-solid:thumbs-up" width="14" />
+							</button>
+							<button
+								class="status-btn status-btn-orange"
+								:class="{ active: activity_status === 'rejected' }"
+								title="Odmietnuté"
+								@click.prevent="activity_status = 'rejected'"
+							>
+								<Icon icon="fa6-solid:thumbs-down" width="14" />
+							</button>
+						</template>
+					</div>
+				</div>
 
-			<div
-				class="relative z-0 w-full mb-5 mt-2 group"
-				v-if="onlineMeeting == true"
-			>
-				<label
-					class="text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
-					>Dôležitosť</label
-				>
-				<select
-					v-model="importance"
-					class="w-full bg-gray-200 text-white rounded-lg p-1 py-2 mt-1 !text-black"
-				>
-					<option value="low">Nízka</option>
-					<option value="normal">Normálna</option>
-					<option value="high">Vysoká</option>
-				</select>
-				<input
-					v-model="ina_aktivita"
-					type="text"
-					v-if="ineBool"
-					class="w-full mt-3 p-1 bg-slate-700 rounded-lg text-white pl-2 focus:outline-blue-500"
-					placeholder="Zadajte aktivitu ..."
-				/>
-			</div>
-
-			<div class="relative z-0 w-full mb-6 group">
-				<input
-					v-model="onlineMeeting"
-					type="checkbox"
-					class="bg-slate-700 rounded-lg text-white pl-2 focus:outline-blue-500 mr-4"
-				/>
-				<label
-					class="!text-black text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
-					>Online Meeting</label
-				>
-			</div>
-
-			<div class="relative z-0 w-full mb-5 mt-6 group">
-				<input
-					v-model="datum_cas"
-					type="datetime-local"
-					step="900"
-					name="datum_cas"
-					id="floating_datum_cas"
-					class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer pr-10"
-					placeholder=" "
-				/>
-				<span
-					class="absolute right-9 top-1/2 transform -translate-y-1/2 pointer-events-none"
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						class="h-5 w-5 text-black"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
+				<!-- col 1: Importance (only when onlineMeeting) -->
+				<div class="relative z-0 w-full group" v-if="onlineMeeting">
+					<label class="text-sm text-gray-500">Dôležitosť</label>
+					<select
+						v-model="importance"
+						class="w-full bg-gray-200 rounded-lg p-1 py-2 mt-1 !text-black"
 					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M8 7V3m8 4V3M3 11h18M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-						/>
-					</svg>
-				</span>
-				<label
-					for="floating_datum_cas"
-					class="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
-					>Dátum a čas začatia</label
-				>
-			</div>
+						<option value="low">Nízka</option>
+						<option value="normal">Normálna</option>
+						<option value="high">Vysoká</option>
+					</select>
+				</div>
 
-			<div class="relative z-0 w-full mb-5 group">
-				<input
-					v-model="koniec"
-					type="datetime-local"
-					step="900"
-					name="datum_cas_koniec"
-					id="floating_datum_cas_koniec"
-					class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer pr-10"
-					placeholder=" "
-				/>
-				<span
-					class="absolute right-9 top-1/2 transform -translate-y-1/2 pointer-events-none"
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						class="h-5 w-5 text-black"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M8 7V3m8 4V3M3 11h18M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-						/>
-					</svg>
-				</span>
-				<label
-					for="floating_datum_cas_koniec"
-					class="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
-					>Dátum a čas ukončenia</label
-				>
-			</div>
-
-			<div class="relative z-0 w-full mb-5 group">
-				<textarea
-					v-model="poznamka"
-					name="poznamka"
-					rows="3"
-					class="!text-black block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-					placeholder=" "
-				></textarea>
-				<label
-					class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
-				>
-					Poznámka k aktivite
-				</label>
-			</div>
-
-			<div
-				v-if="
-					onlineMeeting && miesto_stretnutia && isValidUrl(miesto_stretnutia)
-				"
-				class="mb-4"
-			>
-				<label class="text-sm text-gray-500">Link na online stretnutie:</label>
-				<a
-					:href="miesto_stretnutia"
-					target="_blank"
-					class="block mt-1 text-blue-600 hover:underline text-sm overflow-hidden whitespace-nowrap text-ellipsis"
-					:title="miesto_stretnutia"
-				>
-					Otvoriť Teams stretnutie
-				</a>
-			</div>
-
-			<div class="relative z-0 w-full mb-5 group" v-if="!onlineMeeting">
-				<label
-					class="text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
-				>
-					Miesto stretnutia
-				</label>
+				<!-- col 2 (or full): Online Meeting checkbox -->
 				<div
-					v-if="miesto_stretnutia && isValidUrl(miesto_stretnutia)"
-					class="mt-3"
+					class="relative z-0 w-full group flex items-center"
+					:class="{ 'span-2': !onlineMeeting }"
 				>
+					<input
+						v-model="onlineMeeting"
+						type="checkbox"
+						class="bg-slate-700 rounded-lg text-white focus:outline-blue-500 mr-3"
+					/>
+					<label class="!text-black text-sm">Online Meeting</label>
+				</div>
+
+				<!-- col 1: Dátum začatia -->
+				<div class="relative z-0 w-full group">
+					<input
+						v-model="datum_cas"
+						type="datetime-local"
+						step="900"
+						class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+						placeholder=" "
+					/>
+					<label
+						class="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+					>
+						Dátum a čas začatia
+					</label>
+				</div>
+
+				<!-- col 2: Dátum ukončenia -->
+				<div class="relative z-0 w-full group">
+					<input
+						v-model="koniec"
+						type="datetime-local"
+						step="900"
+						class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+						placeholder=" "
+					/>
+					<label
+						class="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+					>
+						Dátum a čas ukončenia
+					</label>
+				</div>
+
+				<!-- full: Poznámka -->
+				<div class="relative z-0 w-full group span-2">
+					<textarea
+						v-model="poznamka"
+						name="poznamka"
+						rows="2"
+						class="!text-black block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+						placeholder=" "
+					></textarea>
+					<label
+						class="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+					>
+						Poznámka k aktivite
+					</label>
+				</div>
+
+				<!-- full: Teams link -->
+				<div
+					v-if="
+						onlineMeeting && miesto_stretnutia && isValidUrl(miesto_stretnutia)
+					"
+					class="span-2"
+				>
+					<label class="text-sm text-gray-500"
+						>Link na online stretnutie:</label
+					>
 					<a
 						:href="miesto_stretnutia"
 						target="_blank"
-						class="text-blue-600 hover:underline block w-4/5 overflow-hidden whitespace-nowrap text-ellipsis"
+						class="block mt-1 text-blue-600 hover:underline text-sm overflow-hidden whitespace-nowrap text-ellipsis"
 						:title="miesto_stretnutia"
 					>
-						{{ miesto_stretnutia }}
+						Otvoriť Teams stretnutie
 					</a>
+				</div>
+
+				<!-- col 1: Miesto stretnutia -->
+				<div class="relative z-0 w-full group" v-if="!onlineMeeting">
+					<label class="text-sm text-gray-500">Miesto stretnutia</label>
+					<div
+						v-if="miesto_stretnutia && isValidUrl(miesto_stretnutia)"
+						class="mt-2"
+					>
+						<a
+							:href="miesto_stretnutia"
+							target="_blank"
+							class="text-blue-600 hover:underline block w-4/5 overflow-hidden whitespace-nowrap text-ellipsis"
+							:title="miesto_stretnutia"
+						>
+							{{ miesto_stretnutia }}
+						</a>
+						<input
+							v-model="miesto_stretnutia"
+							type="text"
+							class="!text-black w-full mt-1 p-1 bg-gray-200 rounded-lg pl-2 focus:outline-blue-500"
+							placeholder="Zadajte miesto stretnutia ..."
+						/>
+					</div>
 					<input
+						v-else
 						v-model="miesto_stretnutia"
 						type="text"
-						class="!text-black w-full mt-1 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500"
+						class="!text-black w-full mt-2 p-1 bg-gray-200 rounded-lg pl-2 focus:outline-blue-500"
 						placeholder="Zadajte miesto stretnutia ..."
 					/>
 				</div>
-				<input
-					v-else
-					v-model="miesto_stretnutia"
-					type="text"
-					class="!text-black w-full mt-3 p-1 bg-gray-200 rounded-lg text-white pl-2 focus:outline-blue-500"
-					placeholder="Zadajte miesto stretnutia ..."
-				/>
-			</div>
 
-			<div class="relative z-0 w-full mb-5 group">
-				<div
-					@click="toggleOffices"
-					class="flex justify-between w-full cursor-pointer p-2 bg-gray-200 rounded-lg text-black"
-				>
-					<div>{{ selectedOffice.name }}</div>
-					<svg
-						class="-mr-1 h-5 w-5 text-gray-400"
-						xmlns="http://www.w3.org/2000/svg"
-						fill="currentColor"
-						viewBox="0 0 20 20"
-						aria-hidden="true"
-					>
-						<path
-							fill-rule="evenodd"
-							clip-rule="evenodd"
-							d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
-						/>
-					</svg>
-				</div>
-				<div
-					v-if="showOffices"
-					class="w-full bg-gray-200 rounded-lg !text-black flex flex-col mt-1 max-h-[150px] overflow-y-auto"
-				>
-					<ul class="m-0 p-0 list-none">
-						<li
-							v-for="office in allOffices"
-							:key="office.id"
-							@click="selectOffice(office)"
-							:class="[
-								'hover:bg-gray-300 my-0 p-2 rounded-sm',
-								officeAvailability[office.id] &&
-								!officeAvailability[office.id].isFree
-									? 'border-2 border-red-500 bg-red-50'
-									: '',
-							]"
-						>
-							<div class="flex justify-between items-center">
-								<span>{{ office.name }}</span>
-								<span
-									v-if="
-										officeAvailability[office.id] &&
-										!officeAvailability[office.id].isFree
-									"
-									class="text-xs text-red-600 ml-2"
-								>
-									(Obsadená)
-								</span>
-							</div>
-						</li>
-					</ul>
-				</div>
-			</div>
-
-			<div class="flex justify-end mt-1" v-if="officeActivity">
-				<button
-					type="button"
-					@click="freeOffice"
-					:disabled="deletingOfficeActivity"
-					class="free-office-btn"
-				>
-					<Icon icon="material-symbols:lock-open" width="14" height="14" />
-					<span v-if="deletingOfficeActivity">Uvoľňujem...</span>
-					<span v-else>Uvoľniť kanceláriu</span>
-				</button>
-			</div>
-
-			<div class="flex justify-between px-12 pb-4" v-if="showVDD">
-				<label class="cursor-pointer flex flex-col items-center gap-4">
-					<span
-						class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300 !text-black"
-						>Volané</span
-					>
-					<input
-						type="checkbox"
-						value="1"
-						class="sr-only peer"
-						v-model="volane"
-					/>
+				<!-- col 2: Kancelária -->
+				<div class="relative z-0 w-full group">
+					<label class="text-sm text-gray-500 block mb-1">Kancelária</label>
 					<div
-						class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"
-					></div>
-				</label>
-				<div>
-					<label class="cursor-pointer flex flex-col items-center gap-4">
-						<span
-							class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300 !text-black"
-							>Dovolané</span
-						>
-						<input
-							type="checkbox"
-							value="1"
-							class="sr-only peer"
-							v-model="dovolane"
-						/>
-						<div
-							class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"
-						></div>
-					</label>
-				</div>
-				<div>
-					<label class="cursor-pointer flex flex-col items-center gap-4">
-						<span
-							class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300 !text-black"
-							>Dohodnuté</span
-						>
-						<input
-							type="checkbox"
-							value="1"
-							class="sr-only peer"
-							v-model="dohodnute"
-						/>
-						<div
-							class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"
-						></div>
-					</label>
-				</div>
-			</div>
-
-			<div class="flex justify-center gap-4 mb-6">
-				<button
-					class="status-btn"
-					:class="{ active: activity_status === 'questionmark' }"
-					title="Otáznik"
-					@click.prevent="activity_status = 'questionmark'"
-				>
-					<Icon icon="pepicons-pencil:question" width="18" />
-				</button>
-				<button
-					class="status-btn status-btn-green"
-					:class="{
-						active:
-							activity_status === 'check' || activity_status === 'accepted',
-					}"
-					title="Dokončené"
-					@click.prevent="activity_status = 'check'"
-				>
-					<Icon icon="fa6-solid:check" width="14" />
-				</button>
-				<button
-					class="status-btn status-btn-red"
-					:class="{ active: activity_status === 'discarded' }"
-					title="Zamietnuté"
-					@click.prevent="activity_status = 'discarded'"
-				>
-					<Icon icon="material-symbols:close" width="18" />
-				</button>
-				<template v-if="aktivita === 'Pohovor'">
-					<button
-						class="status-btn status-btn-blue"
-						:class="{ active: activity_status === 'accepted' }"
-						title="Prijaté"
-						@click.prevent="activity_status = 'accepted'"
+						@click="toggleOffices"
+						class="flex justify-between w-full cursor-pointer p-2 bg-gray-200 rounded-lg text-black"
 					>
-						<Icon icon="fa6-solid:thumbs-up" width="14" />
+						<div>{{ selectedOffice.name }}</div>
+						<svg
+							class="-mr-1 h-5 w-5 text-gray-400"
+							xmlns="http://www.w3.org/2000/svg"
+							fill="currentColor"
+							viewBox="0 0 20 20"
+						>
+							<path
+								fill-rule="evenodd"
+								clip-rule="evenodd"
+								d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+							/>
+						</svg>
+					</div>
+					<div
+						v-if="showOffices"
+						class="w-full bg-gray-200 rounded-lg !text-black flex flex-col mt-1 max-h-[150px] overflow-y-auto"
+					>
+						<ul class="m-0 p-0 list-none">
+							<li
+								v-for="office in allOffices"
+								:key="office.id"
+								@click="selectOffice(office)"
+								:class="[
+									'hover:bg-gray-300 my-0 p-2 rounded-sm',
+									officeAvailability[office.id] &&
+									!officeAvailability[office.id].isFree
+										? 'border-2 border-red-500 bg-red-50'
+										: '',
+								]"
+							>
+								<div class="flex justify-between items-center">
+									<span>{{ office.name }}</span>
+									<span
+										v-if="
+											officeAvailability[office.id] &&
+											!officeAvailability[office.id].isFree
+										"
+										class="text-xs text-red-600 ml-2"
+										>(Obsadená)</span
+									>
+								</div>
+							</li>
+						</ul>
+					</div>
+				</div>
+
+				<!-- full: Free office button -->
+				<div class="flex justify-end span-2" v-if="officeActivity">
+					<button
+						type="button"
+						@click="freeOffice"
+						:disabled="deletingOfficeActivity"
+						class="free-office-btn"
+					>
+						<Icon icon="material-symbols:lock-open" width="14" height="14" />
+						<span v-if="deletingOfficeActivity">Uvoľňujem...</span>
+						<span v-else>Uvoľniť kanceláriu</span>
+					</button>
+				</div>
+
+				<!-- col 1: VDD toggles -->
+				<div class="relative z-0 w-full group" v-if="showVDD">
+					<label class="text-sm text-gray-500 block mb-2"
+						>Volané / Dovolané / Dohodnuté</label
+					>
+					<div class="flex justify-between px-2">
+						<label class="cursor-pointer flex flex-col items-center gap-3">
+							<span class="text-sm font-medium !text-black">Volané</span>
+							<input
+								type="checkbox"
+								value="1"
+								class="sr-only peer"
+								v-model="volane"
+							/>
+							<div
+								class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"
+							></div>
+						</label>
+						<label class="cursor-pointer flex flex-col items-center gap-3">
+							<span class="text-sm font-medium !text-black">Dovolané</span>
+							<input
+								type="checkbox"
+								value="1"
+								class="sr-only peer"
+								v-model="dovolane"
+							/>
+							<div
+								class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"
+							></div>
+						</label>
+						<label class="cursor-pointer flex flex-col items-center gap-3">
+							<span class="text-sm font-medium !text-black">Dohodnuté</span>
+							<input
+								type="checkbox"
+								value="1"
+								class="sr-only peer"
+								v-model="dohodnute"
+							/>
+							<div
+								class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"
+							></div>
+						</label>
+					</div>
+				</div>
+
+				<!-- col 2 (or full if no VDD): Notifications -->
+				<div
+					class="relative z-0 w-full group flex flex-col justify-center"
+					:class="{ 'span-2': !showVDD }"
+				>
+					<label class="text-sm text-gray-500 mb-2">Vytvoriť notifikáciu</label>
+					<div class="flex items-center gap-3">
+						<span
+							v-for="n in [15, 30, 60]"
+							:key="n"
+							@click="setActive(n)"
+							class="bg-slate-200 px-3 py-1.5 rounded-lg border-2 cursor-pointer transition"
+							:class="active.includes(n) ? 'border-blue-500 bg-blue-100' : ''"
+							>{{ n }}</span
+						>
+					</div>
+				</div>
+
+				<!-- full: Action buttons -->
+				<div
+					v-if="
+						userStore.user.id == activity_creator ||
+						(people &&
+							people.length > 0 &&
+							people[0].shared_author == userStore.user.id)
+					"
+					class="flex justify-center items-center gap-6 span-2 mt-2"
+				>
+					<button
+						type="button"
+						@click="updateActivity()"
+						class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center"
+					>
+						Upraviť
 					</button>
 					<button
-						class="status-btn status-btn-orange"
-						:class="{ active: activity_status === 'rejected' }"
-						title="Odmietnuté"
-						@click.prevent="activity_status = 'rejected'"
+						type="button"
+						@click="deleteActivity()"
+						class="text-white bg-red-500 hover:bg-red-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center"
 					>
-						<Icon icon="fa6-solid:thumbs-down" width="14" />
+						Vymazať
 					</button>
-				</template>
-			</div>
-
-			<div class="relative z-0 w-full mb-2 group flex items-center">
-				<label class="text-sm text-gray-500">Vytvoriť notifikáciu</label>
-				<div class="flex justify-center items-center gap-4 ml-9">
-					<span
-						v-for="n in [15, 30, 60]"
-						:key="n"
-						@click="setActive(n)"
-						class="bg-slate-200 px-2 py-1.5 rounded-lg border-2 cursor-pointer transition"
-						:class="active.includes(n) ? 'border-blue-500 bg-blue-100' : ''"
-						>{{ n }}</span
-					>
 				</div>
 			</div>
-
-			<div
-				v-if="
-					userStore.user.id == activity_creator ||
-					(people &&
-						people.length > 0 &&
-						people[0].shared_author == userStore.user.id)
-				"
-				class="flex justify-center items-center mt-3 gap-6"
-			>
-				<button
-					type="button"
-					@click="updateActivity()"
-					class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-				>
-					Upraviť
-				</button>
-				<button
-					type="button"
-					@click="deleteActivity()"
-					class="text-white bg-red-500 hover:bg-red-700 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center dark:bg-red-500 dark:hover:bg-red-60"
-				>
-					Vymazať
-				</button>
-			</div>
+			<!-- ═══ END GRID ═══ -->
 		</form>
 	</div>
 </template>
@@ -1120,6 +1054,23 @@ const handleCloseConfirmEvent = async () => {
 <style scoped>
 * {
 	text: black !important;
+}
+.form-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 14px 24px;
+	align-items: start;
+}
+.form-grid .span-2 {
+	grid-column: 1 / -1;
+}
+@media (max-width: 520px) {
+	.form-grid {
+		grid-template-columns: 1fr;
+	}
+	.form-grid .span-2 {
+		grid-column: 1;
+	}
 }
 .status-btn {
 	padding: 8px;
@@ -1150,7 +1101,7 @@ const handleCloseConfirmEvent = async () => {
 	padding: 8px 12px;
 	border-radius: 8px;
 	background-color: #cecbcb;
-	margin-bottom: 16px;
+	margin-bottom: 8px;
 }
 .free-office-btn:hover {
 	background-color: #b3b0b0;

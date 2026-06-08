@@ -23,6 +23,9 @@ const todoItems = ref([]);
 
 const yesterDayUncompletedActivities = ref([]);
 
+const allUncompletedActivities = ref([]);
+const showingAllUncompletedActivities = ref(false);
+
 // Add current date state for pagination
 const currentDate = ref(new Date());
 
@@ -33,6 +36,25 @@ const showingAllTodos = ref(false);
 const showingTodosWithoutContact = ref(false);
 
 const contactNames = reactive({});
+
+const showAllUncompletedActivities = async () => {
+	activeGroup.value = "allUncompleted";
+
+	showingAllUncompletedActivities.value = true;
+	showingAllTodos.value = false;
+	showingTodosWithoutContact.value = false;
+
+	const response = await axios.get(
+		`${config.public.apiUrl}get-all-uncompleted-activities`,
+		{
+			headers: {
+				Authorization: `Bearer ${authStore.token}`,
+			},
+		},
+	);
+
+	allUncompletedActivities.value = response.data.activities;
+};
 
 const loadContactName = async (contactId) => {
 	if (!contactId || contactNames[contactId]) return;
@@ -903,6 +925,12 @@ const getNowForDatetimeLocal = () => {
 						Bez kontaktu
 					</button>
 					<button
+						class="show-all-button !bg-orange-500 hover:!bg-orange-600"
+						@click="showAllUncompletedActivities"
+					>
+						Všetky nedokončené aktivity
+					</button>
+					<button
 						v-if="showingAllTodos || showingTodosWithoutContact"
 						class="today-button"
 						@click="goToToday"
@@ -1091,6 +1119,42 @@ const getNowForDatetimeLocal = () => {
 										Vymazať
 									</button>
 								</div>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+
+				<h3 class="font-semibold mb-2 mt-6">Všetky nedokončené aktivity:</h3>
+
+				<table
+					class="todo-table mb-8 w-full"
+					v-if="showingAllUncompletedActivities"
+				>
+					<thead>
+						<tr>
+							<th>Aktivita</th>
+							<th>Plánovaná</th>
+							<th>Kontakt</th>
+							<th>Poznámka</th>
+							<th>Status</th>
+						</tr>
+					</thead>
+
+					<tbody>
+						<tr v-for="item in allUncompletedActivities" :key="item.id">
+							<td>{{ item.aktivita }}</td>
+							<td>{{ formatDateTime(item.datumCas) }}</td>
+							<td>
+								<a
+									:href="'/contact/' + item.contact_id"
+									class="text-blue-700 hover:underline"
+								>
+									{{ item.meno }} {{ item.priezvisko }}
+								</a>
+							</td>
+							<td>{{ item.poznamka || "Žiadna poznámka" }}</td>
+							<td>
+								{{ item.activity_status }}
 							</td>
 						</tr>
 					</tbody>

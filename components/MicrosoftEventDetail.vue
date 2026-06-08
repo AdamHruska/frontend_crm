@@ -13,7 +13,7 @@ const props = defineProps({
 const showNote = ref(false);
 
 onMounted(() => {
-	console.log("google Event Detail Props:", props);
+	console.log("google Event Detail Props:", props.eventType);
 });
 
 // Extrahuj meeting link z note textu (Teams, Meet, Zoom...)
@@ -358,7 +358,7 @@ const closeModal = () => {
 					</div>
 
 					<button
-						v-if="props.event.id"
+						v-if="props.event.id && eventType === 'microsoft'"
 						@click="$emit('deleteMicrosoftEvent', props.event.id)"
 						class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-400 hover:scale-105 flex items-center"
 					>

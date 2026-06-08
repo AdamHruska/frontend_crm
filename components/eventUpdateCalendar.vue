@@ -7,6 +7,7 @@ import axios from "axios";
 const props = defineProps({
 	activityID: String,
 	user: Object,
+	eventType: String,
 });
 
 import { useUserStore } from "#imports";
@@ -38,14 +39,16 @@ const importance = ref("normal");
 const datum_cas = ref("");
 const koniec = ref("");
 const poznamka = ref("");
-const volane = ref("");
-const dovolane = ref("");
+const volane = ref(0);
+const dovolane = ref(0);
 const dohodnute = ref(0);
 const ineBool = ref(false);
 const miesto_stretnutia = ref("");
 const onlineMeeting = ref(false);
 const activity_creator = ref("");
 const activity_status = ref("");
+
+const isIcsEvent = computed(() => props.eventType === "ics");
 
 const officeAvailability = ref({});
 
@@ -66,14 +69,22 @@ const checkOfficeAvailability = (officeId, newDatum, newKoniec) => {
 	if (!newDatum || !newKoniec)
 		return { isFree: true, overlappingActivity: null };
 
-	const newStart = new Date(newDatum.replace(" ", "T"));
-	const newEnd = new Date(newKoniec.replace(" ", "T"));
+	const parseLocal = (str) => {
+		const normalized = str.replace(" ", "T").substring(0, 16);
+		const [datePart, timePart] = normalized.split("T");
+		const [year, month, day] = datePart.split("-").map(Number);
+		const [hours, minutes] = timePart.split(":").map(Number);
+		return new Date(year, month - 1, day, hours, minutes);
+	};
+
+	const newStart = parseLocal(newDatum);
+	const newEnd = parseLocal(newKoniec);
 
 	const overlappingActivity = officeStore.allOfficeActivities.find(
 		(activity) => {
 			if (activity.office_id !== officeId) return false;
-			const activityStart = new Date(activity.datum_cas.replace(" ", "T"));
-			const activityEnd = new Date(activity.koniec.replace(" ", "T"));
+			const activityStart = parseLocal(activity.datum_cas);
+			const activityEnd = parseLocal(activity.koniec);
 			return newStart < activityEnd && activityStart < newEnd;
 		},
 	);
@@ -220,13 +231,9 @@ onMounted(async () => {
 	datum_cas.value = response.data.activity.datumCas;
 	koniec.value = response.data.activity.koniec;
 	poznamka.value = response.data.activity.poznamka;
-	volane.value = response.data.activity.volane;
-	dovolane.value = response.data.activity.dovolane;
-	if (response.data.activity.dohodnute === 1) {
-		dohodnute.value = true;
-	} else {
-		dohodnute.value = false;
-	}
+	volane.value = !!response.data.activity.volane;
+	dovolane.value = !!response.data.activity.dovolane;
+	dohodnute.value = !!response.data.activity.dohodnute;
 
 	ineBool.value = response.data.activity.ineBool;
 	miesto_stretnutia.value = response.data.activity.miesto_stretnutia;
@@ -313,8 +320,8 @@ const runUpdateActivity = async () => {
 				datumCas: datum_cas.value,
 				koniec: koniec.value,
 				poznamka: poznamka.value,
-				volane: volane.value,
-				dovolane: dovolane.value,
+				volane: volane.value ? 1 : 0,
+				dovolane: dovolane.value ? 1 : 0,
 				dohodnute: dohodnute.value ? 1 : 0,
 				miesto_stretnutia: miesto_stretnutia.value,
 				online_meeting: onlineMeeting.value,
@@ -700,8 +707,19 @@ const changeLoading = () => {
 	loading.value = !loading.value;
 };
 
+watch(volane, (newValue) => {
+	if (!newValue) {
+		dovolane.value = false;
+		dohodnute.value = false;
+	}
+});
+
 watch(dovolane, (newValue) => {
-	if (newValue) volane.value = true;
+	if (newValue) {
+		volane.value = true;
+	} else {
+		dohodnute.value = false;
+	}
 });
 
 watch(dohodnute, (newValue) => {

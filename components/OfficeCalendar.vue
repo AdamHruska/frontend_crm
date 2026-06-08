@@ -18,6 +18,39 @@ const props = defineProps({
 		type: [Number, String, null],
 		default: null,
 	},
+	officeUsers: {
+		type: Array,
+		default: () => [],
+	},
+});
+
+const userActivityStats = computed(() => {
+	const activities = officeStore.officeActivities || [];
+	const { startOfMonth, endOfMonth } = getCurrentMonthRange();
+
+	const currentMonthActivities = activities.filter((activity) => {
+		const activityDate = new Date(activity.datum_cas.replace(" ", "T"));
+		return activityDate >= startOfMonth && activityDate <= endOfMonth;
+	});
+
+	const stats = {};
+
+	props.officeUsers.forEach((user) => {
+		stats[user.id] = {
+			user,
+			count: 0,
+		};
+	});
+
+	currentMonthActivities.forEach((activity) => {
+		const userId = activity.owner_id;
+
+		if (stats[userId]) {
+			stats[userId].count++;
+		}
+	});
+
+	return Object.values(stats);
 });
 
 // form states
@@ -407,6 +440,26 @@ const closeForm = () => {
 
 					<div class="text-xs text-gray-500 mt-1">
 						{{ Math.round((count / activityStats.total) * 100) }}%
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div v-if="userActivityStats.length" class="mt-6">
+			<h4 class="text-md font-semibold mb-3">
+				Aktivity podľa používateľov (tento mesiac)
+			</h4>
+
+			<div class="space-y-2">
+				<div
+					v-for="stat in userActivityStats"
+					:key="stat.user.id"
+					class="flex justify-between bg-slate-50 p-2 rounded-md border"
+				>
+					<div>{{ stat.user.first_name }} {{ stat.user.last_name }}</div>
+
+					<div class="font-bold text-blue-600">
+						{{ stat.count }}
 					</div>
 				</div>
 			</div>

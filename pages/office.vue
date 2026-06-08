@@ -31,7 +31,10 @@
 	<div class="w-full h-[2px] bg-slate-500"></div>
 
 	<div class="mt-8 mx-8 max-h-fit">
-		<OfficeCalendar :ownerId="selectedOfficeOwnerId" />
+		<OfficeCalendar
+			:ownerId="selectedOfficeOwnerId"
+			:officeUsers="currentOfficeUsers"
+		/>
 	</div>
 
 	<div class="mt-8">
@@ -409,4 +412,19 @@ const handleRevokeAccess = async (userId, officeId) => {
 const isDefaultOffice = (officeId) => {
 	return officeStore.defaultOfficeId === officeId;
 };
+
+const currentOfficeUsers = computed(() => {
+	const office = allOffices.value.find((o) => o.id === officeStore.setOfficeID);
+
+	if (!office) return [];
+
+	const sharedIds = Array.isArray(office.shared_with) ? office.shared_with : [];
+
+	// owner + shared users
+	const users = sharedWithUsers.value.filter(
+		(u) => sharedIds.includes(u.id) || u.id === office.creator_id,
+	);
+
+	return users;
+});
 </script>

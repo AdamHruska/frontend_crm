@@ -68,6 +68,7 @@ const delegatedUser = computed(() => {
 	const user = userStore.allUsers.find(
 		(user) => user.id == people.value[0]?.author_id,
 	);
+
 	return user ? `${user.first_name} ${user.last_name}` : "";
 });
 
@@ -96,6 +97,13 @@ const sharedAuthorName = computed(() => {
 	sharedId.value = people.value[0]?.shared_author;
 	if (!sharedId.value) return "";
 	const user = userStore.allUsersAdmin.find((u) => u.id === sharedId.value);
+	return user ? `${user.first_name} ${user.last_name}` : "";
+});
+
+const sharedFromName = computed(() => {
+	const authorId = people.value[0]?.author_id;
+	if (!authorId) return "";
+	const user = userStore.allUsersAdmin.find((u) => u.id == authorId);
 	return user ? `${user.first_name} ${user.last_name}` : "";
 });
 
@@ -137,6 +145,7 @@ const findPerson = async (id) => {
 			showWrongNumberButton.value = response.data.contact.wrong_number == 0;
 		}
 		author_id.value = response.data.contact.author_id;
+		console.log("Fetched contact:", people.value[0]);
 	} catch (error) {
 		console.error("Error fetching contact:", error);
 	}
@@ -349,6 +358,41 @@ const currentActivity = ref(null);
 
 const selectedActivityId = ref(null);
 
+// const changeActivityStatus = async (row, status) => {
+// 	const originalStatus = row.activity_status;
+// 	try {
+// 		if (row.aktivita === "Prvé stretnutie" && status === "check") {
+// 			changeConfirmEventModal();
+// 			pendingFirstMeetingRow.value = row;
+// 			return;
+// 		}
+// 		if (status === "discarded") {
+// 			currentActivity.value = row;
+// 			changeDiscardActivityModal();
+// 		}
+// 		if (
+// 			(row.aktivita === "Analýza osobných financí" && status === "check") ||
+// 			(row.aktivita === "Servisná analýza" && status === "check")
+// 		) {
+// 			selectedActivityId.value = row.id;
+// 			console.log(
+// 				"Selected activity ID for new names:",
+// 				selectedActivityId.value,
+// 			);
+// 			changeShowNewNamesModal();
+// 		}
+// 		row.activity_status = status;
+// 		await axios.patch(
+// 			`${config.public.apiUrl}activities/${row.id}/status`,
+// 			{ activity_status: status },
+// 			{ headers: { Authorization: `Bearer ${authStore.token}` } },
+// 		);
+// 	} catch (error) {
+// 		row.activity_status = originalStatus;
+// 		console.error("Error updating activity status:", error);
+// 	}
+// };
+
 const changeActivityStatus = async (row, status) => {
 	const originalStatus = row.activity_status;
 	try {
@@ -366,18 +410,32 @@ const changeActivityStatus = async (row, status) => {
 			(row.aktivita === "Servisná analýza" && status === "check")
 		) {
 			selectedActivityId.value = row.id;
-			console.log(
-				"Selected activity ID for new names:",
-				selectedActivityId.value,
-			);
 			changeShowNewNamesModal();
 		}
+
 		row.activity_status = status;
+
 		await axios.patch(
 			`${config.public.apiUrl}activities/${row.id}/status`,
 			{ activity_status: status },
 			{ headers: { Authorization: `Bearer ${authStore.token}` } },
 		);
+
+		// Sync office activity status
+		try {
+			await axios.post(
+				`${config.public.apiUrl}office-activities/sync-status`,
+				{
+					datum_cas: row.datumCas,
+					koniec: row.koniec,
+					owner_id: user_id.value,
+					activity_status: status,
+				},
+				{ headers: { Authorization: `Bearer ${authStore.token}` } },
+			);
+		} catch (syncError) {
+			console.warn("Could not sync office activity status:", syncError.message);
+		}
 	} catch (error) {
 		row.activity_status = originalStatus;
 		console.error("Error updating activity status:", error);
@@ -718,13 +776,28 @@ const contactInitials = computed(() => {
 		:single_contact="people[0]"
 		@alterPerson="updatePerson"
 	/>
-	<AddActivityForm
+
+	<!-- <AddActivityFormSecond
+		:contact_id="id"
+		v-if="AddActivityBool"
+		@cancelAddActivity="changeAddActivityBool"
+		@activityAdded="addActivityToList"
+	/> -->
+
+	<AddActivityFormSecond
 		:contact_id="id"
 		v-if="AddActivityBool"
 		@cancelAddActivity="changeAddActivityBool"
 		@activityAdded="addActivityToList"
 	/>
-	<AlterActivityForm
+
+	<!-- <AlterActivityForm
+		v-if="actityFormBool"
+		:activityID="activityID"
+		@cancelAddActivity="alterActivity"
+	/> -->
+
+	<AlterActivityFormSecond
 		v-if="actityFormBool"
 		:activityID="activityID"
 		@cancelAddActivity="alterActivity"
@@ -763,8 +836,22 @@ const contactInitials = computed(() => {
 					class="badge badge-blue"
 				>
 					<Icon name="i-heroicons-share-20-solid" size="14" />
-					Zdielaný s <strong>{{ sharedAuthorName }}</strong>
+					Zdielaný s<strong>{{ sharedAuthorName }}</strong>
 				</span>
+
+				<span
+					v-if="
+						userStore.user &&
+						people[0]?.shared_author !== null &&
+						people[0]?.shared_author === userStore.user?.id &&
+						people[0]?.author_id !== userStore.user?.id
+					"
+					class="badge badge-blue"
+				>
+					<Icon name="i-heroicons-share-20-solid" size="14" />
+					Zdielaný od<strong>{{ sharedFromName }}</strong>
+				</span>
+
 				<span
 					v-if="
 						people[0]?.who_created_contact == userStore.user?.id &&

@@ -74,25 +74,6 @@
 				</UTooltip>
 
 				<UTooltip
-					text="Štatistika"
-					:ui="{ background: '!bg-white', color: '' }"
-					class=""
-				>
-					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded border-t border-black hover:scale-[105%] transition-transform"
-						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'stats' }"
-						to="/statistics"
-						@click="setActiveTab('stats')"
-					>
-						<Icon
-							icon="simple-icons:soundcharts"
-							style="font-size: 22px"
-							class="text-white"
-						/>
-					</NuxtLink>
-				</UTooltip>
-
-				<UTooltip
 					v-if="contactsStore.lastShowenDetails"
 					text="Posledný zobrazený kontakt"
 					:ui="{ background: '!bg-white', color: '' }"
@@ -100,7 +81,7 @@
 				>
 					<NuxtLink
 						v-if="contactsStore.lastShowenDetails"
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded border-t border-black hover:scale-[105%] transition-transform"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded border-t border- border-black hover:scale-[105%] transition-transform"
 						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'detail' }"
 						:to="`/contact/${contactsStore.lastShowenDetails}`"
 						@click="setActiveTab('detail')"
@@ -116,7 +97,7 @@
 				<UTooltip
 					text="ToDo List"
 					:ui="{ background: '!bg-white', color: '' }"
-					class=""
+					class="mt-auto"
 				>
 					<NuxtLink
 						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
@@ -147,27 +128,6 @@
 					>
 						<Icon
 							icon="hugeicons:office"
-							style="font-size: 36px"
-							class="text-white"
-						/>
-					</NuxtLink>
-				</UTooltip>
-
-				<UTooltip
-					text="Zrušené udalosti"
-					:ui="{ background: '!bg-white', color: '' }"
-					class=""
-				>
-					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
-						:class="{
-							'bg-blue-700 text-gray-200': activeTab === 'declined-events',
-						}"
-						to="/declined-events"
-						@click="setActiveTab('declined-events')"
-					>
-						<Icon
-							icon="material-symbols:filter-alt"
 							style="font-size: 36px"
 							class="text-white"
 						/>
@@ -253,6 +213,46 @@
 						<Icon
 							icon="fluent:task-list-square-ltr-16-regular"
 							style="font-size: 36px"
+							class="text-white"
+						/>
+					</NuxtLink>
+				</UTooltip>
+
+				<UTooltip
+					text="Zrušené udalosti"
+					:ui="{ background: '!bg-white', color: '' }"
+					class=""
+				>
+					<NuxtLink
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
+						:class="{
+							'bg-blue-700 text-gray-200': activeTab === 'declined-events',
+						}"
+						to="/declined-events"
+						@click="setActiveTab('declined-events')"
+					>
+						<Icon
+							icon="material-symbols:filter-alt"
+							style="font-size: 36px"
+							class="text-white"
+						/>
+					</NuxtLink>
+				</UTooltip>
+
+				<UTooltip
+					text="Štatistika"
+					:ui="{ background: '!bg-white', color: '' }"
+					class=""
+				>
+					<NuxtLink
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded border-t border-black hover:scale-[105%] transition-transform"
+						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'stats' }"
+						to="/statistics"
+						@click="setActiveTab('stats')"
+					>
+						<Icon
+							icon="simple-icons:soundcharts"
+							style="font-size: 22px"
 							class="text-white"
 						/>
 					</NuxtLink>

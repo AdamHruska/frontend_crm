@@ -61,14 +61,22 @@ const checkOfficeAvailability = (officeId, newDatum, newKoniec) => {
 	if (!newDatum || !newKoniec)
 		return { isFree: true, overlappingActivity: null };
 
-	const newStart = new Date(newDatum.replace(" ", "T"));
-	const newEnd = new Date(newKoniec.replace(" ", "T"));
+	const parseLocal = (str) => {
+		const normalized = str.replace(" ", "T").substring(0, 16);
+		const [datePart, timePart] = normalized.split("T");
+		const [year, month, day] = datePart.split("-").map(Number);
+		const [hours, minutes] = timePart.split(":").map(Number);
+		return new Date(year, month - 1, day, hours, minutes);
+	};
+
+	const newStart = parseLocal(newDatum);
+	const newEnd = parseLocal(newKoniec);
 
 	const overlappingActivity = officeStore.allOfficeActivities.find(
 		(activity) => {
 			if (activity.office_id !== officeId) return false;
-			const activityStart = new Date(activity.datum_cas.replace(" ", "T"));
-			const activityEnd = new Date(activity.koniec.replace(" ", "T"));
+			const activityStart = parseLocal(activity.datum_cas);
+			const activityEnd = parseLocal(activity.koniec);
 			return newStart < activityEnd && activityStart < newEnd;
 		},
 	);
@@ -1282,5 +1290,22 @@ input[type="datetime-local"]::-moz-calendar-picker-indicator {
 /* Optional: pointer cursor */
 input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 	cursor: pointer;
+}
+
+.form-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 10px 20px;
+}
+.form-grid .span-2 {
+	grid-column: 1 / -1;
+}
+@media (max-width: 500px) {
+	.form-grid {
+		grid-template-columns: 1fr;
+	}
+	.form-grid .span-2 {
+		grid-column: 1;
+	}
 }
 </style>
