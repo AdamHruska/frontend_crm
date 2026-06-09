@@ -1056,15 +1056,38 @@ function handleEventClick(clickInfo) {
 			: clickInfo.event.extendedProps.source === "google"
 				? "google"
 				: clickInfo.event.extendedProps.source === "ics"
-					? "ics" // ← add this
+					? "ics"
 					: "regular";
 
 	if (eventType.value === "microsoft") {
-		// ... existing microsoft code unchanged
+		selectedMicrosoftEvent.value = {
+			id: clickInfo.event.id,
+			title: clickInfo.event.title,
+			start: clickInfo.event.start,
+			end: clickInfo.event.end,
+			location:
+				clickInfo.event.extendedProps.location || "Nebola zadaná lokalita",
+			link: clickInfo.event.extendedProps.link || "",
+			organizer: clickInfo.event.extendedProps.organizer,
+			attendees: clickInfo.event.extendedProps.attendees,
+			allDay: clickInfo.event.allDay,
+			note: clickInfo.event.extendedProps.note || "Žiadna poznámka",
+			importance: clickInfo.event.extendedProps.importance || "normal",
+		};
+		toggleMicrosoftEvents();
 	} else if (eventType.value === "google") {
-		// ... existing google code unchanged
+		selectedMicrosoftEvent.value = {
+			id: clickInfo.event.id,
+			title: clickInfo.event.title,
+			start: clickInfo.event.start,
+			end: clickInfo.event.end,
+			note: clickInfo.event.extendedProps.description || "Žiadna poznámka",
+			organizer: clickInfo.event.extendedProps.organizer || null,
+			attendees: clickInfo.event.extendedProps.attendees || [],
+			calendar: clickInfo.event.extendedProps.calendar || "",
+		};
+		toggleMicrosoftEvents();
 	} else if (eventType.value === "ics") {
-		// ← add this block
 		selectedMicrosoftEvent.value = {
 			id: clickInfo.event.id,
 			title: clickInfo.event.title,
@@ -1074,7 +1097,7 @@ function handleEventClick(clickInfo) {
 			location: clickInfo.event.extendedProps.location || "",
 			calendar: clickInfo.event.extendedProps.calendar || "",
 		};
-		toggleMicrosoftEvents(); // reuse the same detail modal
+		toggleMicrosoftEvents();
 	} else {
 		toggleUpdateActivity();
 	}
