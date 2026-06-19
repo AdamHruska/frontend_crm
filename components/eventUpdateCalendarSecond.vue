@@ -48,6 +48,8 @@ const onlineMeeting = ref(false);
 const activity_creator = ref("");
 const activity_status = ref("");
 
+const originalDuration = ref(0);
+
 const isIcsEvent = computed(() => props.eventType === "ics");
 
 const officeAvailability = ref({});
@@ -113,6 +115,13 @@ watch(
 	},
 	{ deep: true },
 );
+
+// Auto-flag office activity for update when times change and one already exists
+watch([datum_cas, koniec], () => {
+	if (officeActivity.value) {
+		updateOfficeActivity.value = true;
+	}
+});
 
 const emailBool = ref(false);
 const email = ref("");
@@ -218,6 +227,9 @@ onMounted(async () => {
 	dovolane.value = !!response.data.activity.dovolane;
 	dohodnute.value = !!response.data.activity.dohodnute;
 
+	originalDuration.value =
+		new Date(koniec.value).getTime() - new Date(datum_cas.value).getTime();
+
 	ineBool.value = response.data.activity.ineBool;
 	miesto_stretnutia.value = response.data.activity.miesto_stretnutia;
 	onlineMeeting.value = response.data.activity.online_meeting == 1;
@@ -252,6 +264,22 @@ onMounted(async () => {
 		};
 	} else {
 		doesOfficeActivityExist.value = false;
+	}
+});
+
+import { add, parseISO, format } from "date-fns";
+
+watch([aktivita, datum_cas], ([newAktivita, newDatumCas]) => {
+	if (!newAktivita || !newDatumCas) return;
+
+	const val = newAktivita.toLowerCase().trim();
+
+	if (val.startsWith("telefonát")) {
+		const newEndTime = add(parseISO(newDatumCas), { minutes: 5 });
+		koniec.value = format(newEndTime, "yyyy-MM-dd'T'HH:mm");
+	} else {
+		const newEndTime = add(parseISO(newDatumCas), { hours: 1 });
+		koniec.value = format(newEndTime, "yyyy-MM-dd'T'HH:mm");
 	}
 });
 
@@ -466,6 +494,7 @@ const deleteActivity = async () => {
 	event.preventDefault();
 	await officeStore.deleteActivity(officeActivityId.value);
 	await calendarStore.deleteActivity(props.activityID);
+	toast.success("Aktivita bola úspešne zmazaná");
 	emit("cancelAddActivity");
 	emit("alterEvents", null);
 };

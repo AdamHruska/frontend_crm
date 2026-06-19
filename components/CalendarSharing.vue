@@ -1,133 +1,161 @@
 <template>
-	<div class="font-[sans-serif] w-[180px] mx-auto" ref="dropdownContainer">
-		<loadigcomponent v-if="loading" />
+	<div class="relative" ref="dropdownContainer">
+		<!-- Blocking overlay when loading -->
+		<div
+			v-if="props.disabled"
+			class="absolute inset-0 bg-white/60 z-10 rounded-lg cursor-not-allowed"
+		/>
 
 		<div
-			v-if="loading"
-			class="flex items-center gap-2 mb-1 text-xs text-gray-500"
+			class="font-[sans-serif] w-[180px] mx-auto transition-opacity duration-200"
+			:class="{ 'opacity-50': props.disabled }"
 		>
-			<svg
-				class="animate-spin h-3 w-3 text-blue-500"
-				xmlns="http://www.w3.org/2000/svg"
-				fill="none"
-				viewBox="0 0 24 24"
+			<loadigcomponent v-if="loading" />
+
+			<div
+				v-if="loading"
+				class="flex items-center gap-2 mb-1 text-xs text-gray-500"
 			>
-				<circle
-					class="opacity-25"
-					cx="12"
-					cy="12"
-					r="10"
-					stroke="currentColor"
-					stroke-width="4"
-				/>
+				<svg
+					class="animate-spin h-3 w-3 text-blue-500"
+					xmlns="http://www.w3.org/2000/svg"
+					fill="none"
+					viewBox="0 0 24 24"
+				>
+					<circle
+						class="opacity-25"
+						cx="12"
+						cy="12"
+						r="10"
+						stroke="currentColor"
+						stroke-width="4"
+					/>
+					<path
+						class="opacity-75"
+						fill="currentColor"
+						d="M4 12a8 8 0 018-8v8z"
+					/>
+				</svg>
+				<span>Načítava...</span>
+			</div>
 
-				<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-			</svg>
-
-			<span>Načítava...</span>
-		</div>
-		<!-- Button to toggle dropdown -->
-
-		<button
-			type="button"
-			@click="toggleDropdown"
-			class="px-4 py-2.5 rounded-[50px] text-white text-sm font-semibold border-none outline-none bg-blue-600 hover:bg-blue-700 active:bg-blue-600"
-		>
-			Zobraziť kalendár
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				class="w-3 fill-white inline ml-3"
-				viewBox="0 0 24 24"
+			<!-- Button to toggle dropdown -->
+			<button
+				type="button"
+				@click="toggleDropdown"
+				class="px-4 py-2.5 rounded-[50px] text-white text-sm font-semibold border-none outline-none bg-blue-600 hover:bg-blue-700 active:bg-blue-600"
 			>
-				<path
-					fill-rule="evenodd"
-					d="M11.99997 18.1669a2.38 2.38 0 0 1-1.68266-.69733l-9.52-9.52a2.38 2.38 0 1 1 3.36532-3.36532l7.83734 7.83734 7.83734-7.83734a2.38 2.38 0 1 1 3.36532 3.36532l-9.52 9.52a2.38 2.38 0 0 1-1.68266.69734z"
-					clip-rule="evenodd"
-					data-original="#000000"
-				/>
-			</svg>
-		</button>
+				Zobraziť kalendár
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="w-3 fill-white inline ml-3"
+					viewBox="0 0 24 24"
+				>
+					<path
+						fill-rule="evenodd"
+						d="M11.99997 18.1669a2.38 2.38 0 0 1-1.68266-.69733l-9.52-9.52a2.38 2.38 0 1 1 3.36532-3.36532l7.83734 7.83734 7.83734-7.83734a2.38 2.38 0 1 1 3.36532 3.36532l-9.52 9.52a2.38 2.38 0 0 1-1.68266.69734z"
+						clip-rule="evenodd"
+						data-original="#000000"
+					/>
+				</svg>
+			</button>
 
-		<!-- Dropdown list of users -->
-		<ul
-			v-show="isDropdownOpen"
-			class="shadow-2xl shadow-gray-400 bg-white py-2 px-2 z-[1000] min-w-full w-max rounded max-h-[500px] overflow-auto"
-		>
-			<!-- Search input -->
-			<li class="mb-2">
-				<input
-					v-model="searchInput"
-					placeholder="Search..."
-					@input="debounceSearch"
-					class="px-4 py-2.5 w-full rounded text-black text-sm border-none outline-blue-600 bg-gray-50 focus:bg-transparent"
-				/>
-			</li>
-			<!-- User list with checkboxes -->
-			<li
-				v-for="user in filteredUsers"
-				:key="user.id"
-				class="py-2.5 px-4 hover:bg-blue-50 rounded text-black text-sm cursor-pointer"
+			<!-- Dropdown list of users -->
+			<ul
+				v-show="isDropdownOpen"
+				class="shadow-2xl shadow-gray-400 bg-white py-2 px-2 z-[1000] min-w-full w-max rounded max-h-[500px] overflow-auto"
 			>
-				<div class="flex items-center">
+				<!-- Search input -->
+				<li class="mb-2">
+					<input
+						v-model="searchInput"
+						placeholder="Search..."
+						@input="debounceSearch"
+						class="px-4 py-2.5 w-full rounded text-black text-sm border-none outline-blue-600 bg-gray-50 focus:bg-transparent"
+					/>
+				</li>
+				<!-- User list with checkboxes -->
+				<li
+					v-for="user in filteredUsers"
+					:key="user.id"
+					class="py-2.5 px-4 hover:bg-blue-50 rounded text-black text-sm cursor-pointer"
+				>
+					<div class="flex items-center gap-2">
+						<input
+							v-model="user.checked"
+							:id="'checkbox' + user.id"
+							type="checkbox"
+							class="peer w-5 h-5 cursor-pointer checkbox-custom"
+							:disabled="props.disabled"
+							:class="{ 'opacity-40 cursor-not-allowed': props.disabled }"
+							@change="handleCheckboxChange(user, user.checked)"
+						/>
+						<label :for="'checkbox' + user.id" class="cursor-pointer flex-1">
+							{{ user.first_name }} {{ user.last_name }}
+							<span v-if="user.isTransitive" class="text-xs text-gray-400 ml-1"
+								>(zdieľaný)</span
+							>
+						</label>
+						<!-- Color square — only shown when user is checked and color is available -->
+						<div
+							v-if="user.checked"
+							class="h-4 w-4 rounded shrink-0 transition-colors duration-300"
+							:style="{ backgroundColor: getUserColor(user.id) }"
+						/>
+					</div>
+				</li>
+			</ul>
+
+			<div
+				v-if="!isDropdownOpen"
+				class="text-black mt-3 flex flex-col items-center gap-2 text-base font-medium"
+			>
+				<!-- My own calendar row — always blue -->
+				<div class="flex gap-3 items-center">
+					<input
+						v-model="myCalendar"
+						type="checkbox"
+						:disabled="props.disabled"
+						:class="{ 'opacity-40 cursor-not-allowed': props.disabled }"
+						@change="handleMyCalendarChange"
+						class="peer w-5 h-5 cursor-pointer checkbox-custom"
+					/>
+					<div class="">
+						{{ userStore.user?.first_name || "meno" }}
+						{{ userStore.user?.last_name || "priezvisko" }}
+					</div>
+					<div
+						class="h-5 w-5 rounded"
+						style="background-color: rgb(37 99 235)"
+					></div>
+				</div>
+
+				<!-- Checked shared users — color comes from calendarStore.userColors -->
+				<div
+					v-for="user in checkedUsers"
+					:key="user.id"
+					class="flex gap-3 items-center justify-between w-full"
+				>
 					<input
 						v-model="user.checked"
 						:id="'checkbox' + user.id"
 						type="checkbox"
-						class="peer mr-3 w-5 h-5 cursor-pointer checkbox-custom"
+						class="peer w-5 h-5 cursor-pointer checkbox-custom"
+						:disabled="props.disabled"
+						:class="{ 'opacity-40 cursor-not-allowed': props.disabled }"
 						@change="handleCheckboxChange(user, user.checked)"
 					/>
-					<label :for="'checkbox' + user.id" class="cursor-pointer">
+					<div>
 						{{ user.first_name }} {{ user.last_name }}
-						<span v-if="user.isTransitive" class="text-xs text-gray-400 ml-1"
+						<span v-if="user.isTransitive" class="text-xs text-gray-400"
 							>(zdieľaný)</span
 						>
-					</label>
+					</div>
+					<div
+						class="h-5 w-5 rounded transition-colors duration-300"
+						:style="{ backgroundColor: getUserColor(user.id) }"
+					></div>
 				</div>
-			</li>
-		</ul>
-		<div
-			v-if="!isDropdownOpen"
-			class="text-black mt-3 flex flex-col items-center gap-2 text-base font-medium"
-		>
-			<div class="flex gap-3 items-center">
-				<input
-					v-model="myCalendar"
-					type="checkbox"
-					@change="handleMyCalendarChange"
-					class="peer w-5 h-5 cursor-pointer checkbox-custom"
-				/>
-				<div class="">
-					{{ userStore.user?.first_name || "meno" }}
-					{{ userStore.user?.last_name || "priezvisko" }}
-				</div>
-
-				<div
-					class="h-5 w-5 rounded"
-					style="background-color: rgb(37 99 235)"
-				></div>
-			</div>
-			<div
-				v-for="(user, index) in checkedUsers"
-				:key="user.id"
-				class="flex gap-3 items-center justify-between w-full"
-			>
-				<input
-					v-model="user.checked"
-					:id="'checkbox' + user.id"
-					type="checkbox"
-					class="peer w-5 h-5 cursor-pointer checkbox-custom"
-					@change="handleCheckboxChange(user, user.checked)"
-				/>
-				<div>
-					{{ user.first_name }} {{ user.last_name }}
-					<span v-if="user.isTransitive" class="text-xs text-gray-400"
-						>(zdieľaný)</span
-					>
-				</div>
-				<div
-					class="h-5 w-5 rounded"
-					:style="{ backgroundColor: getUserColor(user.id, index) }"
-				></div>
 			</div>
 		</div>
 	</div>
@@ -144,6 +172,13 @@ const calendarStore = useCalendarstore();
 const userStore = useUserStore();
 const config = useRuntimeConfig();
 const authStore = useAuthStore();
+
+const props = defineProps({
+	disabled: {
+		type: Boolean,
+		default: false,
+	},
+});
 
 const myCalendar = ref(true);
 const users = ref([]);
@@ -168,12 +203,10 @@ const pastelColors = [
 	"#FFEAA7",
 ];
 
-const getUserColor = (userId, index) => {
-	if (!calendarStore.userColors[userId]) {
-		calendarStore.userColors[userId] =
-			pastelColors[index % pastelColors.length];
-	}
-	return calendarStore.userColors[userId];
+// Read color from store — set by transformData in parent when activities load.
+// Falls back to a pastel by list index if not yet set (e.g. user has no activities).
+const getUserColor = (userId) => {
+	return calendarStore.userColors[userId] ?? "#cbd5e1";
 };
 
 const emit = defineEmits([
@@ -182,16 +215,9 @@ const emit = defineEmits([
 	"toggleMyActivities",
 ]);
 
-const updateUserColor = (userId, color) => {
-	calendarStore.userColors[userId] = color;
-};
-
-// Initialize auth store
 authStore.loadToken();
 
 const handleMyCalendarChange = () => {
-	console.log("My calendar checkbox changed:", myCalendar.value);
-	//calendarStore.toggleMyActivities();
 	emit("toggleMyActivities", myCalendar.value);
 };
 
@@ -206,13 +232,11 @@ const handleSearch = async () => {
 			},
 		});
 
-		// All users start as UNCHECKED
 		users.value = (response.data.users || []).map((user) => ({
 			...user,
 			checked: false,
 		}));
 
-		// Update store (will be empty array initially)
 		const checkedUsers = users.value.filter((user) => user.checked);
 		calendarStore.setCheckedUsers(checkedUsers);
 	} catch (err) {
@@ -223,100 +247,25 @@ const handleSearch = async () => {
 	}
 };
 
-// const handleSearch = async () => {
-// 	loading.value = true;
-// 	error.value = "";
-
-// 	try {
-// 		const current_user = await axios.get(`${config.public.apiUrl}get-user`, {
-// 			headers: {
-// 				Authorization: `Bearer ${authStore.token}`,
-// 			},
-// 		});
-
-// 		let numbers = [];
-// 		const shareIDs = current_user.data.user.share_user_id;
-
-// 		if (shareIDs) {
-// 			try {
-// 				numbers = Array.isArray(shareIDs)
-// 					? shareIDs.map(Number)
-// 					: JSON.parse(shareIDs).map(Number);
-// 				console.log("Parsed numbers:", numbers);
-// 			} catch (parseError) {
-// 				console.error("Error parsing share_user_id:", parseError);
-// 			}
-// 		}
-
-// 		const response = await axios.get(`${config.public.apiUrl}get-users`, {
-// 			headers: {
-// 				Authorization: `Bearer ${authStore.token}`,
-// 			},
-// 		});
-
-// 		users.value = (response.data.users || []).map((user) => ({
-// 			...user,
-// 			checked: numbers.includes(user.id),
-// 		}));
-
-// 		const checkedUsers = users.value.filter((user) => user.checked);
-// 		calendarStore.setCheckedUsers(checkedUsers);
-// 		console.log("Updated checked users in store:", checkedUsers);
-// 	} catch (err) {
-// 		console.error("Error in handleSearch:", err);
-// 		error.value = err.message || "Error fetching users";
-// 	} finally {
-// 		loading.value = false;
-// 		console.log("HandleSearch completed. Users:", users.value);
-// 	}
-// };
-
-// const filteredUsers = computed(() => {
-// 	const confirmedIds = Object.values(
-// 		userStore.user.confirmed_share_user_id || {}
-// 	).map(String);
-
-// 	if (!searchInput.value) {
-// 		return users.value.filter((user) => confirmedIds.includes(String(user.id)));
-// 	}
-
-// 	const normalizedSearchInput = searchInput.value.toLowerCase();
-// 	return users.value.filter((user) => {
-// 		const userFullName = `${user.first_name} ${user.last_name}`.toLowerCase();
-// 		return (
-// 			userFullName.includes(normalizedSearchInput) &&
-// 			confirmedIds.includes(String(user.id))
-// 		);
-// 	});
-// });
-
-// const filteredUsers = computed(() => {
-// 	// Add null checks for userStore.user and confirmed_share_user_id
-// 	const confirmedIds = userStore.user?.confirmed_share_user_id
-// 		? Object.values(userStore.user.confirmed_share_user_id).map(String)
-// 		: [];
-
-// 	if (!searchInput.value) {
-// 		return users.value.filter((user) => confirmedIds.includes(String(user.id)));
-// 	}
-
-// 	const normalizedSearchInput = searchInput.value.toLowerCase();
-// 	return users.value.filter((user) => {
-// 		const userFullName = `${user.first_name} ${user.last_name}`.toLowerCase();
-// 		return (
-// 			userFullName.includes(normalizedSearchInput) &&
-// 			confirmedIds.includes(String(user.id))
-// 		);
-// 	});
-// });
-
 const filteredUsers = computed(() => {
 	const directUsers = (userStore.sharedUsers || []).map((u) => ({
 		...u,
 		isTransitive: false,
 	}));
-	const transitiveUsers = userStore.transitiveSharedUsers || [];
-	const allUsers = [...directUsers, ...transitiveUsers];
+	const transitiveUsers = (userStore.transitiveSharedUsers || []).map((u) => ({
+		...u,
+		isTransitive: true,
+	}));
+
+	const seen = new Set();
+	const allUsers = [];
+
+	for (const user of [...directUsers, ...transitiveUsers]) {
+		if (!seen.has(user.id)) {
+			seen.add(user.id);
+			allUsers.push(user);
+		}
+	}
 
 	if (!searchInput.value) return allUsers;
 
@@ -329,10 +278,7 @@ const filteredUsers = computed(() => {
 onMounted(async () => {
 	try {
 		await userStore.fetchSharedUsersTree();
-
 		await handleSearch();
-
-		console.log("Initial search completed");
 	} catch (err) {
 		console.error("Error during mount:", err);
 	}
@@ -356,15 +302,12 @@ const handleCheckboxChange = async (user, isChecked) => {
 
 const toggleDropdown = () => {
 	isDropdownOpen.value = !isDropdownOpen.value;
-	console.log("Dropdown toggled:", isDropdownOpen.value);
 };
 
-// Cleanup
 onBeforeUnmount(() => {
 	document.removeEventListener("click", handleClickOutside);
 });
 
-// Click outside handler
 const handleClickOutside = (event) => {
 	if (
 		dropdownContainer.value &&
@@ -374,27 +317,34 @@ const handleClickOutside = (event) => {
 	}
 };
 
-// Add click outside listener after mount
 onMounted(() => {
 	document.addEventListener("click", handleClickOutside);
 });
 
 const checkedUsers = computed(() => {
-	const directChecked = users.value.filter((u) => u.checked);
-	const transitiveChecked = (userStore.transitiveSharedUsers || []).filter(
-		(u) => u.checked,
-	);
-	return [...directChecked, ...transitiveChecked];
+	const seen = new Set();
+	const result = [];
+
+	for (const u of [
+		...users.value,
+		...(userStore.transitiveSharedUsers || []),
+	]) {
+		if (u.checked && !seen.has(u.id)) {
+			seen.add(u.id);
+			result.push(u);
+		}
+	}
+
+	return result;
 });
 </script>
 
 <style scoped>
-/* Hide default checkbox appearance */
 .checkbox-custom {
 	appearance: none;
 	-webkit-appearance: none;
 	background-color: white;
-	border: 2px solid #cbd5e1; /* light-gray border */
+	border: 2px solid #cbd5e1;
 	border-radius: 4px;
 	width: 20px;
 	height: 20px;
@@ -405,13 +355,11 @@ const checkedUsers = computed(() => {
 		border-color 0.2s ease;
 }
 
-/* Style checkbox when checked */
 .checkbox-custom:checked {
-	background-color: #2563eb; /* blue color */
-	border-color: #2563eb; /* change border color when checked */
+	background-color: #2563eb;
+	border-color: #2563eb;
 }
 
-/* Custom checkmark SVG when checked */
 .checkbox-custom:checked::before {
 	content: "";
 	position: absolute;

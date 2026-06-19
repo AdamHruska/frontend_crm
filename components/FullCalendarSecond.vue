@@ -33,27 +33,40 @@ const icsLoading = ref(false);
 
 const selectedIcsCalendars = ref([]);
 const availableIcsCalendars = ref([]);
+const icsGlobalColor = ref("#F59E0B");
 
 const showIcsCalendarDropdown = ref(false);
 
-const getIcsCalendarColor = (calendarName) => {
-	const index = availableIcsCalendars.value.indexOf(calendarName);
+const showContactNames = ref(true);
+const showActivityTitle = ref(true);
 
-	if (index === -1) return "#DB2777";
+// const getIcsCalendarColor = (calendarName) => {
+// 	const index = availableIcsCalendars.value.indexOf(calendarName);
 
-	return icsCalendarColors[index % icsCalendarColors.length];
+// 	if (index === -1) return "#DB2777";
+
+// 	return icsCalendarColors[index % icsCalendarColors.length];
+// };
+
+const ICS_COLOR = "#F59E0B";
+// const getIcsCalendarColor = () => {
+// 	return ICS_COLOR;
+// };
+
+const getIcsCalendarColor = () => {
+	return icsGlobalColor.value;
 };
 
-const icsCalendarColors = [
-	"#16A34A", // green
-	"#DC2626", // red
-	"#F59E0B", // orange
-	"#DB2777", // pink
-	"#0891B2", // cyan
-	"#7C3AED", // violet
-	"#65A30D", // lime
-	"#EA580C", // amber
-];
+// const icsCalendarColors = [
+// 	"#16A34A", // green
+// 	"#DC2626", // red
+// 	"#F59E0B", // orange
+// 	"#DB2777", // pink
+// 	"#0891B2", // cyan
+// 	"#7C3AED", // violet
+// 	"#65A30D", // lime
+// 	"#EA580C", // amber
+// ];
 
 function parseIcsToEvents(icsText, userId, color = "#DB2777") {
 	try {
@@ -92,9 +105,28 @@ const icsRefreshInterval = ref(null);
 
 async function fetchIcsEvents(forceRefresh = false) {
 	console.log("[ICS] fetchIcsEvents called, forceRefresh:", forceRefresh);
+	// if (!forceRefresh && calendarStore.isIcsCacheValid()) {
+	// 	const cachedEvents = calendarStore.icsEventCache;
+	// 	const nonIcsEvents = events.value.filter(
+	// 		(e) => e.extendedProps?.source !== "ics",
+	// 	);
+	// 	events.value = [...nonIcsEvents, ...cachedEvents];
+	// 	calendarOptions.value = {
+	// 		...calendarOptions.value,
+	// 		events: [...events.value],
+	// 	};
+	// 	return;
+	// }
+
 	if (!forceRefresh && calendarStore.isIcsCacheValid()) {
-		console.log("[ICS] Using cache, skipping fetch");
 		const cachedEvents = calendarStore.icsEventCache;
+
+		// ← toto chýbalo
+		availableIcsCalendars.value = calendarStore.icsCalendarNames;
+		if (selectedIcsCalendars.value.length === 0) {
+			selectedIcsCalendars.value = [...availableIcsCalendars.value];
+		}
+
 		const nonIcsEvents = events.value.filter(
 			(e) => e.extendedProps?.source !== "ics",
 		);
@@ -128,7 +160,11 @@ async function fetchIcsEvents(forceRefresh = false) {
 		response.data.forEach((calendar, index) => {
 			if (!selectedIcsCalendars.value.includes(calendar.calendar_name)) return;
 
-			const color = icsCalendarColors[index % icsCalendarColors.length];
+			// const color = icsCalendarColors[index % icsCalendarColors.length];
+			//const color = ICS_COLOR;
+
+			const color = icsGlobalColor.value; // ← single global color
+
 			const parsed = parseIcsToEvents(
 				calendar.ics_data,
 				userStore.user.id,
@@ -147,7 +183,8 @@ async function fetchIcsEvents(forceRefresh = false) {
 		});
 
 		// Save to cache
-		calendarStore.setIcsCache(allParsedEvents);
+		//calendarStore.setIcsCache(allParsedEvents);
+		calendarStore.setIcsCache(allParsedEvents, availableIcsCalendars.value);
 
 		icsEvents.value = allParsedEvents;
 
@@ -795,6 +832,11 @@ const calendarListLoading = ref(false);
 
 onMounted(async () => {
 	await userStore.fetchUser();
+
+	const savedColor = localStorage.getItem("icsGlobalColor");
+	if (savedColor) {
+		icsGlobalColor.value = savedColor;
+	}
 
 	await fetchIcsEvents();
 
@@ -1790,6 +1832,11 @@ const toggleMyActivities = (isChecked) => {
 // 	};
 // };
 
+watch(icsGlobalColor, (color) => {
+	localStorage.setItem("icsGlobalColor", color);
+	fetchIcsEvents(true);
+});
+
 const showMicrosoftEventsOnCalendar = ref(true);
 
 const toggleMicrosoftEventsVisibility = () => {
@@ -1945,9 +1992,41 @@ const isMounted = ref(false);
 						</ul>
 					</div>
 				</div>
+				<div
+					class="demo-app-sidebar-section text-black border-t border-gray-200 pt-3 flex flex-col justify-center items-center mb-6"
+				>
+					<h3
+						class="font-semibold text-sm mb-2 text-gray-600 uppercase tracking-wide"
+					>
+						Zobrazenie udalostí
+					</h3>
+					<div class="">
+						<label
+							class="flex items-center gap-2 text-sm mb-2 cursor-pointer select-none"
+						>
+							<input
+								type="checkbox"
+								v-model="showActivityTitle"
+								class="accent-blue-600"
+							/>
+							<span>Zobraziť názov aktivity</span>
+						</label>
+						<label
+							class="flex items-center gap-2 text-sm cursor-pointer select-none"
+						>
+							<input
+								type="checkbox"
+								v-model="showContactNames"
+								class="accent-blue-600"
+							/>
+							<span>Zobraziť meno kontaktu</span>
+						</label>
+					</div>
+				</div>
 				<div class="shadow pb-4 rounded-b-lg">
 					<CalendarSharing
 						class="mt-4"
+						:disabled="loadingSharedUser"
 						@deleteSharedEventsId="deleteSharedEventsId"
 						@addSharedEventsId="addSharedEventsId"
 						@toggleMyActivities="toggleMyActivities"
@@ -2081,9 +2160,20 @@ const isMounted = ref(false);
 							}}
 						</button>
 
+						<div class="flex items-center justify-between px-2 mt-2">
+							<span class="text-sm font-medium text-gray-700"
+								>Farba ICS udalostí</span
+							>
+							<input
+								type="color"
+								v-model="icsGlobalColor"
+								class="w-10 h-8 cursor-pointer border rounded"
+							/>
+						</div>
+
 						<transition name="fade">
 							<div v-if="showIcsCalendarDropdown" class="mt-3">
-								<div
+								<!-- <div
 									v-for="calendar in availableIcsCalendars"
 									:key="calendar"
 									@click="toggleIcsCalendar(calendar)"
@@ -2103,6 +2193,32 @@ const isMounted = ref(false);
 									"
 								>
 									{{ calendar }}
+								</div> -->
+
+								<div
+									v-for="calendar in availableIcsCalendars"
+									:key="calendar"
+									class="mb-2"
+								>
+									<div
+										@click="toggleIcsCalendar(calendar)"
+										class="w-full rounded-md py-2 px-2 cursor-pointer transition-colors text-center font-medium"
+										:style="
+											selectedIcsCalendars.includes(calendar)
+												? {
+														backgroundColor: getIcsCalendarColor(calendar),
+														color: 'white',
+													}
+												: {}
+										"
+										:class="
+											selectedIcsCalendars.includes(calendar)
+												? ''
+												: 'bg-gray-200 hover:bg-slate-100'
+										"
+									>
+										{{ calendar }}
+									</div>
 								</div>
 							</div>
 						</transition>
@@ -2140,12 +2256,19 @@ const isMounted = ref(false);
 							<div class="event-time">
 								<b>{{ arg.timeText }}</b>
 							</div>
-							<div class="event-title">{{ arg.event.title }}</div>
-							<div class="">
-								<div>
-									{{ arg.event.extendedProps.firstName }}
-									{{ arg.event.extendedProps.lastName }}
-								</div>
+							<div v-if="showActivityTitle" class="event-title">
+								{{ arg.event.title }}
+							</div>
+							<div
+								v-if="
+									showContactNames &&
+									(arg.event.extendedProps.firstName ||
+										arg.event.extendedProps.lastName)
+								"
+								class="event-contact"
+							>
+								{{ arg.event.extendedProps.firstName }}
+								{{ arg.event.extendedProps.lastName }}
 							</div>
 						</div>
 					</template>
@@ -2156,6 +2279,15 @@ const isMounted = ref(false);
 </template>
 
 <style lang="css">
+.event-contact {
+	font-size: 0.75em;
+	opacity: 0.85;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	margin-top: 1px;
+}
+
 .bg-white-force {
 	background-color: #fff !important;
 }

@@ -47,6 +47,30 @@ const closeShareContactsForm = () => {
 	showShareContactsForm.value = false;
 };
 
+const showBjModal = ref(false);
+const bjModalActivityId = ref(null);
+const bjModalActivityName = ref("");
+
+const openBjModal = (activityId, activityName) => {
+	bjModalActivityId.value = activityId;
+	bjModalActivityName.value = activityName;
+	showBjModal.value = true;
+};
+
+const closeBjModal = () => {
+	showBjModal.value = false;
+	bjModalActivityId.value = null;
+	bjModalActivityName.value = "";
+};
+
+const onBjSubmitted = (count) => {
+	// Update the bj_count inline in the local activities array
+	const activity = activities.value.find(
+		(a) => a.id === bjModalActivityId.value,
+	);
+	if (activity) activity.bj_count = count;
+};
+
 const activities_todo = computed(() => {
 	return (todoStore.todosHistory || [])
 		.filter((todo) => todo.contact_id == id)
@@ -224,6 +248,7 @@ const columns_activity = ref([
 	{ key: "dovolane", label: "Dovolané" },
 	{ key: "dohodnute", label: "Dohodnuté" },
 	{ key: "letters", label: "Vyhodnotenie" },
+	{ key: "bj_count", label: "BJ" },
 	{ key: "created_at", label: "Vytvorené" },
 	{ key: "miesto_stretnutia", label: "Miesto" },
 	{ key: "actions" },
@@ -358,59 +383,44 @@ const currentActivity = ref(null);
 
 const selectedActivityId = ref(null);
 
-// const changeActivityStatus = async (row, status) => {
-// 	const originalStatus = row.activity_status;
-// 	try {
-// 		if (row.aktivita === "Prvé stretnutie" && status === "check") {
-// 			changeConfirmEventModal();
-// 			pendingFirstMeetingRow.value = row;
-// 			return;
-// 		}
-// 		if (status === "discarded") {
-// 			currentActivity.value = row;
-// 			changeDiscardActivityModal();
-// 		}
-// 		if (
-// 			(row.aktivita === "Analýza osobných financí" && status === "check") ||
-// 			(row.aktivita === "Servisná analýza" && status === "check")
-// 		) {
-// 			selectedActivityId.value = row.id;
-// 			console.log(
-// 				"Selected activity ID for new names:",
-// 				selectedActivityId.value,
-// 			);
-// 			changeShowNewNamesModal();
-// 		}
-// 		row.activity_status = status;
-// 		await axios.patch(
-// 			`${config.public.apiUrl}activities/${row.id}/status`,
-// 			{ activity_status: status },
-// 			{ headers: { Authorization: `Bearer ${authStore.token}` } },
-// 		);
-// 	} catch (error) {
-// 		row.activity_status = originalStatus;
-// 		console.error("Error updating activity status:", error);
-// 	}
-// };
-
 const changeActivityStatus = async (row, status) => {
 	const originalStatus = row.activity_status;
 	try {
 		if (row.aktivita === "Prvé stretnutie" && status === "check") {
-			changeConfirmEventModal();
-			pendingFirstMeetingRow.value = row;
-			return;
+			const alreadyHasAnalyza = activities.value.some(
+				(a) =>
+					a.aktivita === "Analýza osobných financí" &&
+					a.activity_status !== "discarded",
+			);
+			if (!alreadyHasAnalyza) {
+				changeConfirmEventModal();
+				pendingFirstMeetingRow.value = row;
+				return;
+			}
 		}
+
 		if (status === "discarded") {
 			currentActivity.value = row;
 			changeDiscardActivityModal();
 		}
+
 		if (
 			(row.aktivita === "Analýza osobných financí" && status === "check") ||
 			(row.aktivita === "Servisná analýza" && status === "check")
 		) {
 			selectedActivityId.value = row.id;
 			changeShowNewNamesModal();
+		}
+
+		// ── BJ modal for poradenstvo + realizacia ──
+		const bjActivities = [
+			"poradenstvo nové",
+			"servisné poradenstvo",
+			"realizácia nová",
+			"realizácia servisná",
+		];
+		if (bjActivities.includes(row.aktivita) && status === "check") {
+			openBjModal(row.id, row.aktivita);
 		}
 
 		row.activity_status = status;
@@ -421,7 +431,6 @@ const changeActivityStatus = async (row, status) => {
 			{ headers: { Authorization: `Bearer ${authStore.token}` } },
 		);
 
-		// Sync office activity status
 		try {
 			await axios.post(
 				`${config.public.apiUrl}office-activities/sync-status`,
@@ -441,6 +450,114 @@ const changeActivityStatus = async (row, status) => {
 		console.error("Error updating activity status:", error);
 	}
 };
+
+// const changeActivityStatus = async (row, status) => {
+// 	const originalStatus = row.activity_status;
+// 	try {
+// 		if (row.aktivita === "Prvé stretnutie" && status === "check") {
+// 			const alreadyHasAnalyza = activities.value.some(
+// 				(a) =>
+// 					a.aktivita === "Analýza osobných financí" &&
+// 					a.activity_status !== "discarded",
+// 			);
+
+// 			if (!alreadyHasAnalyza) {
+// 				changeConfirmEventModal();
+// 				pendingFirstMeetingRow.value = row;
+// 				return;
+// 			}
+// 			// Already has a non-discarded analysis — skip modal, fall through
+// 		}
+
+// 		if (status === "discarded") {
+// 			currentActivity.value = row;
+// 			changeDiscardActivityModal();
+// 		}
+
+// 		if (
+// 			(row.aktivita === "Analýza osobných financí" && status === "check") ||
+// 			(row.aktivita === "Servisná analýza" && status === "check")
+// 		) {
+// 			selectedActivityId.value = row.id;
+// 			changeShowNewNamesModal();
+// 		}
+
+// 		row.activity_status = status;
+
+// 		await axios.patch(
+// 			`${config.public.apiUrl}activities/${row.id}/status`,
+// 			{ activity_status: status },
+// 			{ headers: { Authorization: `Bearer ${authStore.token}` } },
+// 		);
+
+// 		try {
+// 			await axios.post(
+// 				`${config.public.apiUrl}office-activities/sync-status`,
+// 				{
+// 					datum_cas: row.datumCas,
+// 					koniec: row.koniec,
+// 					owner_id: user_id.value,
+// 					activity_status: status,
+// 				},
+// 				{ headers: { Authorization: `Bearer ${authStore.token}` } },
+// 			);
+// 		} catch (syncError) {
+// 			console.warn("Could not sync office activity status:", syncError.message);
+// 		}
+// 	} catch (error) {
+// 		row.activity_status = originalStatus;
+// 		console.error("Error updating activity status:", error);
+// 	}
+// };
+
+// const changeActivityStatus = async (row, status) => {
+// 	const originalStatus = row.activity_status;
+// 	try {
+// 		if (row.aktivita === "Prvé stretnutie" && status === "check") {
+// 			changeConfirmEventModal();
+// 			pendingFirstMeetingRow.value = row;
+// 			return;
+// 		}
+// 		if (status === "discarded") {
+// 			currentActivity.value = row;
+// 			changeDiscardActivityModal();
+// 		}
+// 		if (
+// 			(row.aktivita === "Analýza osobných financí" && status === "check") ||
+// 			(row.aktivita === "Servisná analýza" && status === "check")
+// 		) {
+// 			selectedActivityId.value = row.id;
+// 			changeShowNewNamesModal();
+// 		}
+
+// 		row.activity_status = status;
+
+// 		await axios.patch(
+// 			`${config.public.apiUrl}activities/${row.id}/status`,
+// 			{ activity_status: status },
+// 			{ headers: { Authorization: `Bearer ${authStore.token}` } },
+// 		);
+
+// 		// Sync office activity status
+// 		try {
+// 			await axios.post(
+// 				`${config.public.apiUrl}office-activities/sync-status`,
+// 				{
+// 					datum_cas: row.datumCas,
+// 					koniec: row.koniec,
+// 					owner_id: user_id.value,
+// 					activity_status: status,
+// 				},
+// 				{ headers: { Authorization: `Bearer ${authStore.token}` } },
+// 			);
+// 		} catch (syncError) {
+// 			console.warn("Could not sync office activity status:", syncError.message);
+// 		}
+// 	} catch (error) {
+// 		row.activity_status = originalStatus;
+// 		console.error("Error updating activity status:", error);
+// 	}
+// };
 
 const handleConfirmEvent = async () => {
 	try {
@@ -672,6 +789,14 @@ const contactInitials = computed(() => {
 
 <template>
 	<!-- ── Duplicate results modal ── -->
+	<BJCountModal
+		v-if="showBjModal"
+		:activityId="bjModalActivityId"
+		:activityName="bjModalActivityName"
+		@close="closeBjModal"
+		@submitted="onBjSubmitted"
+	/>
+
 	<Teleport to="body">
 		<div
 			v-if="showDuplicateModal"
@@ -1206,6 +1331,37 @@ const contactInitials = computed(() => {
 								</div>
 							</td>
 
+							<!-- BJ count cell -->
+							<td class="td-center td-narrow" @click.stop>
+								<div
+									v-if="
+										[
+											'poradenstvo nové',
+											'servisné poradenstvo',
+											'realizácia nová',
+											'realizácia servisná',
+										].includes(row.aktivita)
+									"
+									class="flex items-center justify-center gap-1"
+								>
+									<span
+										v-if="row.bj_count !== null && row.bj_count !== undefined"
+										class="bj-pill"
+									>
+										{{ row.bj_count }} BJ
+									</span>
+									<span v-else class="text-muted text-xs">—</span>
+									<button
+										class="bj-edit-btn"
+										title="Upraviť počet BJ"
+										@click="openBjModal(row.id, row.aktivita)"
+									>
+										✏️
+									</button>
+								</div>
+								<span v-else class="text-muted">—</span>
+							</td>
+
 							<td class="td-mono text-muted">
 								{{ formatDateTime(row.created_at) }}
 							</td>
@@ -1266,6 +1422,34 @@ const contactInitials = computed(() => {
 	--violet: #7c3aed;
 	--radius: 10px;
 	--shadow: 0 1px 4px rgba(0, 0, 0, 0.07), 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+/* ── BJ pill ── */
+.bj-pill {
+	display: inline-block;
+	padding: 2px 8px;
+	background: #f0fdf4;
+	color: #15803d;
+	border: 1px solid #86efac;
+	border-radius: 20px;
+	font-size: 11px;
+	font-weight: 700;
+	white-space: nowrap;
+}
+
+.bj-edit-btn {
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 12px;
+	padding: 1px 3px;
+	border-radius: 4px;
+	opacity: 0.6;
+	transition: opacity 0.15s;
+}
+.bj-edit-btn:hover {
+	opacity: 1;
+	background: #f1f3f7;
 }
 
 /* ── Page ── */

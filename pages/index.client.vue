@@ -617,7 +617,7 @@ const closeMenuOnOutsideClick = (e) => {
 		<div class="flex justify-between">
 			<div class="w-[650px] ml-8 mt-8 mb-2 flex gap-2 items-center">
 				<searchBar @updateResults="handleSearchResults" class="w-[70%]" />
-				<ContactImportComponent />
+				<!-- <ContactImportComponent /> -->
 			</div>
 
 			<div class="flex items-center mb-2">
@@ -812,12 +812,12 @@ const closeMenuOnOutsideClick = (e) => {
 					</button>
 				</UTooltip>
 
-				<button
+				<!-- <button
 					@click="showSelectedContacts"
 					class="bg-green-400 hover:bg-green-500 rounded-lg h-11 mt-8 mr-8 shadow-md px-2 w-auto"
 				>
 					Zobraziť zaklinuté kontakty
-				</button>
+				</button> -->
 			</div>
 		</div>
 

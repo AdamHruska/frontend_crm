@@ -382,24 +382,71 @@ const changeNewNamesModal = (contactId = null) => {
 	}
 };
 
-// Unified handler for status changes — works for BOTH tables
 const changeActivityStatus = async (
 	item,
 	status,
 	isFromAllUncompleted = false,
 ) => {
 	if (item.aktivita === "Prvé stretnutie" && status === "check") {
-		changeConfirmEventModal();
-		pendingFirstMeetingRow.value = item;
+		// Check if a non-discarded Analýza already exists for this contact
+		const activitiesForContact = isFromAllUncompleted
+			? allUncompletedActivities.value
+			: yesterDayUncompletedActivities.value;
+
+		// Also check across both lists combined
+		const allLoaded = [
+			...yesterDayUncompletedActivities.value,
+			...allUncompletedActivities.value,
+		];
+
+		const alreadyHasAnalyza = allLoaded.some(
+			(a) =>
+				a.contact_id === item.contact_id &&
+				a.aktivita === "Analýza osobných financí" &&
+				a.activity_status !== "discarded",
+		);
+
+		if (!alreadyHasAnalyza) {
+			// Also check via API since the Analýza might not be in our local lists
+			try {
+				const response = await axios.get(
+					`${config.public.apiUrl}contacts/${item.contact_id}/activities`,
+					{ headers: { Authorization: `Bearer ${authStore.token}` } },
+				);
+				const contactActivities = response.data.activities ?? [];
+				const hasAnalyzaInDb = contactActivities.some(
+					(a) =>
+						a.aktivita === "Analýza osobných financí" &&
+						a.activity_status !== "discarded",
+				);
+
+				if (!hasAnalyzaInDb) {
+					changeConfirmEventModal();
+					pendingFirstMeetingRow.value = item;
+					return;
+				}
+				// Has Analýza in DB — skip modal, fall through
+			} catch (err) {
+				console.error("Error checking for existing Analýza:", err);
+				// On error, be safe and show the modal
+				changeConfirmEventModal();
+				pendingFirstMeetingRow.value = item;
+				return;
+			}
+		}
+		// Already has a non-discarded Analýza in local lists — skip modal, fall through
 	}
+
 	if (item.aktivita === "Analýza osobných financí" && status === "check") {
 		selectedActivtyId.value = item.id;
 		changeNewNamesModal(item.contact_id);
 	}
+
 	if (status === "discarded") {
 		currentActivity.value = item;
 		changeDiscardActivityModal();
 	}
+
 	try {
 		await axios.patch(
 			`${config.public.apiUrl}activities/${item.id}/status`,
@@ -408,7 +455,6 @@ const changeActivityStatus = async (
 		);
 
 		if (isFromAllUncompleted) {
-			// Remove from allUncompletedActivities list
 			allUncompletedActivities.value = allUncompletedActivities.value.filter(
 				(activity) => activity.id !== item.id,
 			);
@@ -423,6 +469,48 @@ const changeActivityStatus = async (
 		console.error("Error updating activity status:", error);
 	}
 };
+
+// // Unified handler for status changes — works for BOTH tables
+// const changeActivityStatus = async (
+// 	item,
+// 	status,
+// 	isFromAllUncompleted = false,
+// ) => {
+// 	if (item.aktivita === "Prvé stretnutie" && status === "check") {
+// 		changeConfirmEventModal();
+// 		pendingFirstMeetingRow.value = item;
+// 	}
+// 	if (item.aktivita === "Analýza osobných financí" && status === "check") {
+// 		selectedActivtyId.value = item.id;
+// 		changeNewNamesModal(item.contact_id);
+// 	}
+// 	if (status === "discarded") {
+// 		currentActivity.value = item;
+// 		changeDiscardActivityModal();
+// 	}
+// 	try {
+// 		await axios.patch(
+// 			`${config.public.apiUrl}activities/${item.id}/status`,
+// 			{ activity_status: status },
+// 			{ headers: { Authorization: `Bearer ${authStore.token}` } },
+// 		);
+
+// 		if (isFromAllUncompleted) {
+// 			// Remove from allUncompletedActivities list
+// 			allUncompletedActivities.value = allUncompletedActivities.value.filter(
+// 				(activity) => activity.id !== item.id,
+// 			);
+// 		} else {
+// 			yesterDayUncompletedActivities.value =
+// 				yesterDayUncompletedActivities.value.filter(
+// 					(activity) => activity.id !== item.id,
+// 				);
+// 		}
+// 		toast.success("Status aktivity bol úspešne aktualizovaný!");
+// 	} catch (error) {
+// 		console.error("Error updating activity status:", error);
+// 	}
+// };
 
 async function addFinancialAnalysisActivity(contactId, dateTimeStart) {
 	try {

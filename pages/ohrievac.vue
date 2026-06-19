@@ -341,6 +341,17 @@
 									<th
 										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
 									>
+										BJ Porad.
+									</th>
+									<th
+										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
+									>
+										BJ Real.
+									</th>
+
+									<th
+										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
+									>
 										Dni 1.str → real.
 									</th>
 									<th
@@ -410,6 +421,25 @@
 									</td>
 									<td class="px-4 py-3 text-center">
 										<span
+											v-if="row.bjPoradenstvo"
+											class="font-['DM_Mono'] text-emerald-700 font-medium text-sm"
+										>
+											{{ row.bjPoradenstvo }}
+										</span>
+										<span v-else class="text-slate-300">—</span>
+									</td>
+									<td class="px-4 py-3 text-center">
+										<span
+											v-if="row.bjRealizacia"
+											class="font-['DM_Mono'] text-emerald-700 font-medium text-sm"
+										>
+											{{ row.bjRealizacia }}
+										</span>
+										<span v-else class="text-slate-300">—</span>
+									</td>
+
+									<td class="px-4 py-3 text-center">
+										<span
 											v-if="daysBetween(row) !== null"
 											class="inline-block font-['DM_Mono'] text-sm font-medium px-2 py-0.5 rounded-full"
 											:class="
@@ -442,6 +472,56 @@
 									</td>
 								</tr>
 							</tbody>
+							<tfoot>
+								<tr class="border-t-2 border-slate-200 bg-emerald-50">
+									<td
+										colspan="6"
+										class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-widest"
+									>
+										Celkom BJ (Nové):
+									</td>
+									<td class="px-4 py-3 text-center">
+										<span
+											class="inline-block font-['DM_Mono'] text-sm font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800"
+										>
+											{{
+												filteredNove.reduce(
+													(sum, r) => sum + (r.bjPoradenstvo || 0),
+													0,
+												)
+											}}
+										</span>
+									</td>
+									<td class="px-4 py-3 text-center">
+										<span
+											class="inline-block font-['DM_Mono'] text-sm font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800"
+										>
+											{{
+												filteredNove.reduce(
+													(sum, r) => sum + (r.bjRealizacia || 0),
+													0,
+												)
+											}}
+										</span>
+									</td>
+									<td colspan="2" class="px-4 py-3 text-center">
+										<span
+											class="inline-block font-['DM_Mono'] text-base font-bold px-3 py-1 rounded-full bg-emerald-600 text-white"
+										>
+											{{
+												filteredNove.reduce(
+													(sum, r) =>
+														sum +
+														(r.bjPoradenstvo || 0) +
+														(r.bjRealizacia || 0),
+													0,
+												)
+											}}
+											BJ
+										</span>
+									</td>
+								</tr>
+							</tfoot>
 						</table>
 					</div>
 				</section>
@@ -493,6 +573,17 @@
 									>
 										Serv. realizácia
 									</th>
+									<th
+										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
+									>
+										BJ Porad.
+									</th>
+									<th
+										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
+									>
+										BJ Real.
+									</th>
+
 									<th
 										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
 									>
@@ -550,6 +641,25 @@
 									</td>
 									<td class="px-4 py-3 text-center">
 										<span
+											v-if="row.bjPoradenstvo"
+											class="font-['DM_Mono'] text-emerald-700 font-medium text-sm"
+										>
+											{{ row.bjPoradenstvo }}
+										</span>
+										<span v-else class="text-slate-300">—</span>
+									</td>
+									<td class="px-4 py-3 text-center">
+										<span
+											v-if="row.bjRealizacia"
+											class="font-['DM_Mono'] text-emerald-700 font-medium text-sm"
+										>
+											{{ row.bjRealizacia }}
+										</span>
+										<span v-else class="text-slate-300">—</span>
+									</td>
+
+									<td class="px-4 py-3 text-center">
+										<span
 											v-if="row.recommendationsByName !== null"
 											class="font-['DM_Mono'] text-slate-700 font-medium"
 											>{{ row.recommendationsByName }}</span
@@ -566,6 +676,57 @@
 									</td>
 								</tr>
 							</tbody>
+							<tfoot>
+								<tr class="border-t-2 border-slate-200 bg-teal-50">
+									<td
+										colspan="3"
+										class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-widest"
+									>
+										Celkom BJ (Servisné):
+									</td>
+									<td class="px-4 py-3 text-center">
+										<span
+											class="inline-block font-['DM_Mono'] text-sm font-bold px-3 py-1 rounded-full bg-teal-100 text-teal-800"
+										>
+											{{
+												filteredServisne.reduce(
+													(sum, r) => sum + (r.bjPoradenstvo || 0),
+													0,
+												)
+											}}
+										</span>
+									</td>
+									<td class="px-4 py-3 text-center">
+										<span
+											class="inline-block font-['DM_Mono'] text-sm font-bold px-3 py-1 rounded-full bg-teal-100 text-teal-800"
+										>
+											{{
+												filteredServisne.reduce(
+													(sum, r) => sum + (r.bjRealizacia || 0),
+													0,
+												)
+											}}
+										</span>
+									</td>
+									<td class="px-4 py-3 text-center">
+										<span
+											class="inline-block font-['DM_Mono'] text-base font-bold px-3 py-1 rounded-full bg-teal-600 text-white"
+										>
+											{{
+												filteredServisne.reduce(
+													(sum, r) =>
+														sum +
+														(r.bjPoradenstvo || 0) +
+														(r.bjRealizacia || 0),
+													0,
+												)
+											}}
+											BJ
+										</span>
+									</td>
+									<td colspan="2"></td>
+								</tr>
+							</tfoot>
 						</table>
 					</div>
 				</section>
@@ -736,6 +897,33 @@ function daysBetween(row) {
 	return Math.round(diff / 86_400_000);
 }
 
+// const summaryStats = computed(() => {
+// 	const mienAoF = filteredNove.value.reduce(
+// 		(sum, r) => sum + (r.mienAoF || 0),
+// 		0,
+// 	);
+// 	const mienAnalyza = filteredServisne.value.reduce(
+// 		(sum, r) => sum + (r.mienAoF || 0),
+// 		0,
+// 	);
+
+// 	const daysArr = filteredNove.value.map(daysBetween).filter((d) => d !== null);
+// 	const avgDays =
+// 		daysArr.length > 0
+// 			? Math.round(daysArr.reduce((s, d) => s + d, 0) / daysArr.length)
+// 			: null;
+
+// 	return [
+// 		{ label: "Počet mien v nových AOF", value: mienAoF + mienAnalyza },
+// 		{ label: "Počet nových kontaktov", value: newContactsLength.value },
+// 		{ label: "Počet dokončených kontaktov", value: daysArr.length },
+// 		{
+// 			label: "Ø dni 1.str → real.",
+// 			value: avgDays !== null ? `${avgDays}d` : "—",
+// 		},
+// 	];
+// });
+
 const summaryStats = computed(() => {
 	const mienAoF = filteredNove.value.reduce(
 		(sum, r) => sum + (r.mienAoF || 0),
@@ -743,6 +931,15 @@ const summaryStats = computed(() => {
 	);
 	const mienAnalyza = filteredServisne.value.reduce(
 		(sum, r) => sum + (r.mienAoF || 0),
+		0,
+	);
+
+	const bjNove = filteredNove.value.reduce(
+		(sum, r) => sum + (r.bjTotal || 0),
+		0,
+	);
+	const bjServisne = filteredServisne.value.reduce(
+		(sum, r) => sum + (r.bjTotal || 0),
 		0,
 	);
 
@@ -760,6 +957,9 @@ const summaryStats = computed(() => {
 			label: "Ø dni 1.str → real.",
 			value: avgDays !== null ? `${avgDays}d` : "—",
 		},
+		{ label: "BJ nové", value: bjNove },
+		{ label: "BJ servisné", value: bjServisne },
+		{ label: "BJ celkom", value: bjNove + bjServisne },
 	];
 });
 </script>

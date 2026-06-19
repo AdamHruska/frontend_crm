@@ -428,12 +428,12 @@ const addActivity = async () => {
 			},
 		);
 
-		if (activityResponse.data.status === 201) {
-			toast.success("Aktivita bola úspešne pridaná", {
-				position: "top-right",
-				timeout: 5000,
-			});
-		}
+		// if (activityResponse.data.status === 201) {
+		// 	toast.success("Aktivita bola úspešne pridaná", {
+		// 		position: "top-right",
+		// 		timeout: 5000,
+		// 	});
+		// }
 
 		if (activityResponse.data.activity.aktivita === "Pohovor") {
 			location.reload();

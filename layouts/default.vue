@@ -62,7 +62,7 @@
 					<NuxtLink
 						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded border-t border-black hover:scale-[105%] transition-transform"
 						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'calls' }"
-						to="/calls"
+						to="/callsSecond"
 						@click="setActiveTab('calls')"
 					>
 						<Icon
@@ -102,7 +102,7 @@
 					<NuxtLink
 						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
 						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'todo' }"
-						to="/todo"
+						to="/todoSecond"
 						@click="setActiveTab('todo')"
 					>
 						<Icon
@@ -207,7 +207,7 @@
 						:class="{
 							'bg-blue-700 text-gray-200': activeTab === 'kategorie',
 						}"
-						to="/categorySecond"
+						to="/categoryThird"
 						@click="setActiveTab('kategorie')"
 					>
 						<Icon

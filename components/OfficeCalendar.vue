@@ -24,6 +24,35 @@ const props = defineProps({
 	},
 });
 
+// const userActivityStats = computed(() => {
+// 	const activities = officeStore.officeActivities || [];
+// 	const { startOfMonth, endOfMonth } = getCurrentMonthRange();
+
+// 	const currentMonthActivities = activities.filter((activity) => {
+// 		const activityDate = new Date(activity.datum_cas.replace(" ", "T"));
+// 		return activityDate >= startOfMonth && activityDate <= endOfMonth;
+// 	});
+
+// 	const stats = {};
+
+// 	props.officeUsers.forEach((user) => {
+// 		stats[user.id] = {
+// 			user,
+// 			count: 0,
+// 		};
+// 	});
+
+// 	currentMonthActivities.forEach((activity) => {
+// 		const userId = activity.owner_id;
+
+// 		if (stats[userId]) {
+// 			stats[userId].count++;
+// 		}
+// 	});
+
+// 	return Object.values(stats);
+// });
+
 const userActivityStats = computed(() => {
 	const activities = officeStore.officeActivities || [];
 	const { startOfMonth, endOfMonth } = getCurrentMonthRange();
@@ -35,16 +64,37 @@ const userActivityStats = computed(() => {
 
 	const stats = {};
 
-	props.officeUsers.forEach((user) => {
-		stats[user.id] = {
-			user,
+	// Include the office owner first
+	if (props.ownerId && userStore.user) {
+		// Find owner in allUsers — if it's the logged-in user we already have them
+		// We need to look them up; use officeActivities owner_name as fallback
+		const ownerActivity = activities.find(
+			(a) => String(a.owner_id) === String(props.ownerId),
+		);
+		stats[props.ownerId] = {
+			user: {
+				id: props.ownerId,
+				first_name: ownerActivity?.owner_name ?? "Vlastník",
+				last_name: "",
+			},
 			count: 0,
+			isOwner: true,
 		};
+	}
+
+	// Add shared users (skip if already added as owner)
+	props.officeUsers.forEach((user) => {
+		if (!stats[user.id]) {
+			stats[user.id] = {
+				user,
+				count: 0,
+				isOwner: false,
+			};
+		}
 	});
 
 	currentMonthActivities.forEach((activity) => {
 		const userId = activity.owner_id;
-
 		if (stats[userId]) {
 			stats[userId].count++;
 		}

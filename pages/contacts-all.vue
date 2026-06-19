@@ -132,6 +132,44 @@
 			</template>
 		</UTable>
 
+		<div class="flex items-center justify-center gap-1 mt-4 mb-8">
+			<button
+				@click="goToPage(meta.currentPage - 1)"
+				:disabled="!meta.prevPageUrl"
+				class="px-2 py-0.5 text-sm rounded border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
+			>
+				‹
+			</button>
+
+			<template v-for="pageNum in adminPageNumbers" :key="pageNum">
+				<span v-if="pageNum === '...'" class="px-1 text-sm text-gray-400"
+					>…</span
+				>
+				<button
+					v-else
+					@click="goToPage(pageNum)"
+					class="px-2 py-0.5 text-sm rounded border transition"
+					:class="[
+						pageNum === meta.currentPage
+							? 'bg-blue-400 border-blue-400 text-white'
+							: 'bg-white border-gray-300 hover:bg-gray-100 text-gray-800',
+					]"
+				>
+					{{ pageNum }}
+				</button>
+			</template>
+
+			<button
+				@click="goToPage(meta.currentPage + 1)"
+				:disabled="!meta.nextPageUrl"
+				class="px-2 py-0.5 text-sm rounded border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
+			>
+				›
+			</button>
+
+			<span class="text-sm text-gray-400 ml-2">{{ meta.total }} kontaktov</span>
+		</div>
+
 		<AlterPersonForm
 			v-if="showAlterPesonForm"
 			@cancelAlter="alterPerson()"
@@ -197,6 +235,28 @@ const onAuxClick = (event, id) => {
 	}
 };
 
+const adminPageNumbers = computed(() => {
+	const total = meta.value.lastPage;
+	const current = meta.value.currentPage;
+
+	if (total <= 5) {
+		return Array.from({ length: total }, (_, i) => i + 1);
+	}
+
+	let range = [];
+	range.push(1);
+
+	const rangeStart = Math.max(2, current - 1);
+	const rangeEnd = Math.min(total - 1, current + 1);
+
+	if (rangeStart > 2) range.push("...");
+	for (let i = rangeStart; i <= rangeEnd; i++) range.push(i);
+	if (rangeEnd < total - 1) range.push("...");
+	range.push(total);
+
+	return range;
+});
+
 const columns = [
 	{
 		key: "meno",
@@ -236,6 +296,13 @@ const columns = [
 import AlterPersonForm from "@/components/alterPersonForm.vue";
 
 onBeforeMount(() => {});
+
+const meta = computed(() => contactsStore.allContactsAdminMeta);
+
+const goToPage = (page) => {
+	if (page < 1 || page > meta.value.lastPage) return;
+	contactsStore.fetchAllContactsAdmin(page);
+};
 
 onMounted(async () => {
 	await contactsStore.fetchAllContactsAdmin();

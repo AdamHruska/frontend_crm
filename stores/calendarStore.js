@@ -20,12 +20,19 @@ export const useCalendarstore = defineStore("calendar", {
 		microsoftEventCache: {}, // Format: {"2025-4": [...events]}
 		googleEventCache: {},
 		userColors: {},
+		icsCalendarNames: [],
 		icsEventCache: null,
 		icsLastFetched: null,
 		icsRefreshInterval: null,
 		ICS_CACHE_DURATION: 5 * 60 * 1000, // 5 minutes in milliseconds
 	}),
 	actions: {
+		setIcsCache(events, calendarNames = []) {
+			this.icsEventCache = events;
+			this.icsCacheTimestamp = Date.now();
+			this.icsCalendarNames = calendarNames; // ulož názvy
+		},
+
 		setIcsRefreshInterval(intervalId) {
 			this.icsRefreshInterval = intervalId;
 		},

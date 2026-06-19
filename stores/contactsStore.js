@@ -19,6 +19,14 @@ export const useContactsStore = defineStore("contacts", {
 		next_page_url: null,
 		loadingState: false,
 		lastShowenDetails: null,
+		allContactsAdminMeta: {
+			currentPage: 1,
+			lastPage: 1,
+			prevPageUrl: null,
+			nextPageUrl: null,
+			total: 0,
+			perPage: 30,
+		},
 	}),
 	actions: {
 		async fetchDelegatedContacts() {
@@ -38,13 +46,13 @@ export const useContactsStore = defineStore("contacts", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 				this.delegatedContacts = response.data.contacts;
 			} catch (error) {
 				console.error(
 					"Error fetching delegated contacts:",
-					error.response || error
+					error.response || error,
 				);
 				const toast = useToast();
 				toast.error("Nepodarilo sa načítať delegované kontakty");
@@ -69,7 +77,7 @@ export const useContactsStore = defineStore("contacts", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 				this.allContacts = response.data.contacts;
 			} catch (error) {
@@ -97,7 +105,7 @@ export const useContactsStore = defineStore("contacts", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 				this.prev_page_url = response.data.contacts.prev_page_url;
 				this.next_page_url = response.data.contacts.next_page_url;
@@ -202,7 +210,7 @@ export const useContactsStore = defineStore("contacts", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 				this.contacts.data = this.contacts.data
 					.filter((contact) => contact.id !== id)
@@ -254,7 +262,7 @@ export const useContactsStore = defineStore("contacts", {
 				// Check if contacts and data exist before trying to find the index
 				if (!this.contacts || !this.contacts.data) {
 					console.warn(
-						"Contacts data not initialized. Initializing with the updated contact."
+						"Contacts data not initialized. Initializing with the updated contact.",
 					);
 					this.contacts = { data: [updatedContact] };
 					this.loadingState = false;
@@ -263,7 +271,7 @@ export const useContactsStore = defineStore("contacts", {
 
 				// Find the index of the contact to update
 				const index = this.contacts.data.findIndex(
-					(person) => person.id === updatedContact.id
+					(person) => person.id === updatedContact.id,
 				);
 
 				// If contact is found, replace it with the updated contact
@@ -308,7 +316,7 @@ export const useContactsStore = defineStore("contacts", {
 			// First try to find in local contacts data
 			if (this.contacts?.data) {
 				const localContact = this.contacts.data.find(
-					(contact) => contact.id === id
+					(contact) => contact.id === id,
 				);
 				if (localContact) {
 					return localContact;
@@ -332,7 +340,7 @@ export const useContactsStore = defineStore("contacts", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 
 				if (response.data.contact) {
@@ -353,7 +361,7 @@ export const useContactsStore = defineStore("contacts", {
 			// First try to find in local contacts data
 			if (this.contacts?.data) {
 				const localContact = this.contacts.data.find(
-					(contact) => contact.id === id
+					(contact) => contact.id === id,
 				);
 				if (localContact) {
 					return localContact;
@@ -377,7 +385,7 @@ export const useContactsStore = defineStore("contacts", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 
 				if (response.data.contact) {
@@ -394,29 +402,60 @@ export const useContactsStore = defineStore("contacts", {
 			return null;
 		},
 
-		async fetchAllContactsAdmin() {
+		// async fetchAllContactsAdmin() {
+		// 	this.loadingState = true;
+		// 	const authStore = useAuthStore();
+		// 	const token = authStore.token;
+
+		// 	if (!token) {
+		// 		console.error("Token not found. Please log in.");
+		// 		return;
+		// 	}
+
+		// 	try {
+		// 		const response = await axios.get(`${config.public.apiUrl}all-users`, {
+		// 			headers: {
+		// 				Authorization: `Bearer ${authStore.token}`,
+		// 			},
+		// 		});
+		// 		this.allContactsAdmin = response.data.contacts.flat();
+		// 	} catch (error) {
+		// 		console.error("Error fetching all contacts:", error.response || error);
+		// 		const toast = useToast();
+		// 		toast.error("Nepodarilo sa načítať všetky kontakty");
+		// 	}
+		// 	this.loadingState = false;
+		// },
+
+		async fetchAllContactsAdmin(page = 1) {
 			this.loadingState = true;
 			const authStore = useAuthStore();
-			const token = authStore.token;
-
-			if (!token) {
-				console.error("Token not found. Please log in.");
-				return;
-			}
-
+			if (!authStore.token) return;
 			try {
 				const response = await axios.get(`${config.public.apiUrl}all-users`, {
-					headers: {
-						Authorization: `Bearer ${authStore.token}`,
-					},
+					params: { page, per_page: 30 },
+					headers: { Authorization: `Bearer ${authStore.token}` },
 				});
-				this.allContactsAdmin = response.data.contacts.flat();
+				const paginated = response.data.contacts;
+				this.allContactsAdmin = paginated.data;
+				this.allContactsAdminMeta = {
+					currentPage: paginated.current_page,
+					lastPage: paginated.last_page,
+					prevPageUrl: paginated.prev_page_url,
+					nextPageUrl: paginated.next_page_url,
+					total: paginated.total,
+					perPage: paginated.per_page,
+				};
 			} catch (error) {
 				console.error("Error fetching all contacts:", error.response || error);
-				const toast = useToast();
-				toast.error("Nepodarilo sa načítať všetky kontakty");
+				useToast().error("Nepodarilo sa načítať všetky kontakty");
 			}
 			this.loadingState = false;
+		},
+
+		// Add these two actions:
+		async goToPageAdmin(page) {
+			await this.fetchAllContactsAdmin(page);
 		},
 
 		async deleteContactAdmin(id) {
@@ -431,10 +470,10 @@ export const useContactsStore = defineStore("contacts", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 				this.allContactsAdmin = this.allContactsAdmin.filter(
-					(user) => user.id !== id
+					(user) => user.id !== id,
 				);
 			} catch (error) {
 				console.error("Error deteleting user:", error);
@@ -457,7 +496,7 @@ export const useContactsStore = defineStore("contacts", {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
-					}
+					},
 				);
 
 				this.allContactsAdmin = this.allContactsAdmin.map((user) => {

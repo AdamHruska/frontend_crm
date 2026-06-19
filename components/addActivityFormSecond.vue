@@ -244,9 +244,9 @@ const addActivity = async () => {
 			{ headers: { Authorization: `Bearer ${authStore.token}` } },
 		);
 
-		if (response.data.status === 201) {
-			toast.success("Aktivita bola úspešne pridaná");
-		}
+		// if (response.data.status === 201) {
+		// 	toast.success("Aktivita bola úspešne pridaná");
+		// }
 
 		if (response.data.activity.aktivita === "Pohovor") {
 			location.reload();

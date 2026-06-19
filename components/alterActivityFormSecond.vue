@@ -102,6 +102,13 @@ watch(
 	{ deep: true },
 );
 
+// Auto-flag office activity for update when times change and one already exists
+watch([datum_cas, koniec], () => {
+	if (officeActivity.value) {
+		updateOfficeActivity.value = true;
+	}
+});
+
 const emailBool = ref(false);
 const email = ref("");
 
@@ -448,6 +455,7 @@ const deleteActivity = async () => {
 	event.preventDefault();
 	await officeStore.deleteActivity(officeActivityId.value);
 	await calendarStore.deleteActivity(props.activityID);
+	toast.success("Aktivita bola úspěšne smazaná");
 	emit("cancelAddActivity");
 	emit("alterEvents", null);
 };
