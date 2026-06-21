@@ -95,6 +95,11 @@ const detailView = (id) => {
 		:columns="columns"
 		class="mx-6 table-container shadow-md rounded-md pb-[70px]"
 		:row-class="(row) => row.class"
+		:ui="{
+			td: {
+				base: 'align-top whitespace-normal overflow-hidden !text-black',
+			},
+		}"
 	>
 		<template #actions-data="{ row }">
 			<div class="flex justify-between">
