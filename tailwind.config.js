@@ -9,9 +9,7 @@ export default {
 		"./error.vue",
 	],
 	theme: {
-		extend: {
-			container: require("./theme/containers.mjs"),
-		},
+		extend: {},
 	},
 	plugins: [require("@tailwindcss/typography")],
 };

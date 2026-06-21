@@ -889,7 +889,7 @@ const closeMenuOnOutsideClick = (e) => {
 		:row-class="(row) => row.class"
 		:ui="{
 			td: {
-				base: 'align-top whitespace-normal overflow-hidden',
+				base: 'align-top whitespace-normal overflow-hidden !text-black',
 			},
 		}"
 	>
