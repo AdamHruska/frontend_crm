@@ -2278,7 +2278,7 @@ const isMounted = ref(false);
 	</div>
 </template>
 
-<style lang="css">
+<style lang="css" scoped>
 .event-contact {
 	font-size: 0.75em;
 	opacity: 0.85;

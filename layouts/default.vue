@@ -453,10 +453,10 @@ const isAdmin = computed(() => {
 });
 </script>
 
-<style scoped>
+<style>
 * {
 	font-family: "Inter", sans-serif;
-	color: aliceblue !important;
+	color: black;
 }
 
 .text-white {
