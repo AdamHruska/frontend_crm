@@ -3,7 +3,10 @@
 		<Loadigcomponent class="z-[10]" />
 	</div>
 	<div>
-		<button @click="isOpen = true" class="btn btn-primary">
+		<button
+			@click="isOpen = true"
+			class="btn btn-primary !bg-[#921337] hover:!bg-[#cc1d4d]"
+		>
 			Importovať kontakty
 		</button>
 

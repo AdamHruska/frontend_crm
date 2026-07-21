@@ -118,12 +118,12 @@ const rememberMe = ref(false);
 
 <template>
 	<loadigcomponent v-if="loading" />
-	<div class="flex items-center justify-center min-h-screen bg-blue-800">
+	<div class="flex items-center justify-center min-h-screen bg-[#921337]">
 		<div class="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
 			<div class="flex justify-center">
-				<h1 class="mx-auto text-center text-3xl font-bold pb-4 text-black">
-					Partners Group SK
-				</h1>
+				<div class="w-full flex justify-center items-center py-4">
+					<img src="/public/pgsk-logo-small.png" alt="" />
+				</div>
 			</div>
 			<form class="mt-8 space-y-6">
 				<div class="rounded-md shadow-sm">
@@ -137,7 +137,7 @@ const rememberMe = ref(false);
 							id="meno"
 							name="meno"
 							required
-							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-red-800 focus:border-red-800 sm:text-sm"
 						/>
 					</div>
 					<div class="mb-4">
@@ -149,7 +149,7 @@ const rememberMe = ref(false);
 							id="priezvisko"
 							name="priezvisko"
 							required
-							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-red-800 focus:border-red-800 sm:text-sm"
 						/>
 					</div>
 					<div class="mb-4">
@@ -163,7 +163,7 @@ const rememberMe = ref(false);
 							type="email"
 							autocomplete="email"
 							required
-							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-red-800 focus:border-red-800 sm:text-sm"
 						/>
 					</div>
 					<div class="mb-4">
@@ -176,7 +176,7 @@ const rememberMe = ref(false);
 							id="phone"
 							name="phone"
 							required
-							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-red-800 focus:border-red-800 sm:text-sm"
 						/>
 					</div>
 					<div class="mb-4">
@@ -190,11 +190,11 @@ const rememberMe = ref(false);
 							type="password"
 							autocomplete="current-password"
 							required
-							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-red-800 focus:border-red-800 sm:text-sm"
 							:class="{
 								'border-red-500 focus:ring-red-500 focus:border-red-500':
 									password !== password_confirmation,
-								'border-gray-600 focus:ring-blue-500 focus:border-blue-500':
+								'border-gray-600 focus:ring-red-800 focus:border-red-800':
 									password === password_confirmation,
 							}"
 						/>
@@ -214,7 +214,7 @@ const rememberMe = ref(false);
 							:class="{
 								'border-red-500 focus:ring-red-500 focus:border-red-500':
 									password !== password_confirmation,
-								'border-gray-600 focus:ring-blue-500 focus:border-blue-500':
+								'border-gray-600 focus:ring-red-800 focus:border-red-800':
 									password === password_confirmation,
 							}"
 						/>
@@ -226,7 +226,7 @@ const rememberMe = ref(false);
 							id="remember_me"
 							name="remember_me"
 							type="checkbox"
-							class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-900 rounded"
+							class="h-4 w-4 text-red-800 focus:ring-red-800 border-gray-600 bg-gray-900 rounded"
 							v-model="rememberMe"
 						/>
 						<label for="remember_me" class="ml-2 block text-sm text-black"
@@ -238,7 +238,7 @@ const rememberMe = ref(false);
 					<button
 						@click="register"
 						type="submit"
-						class="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+						class="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#921337] hover:bg-[#cc1d4d] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
 					>
 						Registrovať
 					</button>

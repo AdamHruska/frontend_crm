@@ -588,8 +588,32 @@ const changeNewNamesModal = (contactId = null) => {
 
 const changeActivityStatus = async (item, status) => {
 	if (item.aktivita === "Prvé stretnutie" && status === "check") {
-		changeConfirmEventModal();
-		pendingFirstMeetingRow.value = item;
+		const stretnutieDate = new Date(item.datumCas);
+
+		// Fetch all activities for this contact to check properly
+		let contactActivities = [];
+		try {
+			const response = await axios.get(
+				`${config.public.apiUrl}contacts/${item.contact_id}/activities`,
+				{ headers: { Authorization: `Bearer ${authStore.token}` } },
+			);
+			contactActivities = response.data.activities || [];
+		} catch (e) {
+			console.error("Could not fetch contact activities:", e);
+		}
+
+		const hasNewerAnalyza = contactActivities.some(
+			(a) =>
+				a.aktivita === "Analýza osobných financí" &&
+				a.activity_status !== "discarded" &&
+				new Date(a.datumCas) > stretnutieDate,
+		);
+
+		if (!hasNewerAnalyza) {
+			changeConfirmEventModal();
+			pendingFirstMeetingRow.value = item;
+			return;
+		}
 	}
 
 	if (item.aktivita === "Analýza osobných financí" && status === "check") {
@@ -622,7 +646,6 @@ const changeActivityStatus = async (item, status) => {
 		toast.success("Status aktivity bol úspešne aktualizovaný!");
 	} catch (error) {
 		console.error("Error updating activity status:", error);
-		// Handle error appropriately (show toast notification, etc.)
 	}
 };
 

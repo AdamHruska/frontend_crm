@@ -44,7 +44,7 @@ const handleSearch = () => {
 	} else {
 		// Otherwise, filter based on the search input
 		searchResults.value = props.call_lists.filter((item) =>
-			item.name.toLowerCase().includes(searchInput.value.toLowerCase())
+			item.name.toLowerCase().includes(searchInput.value.toLowerCase()),
 		);
 	}
 
@@ -80,7 +80,7 @@ watch(searchInput, debounceSearch(handleSearch, 200));
 			v-model="searchInput"
 			type="search"
 			id="default-search"
-			class="block w-full p-4 ps-10 text-sm text-black border border-gray-400 border-2 rounded-full bg-white focus:ring-blue-500 focus:border-blue-500 placeholder-gray-500"
+			class="block w-full p-4 ps-10 text-sm text-black border border-gray-400 border-2 rounded-full bg-white focus:ring-[#921337] focus:border-[#921337] placeholder-gray-500"
 			placeholder="Hľadať ..."
 			required
 		/>

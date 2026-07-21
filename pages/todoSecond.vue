@@ -1246,7 +1246,7 @@ const topSectionLabel = computed(() => {
 
 /* ===== Page header ===== */
 .page-header {
-	background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+	background-color: #921337;
 	padding: 32px 40px 28px;
 	margin-bottom: 0;
 }
@@ -1482,7 +1482,7 @@ const topSectionLabel = computed(() => {
 	align-items: center;
 	justify-content: center;
 	gap: 6px;
-	background: #2563eb;
+	background: #921337;
 	color: #fff;
 	border: none;
 	padding: 9px 14px;
@@ -1493,7 +1493,7 @@ const topSectionLabel = computed(() => {
 	transition: background 0.18s;
 }
 .btn-add:hover {
-	background: #1d4ed8;
+	background: #cc1d4d;
 }
 
 /* ===== Content Area ===== */

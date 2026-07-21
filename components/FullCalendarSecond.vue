@@ -37,36 +37,26 @@ const icsGlobalColor = ref("#F59E0B");
 
 const showIcsCalendarDropdown = ref(false);
 
-const showContactNames = ref(true);
-const showActivityTitle = ref(true);
+// ── NEW: mobile sidebar state ──────────────────────────────
+const mobileSidebarOpen = ref(false);
 
-// const getIcsCalendarColor = (calendarName) => {
-// 	const index = availableIcsCalendars.value.indexOf(calendarName);
+const showContactNames = ref(
+	localStorage.getItem("showContactNames") !== "false",
+);
+const showActivityTitle = ref(
+	localStorage.getItem("showActivityTitle") !== "false",
+);
 
-// 	if (index === -1) return "#DB2777";
-
-// 	return icsCalendarColors[index % icsCalendarColors.length];
-// };
+watch(showContactNames, (val) => localStorage.setItem("showContactNames", val));
+watch(showActivityTitle, (val) =>
+	localStorage.setItem("showActivityTitle", val),
+);
 
 const ICS_COLOR = "#F59E0B";
-// const getIcsCalendarColor = () => {
-// 	return ICS_COLOR;
-// };
 
 const getIcsCalendarColor = () => {
 	return icsGlobalColor.value;
 };
-
-// const icsCalendarColors = [
-// 	"#16A34A", // green
-// 	"#DC2626", // red
-// 	"#F59E0B", // orange
-// 	"#DB2777", // pink
-// 	"#0891B2", // cyan
-// 	"#7C3AED", // violet
-// 	"#65A30D", // lime
-// 	"#EA580C", // amber
-// ];
 
 function parseIcsToEvents(icsText, userId, color = "#DB2777") {
 	try {
@@ -105,23 +95,10 @@ const icsRefreshInterval = ref(null);
 
 async function fetchIcsEvents(forceRefresh = false) {
 	console.log("[ICS] fetchIcsEvents called, forceRefresh:", forceRefresh);
-	// if (!forceRefresh && calendarStore.isIcsCacheValid()) {
-	// 	const cachedEvents = calendarStore.icsEventCache;
-	// 	const nonIcsEvents = events.value.filter(
-	// 		(e) => e.extendedProps?.source !== "ics",
-	// 	);
-	// 	events.value = [...nonIcsEvents, ...cachedEvents];
-	// 	calendarOptions.value = {
-	// 		...calendarOptions.value,
-	// 		events: [...events.value],
-	// 	};
-	// 	return;
-	// }
 
 	if (!forceRefresh && calendarStore.isIcsCacheValid()) {
 		const cachedEvents = calendarStore.icsEventCache;
 
-		// ← toto chýbalo
 		availableIcsCalendars.value = calendarStore.icsCalendarNames;
 		if (selectedIcsCalendars.value.length === 0) {
 			selectedIcsCalendars.value = [...availableIcsCalendars.value];
@@ -157,13 +134,10 @@ async function fetchIcsEvents(forceRefresh = false) {
 			selectedIcsCalendars.value = [...availableIcsCalendars.value];
 		}
 
-		response.data.forEach((calendar, index) => {
+		response.data.forEach((calendar) => {
 			if (!selectedIcsCalendars.value.includes(calendar.calendar_name)) return;
 
-			// const color = icsCalendarColors[index % icsCalendarColors.length];
-			//const color = ICS_COLOR;
-
-			const color = icsGlobalColor.value; // ← single global color
+			const color = icsGlobalColor.value;
 
 			const parsed = parseIcsToEvents(
 				calendar.ics_data,
@@ -182,8 +156,6 @@ async function fetchIcsEvents(forceRefresh = false) {
 			allParsedEvents.push(...parsed);
 		});
 
-		// Save to cache
-		//calendarStore.setIcsCache(allParsedEvents);
 		calendarStore.setIcsCache(allParsedEvents, availableIcsCalendars.value);
 
 		icsEvents.value = allParsedEvents;
@@ -211,164 +183,6 @@ async function fetchIcsEvents(forceRefresh = false) {
 	}
 }
 
-// async function fetchIcsEvents(forceRefresh = false) {
-// 	// Return cached events if still valid
-// 	if (!forceRefresh && calendarStore.isIcsCacheValid()) {
-// 		const cachedEvents = calendarStore.icsEventCache;
-
-// 		const nonIcsEvents = events.value.filter(
-// 			(e) => e.extendedProps?.source !== "ics",
-// 		);
-// 		events.value = [...nonIcsEvents, ...cachedEvents];
-// 		calendarOptions.value = {
-// 			...calendarOptions.value,
-// 			events: [...events.value],
-// 		};
-// 		return;
-// 	}
-
-// 	icsLoading.value = true;
-
-// 	try {
-// 		const response = await axios.get(`${config.public.apiUrl}proxy-ics-all`, {
-// 			headers: {
-// 				Authorization: `Bearer ${authStore.token}`,
-// 			},
-// 		});
-
-// 		let allParsedEvents = [];
-// 		const loadedCalendarNames = [];
-
-// 		availableIcsCalendars.value = response.data.map(
-// 			(calendar) => calendar.calendar_name,
-// 		);
-
-// 		if (selectedIcsCalendars.value.length === 0) {
-// 			selectedIcsCalendars.value = [...availableIcsCalendars.value];
-// 		}
-
-// 		response.data.forEach((calendar, index) => {
-// 			if (!selectedIcsCalendars.value.includes(calendar.calendar_name)) {
-// 				return;
-// 			}
-
-// 			const color = icsCalendarColors[index % icsCalendarColors.length];
-// 			const parsed = parseIcsToEvents(
-// 				calendar.ics_data,
-// 				userStore.user.id,
-// 				color,
-// 			);
-
-// 			parsed.forEach((event) => {
-// 				event.extendedProps.calendar = calendar.calendar_name;
-// 			});
-
-// 			if (parsed.length > 0) {
-// 				loadedCalendarNames.push(calendar.calendar_name);
-// 			}
-
-// 			allParsedEvents.push(...parsed);
-// 		});
-
-// 		// Store in cache
-// 		calendarStore.setIcsCache(allParsedEvents);
-
-// 		icsEvents.value = allParsedEvents;
-
-// 		const nonIcsEvents = events.value.filter(
-// 			(e) => e.extendedProps?.source !== "ics",
-// 		);
-// 		events.value = [...nonIcsEvents, ...allParsedEvents];
-
-// 		calendarOptions.value = {
-// 			...calendarOptions.value,
-// 			events: [...events.value],
-// 		};
-
-// 		if (loadedCalendarNames.length > 0) {
-// 			toast.success(
-// 				`Načítaných ${allParsedEvents.length} ICS udalostí z kalendárov: ${loadedCalendarNames.join(", ")}`,
-// 			);
-// 		}
-// 	} catch (err) {
-// 		console.error("Error fetching ICS events:", err);
-// 		toast.error("Nepodarilo sa načítať ICS udalosti.");
-// 	} finally {
-// 		icsLoading.value = false;
-// 	}
-// }
-
-// async function fetchIcsEvents() {
-// 	icsLoading.value = true;
-
-// 	try {
-// 		const response = await axios.get(`${config.public.apiUrl}proxy-ics-all`, {
-// 			headers: {
-// 				Authorization: `Bearer ${authStore.token}`,
-// 			},
-// 		});
-
-// 		let allParsedEvents = [];
-// 		const loadedCalendarNames = [];
-
-// 		availableIcsCalendars.value = response.data.map(
-// 			(calendar) => calendar.calendar_name,
-// 		);
-
-// 		// First load = all selected
-// 		if (selectedIcsCalendars.value.length === 0) {
-// 			selectedIcsCalendars.value = [...availableIcsCalendars.value];
-// 		}
-
-// 		response.data.forEach((calendar, index) => {
-// 			// Skip unchecked calendars
-// 			if (!selectedIcsCalendars.value.includes(calendar.calendar_name)) {
-// 				return;
-// 			}
-
-// 			const color = icsCalendarColors[index % icsCalendarColors.length];
-
-// 			const parsed = parseIcsToEvents(
-// 				calendar.ics_data,
-// 				userStore.user.id,
-// 				color,
-// 			);
-
-// 			parsed.forEach((event) => {
-// 				event.extendedProps.calendar = calendar.calendar_name;
-// 			});
-
-// 			if (parsed.length > 0) {
-// 				loadedCalendarNames.push(calendar.calendar_name);
-// 			}
-
-// 			allParsedEvents.push(...parsed);
-// 		});
-
-// 		icsEvents.value = allParsedEvents;
-
-// 		const nonIcsEvents = events.value.filter(
-// 			(e) => e.extendedProps?.source !== "ics",
-// 		);
-
-// 		events.value = [...nonIcsEvents, ...allParsedEvents];
-
-// 		calendarOptions.value = {
-// 			...calendarOptions.value,
-// 			events: [...events.value],
-// 		};
-
-// 		toast.success(
-// 			`Načítaných ${allParsedEvents.length} ICS udalostí z kalendárov: ${loadedCalendarNames.join(", ")}`,
-// 		);
-// 	} catch (err) {
-// 		console.error("Error fetching ICS events:", err);
-// 		toast.error("Nepodarilo sa načítať ICS udalosti.");
-// 	} finally {
-// 		icsLoading.value = false;
-// 	}
-// }
-
 const toggleIcsCalendar = async (calendarName) => {
 	if (selectedIcsCalendars.value.includes(calendarName)) {
 		selectedIcsCalendars.value = selectedIcsCalendars.value.filter(
@@ -379,75 +193,6 @@ const toggleIcsCalendar = async (calendarName) => {
 	}
 	await fetchIcsEvents(true);
 };
-
-// const toggleIcsCalendar = async (calendarName) => {
-// 	if (selectedIcsCalendars.value.includes(calendarName)) {
-// 		selectedIcsCalendars.value = selectedIcsCalendars.value.filter(
-// 			(name) => name !== calendarName,
-// 		);
-// 	} else {
-// 		selectedIcsCalendars.value.push(calendarName);
-// 	}
-
-// 	await fetchIcsEvents();
-// };
-
-// async function fetchIcsEvents() {
-// 	icsLoading.value = true;
-
-// 	try {
-// 		const response = await axios.get(`${config.public.apiUrl}proxy-ics-all`, {
-// 			headers: {
-// 				Authorization: `Bearer ${authStore.token}`,
-// 			},
-// 		});
-
-// 		let allParsedEvents = [];
-// 		const loadedCalendarNames = [];
-
-// 		response.data.forEach((calendar, index) => {
-// 			const color = icsCalendarColors[index % icsCalendarColors.length];
-
-// 			const parsed = parseIcsToEvents(
-// 				calendar.ics_data,
-// 				userStore.user.id,
-// 				color,
-// 			);
-
-// 			parsed.forEach((event) => {
-// 				event.extendedProps.calendar = calendar.calendar_name;
-// 			});
-
-// 			if (parsed.length > 0) {
-// 				loadedCalendarNames.push(calendar.calendar_name);
-// 			}
-
-// 			allParsedEvents.push(...parsed);
-// 		});
-
-// 		icsEvents.value = allParsedEvents;
-
-// 		const nonIcsEvents = events.value.filter(
-// 			(e) => e.extendedProps?.source !== "ics",
-// 		);
-
-// 		events.value = [...nonIcsEvents, ...allParsedEvents];
-
-// 		calendarOptions.value = {
-// 			...calendarOptions.value,
-// 			events: [...events.value],
-// 		};
-
-// 		toast.success(
-// 			`Načítaných ${allParsedEvents.length} ICS udalostí z kalendárov: ${loadedCalendarNames.join(", ")}`,
-// 		);
-// 	} catch (err) {
-// 		console.error("Error fetching ICS events:", err);
-// 		toast.error("Nepodarilo sa načítať ICS udalosti.");
-// 	} finally {
-// 		icsLoading.value = false;
-// 	}
-// }
 
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import FullCalendar from "@fullcalendar/vue3";
@@ -467,18 +212,18 @@ const showMicrosoftEvents = ref(false);
 const calendarRef = ref(null);
 
 const pastelColors = [
-	"#FFB3BA", // koralovo ružová
-	"#FFDFBA", // broskyňová
-	"#FFFFBA", // svetlo žltá
-	"#BAFFC9", // mätovo zelená
-	"#FFD7BA", // marhuľová
-	"#FFB3E6", // svetlo ružová
-	"#C9FFE5", // aqua zelená
-	"#FFE4BA", // vanilková
-	"#FFCCE5", // bubble gum ružová
-	"#D4F0C9", // limetková zelená
-	"#FFC6D9", // lososová ružová
-	"#FFEAA7", // pastelovo žltá
+	"#FFB3BA",
+	"#FFDFBA",
+	"#FFFFBA",
+	"#BAFFC9",
+	"#FFD7BA",
+	"#FFB3E6",
+	"#C9FFE5",
+	"#FFE4BA",
+	"#FFCCE5",
+	"#D4F0C9",
+	"#FFC6D9",
+	"#FFEAA7",
 ];
 
 // Collapsible menu state for account/calendar actions
@@ -495,6 +240,13 @@ const toggleAddActivity = () => {
 	addActivity.value = !addActivity.value;
 };
 
+const openAddActivityMobile = () => {
+	// No date was selected via the calendar grid, so default to "now"
+	const now = new Date();
+	end_date.value = format(now, "yyyy-MM-dd'T'HH:mm:ss");
+	toggleAddActivity();
+};
+
 const events = ref([]);
 
 const currentLoadedMonth = ref(null);
@@ -508,14 +260,18 @@ async function fetchAndMergeAllEvents(month, year) {
 	rawData.value = calendarStore.activities;
 	const localEvents = transformData(rawData.value);
 
-	const [googleEvents, microsoftEvents] = await Promise.all([
+	const [googleEvents, rawMicrosoftEvents] = await Promise.all([
 		calendarStore.fetchGoogleEvents(month, year),
 		showMicrosoftEventsOnCalendar.value
 			? calendarStore.fetchMicrosoftEvents(month, year)
 			: Promise.resolve([]),
 	]);
 
-	// events.value = [...localEvents, ...googleEvents, ...microsoftEvents];
+	// Stamp own Microsoft events with the current user's id so toggleMyActivities can filter them
+	const microsoftEvents = rawMicrosoftEvents.map((e) => ({
+		...e,
+		user_id: e.user_id ?? userStore.user.id,
+	}));
 
 	const existingIcsEvents = events.value.filter(
 		(event) => event.extendedProps?.source === "ics",
@@ -632,16 +388,16 @@ async function handleEventDrop(dropInfo) {
 
 	if (event) {
 		try {
-			const oldStart = new Date(event.datumCas);
-			oldStart.setHours(oldStart.getHours() - 1);
-			const oldEnd = new Date(event.koniec);
-			oldEnd.setHours(oldEnd.getHours() - 1);
+			// Use FullCalendar's own pre-drag start/end — exact, no guessed offset
+			const oldStart = dropInfo.oldEvent.start;
+			const oldEnd = dropInfo.oldEvent.end ?? oldStart;
 
 			const officeActivityResult = await officeStore.findActivityId({
 				datum_cas: formatDateForBackend(oldStart),
 				koniec: formatDateForBackend(oldEnd),
-				owner_id: userStore.user.id,
+				owner_number: userStore.user.vizitka_phone_num,
 			});
+
 			if (officeActivityResult && officeActivityResult.activity) {
 				const officeActivity = officeActivityResult.activity;
 				const updatePayload = {
@@ -671,6 +427,84 @@ async function handleEventDrop(dropInfo) {
 		dropInfo.revert();
 	}
 }
+
+// async function handleEventDrop(dropInfo) {
+// 	if (
+// 		!confirm(`Naozaj chcete aktualizovať udalosť "${dropInfo.event.title}"?`)
+// 	) {
+// 		dropInfo.revert();
+// 		return;
+// 	}
+
+// 	const officeStore = useOfficeStore();
+// 	const eventId = dropInfo.event.id;
+// 	const newStart = dropInfo.event.start;
+// 	const newEnd = dropInfo.event.end ?? newStart;
+
+// 	if (dropInfo.event.extendedProps.source === "microsoft") {
+// 		try {
+// 			await updateMicrosoftEvent(
+// 				eventId,
+// 				newStart.toISOString(),
+// 				newEnd.toISOString(),
+// 				dropInfo.event.title,
+// 			);
+// 		} catch (error) {
+// 			console.error("Failed to update Microsoft event:", error);
+// 			alert("Failed to update Microsoft event.");
+// 			dropInfo.revert();
+// 		}
+// 		return;
+// 	}
+
+// 	const event = rawData.value.find((event) => event.id == eventId);
+// 	if (event && event.created_id !== userStore.user.id) {
+// 		alert("You don't have permission to edit this event.");
+// 		dropInfo.revert();
+// 		return;
+// 	}
+
+// 	if (event) {
+// 		try {
+// 			const oldStart = new Date(event.datumCas);
+// 			oldStart.setHours(oldStart.getHours() - 1);
+// 			const oldEnd = new Date(event.koniec);
+// 			oldEnd.setHours(oldEnd.getHours() - 1);
+
+// 			const officeActivityResult = await officeStore.findActivityId({
+// 				datum_cas: formatDateForBackend(oldStart),
+// 				koniec: formatDateForBackend(oldEnd),
+// 				owner_id: userStore.user.id,
+// 			});
+// 			if (officeActivityResult && officeActivityResult.activity) {
+// 				const officeActivity = officeActivityResult.activity;
+// 				const updatePayload = {
+// 					id: officeActivity.id,
+// 					aktivita: dropInfo.event.title,
+// 					datum_cas: formatDateForBackend(newStart),
+// 					koniec: formatDateForBackend(newEnd),
+// 					poznamka: officeActivity.poznamka || "",
+// 					office_id: officeActivity.office_id,
+// 					owner_number: userStore.user.vizitka_phone_num,
+// 				};
+// 				await officeStore.updateActivity(updatePayload);
+// 			}
+// 		} catch (err) {
+// 			console.error("Failed to update office activity:", err);
+// 		}
+// 	}
+
+// 	const formattedStart = formatDateForBackend(newStart);
+// 	const formattedEnd = formatDateForBackend(newEnd);
+
+// 	try {
+// 		await updateEventInBackend(eventId, formattedStart, formattedEnd);
+// 	} catch (error) {
+// 		console.error("Failed to update local event:", error);
+// 		alert("Failed to update event. Please try again.");
+// 		dropInfo.revert();
+// 	}
+// }
 
 async function updateEventInBackend(eventId, formattedStart, formattedEnd) {
 	const calendarStore = useCalendarstore();
@@ -838,7 +672,32 @@ onMounted(async () => {
 		icsGlobalColor.value = savedColor;
 	}
 
-	await fetchIcsEvents();
+	//await fetchIcsEvents();
+
+	calendarStore.hydrateIcsCacheFromSession();
+
+	if (calendarStore.icsEventCache) {
+		const cachedEvents = calendarStore.icsEventCache;
+
+		availableIcsCalendars.value = calendarStore.icsCalendarNames;
+		if (selectedIcsCalendars.value.length === 0) {
+			selectedIcsCalendars.value = [...availableIcsCalendars.value];
+		}
+
+		icsEvents.value = cachedEvents;
+
+		const nonIcsEvents = events.value.filter(
+			(e) => e.extendedProps?.source !== "ics",
+		);
+		events.value = [...nonIcsEvents, ...cachedEvents];
+
+		calendarOptions.value = {
+			...calendarOptions.value,
+			events: [...events.value],
+		};
+	} else {
+		await fetchIcsEvents();
+	}
 
 	if (!calendarStore.icsRefreshInterval) {
 		calendarStore.setIcsRefreshInterval(
@@ -891,21 +750,8 @@ onMounted(async () => {
 	currentLoadedMonth.value = now.getMonth() + 1;
 	currentLoadedYear.value = now.getFullYear();
 
-	// await userStore.fetchUser();
-	// await fetchIcsEvents();
-
 	console.log("Loaded user:", userStore.user);
 	console.log("ICS LINK:", userStore.user?.ics_link);
-
-	// await fetchIcsEvents();
-
-	// ✅ Load shared users' DB + Microsoft events using the new endpoint
-	// if (userStore.user.confirmed_share_user_id) {
-	// 	const confirmedIds = Object.values(userStore.user.confirmed_share_user_id);
-	// 	for (const sharedUserId of confirmedIds) {
-	// 		await addSharedEventsId(sharedUserId);
-	// 	}
-	// }
 
 	if (calendarRef.value) {
 		setTimeout(() => {
@@ -964,6 +810,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
 	eventBus.off("deleteSharedEvents");
+	calendarStore.clearIcsRefreshInterval();
 });
 
 const toDisabledColor = (color, factor = 0.5) => {
@@ -1048,48 +895,6 @@ const handleWeekendsToggle = () => {
 
 const selectedMicrosoftEvent = ref(null);
 
-// function handleEventClick(clickInfo) {
-// 	activityID.value = clickInfo.event._def.publicId;
-// 	eventType.value =
-// 		clickInfo.event.extendedProps.source === "microsoft"
-// 			? "microsoft"
-// 			: clickInfo.event.extendedProps.source === "google"
-// 				? "google"
-// 				: "regular";
-
-// 	if (eventType.value === "microsoft") {
-// 		selectedMicrosoftEvent.value = {
-// 			id: clickInfo.event.id,
-// 			title: clickInfo.event.title,
-// 			start: clickInfo.event.start,
-// 			end: clickInfo.event.end,
-// 			location:
-// 				clickInfo.event.extendedProps.location || "Nebola zadaná lokalita",
-// 			link: clickInfo.event.extendedProps.link || "",
-// 			organizer: clickInfo.event.extendedProps.organizer,
-// 			attendees: clickInfo.event.extendedProps.attendees,
-// 			allDay: clickInfo.event.allDay,
-// 			note: clickInfo.event.extendedProps.note || "Žiadna poznámka",
-// 			importance: clickInfo.event.extendedProps.importance || "normal",
-// 		};
-// 		toggleMicrosoftEvents();
-// 	} else if (eventType.value === "google") {
-// 		selectedMicrosoftEvent.value = {
-// 			id: clickInfo.event.id,
-// 			title: clickInfo.event.title,
-// 			start: clickInfo.event.start,
-// 			end: clickInfo.event.end,
-// 			note: clickInfo.event.extendedProps.description || "Žiadna poznámka",
-// 			organizer: clickInfo.event.extendedProps.organizer || null,
-// 			attendees: clickInfo.event.extendedProps.attendees || [],
-// 			calendar: clickInfo.event.extendedProps.calendar || "",
-// 		};
-// 		toggleMicrosoftEvents();
-// 	} else {
-// 		toggleUpdateActivity();
-// 	}
-// }
-
 function handleEventClick(clickInfo) {
 	activityID.value = clickInfo.event._def.publicId;
 	eventType.value =
@@ -1158,41 +963,26 @@ const flattenActivities = (activitiesObject) => {
 };
 
 const deleteSharedEventsId = (userId) => {
-	// Remove shared DB events + shared Microsoft events for this unchecked user
 	loadedSharedUserIds.value.delete(String(userId));
 
 	events.value = events.value.filter(
 		(event) => String(event.user_id) !== String(userId),
 	);
 
-	// Remove from shared activities store too
 	calendarStore.shared_activities = calendarStore.shared_activities.filter(
 		(activity) => String(activity.created_id) !== String(userId),
 	);
 
-	// Update calendar immediately
 	calendarOptions.value = {
 		...calendarOptions.value,
 		events: [...events.value],
 	};
 
-	// Force FullCalendar rerender
 	if (calendarRef.value) {
 		calendarRef.value.getApi().removeAllEvents();
 		calendarRef.value.getApi().addEventSource(events.value);
 	}
 };
-
-// const deleteSharedEventsId = (userId) => {
-// 	console.log("test delete eventov sa vykonal");
-// 	events.value = events.value.filter((event) => event.user_id !== userId);
-// 	calendarOptions.value = {
-// 		...calendarOptions.value,
-// 		events: [...events.value],
-// 	};
-// };
-
-// ✅ Updated: calls new /with-microsoft endpoint to get both DB + Outlook events
 
 const addSharedEventsId = async (userId, isTransitive = false) => {
 	loadingSharedUser.value = true;
@@ -1291,106 +1081,6 @@ const addSharedEventsId = async (userId, isTransitive = false) => {
 		loadingSharedUser.value = false;
 	}
 };
-
-// const addSharedEventsId = async (userId, isTransitive = false) => {
-// 	loadingStateCalendar.value = true;
-// 	const userIdString = String(userId);
-
-// 	// Prevent loading the same user twice
-// 	if (loadedSharedUserIds.value.has(userIdString)) return;
-// 	loadedSharedUserIds.value.add(userIdString);
-
-// 	loadingStateCalendar.value = true;
-
-// 	try {
-// 		const response = await axios.get(
-// 			`${config.public.apiUrl}get-activities-by-creator/${userId}/with-microsoft`,
-// 			{
-// 				params: {
-// 					month: currentLoadedMonth.value ?? new Date().getMonth() + 1,
-// 					year: currentLoadedYear.value ?? new Date().getFullYear(),
-// 					transitive: isTransitive,
-// 				},
-// 				headers: {
-// 					Authorization: `Bearer ${authStore.token}`,
-// 					"Content-Type": "application/json",
-// 				},
-// 			},
-// 		);
-
-// 		if (response?.data) {
-// 			// Handle DB activities
-// 			if (response.data.activities?.length) {
-// 				const sharedEvents = transformData(response.data.activities);
-
-// 				const rawActivities = toRaw(calendarStore.shared_activities);
-// 				const currentActivities = Array.isArray(rawActivities)
-// 					? rawActivities
-// 					: Object.values(rawActivities)[0] || [];
-
-// 				calendarStore.shared_activities = [
-// 					...currentActivities,
-// 					...response.data.activities,
-// 				];
-
-// 				events.value = [...events.value, ...sharedEvents];
-// 			}
-
-// 			// Handle Microsoft events
-// 			if (response.data.microsoft_events?.length) {
-// 				const sharedMicrosoftEvents = response.data.microsoft_events.map(
-// 					(event) => {
-// 						if (!calendarStore.userColors[event.created_id]) {
-// 							const userIds = Object.keys(calendarStore.userColors).length;
-// 							calendarStore.userColors[event.created_id] =
-// 								pastelColors[userIds % pastelColors.length];
-// 						}
-// 						const color = calendarStore.userColors[event.created_id];
-
-// 						return {
-// 							id: event.microsoft_id,
-// 							title: event.subject || "Bez názvu",
-// 							start: event.start,
-// 							end: event.end,
-// 							allDay: event.isAllDay ?? false,
-// 							backgroundColor: color,
-// 							borderColor: color,
-// 							user_id: event.created_id,
-// 							extendedProps: {
-// 								source: "microsoft",
-// 								location: event.location,
-// 								link: event.joinUrl,
-// 								note: event.note,
-// 								organizer: event.organizer,
-// 								attendees: event.attendees,
-// 								calendar: event.calendar,
-// 								importance: "normal",
-// 							},
-// 						};
-// 					},
-// 				);
-
-// 				events.value = [...events.value, ...sharedMicrosoftEvents];
-// 			}
-
-// 			calendarOptions.value = {
-// 				...calendarOptions.value,
-// 				events: [...events.value],
-// 			};
-
-// 			if (response.data.confirmed_share_user_id?.length) {
-// 				await userStore.fetchTransitiveSharedUsers(
-// 					response.data.confirmed_share_user_id,
-// 					userId,
-// 				);
-// 			}
-// 		}
-// 	} catch (error) {
-// 		console.error("Error loading shared user events:", error);
-// 	} finally {
-// 		loadingStateCalendar.value = false;
-// 	}
-// };
 
 const recentEvents = computed(() => {
 	const now = new Date();
@@ -1510,16 +1200,20 @@ async function fetchMicrosoftEvents(month, year) {
 
 	const localEvents = transformData(rawData.value);
 
-	const newMicrosoftEvents = await calendarStore.fetchMicrosoftEvents(
+	const rawMicrosoftEvents = await calendarStore.fetchMicrosoftEvents(
 		month,
 		year,
 	);
+
+	const newMicrosoftEvents = rawMicrosoftEvents.map((e) => ({
+		...e,
+		user_id: e.user_id ?? userStore.user.id,
+	}));
 
 	const existingGoogleEvents = events.value.filter(
 		(event) => event.extendedProps?.source === "google",
 	);
 
-	// Preserve shared user events (both DB and Microsoft) that were already loaded
 	const existingSharedEvents = events.value.filter(
 		(event) =>
 			event.user_id !== userStore.user.id &&
@@ -1771,33 +1465,18 @@ const toggleMyActivities = (isChecked) => {
 	const userId = userStore.user.id;
 
 	if (!isChecked) {
-		// Hide — save current events and filter out all mine
 		calendarStore.originalEvents = [...events.value];
 
 		events.value = calendarStore.originalEvents.filter((event) => {
-			// Hide my DB and shared DB events by user_id
 			if (String(event.user_id) === String(userId)) return false;
-
-			// Hide my Microsoft events
-			if (
-				event.extendedProps?.source === "microsoft" &&
-				String(event.user_id) === String(userId)
-			)
-				return false;
-
-			// Hide my Google events
 			if (event.extendedProps?.source === "google") return false;
-
-			// Hide my ICS events
 			if (event.extendedProps?.source === "ics") return false;
-
 			return true;
 		});
 
 		toast.success("Boli skryté vaše aktivity.");
 		calendarStore.showOnlyMine = true;
 	} else {
-		// Restore all saved events
 		events.value = [...calendarStore.originalEvents];
 		toast.success("Boli obnovené vaše aktivity.");
 		calendarStore.showOnlyMine = false;
@@ -1809,32 +1488,16 @@ const toggleMyActivities = (isChecked) => {
 	};
 };
 
-// const toggleMyActivities = () => {
-// 	const userId = useUserStore().user.id;
-
-// 	if (!calendarStore.showOnlyMine) {
-// 		calendarStore.originalEvents = [...events.value];
-
-// 		events.value = calendarStore.originalEvents.filter(
-// 			(event) => event.user_id !== userId,
-// 		);
-// 		toast.success("Boli skryté vaše aktivity.");
-// 		calendarStore.showOnlyMine = true;
-// 	} else {
-// 		events.value = [...calendarStore.originalEvents];
-// 		toast.success("Boli obnovené vaše aktivity.");
-// 		calendarStore.showOnlyMine = false;
-// 	}
-
-// 	calendarOptions.value = {
-// 		...calendarOptions.value,
-// 		events: [...events.value],
-// 	};
-// };
+let icsColorTimeout = null;
 
 watch(icsGlobalColor, (color) => {
 	localStorage.setItem("icsGlobalColor", color);
-	fetchIcsEvents(true);
+
+	clearTimeout(icsColorTimeout);
+
+	icsColorTimeout = setTimeout(() => {
+		fetchIcsEvents(true);
+	}, 500); // Adjust delay as needed (e.g. 200-500ms)
 });
 
 const showMicrosoftEventsOnCalendar = ref(true);
@@ -1856,6 +1519,10 @@ const toggleMicrosoftEventsVisibility = () => {
 };
 
 const isMounted = ref(false);
+
+const onIcsColorChange = (e) => {
+	icsGlobalColor.value = e.target.value;
+};
 </script>
 
 <template>
@@ -1911,28 +1578,12 @@ const isMounted = ref(false);
 			</div>
 		</div>
 
-		<!-- <AddActivityCalendar
-			v-if="addActivity"
-			@cancelAddActivity="toggleAddActivity"
-			@addNewEvent="addNewEvent"
-			:end_date="end_date"
-		/> -->
-
 		<AddActivityCalendarSecond
 			v-if="addActivity"
 			@cancelAddActivity="toggleAddActivity"
 			@addNewEvent="addNewEvent"
 			:end_date="end_date"
 		/>
-
-		<!-- <EventUpdateCalendar
-			:activityID="activityID"
-			:eventType="eventType"
-			v-if="updateActivity"
-			@cancelAddActivity="toggleUpdateActivity"
-			@alterEvents="alterEvents"
-			:user.value="user"
-		/> -->
 
 		<EventUpdateCalendarSecond
 			:activityID="activityID"
@@ -1959,8 +1610,35 @@ const isMounted = ref(false);
 			@eventCreated="handleMicrosoftEventCreated"
 		/>
 
+		<!-- ── Mobile backdrop ── -->
+		<transition name="backdrop-fade">
+			<div
+				v-if="mobileSidebarOpen"
+				class="mobile-backdrop"
+				@click="mobileSidebarOpen = false"
+			/>
+		</transition>
+
 		<div class="demo-app bg-white">
-			<div class="demo-app-sidebar bg-white-force">
+			<!-- ══════════════════════════════════
+			     SIDEBAR — original markup intact
+			     ══════════════════════════════════ -->
+			<div
+				class="demo-app-sidebar bg-white-force"
+				:class="{ 'sidebar-open': mobileSidebarOpen }"
+			>
+				<!-- Mobile-only close strip (hidden on desktop via CSS) -->
+				<div class="mobile-sidebar-header">
+					<span class="font-semibold text-lg">Diár</span>
+					<button
+						class="mobile-close-btn"
+						@click="mobileSidebarOpen = false"
+						aria-label="Zavrieť panel"
+					>
+						✕
+					</button>
+				</div>
+
 				<div
 					class="shadow-md rounded-lg bg-white p-4 b-grey-300 rounded-2xl mb-10"
 				>
@@ -2032,9 +1710,10 @@ const isMounted = ref(false);
 						@toggleMyActivities="toggleMyActivities"
 					/>
 				</div>
+
 				<div class="flex flex-col items-center py-6 shadow-lg rounded-b-lg">
 					<button
-						class="bg-blue-200 px-4 py-4 rounded-md shadow hover:bg-blue-300 mb-3 font-semibold"
+						class="bg-[#921337] px-4 py-4 rounded-md shadow hover:bg-[#cc1d4d] mb-3 font-semibold text-white"
 						@click="showEventMenu = !showEventMenu"
 					>
 						{{
@@ -2052,14 +1731,6 @@ const isMounted = ref(false);
 								<span>Zobraziť Google udalosti</span>
 								<img src="/public/google_icon.png" alt="logo" />
 							</button>
-
-							<!-- <button
-								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
-								@click="loginWithGoogle"
-							>
-								<span>Prihlásiť sa pomocou Google</span>
-								<img src="/public/google_icon.png" alt="logo" />
-							</button> -->
 
 							<button
 								v-if="showMicrosoftEventsOnCalendar"
@@ -2080,7 +1751,7 @@ const isMounted = ref(false);
 
 							<button
 								v-if="showMicrosoftEventsOnCalendar"
-								class="bg-blue-500 px-4 rounded-md shadow hover:bg-blue-600 flex items-center gap-2 cursor-pointer w-[240px] py-4 mt-3"
+								class="bg-[#921337] px-4 rounded-md shadow hover:bg-[#cc1d4d] flex items-center gap-2 cursor-pointer w-[240px] py-4 mt-3"
 								@click="fetchIcsEvents(true)"
 								:disabled="icsLoading"
 							>
@@ -2088,29 +1759,143 @@ const isMounted = ref(false);
 								<span v-else>🔄 Obnoviť ICS udalosti</span>
 							</button>
 
-							<!-- <button
-								v-if="!isLoggedInWithMicrosoft"
-								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
-								@click="loginWithMicrosoft"
+							<div
+								class="bg-[#D1D5DB] px-2 py-2 rounded-md shadow flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3 flex flex-col text-center"
 							>
-								<span>Prihlásiť pomocou Microsoft</span>
-								<img src="/public/icons8-microsoft-48.png" alt="logo" />
-							</button> -->
-							<!-- <button
-								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
-								@click="logoutWithMicrosoft"
-							>
-								<span>Odhlásiť sa z Microsoft účtu</span>
-								<img src="/public/icons8-microsoft-48.png" alt="logo" />
-							</button> -->
+								<h3 class="font-semibold">Microsoft Kalendáre</h3>
+								<div
+									v-if="!calendarListLoading"
+									v-for="calendar in calendarList"
+									:key="calendar.id"
+									@click="
+										userStore.userAddCalendarName(
+											calendar.name,
+											currentLoadedMonth,
+											currentLoadedYear,
+										)
+									"
+									class="w-full rounded-md py-1 cursor-pointer transition-colors"
+									:class="[
+										'p-2 rounded cursor-pointer',
+										Array.isArray(userStore.selected_calendar_names) &&
+										userStore.selected_calendar_names.includes(calendar.name)
+											? 'bg-green-500 text-white hover:bg-green-400'
+											: 'bg-gray-200 hover:bg-slate-100',
+									]"
+								>
+									{{ calendar.name }}
+								</div>
+								<div
+									v-if="calendarListLoading"
+									class="mt-3 font-bold text-base"
+								>
+									Načitavanie kalendárov...
+								</div>
+							</div>
 
-							<!-- <button
-								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
-								@click="logoutWithGoogle"
+							<!-- ICS Kalendáre moved here -->
+							<div
+								class="bg-[#D1D5DB] px-2 py-2 rounded-md shadow mt-3 w-[240px] flex flex-col text-center"
 							>
-								<span>Odhlásiť sa z Google účtu</span>
+								<button
+									class="w-full bg-gray-300 hover:bg-gray-400 rounded-md py-2 font-semibold"
+									@click="showIcsCalendarDropdown = !showIcsCalendarDropdown"
+								>
+									{{
+										showIcsCalendarDropdown
+											? "Skryť ICS Kalendáre"
+											: "Zobraziť ICS Kalendáre"
+									}}
+								</button>
+
+								<div class="flex items-center justify-between px-2 mt-2">
+									<span class="text-sm font-medium text-gray-700"
+										>Farba ICS udalostí</span
+									>
+									<input type="color" v-model="icsGlobalColor" />
+								</div>
+
+								<transition name="fade">
+									<div v-if="showIcsCalendarDropdown" class="mt-3">
+										<div
+											v-for="calendar in availableIcsCalendars"
+											:key="calendar"
+											class="mb-2"
+										>
+											<div
+												@click="toggleIcsCalendar(calendar)"
+												class="w-full rounded-md py-2 px-2 cursor-pointer transition-colors text-center font-medium"
+												:style="
+													selectedIcsCalendars.includes(calendar)
+														? {
+																backgroundColor: getIcsCalendarColor(calendar),
+																color: 'white',
+															}
+														: {}
+												"
+												:class="
+													selectedIcsCalendars.includes(calendar)
+														? ''
+														: 'bg-gray-200 hover:bg-slate-100'
+												"
+											>
+												{{ calendar }}
+											</div>
+										</div>
+									</div>
+								</transition>
+							</div>
+						</div>
+					</transition>
+				</div>
+
+				<!-- <div class="flex flex-col items-center py-6 shadow-lg rounded-b-lg">
+					<button
+						class="bg-[#921337] px-4 py-4 rounded-md shadow hover:bg-[#cc1d4d] mb-3 font-semibold text-white"
+						@click="showEventMenu = !showEventMenu"
+					>
+						{{
+							showEventMenu
+								? "Skryť menu"
+								: "Zobraziť menu pre účty a kalendáre"
+						}}
+					</button>
+					<transition name="fade">
+						<div v-if="showEventMenu" class="w-full flex flex-col items-center">
+							<button
+								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+								@click="fetchGoogleEvents"
+							>
+								<span>Zobraziť Google udalosti</span>
 								<img src="/public/google_icon.png" alt="logo" />
-							</button> -->
+							</button>
+
+							<button
+								v-if="showMicrosoftEventsOnCalendar"
+								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+								@click="toggleMicrosoftEventsVisibility"
+							>
+								<span>Skryť microsoft eventy</span>
+								<img src="/public/icons8-microsoft-48.png" alt="logo" />
+							</button>
+							<button
+								v-else
+								class="bg-[#D1D5DB] px-4 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3"
+								@click="toggleMicrosoftEventsVisibility"
+							>
+								<span>Zobraziť microsoft eventy</span>
+								<img src="/public/icons8-microsoft-48.png" alt="logo" />
+							</button>
+
+							<button
+								v-if="showMicrosoftEventsOnCalendar"
+								class="bg-[#921337] px-4 rounded-md shadow hover:bg-[#cc1d4d] flex items-center gap-2 cursor-pointer w-[240px] py-4 mt-3"
+								@click="fetchIcsEvents(true)"
+								:disabled="icsLoading"
+							>
+								<span v-if="icsLoading">Načítavam...</span>
+								<span v-else>🔄 Obnoviť ICS udalosti</span>
+							</button>
 
 							<div
 								class="bg-[#D1D5DB] px-2 py-2 rounded-md shadow flex items-center gap-2 cursor-pointer w-[240px] py-1 mt-3 flex flex-col text-center"
@@ -2164,37 +1949,11 @@ const isMounted = ref(false);
 							<span class="text-sm font-medium text-gray-700"
 								>Farba ICS udalostí</span
 							>
-							<input
-								type="color"
-								v-model="icsGlobalColor"
-								class="w-10 h-8 cursor-pointer border rounded"
-							/>
+							<input type="color" v-model="icsGlobalColor" />
 						</div>
 
 						<transition name="fade">
 							<div v-if="showIcsCalendarDropdown" class="mt-3">
-								<!-- <div
-									v-for="calendar in availableIcsCalendars"
-									:key="calendar"
-									@click="toggleIcsCalendar(calendar)"
-									class="w-full rounded-md py-2 px-2 cursor-pointer transition-colors mb-2 text-center font-medium"
-									:style="
-										selectedIcsCalendars.includes(calendar)
-											? {
-													backgroundColor: getIcsCalendarColor(calendar),
-													color: 'white',
-												}
-											: {}
-									"
-									:class="
-										selectedIcsCalendars.includes(calendar)
-											? ''
-											: 'bg-gray-200 hover:bg-slate-100'
-									"
-								>
-									{{ calendar }}
-								</div> -->
-
 								<div
 									v-for="calendar in availableIcsCalendars"
 									:key="calendar"
@@ -2223,8 +1982,10 @@ const isMounted = ref(false);
 							</div>
 						</transition>
 					</div>
-				</div>
+				</div> -->
 			</div>
+			<!-- /SIDEBAR -->
+
 			<div
 				class="absolute top-5 left-1/2 z-50"
 				v-if="calendarStore.microsoftLoadingState"
@@ -2245,6 +2006,10 @@ const isMounted = ref(false);
 					<div class="">Načítava si microsoft kalendár...</div>
 				</div>
 			</div>
+
+			<!-- ══════════════════════════════════
+			     MAIN CALENDAR — original markup intact
+			     ══════════════════════════════════ -->
 			<div class="demo-app-main bg-white text-black">
 				<FullCalendar
 					ref="calendarRef"
@@ -2275,10 +2040,31 @@ const isMounted = ref(false);
 				</FullCalendar>
 			</div>
 		</div>
+
+		<!-- ── Mobile FAB: only visible on small screens ── -->
+		<button
+			class="mobile-sidebar-fab"
+			@click="mobileSidebarOpen = true"
+			aria-label="Otvoriť panel"
+		>
+			☰
+		</button>
+
+		<button
+			class="mobile-add-activity-fab"
+			@click="openAddActivityMobile"
+			aria-label="Pridať aktivitu"
+		>
+			<span class="mobile-add-icon">+</span>
+			<span class="mobile-add-label">Pridať aktivitu</span>
+		</button>
 	</div>
 </template>
 
 <style lang="css" scoped>
+/* ═══════════════════════════════════════════════════════════
+   ORIGINAL STYLES — untouched
+═══════════════════════════════════════════════════════════ */
 .event-contact {
 	font-size: 0.75em;
 	opacity: 0.85;
@@ -2329,6 +2115,7 @@ b {
 	background: #eaf9ff;
 	border-right: 1px solid #d3e2e8;
 	flex-shrink: 0;
+	overflow-y: auto;
 }
 
 .demo-app-sidebar-section {
@@ -2478,5 +2265,209 @@ b {
 	opacity: 1;
 	max-height: 500px;
 	transform: translateY(0);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE ADDITIONS — everything below is new
+   Nothing above this line has been changed.
+═══════════════════════════════════════════════════════════ */
+
+/* Hidden on desktop; shown only on ≤ 768 px */
+.mobile-sidebar-header {
+	display: none;
+}
+
+.mobile-backdrop {
+	display: none;
+}
+
+.mobile-sidebar-fab {
+	display: none;
+}
+
+/* ── Tablet / phone  ≤ 768 px ─────────────────────────── */
+@media (max-width: 768px) {
+	/* Sidebar becomes a fixed slide-in drawer */
+	.demo-app-sidebar {
+		position: fixed;
+		top: 0;
+		left: 0;
+		bottom: 0;
+		z-index: 40;
+		width: 300px;
+		max-width: 88vw;
+		transform: translateX(-100%);
+		transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+		box-shadow: none;
+	}
+
+	.demo-app-sidebar.sidebar-open {
+		transform: translateX(0);
+		box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
+	}
+
+	/* Close strip inside the drawer */
+	.mobile-sidebar-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 14px 16px 10px;
+		border-bottom: 1px solid #d3e2e8;
+		background: #eaf9ff;
+		position: sticky;
+		top: 0;
+		z-index: 1;
+		flex-shrink: 0;
+	}
+
+	.mobile-close-btn {
+		background: none;
+		border: 1px solid #ccc;
+		border-radius: 6px;
+		padding: 4px 10px;
+		font-size: 16px;
+		line-height: 1;
+		cursor: pointer;
+		color: #333;
+	}
+
+	.mobile-close-btn:hover {
+		background: #f0f0f0;
+	}
+
+	/* Semi-transparent backdrop */
+	.mobile-backdrop {
+		display: block;
+		position: fixed;
+		inset: 0;
+		z-index: 39;
+		background: rgba(0, 0, 0, 0.45);
+		backdrop-filter: blur(1px);
+	}
+
+	/* Calendar takes the full viewport width */
+	.demo-app-main {
+		width: 100%;
+		padding: 8px;
+	}
+
+	/* FAB bottom-right to re-open the sidebar */
+	.mobile-sidebar-fab {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		position: fixed;
+		bottom: 20px;
+		right: 16px;
+		z-index: 38;
+		width: 48px;
+		height: 48px;
+		background: #921337;
+		color: #fff;
+		border: none;
+		border-radius: 14px;
+		font-size: 22px;
+		box-shadow: 0 4px 14px rgba(146, 19, 55, 0.4);
+		cursor: pointer;
+		transition:
+			background 0.15s,
+			transform 0.1s;
+	}
+
+	.mobile-sidebar-fab:active {
+		background: #cc1d4d;
+		transform: scale(0.95);
+	}
+
+	/* FullCalendar toolbar wraps on narrow screens */
+	:deep(.fc-toolbar) {
+		flex-wrap: wrap;
+		gap: 6px;
+		padding: 6px !important;
+	}
+
+	:deep(.fc-toolbar-title) {
+		font-size: 14px !important;
+	}
+
+	:deep(.fc-button) {
+		padding: 4px 8px !important;
+		font-size: 12px !important;
+	}
+}
+
+/* ── Small phones  ≤ 480 px ───────────────────────────── */
+@media (max-width: 480px) {
+	/* Full-width drawer on very narrow phones */
+	.demo-app-sidebar {
+		width: 100%;
+		max-width: 100vw;
+	}
+
+	.demo-app-main {
+		padding: 4px;
+	}
+
+	:deep(.fc-toolbar) {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	:deep(.fc-toolbar-chunk) {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+	}
+}
+
+/* ── Backdrop fade transition ──────────────────────────── */
+.backdrop-fade-enter-active,
+.backdrop-fade-leave-active {
+	transition: opacity 0.25s ease;
+}
+
+.backdrop-fade-enter-from,
+.backdrop-fade-leave-to {
+	opacity: 0;
+}
+
+.mobile-add-activity-fab {
+	display: none;
+}
+
+@media (max-width: 768px) {
+	.mobile-add-activity-fab {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		position: fixed;
+		bottom: 80px; /* sits above the ☰ FAB, which is at bottom: 20px */
+		right: 16px;
+		z-index: 38;
+		height: 44px;
+		padding: 0 16px;
+		background: #2563eb;
+		color: #fff;
+		border: none;
+		border-radius: 22px;
+		font-size: 14px;
+		font-weight: 600;
+		box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+		cursor: pointer;
+		transition:
+			background 0.15s,
+			transform 0.1s;
+	}
+
+	.mobile-add-activity-fab:active {
+		background: #1d4ed8;
+		transform: scale(0.96);
+	}
+
+	.mobile-add-icon {
+		font-size: 18px;
+		line-height: 1;
+		font-weight: 700;
+	}
 }
 </style>

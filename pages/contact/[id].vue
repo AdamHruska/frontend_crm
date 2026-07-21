@@ -71,6 +71,7 @@ const onBjSubmitted = (count) => {
 	if (activity) activity.bj_count = count;
 };
 
+/*
 const activities_todo = computed(() => {
 	return (todoStore.todosHistory || [])
 		.filter((todo) => todo.contact_id == id)
@@ -85,6 +86,47 @@ const activities_todo = computed(() => {
 					? todo.updated_at.split("+")[0].replace("T", " ").slice(0, -3)
 					: null,
 			completed: todo.is_completed,
+			creator_name: todo.creator_name ?? null,
+		}));
+});
+*/
+
+// const activities_todo = computed(() => {
+// 	return (todoStore.todosHistory || [])
+// 		.filter((todo) => todo.contact_id == id)
+// 		.map((todo) => ({
+// 			id: todo.id,
+// 			activity: todo.activity_name,
+// 			dueDate: todo.due_date
+// 				? todo.due_date.split("+")[0].replace("T", " ").slice(0, -3)
+// 				: "",
+// 			updated_at:
+// 				todo.is_completed && todo.updated_at
+// 					? todo.updated_at.split("+")[0].replace("T", " ").slice(0, -3)
+// 					: null,
+// 			completed: todo.is_completed,
+// 			creator_name: todo.creator_name ?? null,
+// 			status_changed_by_name: todo.status_changed_by_name ?? null, // add this
+// 		}));
+// });
+
+const activities_todo = computed(() => {
+	return (todoStore.todosHistory || [])
+		.filter((todo) => todo.contact_id == id)
+		.map((todo) => ({
+			id: todo.id,
+			activity: todo.activity_name,
+			dueDate: todo.due_date
+				? todo.due_date.split("+")[0].replace("T", " ").slice(0, -3)
+				: "",
+			updated_at:
+				todo.is_completed && todo.updated_at
+					? todo.updated_at.split("+")[0].replace("T", " ").slice(0, -3)
+					: null,
+			completed: todo.is_completed,
+			creator_name: todo.creator_name ?? null,
+			author_id: todo.author_id ?? null,
+			status_changed_by_name: todo.status_changed_by_name ?? null,
 		}));
 });
 
@@ -332,6 +374,8 @@ const columns_todo = [
 	{ key: "activity", label: "Aktivita" },
 	{ key: "completed", label: "Status" },
 	{ key: "updated_at", label: "Dokončené" },
+	{ key: "status_changed_by_name", label: "Zmenil status" }, // add this
+	{ key: "creator_name", label: "Vytvoril" },
 	{ key: "actions" },
 ];
 
@@ -355,6 +399,11 @@ const todo_items = (row) => [
 const todoBool = ref(false);
 const changeToDoBool = () => {
 	todoBool.value = !todoBool.value;
+};
+
+const onTodoAdded = async () => {
+	todoBool.value = false;
+	await todoStore.fetchTodosHistory();
 };
 
 const updateTodoBool = ref(false);
@@ -387,12 +436,16 @@ const changeActivityStatus = async (row, status) => {
 	const originalStatus = row.activity_status;
 	try {
 		if (row.aktivita === "Prvé stretnutie" && status === "check") {
-			const alreadyHasAnalyza = activities.value.some(
+			const stretnutieDate = new Date(row.datumCas);
+
+			const hasNewerAnalyza = activities.value.some(
 				(a) =>
 					a.aktivita === "Analýza osobných financí" &&
-					a.activity_status !== "discarded",
+					a.activity_status !== "discarded" &&
+					new Date(a.datumCas) > stretnutieDate,
 			);
-			if (!alreadyHasAnalyza) {
+
+			if (!hasNewerAnalyza) {
 				changeConfirmEventModal();
 				pendingFirstMeetingRow.value = row;
 				return;
@@ -785,6 +838,28 @@ const contactInitials = computed(() => {
 	if (!p) return "—";
 	return `${(p.meno || "")[0] || ""}${(p.priezvisko || "")[0] || ""}`.toUpperCase();
 });
+
+const setTodoStatus = async (row, completed) => {
+	if (row.completed === completed) return;
+
+	const rawTodo = todoStore.todosHistory.find((t) => t.id === row.id);
+	if (!rawTodo) return;
+
+	try {
+		await todoStore.updateTodo(row.id, {
+			activity_name: rawTodo.activity_name,
+			due_date: rawTodo.due_date,
+			is_completed: completed,
+		});
+		await todoStore.fetchTodosHistory();
+	} catch (error) {
+		console.error("Error updating todo status:", error);
+		toast.error("Chyba pri aktualizácii úlohy", {
+			position: "top-right",
+			timeout: 5000,
+		});
+	}
+};
 </script>
 
 <template>
@@ -892,6 +967,7 @@ const contactInitials = computed(() => {
 	<addToDoForm
 		v-if="todoBool"
 		@cancelToDoActivity="changeToDoBool"
+		@todoAdded="onTodoAdded"
 		:contact_id="id"
 		:contact="people"
 	/>
@@ -1178,18 +1254,52 @@ const contactInitials = computed(() => {
 						<tr v-for="row in activities_todo" :key="row.id" class="data-row">
 							<td class="td-mono">{{ row.dueDate }}</td>
 							<td>{{ row.activity }}</td>
-							<td>
-								<span
-									:class="
-										row.completed
-											? 'badge-status badge-done'
-											: 'badge-status badge-pending'
-									"
-								>
-									{{ row.completed ? "Dokončené" : "Čaká" }}
-								</span>
+							<td @click.stop>
+								<div class="todo-status-toggle">
+									<button
+										class="todo-status-option"
+										:class="{ active: !row.completed }"
+										@click="setTodoStatus(row, false)"
+									>
+										Čaká
+									</button>
+									<button
+										class="todo-status-option todo-status-option-done"
+										:class="{ active: row.completed }"
+										@click="setTodoStatus(row, true)"
+									>
+										✓ Dokončené
+									</button>
+								</div>
 							</td>
 							<td class="td-mono text-muted">{{ row.updated_at || "—" }}</td>
+							<td>
+								<span
+									v-if="row.status_changed_by_name"
+									class="badge badge-blue"
+									style="font-size: 11px; padding: 2px 8px"
+								>
+									{{ row.status_changed_by_name }}
+								</span>
+								<span v-else class="text-muted">—</span>
+							</td>
+							<td>
+								<span
+									v-if="row.author_id == user_id"
+									class="badge badge-violet"
+									style="font-size: 11px; padding: 2px 8px"
+								>
+									Vytvorené mnou
+								</span>
+								<span
+									v-else-if="row.creator_name"
+									class="badge badge-blue"
+									style="font-size: 11px; padding: 2px 8px"
+								>
+									{{ row.creator_name }}
+								</span>
+								<span v-else class="text-muted">—</span>
+							</td>
 							<td>
 								<UDropdown :items="todo_items(row)" theme="light">
 									<button class="icon-btn">
@@ -2200,5 +2310,72 @@ const contactInitials = computed(() => {
 	border-top: 1px solid #e4e8ef;
 	display: flex;
 	justify-content: flex-end;
+}
+
+.badge-status-btn {
+	display: inline-block;
+	padding: 3px 10px;
+	border-radius: 20px;
+	font-size: 12px;
+	font-weight: 600;
+	border: 1px solid transparent;
+	cursor: pointer;
+	transition: all 0.15s;
+}
+.badge-status-btn.badge-done {
+	background: #dcfce7;
+	color: #15803d;
+}
+.badge-status-btn.badge-done:hover {
+	background: #bbf7d0;
+	border-color: #86efac;
+}
+.badge-status-btn.badge-pending {
+	background: #fef9c3;
+	color: #a16207;
+}
+.badge-status-btn.badge-pending:hover {
+	background: #fde047;
+	border-color: #facc15;
+}
+
+/* ── ToDo status toggle (two explicit buttons) ── */
+.todo-status-toggle {
+	display: inline-flex;
+	border: 1px solid #e4e8ef;
+	border-radius: 20px;
+	overflow: hidden;
+	background: #f8f9fb;
+}
+
+.todo-status-option {
+	border: none;
+	background: transparent;
+	padding: 5px 12px;
+	font-size: 12px;
+	font-weight: 600;
+	color: #9ca3af;
+	cursor: pointer;
+	transition: all 0.15s;
+	white-space: nowrap;
+}
+
+.todo-status-option:not(:last-child) {
+	border-right: 1px solid #e4e8ef;
+}
+
+.todo-status-option:hover {
+	color: #374151;
+	background: #f1f3f7;
+}
+
+.todo-status-option.active {
+	color: #a16207;
+	background: #fef9c3;
+}
+
+.todo-status-option-done.active {
+	color: #15803d;
+	background: #dcfce7;
 }
 </style>

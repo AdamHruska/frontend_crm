@@ -50,7 +50,7 @@
 			<button
 				type="button"
 				@click="saveOffice"
-				class="mt-4 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+				class="mt-4 bg-[#921337] text-white py-2 px-4 rounded-md hover:bg-[#cc1d4d]"
 			>
 				{{ officeToEdit ? "Uložiť zmeny" : "Uložiť kanceláriu" }}
 			</button>

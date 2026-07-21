@@ -14,12 +14,10 @@
 		<div
 			class="border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-50 shadow-sm"
 		>
-			<div
-				class="max-w-screen-2xl mx-auto px-6 py-4 flex items-center justify-between"
-			>
+			<div class="mx-auto px-6 py-4 flex items-center justify-between">
 				<div class="flex items-center gap-3">
 					<div
-						class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm"
+						class="w-8 h-8 rounded-lg bg-[#921337] flex items-center justify-center shadow-sm"
 					>
 						<svg
 							class="w-4 h-4 text-white"
@@ -98,7 +96,7 @@
 							@click="switchToMoje"
 							:class="
 								viewMode === 'moje'
-									? 'bg-indigo-600 text-white'
+									? 'bg-[#921337] text-white'
 									: 'text-slate-500 hover:text-slate-800'
 							"
 							class="px-3 py-2 text-sm font-medium transition-colors"
@@ -109,7 +107,7 @@
 							@click="switchToTim"
 							:class="
 								viewMode === 'tim'
-									? 'bg-indigo-600 text-white'
+									? 'bg-[#921337] text-white'
 									: 'text-slate-500 hover:text-slate-800'
 							"
 							class="px-3 py-2 text-sm font-medium transition-colors"
@@ -125,7 +123,7 @@
 				v-if="viewMode === 'tim'"
 				class="border-t border-slate-200 bg-white px-6 py-3"
 			>
-				<div class="max-w-screen-2xl mx-auto flex items-center gap-2">
+				<div class="mx-auto flex items-center gap-2">
 					<span
 						class="text-xs text-slate-400 font-medium uppercase tracking-widest mr-2"
 						>Člen tímu:</span
@@ -136,15 +134,15 @@
 						@click="selectTimUser(user)"
 						:class="
 							selectedTimUser?.id === user.id
-								? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-								: 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
+								? 'bg-[#921337] text-white border-[#921337] shadow-sm'
+								: 'bg-white text-slate-600 border-slate-200 hover:border-[#921337] hover:text-[#921337]'
 						"
 						class="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-all"
 					>
 						<div
 							:class="
 								selectedTimUser?.id === user.id
-									? 'bg-indigo-400'
+									? 'bg-[#921337]'
 									: 'bg-slate-200'
 							"
 							class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold transition-colors"
@@ -164,7 +162,7 @@
 			</div>
 		</div>
 
-		<div class="max-w-screen-2xl mx-auto px-6 py-8 space-y-10">
+		<div class="mx-auto px-6 py-8 space-y-10">
 			<!-- Tim: no user selected placeholder -->
 			<div
 				v-if="viewMode === 'tim' && !selectedTimUser"
@@ -336,13 +334,14 @@
 									<th
 										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
 									>
-										Realizácia
+										BJ Porad.
 									</th>
 									<th
 										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
 									>
-										BJ Porad.
+										Realizácia
 									</th>
+
 									<th
 										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
 									>
@@ -413,13 +412,6 @@
 										/>
 									</td>
 									<td class="px-4 py-3 text-center">
-										<DateCell
-											:date="row.datumRealizacia"
-											:done="row.realizaciaD"
-											:status="row.realizaciaStatus"
-										/>
-									</td>
-									<td class="px-4 py-3 text-center">
 										<span
 											v-if="row.bjPoradenstvo"
 											class="font-['DM_Mono'] text-emerald-700 font-medium text-sm"
@@ -428,6 +420,14 @@
 										</span>
 										<span v-else class="text-slate-300">—</span>
 									</td>
+									<td class="px-4 py-3 text-center">
+										<DateCell
+											:date="row.datumRealizacia"
+											:done="row.realizaciaD"
+											:status="row.realizaciaStatus"
+										/>
+									</td>
+
 									<td class="px-4 py-3 text-center">
 										<span
 											v-if="row.bjRealizacia"
@@ -566,6 +566,11 @@
 									<th
 										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
 									>
+										BJ Porad.
+									</th>
+									<th
+										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
+									>
 										Mien v analýze
 									</th>
 									<th
@@ -573,11 +578,7 @@
 									>
 										Serv. realizácia
 									</th>
-									<th
-										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
-									>
-										BJ Porad.
-									</th>
+
 									<th
 										class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap"
 									>
@@ -626,6 +627,15 @@
 									</td>
 									<td class="px-4 py-3 text-center">
 										<span
+											v-if="row.bjPoradenstvo"
+											class="font-['DM_Mono'] text-emerald-700 font-medium text-sm"
+										>
+											{{ row.bjPoradenstvo }}
+										</span>
+										<span v-else class="text-slate-300">—</span>
+									</td>
+									<td class="px-4 py-3 text-center">
+										<span
 											v-if="row.mienAoF"
 											class="font-['DM_Mono'] text-slate-700 font-medium"
 											>{{ row.mienAoF }}</span
@@ -639,15 +649,7 @@
 											:status="row.servisRealizaciaStatus"
 										/>
 									</td>
-									<td class="px-4 py-3 text-center">
-										<span
-											v-if="row.bjPoradenstvo"
-											class="font-['DM_Mono'] text-emerald-700 font-medium text-sm"
-										>
-											{{ row.bjPoradenstvo }}
-										</span>
-										<span v-else class="text-slate-300">—</span>
-									</td>
+
 									<td class="px-4 py-3 text-center">
 										<span
 											v-if="row.bjRealizacia"

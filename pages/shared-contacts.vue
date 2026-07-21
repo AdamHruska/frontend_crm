@@ -720,282 +720,284 @@ const getUserName = (userId) => {
 </script>
 
 <template>
-	<div class="">
-		<div class="flex items-center justify-between w-full">
-			<h1 class="ml-6 mt-10 mb-3 font-semibold text-lg">
-				Kontakty na ktorých pracujeme dvaja zároven <span>(Zdieľaneé)</span>
-			</h1>
-			<SelectedContactsComponent
-				v-if="showSelectedContactsBool"
-				@showSelectedContacts="showSelectedContacts"
-			/>
-		</div>
+	<div class="bg-white">
+		<div class="bg-white">
+			<div class="flex items-center justify-between w-full">
+				<h1 class="ml-6 mt-10 mb-3 font-semibold text-lg">
+					Kontakty na ktorých pracujeme dvaja zároven <span>(Zdieľaneé)</span>
+				</h1>
+				<SelectedContactsComponent
+					v-if="showSelectedContactsBool"
+					@showSelectedContacts="showSelectedContacts"
+				/>
+			</div>
 
-		<loadigcomponent v-if="contactsStore.loadingState" />
-		<div class="flex justify-between w-full">
-			<!-- <div class="max-w-sm ml-8 mt-8 mb-2 w-[400px]">
+			<loadigcomponent v-if="contactsStore.loadingState" />
+			<div class="flex justify-between w-full">
+				<!-- <div class="max-w-sm ml-8 mt-8 mb-2 w-[400px]">
 				<searchBar @updateResults="handleSearchResults" />
 			</div> -->
 
-			<div class="flex items-center mb-2 ml-auto">
-				<UTooltip
-					text="Pridať kontakt"
-					:ui="{ background: '!bg-white', color: '' }"
-					class=""
-				>
-					<button
-						@click="addPerson()"
-						class="bg-blue-700 rounded-lg hover:bg-blue-500 hover:text-black h-11 w-11 flex justify-center pt-[7px] mr-4 mt-8 shadow-xl"
+				<div class="flex items-center mb-2 ml-auto">
+					<UTooltip
+						text="Pridať kontakt"
+						:ui="{ background: '!bg-white', color: '' }"
+						class=""
 					>
-						<Icon icon="fa6-solid:plus" style="font-size: 30px" class="" />
+						<button
+							@click="addPerson()"
+							class="bg-[#921337] rounded-lg hover:bg-[#cc1d4d] hover:text-black h-11 w-11 flex justify-center pt-[7px] mr-4 mt-8 shadow-xl"
+						>
+							<Icon icon="fa6-solid:plus" style="font-size: 30px" class="" />
+						</button>
+					</UTooltip>
+
+					<button
+						@click="showSelectedContacts"
+						class="bg-green-400 hover:bg-green-500 rounded-lg h-11 mt-8 mr-8 shadow-md px-2 w-auto"
+					>
+						Zobraziť zaklinuté kontakty
 					</button>
-				</UTooltip>
+				</div>
+			</div>
+
+			<div class="relative float-end mr-10 mt-2">
+				<Icon
+					icon="material-symbols:chat-info-outline"
+					class="scale-[2] hover:scale-[2.5] cursor-pointer transition-transform"
+					@mouseenter="showDisclaimer = true"
+					@mouseleave="showDisclaimer = false"
+				/>
+				<div
+					class="bg-white rounded-md shadow-md w-[300px] absolute right-8 top-[-10px] z-[50] py-3 px-4"
+					id="disclaimer"
+					v-if="showDisclaimer"
+				>
+					<!-- Colour -->
+					<div class="flex items-center space-x-2 mb-2">
+						<div class="w-[32px] h-[32px] bg-green-200"></div>
+						<div>- Kontakt nemá žiadne aktivity</div>
+					</div>
+					<div class="flex items-center space-x-2 mb-2">
+						<div class="w-[32px] h-[32px] bg-blue-200"></div>
+						<div>- Len volané a nedovolané</div>
+					</div>
+					<div class="flex items-center space-x-2 mb-2">
+						<div class="w-[32px] h-[32px] bg-orange-300"></div>
+						<div>- Zlé tel. čislo</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="flex justify-end mr-20 h-11">
+				<!-- Added fixed height h-12 -->
+				<button
+					v-if="contactsStore.selectedContacts.length > 0"
+					@click="uncheckAll"
+					class="px-3 py-1 bg-red-500 hover:bg-red-700 rounded-lg text-white shadow-xl"
+				>
+					Unselect all {{ contactsStore.selectedContacts.length }}
+				</button>
+				<button
+					v-if="contactsStore.selectedContacts.length > 0"
+					@click="toggleCallList"
+					class="px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded-lg text-white ml-4 shadow-xl"
+				>
+					Create Call List
+				</button>
 
 				<button
-					@click="showSelectedContacts"
-					class="bg-green-400 hover:bg-green-500 rounded-lg h-11 mt-8 mr-8 shadow-md px-2 w-auto"
+					v-if="contactsStore.selectedContacts.length > 0"
+					@click="showDelegateForm = !showDelegateForm"
+					class="px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded-lg text-white ml-4 shadow-xl"
 				>
-					Zobraziť zaklinuté kontakty
+					Posunúť kontakty
+				</button>
+
+				<button
+					v-if="contactsStore.selectedContacts.length > 0"
+					@click="showShareContacts = !showShareContacts"
+					class="px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded-lg text-white ml-4 shadow-xl"
+				>
+					Zdielať kontakty
 				</button>
 			</div>
 		</div>
 
-		<div class="relative float-end mr-10 mt-2">
-			<Icon
-				icon="material-symbols:chat-info-outline"
-				class="scale-[2] hover:scale-[2.5] cursor-pointer transition-transform"
-				@mouseenter="showDisclaimer = true"
-				@mouseleave="showDisclaimer = false"
-			/>
-			<div
-				class="bg-white rounded-md shadow-md w-[300px] absolute right-8 top-[-10px] z-[50] py-3 px-4"
-				id="disclaimer"
-				v-if="showDisclaimer"
-			>
-				<!-- Colour -->
-				<div class="flex items-center space-x-2 mb-2">
-					<div class="w-[32px] h-[32px] bg-green-200"></div>
-					<div>- Kontakt nemá žiadne aktivity</div>
-				</div>
-				<div class="flex items-center space-x-2 mb-2">
-					<div class="w-[32px] h-[32px] bg-blue-200"></div>
-					<div>- Len volané a nedovolané</div>
-				</div>
-				<div class="flex items-center space-x-2 mb-2">
-					<div class="w-[32px] h-[32px] bg-orange-300"></div>
-					<div>- Zlé tel. čislo</div>
-				</div>
-			</div>
-		</div>
+		<h1 class="ml-6 mt-10 mb-3 font-semibold text-lg">
+			Kontakty zdieľané so mnou:
+		</h1>
+		<UTable
+			:rows="sharedPeople"
+			:columns="columns"
+			class="mx-6 table-container shadow-md rounded-md table-fixed mb-12"
+			:row-class="(row) => row.class"
+			:ui="{
+				td: {
+					base: 'align-top whitespace-normal overflow-hidden !text-black',
+				},
+			}"
+		>
+			<template #actions-data="{ row }">
+				<div class="flex justify-between">
+					<div class="flex space-x-2">
+						<UButton
+							@click.left="detailView(row.id)"
+							@auxclick.prevent="onAuxClick($event, row.id)"
+							@mousedown="handleMouseDown"
+							class="bg-blue-500 text-white shadow-xl hover:scale-110 transition-transform"
+							label="Zobraziť detail"
+						/>
 
-		<div class="flex justify-end mr-20 h-11">
-			<!-- Added fixed height h-12 -->
-			<button
-				v-if="contactsStore.selectedContacts.length > 0"
-				@click="uncheckAll"
-				class="px-3 py-1 bg-red-500 hover:bg-red-700 rounded-lg text-white shadow-xl"
-			>
-				Unselect all {{ contactsStore.selectedContacts.length }}
-			</button>
-			<button
-				v-if="contactsStore.selectedContacts.length > 0"
-				@click="toggleCallList"
-				class="px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded-lg text-white ml-4 shadow-xl"
-			>
-				Create Call List
-			</button>
+						<UTooltip
+							text="Zrušiť zdielanie kontaktu"
+							:ui="{ background: '!bg-white', color: '' }"
+							class=""
+						>
+							<UButton
+								@click="deletePerson(row.id)"
+								icon="mdi:share-off-outline"
+								color="ffffff"
+								class="shadow-xl text-red-500 hover:bg-gray-300 hover:scale-110 transition-transform"
+							/>
+						</UTooltip>
+					</div>
 
-			<button
-				v-if="contactsStore.selectedContacts.length > 0"
-				@click="showDelegateForm = !showDelegateForm"
-				class="px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded-lg text-white ml-4 shadow-xl"
-			>
-				Posunúť kontakty
-			</button>
+					<!-- optional checkbox support -->
+					<input
+						type="checkbox"
+						@change="toggleCheckbox(row.id)"
+						:checked="isSelected(row.id)"
+					/>
+				</div>
+			</template>
 
-			<button
-				v-if="contactsStore.selectedContacts.length > 0"
-				@click="showShareContacts = !showShareContacts"
-				class="px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded-lg text-white ml-4 shadow-xl"
-			>
-				Zdielať kontakty
-			</button>
-		</div>
+			<template #poznamka-data="{ row }">
+				<div v-if="row.poznamka" class="group relative">
+					<div class="truncate max-w-[380px]">
+						{{ row.poznamka }}
+					</div>
+
+					<div
+						class="absolute hidden group-hover:block z-10 w-[500px] p-3 bg-white border border-gray-200 rounded shadow-lg"
+					>
+						<div class="text-sm text-gray-700 whitespace-normal">
+							{{ row.poznamka }}
+						</div>
+					</div>
+				</div>
+			</template>
+		</UTable>
+
+		<h1 class="ml-6 mb-3 font-semibold text-lg">Moje kontakty:</h1>
+		<UTable
+			:rows="people"
+			:columns="columnsSecond"
+			class="mx-6 table-container shadow-md rounded-md table-fixed"
+			:row-class="(row) => row.class"
+			:ui="{
+				td: {
+					base: 'align-top whitespace-normal overflow-hidden !text-black',
+				},
+			}"
+		>
+			<template #actions-data="{ row }">
+				<div class="flex justify-between">
+					<div class="flex space-x-4">
+						<UButton
+							@click.left="detailView(row.id)"
+							@auxclick.prevent="onAuxClick($event, row.id)"
+							@mousedown="handleMouseDown"
+							class="bg-blue-500 text-white shadow-xl hover:scale-110 transition-transform"
+							label="Zobraziť detail"
+						/>
+						<UTooltip
+							text="Upraviť kontakt"
+							:ui="{ background: '!bg-white', color: '' }"
+							class=""
+						>
+							<UButton
+								@click="findPerson(row.id)"
+								icon="i-heroicons-pencil-square-20-solid"
+								variant="ghost"
+								class="shadow-xl hover:bg-gray-300 hover:scale-110 transition-transform"
+							/>
+						</UTooltip>
+
+						<UTooltip
+							text="Zrušiť zdielanie kontaktu"
+							:ui="{ background: '!bg-white', color: '' }"
+							class=""
+						>
+							<UButton
+								@click="deletePerson(row.id)"
+								icon="mdi:share-off-outline"
+								color="ffffff"
+								class="shadow-xl text-red-500 hover:bg-gray-300 hover:scale-110 transition-transform"
+							/>
+						</UTooltip>
+					</div>
+					<input
+						type="checkbox"
+						@change="toggleCheckbox(row.id)"
+						:checked="isSelected(row.id)"
+					/>
+				</div>
+			</template>
+
+			<template #shared_author-data="{ row }">
+				<div>{{ getUserName(row.shared_author) }}</div>
+			</template>
+
+			<template #poznamka-data="{ row }">
+				<div v-if="row.poznamka" class="group relative">
+					<div class="truncate max-w-[380px]">
+						{{ row.poznamka }}
+					</div>
+
+					<div
+						class="absolute hidden group-hover:block z-10 w-[500px] p-3 bg-white border border-gray-200 rounded shadow-lg"
+					>
+						<div class="text-sm text-gray-700 whitespace-normal">
+							{{ row.poznamka }}
+						</div>
+					</div>
+				</div>
+			</template>
+		</UTable>
+
+		<AddPersonForm
+			v-if="showAddPersonForm"
+			@cancelAdd="addPerson()"
+			@addPeople="addPerson"
+		/>
+		<AlterPersonForm
+			v-if="showAlterPesonForm"
+			@cancelAlter="alterPerson()"
+			@alterPerson="updatePerson"
+			:single_contact="single_contact"
+		/>
+		<CallListAdd
+			v-if="showCallListForm"
+			:callListNames="callListNames"
+			:selected="selected"
+			:user_id="user_id"
+			@cancleCallListForm="cancleCallListForm"
+			@uncheckAll="uncheckAll"
+			@refreshCallLists="fetchCallLists"
+		/>
+		<DelegateContacts
+			v-if="showDelegateForm"
+			@cancelDelegateForm="showDelegateForm = false"
+			:selected="selected"
+		/>
+
+		<ShareContactsForm
+			v-if="showShareContacts"
+			@cancelShareContacts="showShareContacts = false"
+			:selected="selected"
+		/>
 	</div>
-
-	<h1 class="ml-6 mt-10 mb-3 font-semibold text-lg">
-		Kontakty zdieľané so mnou:
-	</h1>
-	<UTable
-		:rows="sharedPeople"
-		:columns="columns"
-		class="mx-6 table-container shadow-md rounded-md table-fixed mb-12"
-		:row-class="(row) => row.class"
-		:ui="{
-			td: {
-				base: 'align-top whitespace-normal overflow-hidden !text-black',
-			},
-		}"
-	>
-		<template #actions-data="{ row }">
-			<div class="flex justify-between">
-				<div class="flex space-x-2">
-					<UButton
-						@click.left="detailView(row.id)"
-						@auxclick.prevent="onAuxClick($event, row.id)"
-						@mousedown="handleMouseDown"
-						class="bg-blue-500 text-white shadow-xl hover:scale-110 transition-transform"
-						label="Zobraziť detail"
-					/>
-
-					<UTooltip
-						text="Zrušiť zdielanie kontaktu"
-						:ui="{ background: '!bg-white', color: '' }"
-						class=""
-					>
-						<UButton
-							@click="deletePerson(row.id)"
-							icon="mdi:share-off-outline"
-							color="ffffff"
-							class="shadow-xl text-red-500 hover:bg-gray-300 hover:scale-110 transition-transform"
-						/>
-					</UTooltip>
-				</div>
-
-				<!-- optional checkbox support -->
-				<input
-					type="checkbox"
-					@change="toggleCheckbox(row.id)"
-					:checked="isSelected(row.id)"
-				/>
-			</div>
-		</template>
-
-		<template #poznamka-data="{ row }">
-			<div v-if="row.poznamka" class="group relative">
-				<div class="truncate max-w-[380px]">
-					{{ row.poznamka }}
-				</div>
-
-				<div
-					class="absolute hidden group-hover:block z-10 w-[500px] p-3 bg-white border border-gray-200 rounded shadow-lg"
-				>
-					<div class="text-sm text-gray-700 whitespace-normal">
-						{{ row.poznamka }}
-					</div>
-				</div>
-			</div>
-		</template>
-	</UTable>
-
-	<h1 class="ml-6 mb-3 font-semibold text-lg">Moje kontakty:</h1>
-	<UTable
-		:rows="people"
-		:columns="columnsSecond"
-		class="mx-6 table-container shadow-md rounded-md table-fixed"
-		:row-class="(row) => row.class"
-		:ui="{
-			td: {
-				base: 'align-top whitespace-normal overflow-hidden !text-black',
-			},
-		}"
-	>
-		<template #actions-data="{ row }">
-			<div class="flex justify-between">
-				<div class="flex space-x-4">
-					<UButton
-						@click.left="detailView(row.id)"
-						@auxclick.prevent="onAuxClick($event, row.id)"
-						@mousedown="handleMouseDown"
-						class="bg-blue-500 text-white shadow-xl hover:scale-110 transition-transform"
-						label="Zobraziť detail"
-					/>
-					<UTooltip
-						text="Upraviť kontakt"
-						:ui="{ background: '!bg-white', color: '' }"
-						class=""
-					>
-						<UButton
-							@click="findPerson(row.id)"
-							icon="i-heroicons-pencil-square-20-solid"
-							variant="ghost"
-							class="shadow-xl hover:bg-gray-300 hover:scale-110 transition-transform"
-						/>
-					</UTooltip>
-
-					<UTooltip
-						text="Zrušiť zdielanie kontaktu"
-						:ui="{ background: '!bg-white', color: '' }"
-						class=""
-					>
-						<UButton
-							@click="deletePerson(row.id)"
-							icon="mdi:share-off-outline"
-							color="ffffff"
-							class="shadow-xl text-red-500 hover:bg-gray-300 hover:scale-110 transition-transform"
-						/>
-					</UTooltip>
-				</div>
-				<input
-					type="checkbox"
-					@change="toggleCheckbox(row.id)"
-					:checked="isSelected(row.id)"
-				/>
-			</div>
-		</template>
-
-		<template #shared_author-data="{ row }">
-			<div>{{ getUserName(row.shared_author) }}</div>
-		</template>
-
-		<template #poznamka-data="{ row }">
-			<div v-if="row.poznamka" class="group relative">
-				<div class="truncate max-w-[380px]">
-					{{ row.poznamka }}
-				</div>
-
-				<div
-					class="absolute hidden group-hover:block z-10 w-[500px] p-3 bg-white border border-gray-200 rounded shadow-lg"
-				>
-					<div class="text-sm text-gray-700 whitespace-normal">
-						{{ row.poznamka }}
-					</div>
-				</div>
-			</div>
-		</template>
-	</UTable>
-
-	<AddPersonForm
-		v-if="showAddPersonForm"
-		@cancelAdd="addPerson()"
-		@addPeople="addPerson"
-	/>
-	<AlterPersonForm
-		v-if="showAlterPesonForm"
-		@cancelAlter="alterPerson()"
-		@alterPerson="updatePerson"
-		:single_contact="single_contact"
-	/>
-	<CallListAdd
-		v-if="showCallListForm"
-		:callListNames="callListNames"
-		:selected="selected"
-		:user_id="user_id"
-		@cancleCallListForm="cancleCallListForm"
-		@uncheckAll="uncheckAll"
-		@refreshCallLists="fetchCallLists"
-	/>
-	<DelegateContacts
-		v-if="showDelegateForm"
-		@cancelDelegateForm="showDelegateForm = false"
-		:selected="selected"
-	/>
-
-	<ShareContactsForm
-		v-if="showShareContacts"
-		@cancelShareContacts="showShareContacts = false"
-		:selected="selected"
-	/>
 </template>
 
 <style scoped>

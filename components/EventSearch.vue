@@ -5,7 +5,19 @@ const searchText = ref("");
 
 const props = defineProps({
 	contactsProp: Array,
+	preselectedContact: { type: Object, default: null },
 });
+
+// Watch for preselected contact from parent
+watch(
+	() => props.preselectedContact,
+	(contact) => {
+		if (contact) {
+			selectedContact.value = contact;
+		}
+	},
+	{ immediate: true },
+);
 
 // Define emit
 const emit = defineEmits(["selectedContact"]);
@@ -18,20 +30,20 @@ const filteredContacts = computed(() => {
 	if (!searchText.value) return props.contactsProp;
 
 	const searchTerms = removeDiacritics(searchText.value.toLowerCase()).split(
-		" "
+		" ",
 	);
 
 	return props.contactsProp.filter((contact) => {
 		const normalizedFirstName = removeDiacritics(contact.meno.toLowerCase());
 		const normalizedLastName = removeDiacritics(
-			contact.priezvisko.toLowerCase()
+			contact.priezvisko.toLowerCase(),
 		);
 
 		const fullNameNormal = `${normalizedFirstName} ${normalizedLastName}`;
 		const fullNameReverse = `${normalizedLastName} ${normalizedFirstName}`;
 
 		return searchTerms.every(
-			(term) => fullNameNormal.includes(term) || fullNameReverse.includes(term)
+			(term) => fullNameNormal.includes(term) || fullNameReverse.includes(term),
 		);
 	});
 });

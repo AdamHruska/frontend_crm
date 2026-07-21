@@ -126,14 +126,14 @@ onMounted(() => {
 			v-model="searchInput"
 			type="search"
 			id="default-search"
-			class="block w-full p-4 ps-10 text-sm text-black border border-gray-400 border-2 rounded-lg bg-white focus:ring-blue-500 focus:border-blue-500 placeholder-gray-500"
+			class="block w-full p-4 ps-10 text-sm text-black border-gray-400 border-2 rounded-lg bg-white focus:ring-[#921337] focus:border-[#921337] placeholder-gray-500"
 			placeholder="Hľadať ..."
 			required
 		/>
 		<button
 			@click="handleSearch"
 			type="submit"
-			class="text-white absolute end-2.5 bottom-2.5 bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
+			class="text-white absolute end-2.5 bottom-2.5 bg-[#921337] hover:bg-[#b81945] focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-4 py-2"
 		>
 			Hľadať
 		</button>

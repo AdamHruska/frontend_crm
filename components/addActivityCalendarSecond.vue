@@ -16,6 +16,8 @@ import { useToast } from "vue-toastification";
 const toast = useToast();
 const props = defineProps({
 	end_date: String,
+	presetContactId: { type: [String, Number], default: null },
+	presetAktivita: { type: String, default: "" },
 });
 
 import { useOfficeStore } from "#imports";
@@ -23,6 +25,8 @@ const officeStore = useOfficeStore();
 
 const emailCount = ref(0);
 const emails = ref([]);
+
+const preselectedContact = ref(null);
 
 const showVDD = ref(false);
 
@@ -137,24 +141,50 @@ onMounted(async () => {
 	officeStore.fetchOffices();
 	officeStore.fetchOfficesSharedWithMe();
 	userStore.fetchUser();
-
 	officeStore.getallOfficeActivites();
 
 	emails.value = [""];
 	datum_cas.value = formatDateToISO(props.end_date);
 
-	const startPlusHour = add(datum_cas.value, { hours: 1 });
+	const startPlusHour = add(parseISO(datum_cas.value), { hours: 1 });
 	koniec.value = format(startPlusHour, "yyyy-MM-dd'T'HH:mm");
 
 	const response2 = await axios.get(`${config.public.apiUrl}all-contacts`, {
 		headers: { Authorization: `Bearer ${authStore.token}` },
 	});
-	contacts.value = await response2.data.contacts;
+	contacts.value = response2.data.contacts;
+
+	// Pre-fill activity type
+	if (props.presetAktivita) {
+		aktivita.value = props.presetAktivita;
+	}
+
+	// Pre-fill contact — suppress watcher to avoid redundant API call
+	if (props.presetContactId) {
+		const found = contacts.value.find(
+			(c) => String(c.id) === String(props.presetContactId),
+		);
+		if (found) {
+			suppressKontaktWatch.value = true;
+			contact.value = found;
+			id.value = found.id;
+			email.value = found.email || "";
+			kontakt.value = `${found.meno} ${found.priezvisko} ${found.id}`;
+			preselectedContact.value = found; // ← this line sets the EventSearch display
+			await nextTick();
+			suppressKontaktWatch.value = false;
+		}
+	}
 });
 
 const id = ref("");
+const suppressKontaktWatch = ref(false);
+
 watch(kontakt, async (newValue) => {
+	if (suppressKontaktWatch.value) return;
+	if (!newValue) return;
 	id.value = getIdFromString(newValue);
+	if (!id.value || isNaN(Number(id.value))) return;
 	const responseContact = await axios.get(
 		`${config.public.apiUrl}contact/${id.value}`,
 		{ headers: { Authorization: `Bearer ${authStore.token}` } },
@@ -175,7 +205,7 @@ function getIdFromString(str) {
 }
 
 const addActivity = async () => {
-	changeLoadingState();
+	loadingState.value = true;
 	event.preventDefault();
 
 	const validEmails = emails.value.filter(
@@ -187,7 +217,7 @@ const addActivity = async () => {
 			position: "top-right",
 			timeout: 5000,
 		});
-		changeLoadingState();
+		loadingState.value = false;
 		return;
 	}
 
@@ -213,17 +243,6 @@ const addActivity = async () => {
 			{ headers: { Authorization: `Bearer ${authStore.token}` } },
 		);
 
-		// if (activityResponse.data.status === 201) {
-		// 	toast.success("Aktivita bola úspešne pridaná", {
-		// 		position: "top-right",
-		// 		timeout: 5000,
-		// 	});
-		// }
-
-		if (activityResponse.data.activity.aktivita === "Pohovor") {
-			location.reload();
-		}
-
 		if (onlineMeeting.value && !emailBool.value && emails.value[0]) {
 			await axios.patch(
 				`${config.public.apiUrl}contact/${id.value}/email`,
@@ -244,7 +263,6 @@ const addActivity = async () => {
 					},
 					{ headers: { Authorization: `Bearer ${authStore.token}` } },
 				);
-
 				if (teamsResponse.data.joinUrl) {
 					const officePart =
 						selectedOffice.value.name !== "Kancelárie"
@@ -265,8 +283,7 @@ const addActivity = async () => {
 
 		if (selectedOffice.value.name !== "Kancelárie") {
 			const toLocalString = (localStr) => localStr.replace("T", " ") + ":00";
-
-			const newActivity = {
+			await officeStore.storeActivity({
 				aktivita:
 					aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
 				importance: importance.value,
@@ -275,41 +292,146 @@ const addActivity = async () => {
 				poznamka: poznamka.value,
 				office_id: officeStore.setOfficeID,
 				owner_number: userStore.user.vizitka_phone_num,
-			};
-
-			await officeStore.storeActivity(newActivity);
+			});
 		}
 
 		calendarStore.activities.push(activityResponse.data.activity);
 
-		const successMsg = onlineMeeting.value
-			? "Online stretnutie bolo úspešne pridané"
-			: "Aktivita bola úspešne pridaná";
+		toast.success(
+			onlineMeeting.value
+				? "Online stretnutie bolo úspešne pridané"
+				: "Aktivita bola úspešne pridaná",
+			{ position: "top-right", timeout: 5000 },
+		);
 
-		toast.success(successMsg, {
-			position: "top-right",
-			timeout: 5000,
-			closeOnClick: true,
-			pauseOnHover: true,
-			draggable: true,
-			draggablePercent: 60,
-			showCloseButtonOnHover: false,
-			hideProgressBar: false,
-		});
-
+		loadingState.value = false;
 		emit("activityAdded", activityResponse.data.activity);
 		emit("addNewEvent", activityResponse.data.activity);
 		emit("cancelAddActivity");
 	} catch (error) {
 		console.error("Error adding activity:", error);
+		loadingState.value = false;
 		alert(
 			"Nastala chyba pri pridaní aktivity: " +
 				(error.response?.data?.error || error.message),
 		);
 	}
-
-	changeLoadingState();
 };
+
+// const addActivity = async () => {
+// 	loadingState.value = true;
+// 	event.preventDefault();
+
+// 	const validEmails = emails.value.filter(
+// 		(email) => email && email.trim() !== "",
+// 	);
+
+// 	if (onlineMeeting.value && validEmails.length === 0) {
+// 		toast.error("Pre online stretnutie je potrebné zadať aspoň jeden email", {
+// 			position: "top-right",
+// 			timeout: 5000,
+// 		});
+// 		loadingState.value = false;
+// 		return;
+// 	}
+
+// 	try {
+// 		const activityResponse = await axios.post(
+// 			`${config.public.apiUrl}add-activity`,
+// 			{
+// 				contact_id: getIdFromString(kontakt.value),
+// 				aktivita:
+// 					aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
+// 				datumCas: datum_cas.value,
+// 				koniec: koniec.value,
+// 				poznamka: poznamka.value,
+// 				volane: volane.value,
+// 				dovolane: dovolane.value,
+// 				dohodnute: dohodnute.value,
+// 				miesto_stretnutia: miesto_stretnutia.value,
+// 				online_meeting: onlineMeeting.value,
+// 				send_notification_15: active.value?.includes(15) || false,
+// 				send_notification_30: active.value?.includes(30) || false,
+// 				send_notification_60: active.value?.includes(60) || false,
+// 			},
+// 			{ headers: { Authorization: `Bearer ${authStore.token}` } },
+// 		);
+
+// 		if (onlineMeeting.value && !emailBool.value && emails.value[0]) {
+// 			await axios.patch(
+// 				`${config.public.apiUrl}contact/${id.value}/email`,
+// 				{ email: emails.value[0] },
+// 				{ headers: { Authorization: `Bearer ${authStore.token}` } },
+// 			);
+// 		}
+
+// 		if (onlineMeeting.value) {
+// 			try {
+// 				const teamsResponse = await axios.post(
+// 					`${config.public.apiUrl}create-teams-meeting`,
+// 					{
+// 						activityId: activityResponse.data.activity.id,
+// 						user_id: userStore.user.id,
+// 						additionalEmails: validEmails.slice(1),
+// 						importance: importance.value,
+// 					},
+// 					{ headers: { Authorization: `Bearer ${authStore.token}` } },
+// 				);
+// 				if (teamsResponse.data.joinUrl) {
+// 					const officePart =
+// 						selectedOffice.value.name !== "Kancelárie"
+// 							? `${selectedOffice.value.name} - `
+// 							: "";
+// 					activityResponse.data.activity.miesto_stretnutia = `${officePart}${teamsResponse.data.joinUrl}`;
+// 					miesto_stretnutia.value =
+// 						activityResponse.data.activity.miesto_stretnutia;
+// 				}
+// 			} catch (error) {
+// 				console.error(
+// 					"Error creating Teams meeting:",
+// 					error.response?.data || error.message,
+// 				);
+// 				toast.error("Je potrebné prihlásiť sa do Microsoft účtu");
+// 			}
+// 		}
+
+// 		if (selectedOffice.value.name !== "Kancelárie") {
+// 			const toLocalString = (localStr) => localStr.replace("T", " ") + ":00";
+// 			const newActivity = {
+// 				aktivita:
+// 					aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
+// 				importance: importance.value,
+// 				datum_cas: toLocalString(datum_cas.value),
+// 				koniec: toLocalString(koniec.value),
+// 				poznamka: poznamka.value,
+// 				office_id: officeStore.setOfficeID,
+// 				owner_number: userStore.user.vizitka_phone_num,
+// 			};
+// 			await officeStore.storeActivity(newActivity);
+// 		}
+
+// 		calendarStore.activities.push(activityResponse.data.activity);
+
+// 		toast.success(
+// 			onlineMeeting.value
+// 				? "Online stretnutie bolo úspešne pridané"
+// 				: "Aktivita bola úspešne pridaná",
+// 			{ position: "top-right", timeout: 5000 },
+// 		);
+
+// 		emit("activityAdded", activityResponse.data.activity);
+// 		emit("addNewEvent", activityResponse.data.activity);
+// 		emit("cancelAddActivity");
+// 	} catch (error) {
+// 		console.error("Error adding activity:", error);
+// 		alert(
+// 			"Nastala chyba pri pridaní aktivity: " +
+// 				(error.response?.data?.error || error.message),
+// 		);
+// 	}
+
+// 	changeLoadingState();
+// };
 
 const handleSelectedContact = (contact) => {
 	kontakt.value = `${contact.meno} ${contact.priezvisko} ${contact.id}`;
@@ -450,6 +572,7 @@ const findAndDeleteOfficeActivity = async () => {
 				<label class="text-sm text-black">Kontakt</label>
 				<EventSearch
 					:contactsProp="contacts"
+					:preselectedContact="preselectedContact"
 					@selectedContact="handleSelectedContact"
 					class="z-30"
 				/>
@@ -812,7 +935,7 @@ const findAndDeleteOfficeActivity = async () => {
 							:key="n"
 							@click="setActive(n)"
 							class="bg-slate-200 px-3 py-1.5 rounded-lg border-2 cursor-pointer transition"
-							:class="active.includes(n) ? 'border-blue-500 bg-blue-100' : ''"
+							:class="active.includes(n) ? 'border-[#921337] bg-[#cc1d4d]	' : ''"
 							>{{ n }}</span
 						>
 					</div>
@@ -822,7 +945,7 @@ const findAndDeleteOfficeActivity = async () => {
 				<div class="flex justify-center items-center span-2 mt-2">
 					<button
 						@click="addActivity()"
-						class="text-white bg-blue-500 hover:bg-blue-600 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center"
+						class="text-white bg-[#921337] hover:bg-[#cc1d4d] focus:ring-4 focus:outline-none focus:ring-[#921337] font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center"
 					>
 						Pridať
 					</button>

@@ -1,626 +1,636 @@
 <template>
 	<!-- The follower div -->
-	<div
-		v-if="showFollower"
-		class="fixed bg-white p-4 shadow-xl rounded-xl w-[250px] max-h-[365px] z-50"
-		:style="{
-			left: `${mouseX + 15}px`,
-			top: `${mouseY + 15}px`,
-		}"
-		@mouseenter="
-			() => {
-				isHoveringFollower = true;
-				clearTimeout(hideTimeout);
-			}
-		"
-		@mouseleave="
-			() => {
-				isHoveringFollower = false;
-				hideFollower();
-			}
-		"
-	>
-		<p class="font-semibold">Zoznam ľudí</p>
-		<div class="my-4 overflow-y-auto max-h-[280px]">
-			<p
-				class="font-semibold"
-				v-if="
-					dataInFollower.filter((p) => p.activity_status === 'check').length !==
-					0
-				"
-			>
-				Zrealizované
-			</p>
-			<div
-				v-for="person in dataInFollower.filter(
-					(p) => p.activity_status === 'check',
-				)"
-				:key="person.contact_id"
-				class="py-1 cursor-pointer hover:bg-gray-100 px-2 rounded"
-				@click="goToContact(person.contact_id)"
-			>
-				{{ person.meno }} {{ person.priezvisko }}
-			</div>
-			<p class="font-semibold">Ostatné</p>
-			<div
-				v-for="person in dataInFollower.filter(
-					(p) => p.activity_status !== 'check',
-				)"
-				:key="person.contact_id"
-				class="py-1 cursor-pointer hover:bg-gray-100 px-2 rounded"
-				@click="goToContact(person.contact_id)"
-			>
-				{{ person.meno }} {{ person.priezvisko }}
+	<div class="bg-white h-full">
+		<div
+			v-if="showFollower"
+			class="fixed bg-white p-4 shadow-xl rounded-xl w-[250px] max-h-[365px] z-50"
+			:style="{
+				left: `${mouseX + 15}px`,
+				top: `${mouseY + 15}px`,
+			}"
+			@mouseenter="
+				() => {
+					isHoveringFollower = true;
+					clearTimeout(hideTimeout);
+				}
+			"
+			@mouseleave="
+				() => {
+					isHoveringFollower = false;
+					hideFollower();
+				}
+			"
+		>
+			<p class="font-semibold">Zoznam ľudí</p>
+			<div class="my-4 overflow-y-auto max-h-[280px]">
+				<p
+					class="font-semibold"
+					v-if="
+						dataInFollower.filter((p) => p.activity_status === 'check')
+							.length !== 0
+					"
+				>
+					Zrealizované
+				</p>
+				<div
+					v-for="person in dataInFollower.filter(
+						(p) => p.activity_status === 'check',
+					)"
+					:key="person.contact_id"
+					class="py-1 cursor-pointer hover:bg-gray-100 px-2 rounded"
+					@click="goToContact(person.contact_id)"
+				>
+					{{ person.meno }} {{ person.priezvisko }}
+				</div>
+				<p class="font-semibold">Ostatné</p>
+				<div
+					v-for="person in dataInFollower.filter(
+						(p) => p.activity_status !== 'check',
+					)"
+					:key="person.contact_id"
+					class="py-1 cursor-pointer hover:bg-gray-100 px-2 rounded"
+					@click="goToContact(person.contact_id)"
+				>
+					{{ person.meno }} {{ person.priezvisko }}
+				</div>
 			</div>
 		</div>
-	</div>
 
-	<loadigcomponent v-if="loadingStateCalendar" />
+		<loadigcomponent v-if="loadingStateCalendar" />
 
-	<div class="p-6">
-		<div class="mb-6">
-			<h1 class="text-2xl font-bold mb-4">Štatistika aktivít</h1>
+		<div class="p-6">
+			<div class="mb-6">
+				<h1 class="text-2xl font-bold mb-4">Štatistika aktivít</h1>
 
-			<!-- Date Range Picker -->
-			<div class="flex gap-4 mb-4 bg-white p-4 rounded shadow">
-				<div>
-					<label class="block text-sm mb-1">Od</label>
-					<input
-						type="date"
-						v-model="dateRange.from"
-						class="border rounded p-2 bg-white shadow-sm"
-						@change="fetchData"
-					/>
-				</div>
-				<div>
-					<label class="block text-sm mb-1">Do</label>
-					<input
-						type="date"
-						v-model="dateRange.to"
-						class="border rounded p-2 bg-white shadow-sm"
-						@change="fetchData"
-					/>
-				</div>
-				<div>
-					<label class="block text-sm mb-1">Obdobie</label>
-					<select
-						v-model="selectedPeriod"
-						class="border rounded p-[11px] bg-white shadow-sm"
-						@change="updateDateRange"
-					>
-						<option value="week">Týždeň</option>
-						<option value="month">Mesiac</option>
-						<option value="quarter">Štvrťrok</option>
-						<option value="halfYear">Polrok</option>
-						<option value="year">Rok</option>
-					</select>
-				</div>
-				<div>
-					<div class="relative w-72 mt-6" ref="dropdownRef">
-						<button
-							type="button"
-							class="w-full flex items-center justify-between border rounded p-2 bg-white shadow-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-							@click="dropdownOpen = !dropdownOpen"
+				<!-- Date Range Picker -->
+				<div class="flex gap-4 mb-4 bg-white p-4 rounded shadow">
+					<div>
+						<label class="block text-sm mb-1">Od</label>
+						<input
+							type="date"
+							v-model="dateRange.from"
+							class="border rounded p-2 bg-white shadow-sm"
+							@change="fetchData"
+						/>
+					</div>
+					<div>
+						<label class="block text-sm mb-1">Do</label>
+						<input
+							type="date"
+							v-model="dateRange.to"
+							class="border rounded p-2 bg-white shadow-sm"
+							@change="fetchData"
+						/>
+					</div>
+					<div>
+						<label class="block text-sm mb-1">Obdobie</label>
+						<select
+							v-model="selectedPeriod"
+							class="border rounded p-[11px] bg-white shadow-sm"
+							@change="updateDateRange"
 						>
-							<span class="truncate text-gray-700">{{ dropdownLabel }}</span>
-							<svg
-								class="w-4 h-4 ml-2 text-gray-400 flex-shrink-0 transition-transform"
-								:class="{ 'rotate-180': dropdownOpen }"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
+							<option value="week">Týždeň</option>
+							<option value="month">Mesiac</option>
+							<option value="quarter">Štvrťrok</option>
+							<option value="halfYear">Polrok</option>
+							<option value="year">Rok</option>
+						</select>
+					</div>
+					<div>
+						<div class="relative w-72 mt-6" ref="dropdownRef">
+							<button
+								type="button"
+								class="w-full flex items-center justify-between border rounded p-2 bg-white shadow-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+								@click="dropdownOpen = !dropdownOpen"
 							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M19 9l-7 7-7-7"
-								/>
-							</svg>
-						</button>
+								<span class="truncate text-gray-700">{{ dropdownLabel }}</span>
+								<svg
+									class="w-4 h-4 ml-2 text-gray-400 flex-shrink-0 transition-transform"
+									:class="{ 'rotate-180': dropdownOpen }"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M19 9l-7 7-7-7"
+									/>
+								</svg>
+							</button>
 
-						<div
-							v-if="dropdownOpen"
-							class="absolute z-40 mt-1 w-full bg-white border rounded shadow-lg max-h-72 overflow-y-auto"
-						>
-							<label
-								class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer border-b"
+							<div
+								v-if="dropdownOpen"
+								class="absolute z-40 mt-1 w-full bg-white border rounded shadow-lg max-h-72 overflow-y-auto"
 							>
-								<input
-									type="checkbox"
-									:checked="includeMyStats"
-									@change="toggleMyStats"
-									class="rounded"
-								/>
-								<span class="text-sm font-medium">Moje štatistiky</span>
-							</label>
+								<label
+									class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer border-b"
+								>
+									<input
+										type="checkbox"
+										:checked="includeMyStats"
+										@change="toggleMyStats"
+										class="rounded"
+									/>
+									<span class="text-sm font-medium">Moje štatistiky</span>
+								</label>
 
-							<label
-								v-for="user in sharedUsers"
-								:key="user.id"
-								class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer"
-							>
-								<input
-									type="checkbox"
-									:checked="selectedUserIds.includes(user.id)"
-									@change="toggleUser(user.id)"
-									class="rounded"
-								/>
-								<span class="text-sm">
-									{{ user.name }}
-									<span
-										v-if="user.isTransitive"
-										class="text-xs text-gray-400 ml-1"
-									>
-										(zdieľaný)
+								<label
+									v-for="user in sharedUsers"
+									:key="user.id"
+									class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer"
+								>
+									<input
+										type="checkbox"
+										:checked="selectedUserIds.includes(user.id)"
+										@change="toggleUser(user.id)"
+										class="rounded"
+									/>
+									<span class="text-sm">
+										{{ user.name }}
+										<span
+											v-if="user.isTransitive"
+											class="text-xs text-gray-400 ml-1"
+										>
+											(zdieľaný)
+										</span>
 									</span>
-								</span>
-							</label>
+								</label>
 
-							<div class="border-t px-3 py-2 flex gap-2">
-								<button
-									type="button"
-									class="text-xs text-blue-600 hover:underline"
-									@click="selectAll"
+								<div class="border-t px-3 py-2 flex gap-2">
+									<button
+										type="button"
+										class="text-xs text-blue-600 hover:underline"
+										@click="selectAll"
+									>
+										Vybrať všetkých
+									</button>
+									<span class="text-gray-300">|</span>
+									<button
+										type="button"
+										class="text-xs text-gray-500 hover:underline"
+										@click="clearAll"
+									>
+										Zrušiť výber
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Telefonát klient Statistics Cards -->
+				<div
+					class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 shadow-sm bg-white p-4"
+				>
+					<div
+						class="bg-blue-100 p-4 rounded"
+						@mouseenter="
+							(e) =>
+								responseData?.grouped_activities?.volane &&
+								showVolaneFollower(responseData.grouped_activities.volane, e)
+						"
+						@mouseleave="hideFollower"
+					>
+						<h3 class="font-bold">Volané</h3>
+						<p class="text-2xl">{{ statistics.called }}</p>
+					</div>
+					<div
+						class="bg-green-100 p-4 rounded"
+						@mouseenter="
+							(e) =>
+								responseData?.grouped_activities?.dovolane &&
+								showVolaneFollower(responseData.grouped_activities.dovolane, e)
+						"
+						@mouseleave="hideFollower"
+					>
+						<h3 class="font-bold">Dovolané</h3>
+						<p class="text-2xl">{{ statistics.reached }}</p>
+					</div>
+					<div
+						class="bg-purple-100 p-4 rounded"
+						@mouseenter="
+							(e) =>
+								responseData?.grouped_activities?.dohodnute &&
+								showVolaneFollower(responseData.grouped_activities.dohodnute, e)
+						"
+						@mouseleave="hideFollower"
+					>
+						<h3 class="font-bold">Dohodnuté</h3>
+						<p class="text-2xl">{{ statistics.scheduled }}</p>
+					</div>
+				</div>
+
+				<div class="mb-6 flex flex-col gap-16" v-if="otherActivies">
+					<div class="flex gap-32">
+						<div
+							class="item"
+							@mouseenter="
+								(e) =>
+									showVolaneFollower(otherActiviesNames['Prvé stretnutie'], e)
+							"
+							@mouseleave="hideFollower"
+						>
+							<div class="item-left"><p>Prvé stretnutia:</p></div>
+							<div class="item-right">
+								<div class="right-count">
+									Pocet vsetkych:
+									{{ otherActivies["Prvé stretnutie"]?.total || 0 }}
+								</div>
+								<div class="right-count green">
+									Pocet zrealizovanych:
+									{{ otherActivies["Prvé stretnutie"]?.checked || 0 }}
+								</div>
+							</div>
+						</div>
+						<div
+							class="item"
+							@mouseenter="
+								(e) =>
+									showVolaneFollower(
+										otherActiviesNames['Analýza osobných financí'],
+										e,
+									)
+							"
+							@mouseleave="hideFollower"
+						>
+							<div class="item-left"><p>Analýza osobných financií:</p></div>
+							<div class="item-right">
+								<div class="right-count">
+									Pocet vsetkych:
+									{{ otherActivies["Analýza osobných financí"]?.total || 0 }}
+								</div>
+								<div class="right-count green">
+									Pocet zrealizovanych:
+									{{ otherActivies["Analýza osobných financí"]?.checked || 0 }}
+								</div>
+							</div>
+						</div>
+						<div
+							class="item"
+							@mouseenter="
+								(e) =>
+									showVolaneFollower(otherActiviesNames['poradenstvo nové'], e)
+							"
+							@mouseleave="hideFollower"
+						>
+							<div class="item-left"><p>Poradenstvo nové:</p></div>
+							<div class="item-right">
+								<div class="right-count">
+									Pocet vsetkych:
+									{{ otherActivies["poradenstvo nové"]?.total || 0 }}
+								</div>
+								<div class="right-count green">
+									Pocet zrealizovanych:
+									{{ otherActivies["poradenstvo nové"]?.checked || 0 }}
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="flex gap-32">
+						<div
+							class="item"
+							@mouseenter="
+								(e) =>
+									showVolaneFollower(otherActiviesNames['realizácia nová'], e)
+							"
+							@mouseleave="hideFollower"
+						>
+							<div class="item-left"><p>Realizácie nové:</p></div>
+							<div class="item-right">
+								<div class="right-count">
+									Pocet vsetkych:
+									{{ otherActivies["realizácia nová"]?.total || 0 }}
+								</div>
+								<div class="right-count green">
+									Pocet zrealizovanych:
+									{{ otherActivies["realizácia nová"]?.checked || 0 }}
+								</div>
+							</div>
+						</div>
+						<div
+							class="item"
+							@mouseenter="
+								(e) =>
+									showVolaneFollower(
+										otherActiviesNames['realizácia servisná'],
+										e,
+									)
+							"
+							@mouseleave="hideFollower"
+						>
+							<div class="item-left"><p>Realizácie servisné:</p></div>
+							<div class="item-right">
+								<div class="right-count">
+									Pocet vsetkych:
+									{{ otherActivies["realizácia servisná"]?.total || 0 }}
+								</div>
+								<div class="right-count green">
+									Pocet zrealizovanych:
+									{{ otherActivies["realizácia servisná"]?.checked || 0 }}
+								</div>
+							</div>
+						</div>
+						<div
+							class="item"
+							@mouseenter="
+								(e) =>
+									showVolaneFollower(otherActiviesNames['Servisná analýza'], e)
+							"
+							@mouseleave="hideFollower"
+						>
+							<div class="item-left"><p>Servisná analýza:</p></div>
+							<div class="item-right">
+								<div class="right-count">
+									Pocet vsetkych:
+									{{ otherActivies["Servisná analýza"]?.total || 0 }}
+								</div>
+								<div class="right-count green">
+									Pocet zrealizovanych:
+									{{ otherActivies["Servisná analýza"]?.checked || 0 }}
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="flex gap-32">
+						<div
+							class="item"
+							@mouseenter="
+								(e) =>
+									showVolaneFollower(
+										otherActiviesNames['servisné poradenstvo'],
+										e,
+									)
+							"
+							@mouseleave="hideFollower"
+						>
+							<div class="item-left"><p>Poradenstvo servisné:</p></div>
+							<div class="item-right">
+								<div class="right-count">
+									Pocet vsetkych:
+									{{ otherActivies["servisné poradenstvo"]?.total || 0 }}
+								</div>
+								<div class="right-count green">
+									Pocet zrealizovanych:
+									{{ otherActivies["servisné poradenstvo"]?.checked || 0 }}
+								</div>
+							</div>
+						</div>
+						<div
+							class="item ml-24"
+							@mouseenter="
+								(e) => showVolaneFollower(responseData.new_contacts, e)
+							"
+							@mouseleave="hideFollower"
+						>
+							<div class="item-left"></div>
+							<div class="item-right">
+								<div class="right-count green">
+									Počet nových kontaktov na lienta:
+									{{
+										responseData?.new_contacts?.filter((c) => c.isContact)
+											.length || 0
+									}}
+								</div>
+								<div
+									class="right-count green"
+									style="margin-top: 8px"
+									@mouseenter.stop="
+										(e) =>
+											showVolaneFollower(
+												responseData.new_contacts?.filter((c) => c.isCoWorker),
+												e,
+											)
+									"
+									@mouseleave.stop="hideFollower"
 								>
-									Vybrať všetkých
-								</button>
-								<span class="text-gray-300">|</span>
-								<button
-									type="button"
-									class="text-xs text-gray-500 hover:underline"
-									@click="clearAll"
-								>
-									Zrušiť výber
-								</button>
+									Počet nových kontaktov na spolupracovníka:
+									{{
+										responseData?.new_contacts?.filter((c) => c.isCoWorker)
+											.length || 0
+									}}
+								</div>
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
 
-			<!-- Telefonát klient Statistics Cards -->
+			<!-- Pohovory Statistika -->
+			<h1 class="text-2xl font-bold mb-4 mt-16">Štatistika pre Nábory</h1>
+			<div class="p-2 bg-white font-semibold text-lg">Pohovory</div>
+
 			<div
-				class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 shadow-sm bg-white p-4"
+				class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6 shadow-sm bg-white p-4"
 			>
 				<div
 					class="bg-blue-100 p-4 rounded"
-					@mouseenter="
-						(e) =>
-							responseData?.grouped_activities?.volane &&
-							showVolaneFollower(responseData.grouped_activities.volane, e)
-					"
+					@mouseenter="(e) => showPohovoryFollower('called', e)"
 					@mouseleave="hideFollower"
 				>
 					<h3 class="font-bold">Volané</h3>
-					<p class="text-2xl">{{ statistics.called }}</p>
+					<p class="text-2xl">{{ dataPohovory?.statistics?.called || 0 }}</p>
 				</div>
 				<div
 					class="bg-green-100 p-4 rounded"
-					@mouseenter="
-						(e) =>
-							responseData?.grouped_activities?.dovolane &&
-							showVolaneFollower(responseData.grouped_activities.dovolane, e)
-					"
+					@mouseenter="(e) => showPohovoryFollower('reached', e)"
 					@mouseleave="hideFollower"
 				>
 					<h3 class="font-bold">Dovolané</h3>
-					<p class="text-2xl">{{ statistics.reached }}</p>
+					<p class="text-2xl">{{ dataPohovory?.statistics?.reached || 0 }}</p>
 				</div>
 				<div
 					class="bg-purple-100 p-4 rounded"
-					@mouseenter="
-						(e) =>
-							responseData?.grouped_activities?.dohodnute &&
-							showVolaneFollower(responseData.grouped_activities.dohodnute, e)
-					"
+					@mouseenter="(e) => showPohovoryFollower('scheduled', e)"
 					@mouseleave="hideFollower"
 				>
 					<h3 class="font-bold">Dohodnuté</h3>
-					<p class="text-2xl">{{ statistics.scheduled }}</p>
+					<p class="text-2xl">{{ dataPohovory?.statistics?.scheduled || 0 }}</p>
 				</div>
-			</div>
-
-			<div class="mb-6 flex flex-col gap-16" v-if="otherActivies">
-				<div class="flex gap-32">
-					<div
-						class="item"
-						@mouseenter="
-							(e) =>
-								showVolaneFollower(otherActiviesNames['Prvé stretnutie'], e)
-						"
-						@mouseleave="hideFollower"
-					>
-						<div class="item-left"><p>Prvé stretnutia:</p></div>
-						<div class="item-right">
-							<div class="right-count">
-								Pocet vsetkych:
-								{{ otherActivies["Prvé stretnutie"]?.total || 0 }}
-							</div>
-							<div class="right-count green">
-								Pocet zrealizovanych:
-								{{ otherActivies["Prvé stretnutie"]?.checked || 0 }}
-							</div>
-						</div>
-					</div>
-					<div
-						class="item"
-						@mouseenter="
-							(e) =>
-								showVolaneFollower(
-									otherActiviesNames['Analýza osobných financí'],
-									e,
-								)
-						"
-						@mouseleave="hideFollower"
-					>
-						<div class="item-left"><p>Analýza osobných financií:</p></div>
-						<div class="item-right">
-							<div class="right-count">
-								Pocet vsetkych:
-								{{ otherActivies["Analýza osobných financí"]?.total || 0 }}
-							</div>
-							<div class="right-count green">
-								Pocet zrealizovanych:
-								{{ otherActivies["Analýza osobných financí"]?.checked || 0 }}
-							</div>
-						</div>
-					</div>
-					<div
-						class="item"
-						@mouseenter="
-							(e) =>
-								showVolaneFollower(otherActiviesNames['poradenstvo nové'], e)
-						"
-						@mouseleave="hideFollower"
-					>
-						<div class="item-left"><p>Poradenstvo nové:</p></div>
-						<div class="item-right">
-							<div class="right-count">
-								Pocet vsetkych:
-								{{ otherActivies["poradenstvo nové"]?.total || 0 }}
-							</div>
-							<div class="right-count green">
-								Pocet zrealizovanych:
-								{{ otherActivies["poradenstvo nové"]?.checked || 0 }}
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<div class="flex gap-32">
-					<div
-						class="item"
-						@mouseenter="
-							(e) =>
-								showVolaneFollower(otherActiviesNames['realizácia nová'], e)
-						"
-						@mouseleave="hideFollower"
-					>
-						<div class="item-left"><p>Realizácie nové:</p></div>
-						<div class="item-right">
-							<div class="right-count">
-								Pocet vsetkych:
-								{{ otherActivies["realizácia nová"]?.total || 0 }}
-							</div>
-							<div class="right-count green">
-								Pocet zrealizovanych:
-								{{ otherActivies["realizácia nová"]?.checked || 0 }}
-							</div>
-						</div>
-					</div>
-					<div
-						class="item"
-						@mouseenter="
-							(e) =>
-								showVolaneFollower(otherActiviesNames['realizácia servisná'], e)
-						"
-						@mouseleave="hideFollower"
-					>
-						<div class="item-left"><p>Realizácie servisné:</p></div>
-						<div class="item-right">
-							<div class="right-count">
-								Pocet vsetkych:
-								{{ otherActivies["realizácia servisná"]?.total || 0 }}
-							</div>
-							<div class="right-count green">
-								Pocet zrealizovanych:
-								{{ otherActivies["realizácia servisná"]?.checked || 0 }}
-							</div>
-						</div>
-					</div>
-					<div
-						class="item"
-						@mouseenter="
-							(e) =>
-								showVolaneFollower(otherActiviesNames['Servisná analýza'], e)
-						"
-						@mouseleave="hideFollower"
-					>
-						<div class="item-left"><p>Servisná analýza:</p></div>
-						<div class="item-right">
-							<div class="right-count">
-								Pocet vsetkych:
-								{{ otherActivies["Servisná analýza"]?.total || 0 }}
-							</div>
-							<div class="right-count green">
-								Pocet zrealizovanych:
-								{{ otherActivies["Servisná analýza"]?.checked || 0 }}
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<div class="flex gap-32">
-					<div
-						class="item"
-						@mouseenter="
-							(e) =>
-								showVolaneFollower(
-									otherActiviesNames['servisné poradenstvo'],
-									e,
-								)
-						"
-						@mouseleave="hideFollower"
-					>
-						<div class="item-left"><p>Poradenstvo servisné:</p></div>
-						<div class="item-right">
-							<div class="right-count">
-								Pocet vsetkych:
-								{{ otherActivies["servisné poradenstvo"]?.total || 0 }}
-							</div>
-							<div class="right-count green">
-								Pocet zrealizovanych:
-								{{ otherActivies["servisné poradenstvo"]?.checked || 0 }}
-							</div>
-						</div>
-					</div>
-					<div
-						class="item ml-24"
-						@mouseenter="
-							(e) => showVolaneFollower(responseData.new_contacts, e)
-						"
-						@mouseleave="hideFollower"
-					>
-						<div class="item-left"></div>
-						<div class="item-right">
-							<div class="right-count green">
-								Počet nových kontaktov na lienta:
-								{{
-									responseData?.new_contacts?.filter((c) => c.isContact)
-										.length || 0
-								}}
-							</div>
-							<div
-								class="right-count green"
-								style="margin-top: 8px"
-								@mouseenter.stop="
-									(e) =>
-										showVolaneFollower(
-											responseData.new_contacts?.filter((c) => c.isCoWorker),
-											e,
-										)
-								"
-								@mouseleave.stop="hideFollower"
-							>
-								Počet nových kontaktov na spolupracovníka:
-								{{
-									responseData?.new_contacts?.filter((c) => c.isCoWorker)
-										.length || 0
-								}}
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<!-- Pohovory Statistika -->
-		<h1 class="text-2xl font-bold mb-4 mt-16">Štatistika pre Nábory</h1>
-		<div class="p-2 bg-white font-semibold text-lg">Pohovory</div>
-
-		<div
-			class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6 shadow-sm bg-white p-4"
-		>
-			<div
-				class="bg-blue-100 p-4 rounded"
-				@mouseenter="(e) => showPohovoryFollower('called', e)"
-				@mouseleave="hideFollower"
-			>
-				<h3 class="font-bold">Volané</h3>
-				<p class="text-2xl">{{ dataPohovory?.statistics?.called || 0 }}</p>
-			</div>
-			<div
-				class="bg-green-100 p-4 rounded"
-				@mouseenter="(e) => showPohovoryFollower('reached', e)"
-				@mouseleave="hideFollower"
-			>
-				<h3 class="font-bold">Dovolané</h3>
-				<p class="text-2xl">{{ dataPohovory?.statistics?.reached || 0 }}</p>
-			</div>
-			<div
-				class="bg-purple-100 p-4 rounded"
-				@mouseenter="(e) => showPohovoryFollower('scheduled', e)"
-				@mouseleave="hideFollower"
-			>
-				<h3 class="font-bold">Dohodnuté</h3>
-				<p class="text-2xl">{{ dataPohovory?.statistics?.scheduled || 0 }}</p>
-			</div>
-			<div
-				class="bg-yellow-100 p-4 rounded"
-				@mouseenter="(e) => showPohovoryFollower('realized', e)"
-				@mouseleave="hideFollower"
-			>
-				<h3 class="font-bold">Zrealizované</h3>
-				<p class="text-2xl">{{ dataPohovory?.statistics?.realized || 0 }}</p>
-			</div>
-			<!-- Konfirmačný servis card: check + accepted -->
-			<div
-				class="bg-orange-100 p-4 rounded"
-				@mouseenter="(e) => showPohovoryFollower('konfirmacny_servis_all', e)"
-				@mouseleave="hideFollower"
-			>
-				<h3 class="font-bold">Konfirmačný servis</h3>
-				<p class="text-2xl">
-					{{ dataPohovory?.statistics?.konfirmacny_servis_all || 0 }}
-				</p>
-			</div>
-			<!-- Zaujatí card: pohovory accepted + konfirmačný servis accepted -->
-			<div
-				class="bg-red-100 p-4 rounded"
-				@mouseenter="(e) => showPohovoryFollower('accepted', e)"
-				@mouseleave="hideFollower"
-			>
-				<h3 class="font-bold">Zaujatí</h3>
-				<p class="text-2xl">
-					{{ dataPohovory?.statistics?.accepted || 0 }}
-					<span class="text-sm font-normal text-gray-500 block">pohovory</span>
-				</p>
-				<p
-					class="text-2xl mt-2"
-					@mouseenter.stop="
-						(e) => showPohovoryFollower('konfirmacny_servis', e)
-					"
-					@mouseleave.stop="hideFollower"
+				<div
+					class="bg-yellow-100 p-4 rounded"
+					@mouseenter="(e) => showPohovoryFollower('realized', e)"
+					@mouseleave="hideFollower"
 				>
-					{{ dataPohovory?.statistics?.konfirmacny_servis || 0 }}
-					<span class="text-sm font-normal text-gray-500 block"
-						>konf. servis</span
+					<h3 class="font-bold">Zrealizované</h3>
+					<p class="text-2xl">{{ dataPohovory?.statistics?.realized || 0 }}</p>
+				</div>
+				<!-- Konfirmačný servis card: check + accepted -->
+				<div
+					class="bg-orange-100 p-4 rounded"
+					@mouseenter="(e) => showPohovoryFollower('konfirmacny_servis_all', e)"
+					@mouseleave="hideFollower"
+				>
+					<h3 class="font-bold">Konfirmačný servis</h3>
+					<p class="text-2xl">
+						{{ dataPohovory?.statistics?.konfirmacny_servis_all || 0 }}
+					</p>
+				</div>
+				<!-- Zaujatí card: pohovory accepted + konfirmačný servis accepted -->
+				<div
+					class="bg-red-100 p-4 rounded"
+					@mouseenter="(e) => showPohovoryFollower('accepted', e)"
+					@mouseleave="hideFollower"
+				>
+					<h3 class="font-bold">Zaujatí</h3>
+					<p class="text-2xl">
+						{{ dataPohovory?.statistics?.accepted || 0 }}
+						<span class="text-sm font-normal text-gray-500 block"
+							>pohovory</span
+						>
+					</p>
+					<p
+						class="text-2xl mt-2"
+						@mouseenter.stop="
+							(e) => showPohovoryFollower('konfirmacny_servis', e)
+						"
+						@mouseleave.stop="hideFollower"
 					>
-				</p>
+						{{ dataPohovory?.statistics?.konfirmacny_servis || 0 }}
+						<span class="text-sm font-normal text-gray-500 block"
+							>konf. servis</span
+						>
+					</p>
+				</div>
 			</div>
-		</div>
 
-		<div class="container" v-if="seminarActivitesStatistics">
-			<div
-				class="item"
-				@mouseenter="
-					(e) => showVolaneFollower(seminarActivitesNames['welcome seminár'], e)
-				"
-				@mouseleave="hideFollower"
-			>
-				<div class="item-left"><p>Welcome Seminár:</p></div>
-				<div class="item-right">
-					<div class="right-count">
-						Všetky:
-						{{ seminarActivitesStatistics["welcome seminár"]?.total || 0 }}
+			<div class="container" v-if="seminarActivitesStatistics">
+				<div
+					class="item"
+					@mouseenter="
+						(e) =>
+							showVolaneFollower(seminarActivitesNames['welcome seminár'], e)
+					"
+					@mouseleave="hideFollower"
+				>
+					<div class="item-left"><p>Welcome Seminár:</p></div>
+					<div class="item-right">
+						<div class="right-count">
+							Všetky:
+							{{ seminarActivitesStatistics["welcome seminár"]?.total || 0 }}
+						</div>
+						<div class="right-count green">
+							Zrealizované:
+							{{ seminarActivitesStatistics["welcome seminár"]?.checked || 0 }}
+						</div>
 					</div>
-					<div class="right-count green">
-						Zrealizované:
-						{{ seminarActivitesStatistics["welcome seminár"]?.checked || 0 }}
+				</div>
+				<div
+					class="item"
+					@mouseenter="
+						(e) => showVolaneFollower(seminarActivitesNames['basic 1'], e)
+					"
+					@mouseleave="hideFollower"
+				>
+					<div class="item-left"><p>Basic 1:</p></div>
+					<div class="item-right">
+						<div class="right-count">
+							Všetky: {{ seminarActivitesStatistics["basic 1"]?.total || 0 }}
+						</div>
+						<div class="right-count green">
+							Zrealizované:
+							{{ seminarActivitesStatistics["basic 1"]?.checked || 0 }}
+						</div>
+					</div>
+				</div>
+				<div
+					class="item"
+					@mouseenter="
+						(e) => showVolaneFollower(seminarActivitesNames['basic 2'], e)
+					"
+					@mouseleave="hideFollower"
+				>
+					<div class="item-left"><p>Basic 2:</p></div>
+					<div class="item-right">
+						<div class="right-count">
+							Všetky: {{ seminarActivitesStatistics["basic 2"]?.total || 0 }}
+						</div>
+						<div class="right-count green">
+							Zrealizované:
+							{{ seminarActivitesStatistics["basic 2"]?.checked || 0 }}
+						</div>
+					</div>
+				</div>
+				<div
+					class="item"
+					@mouseenter="
+						(e) => showVolaneFollower(seminarActivitesNames['basic 3'], e)
+					"
+					@mouseleave="hideFollower"
+				>
+					<div class="item-left"><p>Basic 3:</p></div>
+					<div class="item-right">
+						<div class="right-count">
+							Všetky: {{ seminarActivitesStatistics["basic 3"]?.total || 0 }}
+						</div>
+						<div class="right-count green">
+							Zrealizované:
+							{{ seminarActivitesStatistics["basic 3"]?.checked || 0 }}
+						</div>
+					</div>
+				</div>
+				<div
+					class="item"
+					@mouseenter="
+						(e) => showVolaneFollower(seminarActivitesNames['basic 4'], e)
+					"
+					@mouseleave="hideFollower"
+				>
+					<div class="item-left"><p>Basic 4:</p></div>
+					<div class="item-right">
+						<div class="right-count">
+							Všetky: {{ seminarActivitesStatistics["basic 4"]?.total || 0 }}
+						</div>
+						<div class="right-count green">
+							Zrealizované:
+							{{ seminarActivitesStatistics["basic 4"]?.checked || 0 }}
+						</div>
+					</div>
+				</div>
+				<div
+					class="item"
+					@mouseenter="
+						(e) => showVolaneFollower(seminarActivitesNames['Post info'], e)
+					"
+					@mouseleave="hideFollower"
+				>
+					<div class="item-left"><p>Post info:</p></div>
+					<div class="item-right">
+						<div class="right-count">
+							Všetky: {{ seminarActivitesStatistics["Post info"]?.total || 0 }}
+						</div>
+						<div class="right-count green">
+							Zrealizované:
+							{{ seminarActivitesStatistics["Post info"]?.checked || 0 }}
+						</div>
 					</div>
 				</div>
 			</div>
-			<div
-				class="item"
-				@mouseenter="
-					(e) => showVolaneFollower(seminarActivitesNames['basic 1'], e)
-				"
-				@mouseleave="hideFollower"
-			>
-				<div class="item-left"><p>Basic 1:</p></div>
-				<div class="item-right">
-					<div class="right-count">
-						Všetky: {{ seminarActivitesStatistics["basic 1"]?.total || 0 }}
-					</div>
-					<div class="right-count green">
-						Zrealizované:
-						{{ seminarActivitesStatistics["basic 1"]?.checked || 0 }}
-					</div>
-				</div>
-			</div>
-			<div
-				class="item"
-				@mouseenter="
-					(e) => showVolaneFollower(seminarActivitesNames['basic 2'], e)
-				"
-				@mouseleave="hideFollower"
-			>
-				<div class="item-left"><p>Basic 2:</p></div>
-				<div class="item-right">
-					<div class="right-count">
-						Všetky: {{ seminarActivitesStatistics["basic 2"]?.total || 0 }}
-					</div>
-					<div class="right-count green">
-						Zrealizované:
-						{{ seminarActivitesStatistics["basic 2"]?.checked || 0 }}
-					</div>
-				</div>
-			</div>
-			<div
-				class="item"
-				@mouseenter="
-					(e) => showVolaneFollower(seminarActivitesNames['basic 3'], e)
-				"
-				@mouseleave="hideFollower"
-			>
-				<div class="item-left"><p>Basic 3:</p></div>
-				<div class="item-right">
-					<div class="right-count">
-						Všetky: {{ seminarActivitesStatistics["basic 3"]?.total || 0 }}
-					</div>
-					<div class="right-count green">
-						Zrealizované:
-						{{ seminarActivitesStatistics["basic 3"]?.checked || 0 }}
-					</div>
-				</div>
-			</div>
-			<div
-				class="item"
-				@mouseenter="
-					(e) => showVolaneFollower(seminarActivitesNames['basic 4'], e)
-				"
-				@mouseleave="hideFollower"
-			>
-				<div class="item-left"><p>Basic 4:</p></div>
-				<div class="item-right">
-					<div class="right-count">
-						Všetky: {{ seminarActivitesStatistics["basic 4"]?.total || 0 }}
-					</div>
-					<div class="right-count green">
-						Zrealizované:
-						{{ seminarActivitesStatistics["basic 4"]?.checked || 0 }}
-					</div>
-				</div>
-			</div>
-			<div
-				class="item"
-				@mouseenter="
-					(e) => showVolaneFollower(seminarActivitesNames['Post info'], e)
-				"
-				@mouseleave="hideFollower"
-			>
-				<div class="item-left"><p>Post info:</p></div>
-				<div class="item-right">
-					<div class="right-count">
-						Všetky: {{ seminarActivitesStatistics["Post info"]?.total || 0 }}
-					</div>
-					<div class="right-count green">
-						Zrealizované:
-						{{ seminarActivitesStatistics["Post info"]?.checked || 0 }}
-					</div>
-				</div>
-			</div>
-		</div>
 
-		<h1 class="font-semibold mb-4 mt-8">Zoznam zaujatych ľudí po pohovore:</h1>
-		<div class="max-h-[400px] overflow-y-auto bg-white max-w-[650px]">
-			<table class="w-full">
-				<thead>
-					<tr class="bg-gray-50">
-						<th class="p-3 text-left">Meno a Priezvisko</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr
-						v-for="kanditat in zaujatiKandidati"
-						class="border-t cursor-pointer hover:bg-gray-50"
-						@click="goToContact(kanditat.contact_id)"
-					>
-						<td class="p-3">{{ kanditat.meno }} {{ kanditat.priezvisko }}</td>
-					</tr>
-				</tbody>
-			</table>
+			<h1 class="font-semibold mb-4 mt-8">
+				Zoznam zaujatych ľudí po pohovore:
+			</h1>
+			<div class="max-h-[400px] overflow-y-auto bg-white max-w-[650px]">
+				<table class="w-full">
+					<thead>
+						<tr class="bg-gray-50">
+							<th class="p-3 text-left">Meno a Priezvisko</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr
+							v-for="kanditat in zaujatiKandidati"
+							class="border-t cursor-pointer hover:bg-gray-50"
+							@click="goToContact(kanditat.contact_id)"
+						>
+							<td class="p-3">{{ kanditat.meno }} {{ kanditat.priezvisko }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
 		</div>
 	</div>
 </template>

@@ -1,8 +1,9 @@
 <template>
-	<loadigcomponent v-if="officeStore.loadingState" />
+	<div class="bg-white">
+		<loadigcomponent v-if="officeStore.loadingState" />
 
-	<div class="flex items-center gap-8">
-		<!-- <button
+		<div class="flex items-center gap-8 bg-white">
+			<!-- <button
 			class="mt-4 ml-8 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
 			@click="openNewOfficeForm"
 			v-if="!showSharingForm"
@@ -18,143 +19,143 @@
 			Zdielať kanceláriu
 		</button> -->
 
-		<div
-			class="my-4 ml-8 flex items-center gap-4 bg-slate-200 px-4 py-2 rounded-md"
-		>
-			<span class="font-semibold">Aktuálna kancelária:</span>
-			<span class="font-semibold underline">
-				{{ selectedOfficeName }}
-			</span>
-		</div>
-	</div>
-
-	<div class="w-full h-[2px] bg-slate-500"></div>
-
-	<div class="mt-8 mx-8 max-h-fit">
-		<OfficeCalendar
-			:ownerId="selectedOfficeOwnerId"
-			:officeUsers="currentOfficeUsers"
-		/>
-	</div>
-
-	<div class="mt-8">
-		<button
-			class="mt-4 ml-8 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
-			@click="openNewOfficeForm"
-			v-if="!showSharingForm"
-		>
-			Pridať kanceláriu
-		</button>
-
-		<button
-			class="mt-4 ml-8 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
-			@click="openSharingForm"
-			v-if="!showSharingForm"
-		>
-			Zdielať kanceláriu
-		</button>
-	</div>
-
-	<OfficeForm
-		v-if="showOfficeForm"
-		:officeToEdit="selectedOffice"
-		@officeSaved="handleOfficeSaved"
-		@officeEdited="handleOfficeEdited"
-		@cancel="showOfficeForm = false"
-	/>
-
-	<OfficeSharingForm
-		v-if="showSharingForm"
-		@openSharingForm="openSharingForm"
-	/>
-
-	<div class="ml-8 mt-8 mb-10">
-		<h1 class="text-xl font-semibold mb-4">Kancelárie</h1>
-
-		<div v-if="allOffices.length" class="overflow-x-auto">
-			<table
-				class="min-w-full border border-gray-300 rounded-lg overflow-hidden"
+			<div
+				class="my-4 ml-8 flex items-center gap-4 bg-slate-200 px-4 py-2 rounded-md"
 			>
-				<thead class="bg-gray-100">
-					<tr>
-						<th class="px-4 py-2 border-b">#</th>
-						<th class="px-4 py-2 border-b">Názov</th>
-						<th class="px-4 py-2 border-b">Poloha</th>
-						<th class="px-4 py-2 border-b">Okres</th>
-						<th class="px-4 py-2 border-b">Telefón</th>
-						<th class="px-4 py-2 border-b">Typ</th>
-						<th class="px-4 py-2 border-b">Akcie</th>
-					</tr>
-				</thead>
-
-				<tbody>
-					<tr
-						v-for="(office, index) in allOffices"
-						:key="office.id"
-						class="hover:bg-gray-50"
-						:class="[
-							'hover:bg-gray-50 transition',
-							!isDefaultOffice(office.id) ? 'opacity-50' : 'opacity-100',
-						]"
-					>
-						<td class="px-4 py-2 border-b">{{ index + 1 }}</td>
-						<td class="px-4 py-2 border-b">{{ office.name }}</td>
-						<td class="px-4 py-2 border-b">{{ office.location }}</td>
-						<td class="px-4 py-2 border-b">{{ office.district }}</td>
-						<td class="px-4 py-2 border-b">{{ office.phone_number }}</td>
-
-						<!-- OWNED / SHARED -->
-						<td class="px-4 py-2 border-b">
-							<span
-								:class="office.isShared ? 'text-blue-600' : 'text-green-600'"
-								class="font-semibold"
-							>
-								{{ office.isShared ? "Zdielaná" : "Moja" }}
-							</span>
-						</td>
-
-						<td class="px-4 py-2 border-b flex gap-2">
-							<button
-								@click="showOfficeActivities(office.id)"
-								class="bg-green-600 text-white py-1 px-2 rounded-md hover:bg-green-700"
-							>
-								Zobraziť kalendár
-							</button>
-
-							<!-- Only for owned offices -->
-							<button
-								v-if="!office.isShared"
-								class="bg-blue-600 text-white py-1 px-2 rounded-md hover:bg-blue-700"
-								@click="editOffice(office)"
-							>
-								Upraviť
-							</button>
-
-							<button
-								v-if="!office.isShared"
-								class="bg-red-600 text-white py-1 px-2 rounded-md hover:bg-red-700"
-								@click="deleteOffice(office.id)"
-							>
-								Odstrániť
-							</button>
-
-							<input
-								type="checkbox"
-								:checked="officeStore.defaultOfficeId === office.id"
-								@click="handleOfficeCheckbox(office.id)"
-							/>
-						</td>
-					</tr>
-				</tbody>
-			</table>
+				<span class="font-semibold">Aktuálna kancelária:</span>
+				<span class="font-semibold underline">
+					{{ selectedOfficeName }}
+				</span>
+			</div>
 		</div>
 
-		<div v-else class="text-gray-500 mt-4">
-			Žiadne kancelárie zatiaľ neexistujú.
-		</div>
-	</div>
+		<div class="w-full h-[2px] bg-slate-500"></div>
 
-	<!-- <div class="ml-8 mt-8 mb-10">
+		<div class="mt-8 mx-8 max-h-fit bg-white">
+			<OfficeCalendar
+				:ownerId="selectedOfficeOwnerId"
+				:officeUsers="currentOfficeUsers"
+			/>
+		</div>
+
+		<div class="mt-8 bg-white">
+			<button
+				class="mt-4 ml-8 bg-[#921337] text-white py-2 px-4 rounded-md hover:bg-[#cc1d4d]"
+				@click="openNewOfficeForm"
+				v-if="!showSharingForm"
+			>
+				Pridať kanceláriu
+			</button>
+
+			<button
+				class="mt-4 ml-8 bg-[#921337] text-white py-2 px-4 rounded-md hover:bg-[#cc1d4d]"
+				@click="openSharingForm"
+				v-if="!showSharingForm"
+			>
+				Zdielať kanceláriu
+			</button>
+		</div>
+
+		<OfficeForm
+			v-if="showOfficeForm"
+			:officeToEdit="selectedOffice"
+			@officeSaved="handleOfficeSaved"
+			@officeEdited="handleOfficeEdited"
+			@cancel="showOfficeForm = false"
+		/>
+
+		<OfficeSharingForm
+			v-if="showSharingForm"
+			@openSharingForm="openSharingForm"
+		/>
+
+		<div class="ml-8 mt-8 mb-10 bg-white">
+			<h1 class="text-xl font-semibold mb-4">Kancelárie</h1>
+
+			<div v-if="allOffices.length" class="overflow-x-auto">
+				<table
+					class="min-w-full border border-gray-300 rounded-lg overflow-hidden"
+				>
+					<thead class="bg-gray-100">
+						<tr>
+							<th class="px-4 py-2 border-b">#</th>
+							<th class="px-4 py-2 border-b">Názov</th>
+							<th class="px-4 py-2 border-b">Poloha</th>
+							<th class="px-4 py-2 border-b">Okres</th>
+							<th class="px-4 py-2 border-b">Telefón</th>
+							<th class="px-4 py-2 border-b">Typ</th>
+							<th class="px-4 py-2 border-b">Akcie</th>
+						</tr>
+					</thead>
+
+					<tbody>
+						<tr
+							v-for="(office, index) in allOffices"
+							:key="office.id"
+							class="hover:bg-gray-50"
+							:class="[
+								'hover:bg-gray-50 transition',
+								!isDefaultOffice(office.id) ? 'opacity-50' : 'opacity-100',
+							]"
+						>
+							<td class="px-4 py-2 border-b">{{ index + 1 }}</td>
+							<td class="px-4 py-2 border-b">{{ office.name }}</td>
+							<td class="px-4 py-2 border-b">{{ office.location }}</td>
+							<td class="px-4 py-2 border-b">{{ office.district }}</td>
+							<td class="px-4 py-2 border-b">{{ office.phone_number }}</td>
+
+							<!-- OWNED / SHARED -->
+							<td class="px-4 py-2 border-b">
+								<span
+									:class="office.isShared ? 'text-blue-600' : 'text-green-600'"
+									class="font-semibold"
+								>
+									{{ office.isShared ? "Zdielaná" : "Moja" }}
+								</span>
+							</td>
+
+							<td class="px-4 py-2 border-b flex gap-2">
+								<button
+									@click="showOfficeActivities(office.id)"
+									class="bg-green-600 text-white py-1 px-2 rounded-md hover:bg-green-700"
+								>
+									Zobraziť kalendár
+								</button>
+
+								<!-- Only for owned offices -->
+								<button
+									v-if="!office.isShared"
+									class="bg-blue-600 text-white py-1 px-2 rounded-md hover:bg-blue-700"
+									@click="editOffice(office)"
+								>
+									Upraviť
+								</button>
+
+								<button
+									v-if="!office.isShared"
+									class="bg-red-600 text-white py-1 px-2 rounded-md hover:bg-red-700"
+									@click="deleteOffice(office.id)"
+								>
+									Odstrániť
+								</button>
+
+								<input
+									type="checkbox"
+									:checked="officeStore.defaultOfficeId === office.id"
+									@click="handleOfficeCheckbox(office.id)"
+								/>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<div v-else class="text-gray-500 mt-4">
+				Žiadne kancelárie zatiaľ neexistujú.
+			</div>
+		</div>
+
+		<!-- <div class="ml-8 mt-8 mb-10">
 		<h1 class="text-xl font-semibold mb-4">Moje kancelárie</h1>
 		<div v-if="officeStore.offices.length" class="overflow-x-auto">
 			<table
@@ -264,33 +265,34 @@
 		</div>
 	</div> -->
 
-	<div class="ml-8 mt-10 mb-10">
-		<h2 class="text-lg font-semibold">
-			Ľudia, ktorí majú prístup k mojim kanceláriám
-		</h2>
+		<div class="ml-8 mt-10 mb-10 bg-white">
+			<h2 class="text-lg font-semibold">
+				Ľudia, ktorí majú prístup k mojim kanceláriám
+			</h2>
 
-		<div v-for="office in allOffices" :key="office.id">
-			<h3 class="font-semibold mt-4 mb-2">{{ office.name }}</h3>
-			<ul>
-				<li
-					class="flex justify-between items-center max-w-[600px]"
-					v-for="person in sharedWithUsers.filter(
-						(user) =>
-							Array.isArray(office.shared_with) &&
-							office.shared_with.includes(user.id),
-					)"
-					:key="person.id"
-				>
-					{{ person.first_name }} {{ person.last_name }} - email:
-					{{ person.email }}
-					<button
-						@click="handleRevokeAccess(person.id, office.id)"
-						class="bg-red-500 px-1.5 py-1 rounded-lg hover:bg-red-600"
+			<div v-for="office in allOffices" :key="office.id">
+				<h3 class="font-semibold mt-4 mb-2">{{ office.name }}</h3>
+				<ul>
+					<li
+						class="flex justify-between items-center max-w-[600px] my-1.5"
+						v-for="person in sharedWithUsers.filter(
+							(user) =>
+								Array.isArray(office.shared_with) &&
+								office.shared_with.includes(user.id),
+						)"
+						:key="person.id"
 					>
-						Zrusiť prístup
-					</button>
-				</li>
-			</ul>
+						{{ person.first_name }} {{ person.last_name }} - email:
+						{{ person.email }}
+						<button
+							@click="handleRevokeAccess(person.id, office.id)"
+							class="bg-red-500 px-1.5 py-1 rounded-lg hover:bg-red-600"
+						>
+							Zrusiť prístup
+						</button>
+					</li>
+				</ul>
+			</div>
 		</div>
 	</div>
 </template>

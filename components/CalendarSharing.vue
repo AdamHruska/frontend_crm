@@ -43,7 +43,7 @@
 			<button
 				type="button"
 				@click="toggleDropdown"
-				class="px-4 py-2.5 rounded-[50px] text-white text-sm font-semibold border-none outline-none bg-blue-600 hover:bg-blue-700 active:bg-blue-600"
+				class="px-4 py-2.5 rounded-[50px] text-white text-sm font-semibold border-none outline-none bg-[#921337] hover:bg-[#cc1d4d] active:bg-[#921337]"
 			>
 				Zobraziť kalendár
 				<svg

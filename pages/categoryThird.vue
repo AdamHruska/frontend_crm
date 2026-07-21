@@ -664,7 +664,7 @@ const fetchCategoriesForPage = async (page) => {
 				cat.saveError = "";
 			}),
 		);
-		page.categories = cats;
+		page.categories = cats.reverse();
 	} catch (err) {
 		console.error("Chyba pri načítaní kategórií:", err);
 	} finally {
@@ -887,7 +887,7 @@ onMounted(async () => {
 	align-items: flex-end;
 	gap: 0;
 	padding: 0.75rem 2.5rem 0;
-	background: #fff;
+
 	border-bottom: 1px solid #e5e7eb;
 	overflow-x: auto;
 	scrollbar-width: none;
@@ -920,6 +920,7 @@ onMounted(async () => {
 	max-width: 200px;
 	min-width: 0;
 	user-select: none;
+	background-color: #fff;
 }
 .tab--active {
 	background: #f4f6fb;
@@ -935,7 +936,7 @@ onMounted(async () => {
 	width: 7px;
 	height: 7px;
 	border-radius: 50%;
-	background: #6366f1;
+	background: #921337;
 	flex-shrink: 0;
 }
 .tab-name {
@@ -1070,7 +1071,7 @@ onMounted(async () => {
 	display: flex;
 	align-items: center;
 	gap: 0.5rem;
-	background: #4f46e5;
+	background: #921337;
 	color: #fff;
 	border: none;
 	border-radius: 10px;
@@ -1085,7 +1086,7 @@ onMounted(async () => {
 	white-space: nowrap;
 }
 .btn-create:hover {
-	background: #4338ca;
+	background: #cc1d4d;
 	transform: translateY(-1px);
 }
 .btn-icon {
@@ -1285,7 +1286,7 @@ onMounted(async () => {
 	margin: 0;
 }
 .btn-save-contacts {
-	background: #4f46e5;
+	background: #921337;
 	color: #fff;
 	border: none;
 	border-radius: 8px;
@@ -1301,7 +1302,7 @@ onMounted(async () => {
 	cursor: not-allowed;
 }
 .btn-save-contacts:hover:not(:disabled) {
-	background: #4338ca;
+	background: #cc1d4d;
 }
 
 /* ── Empty & Loading ────────────────────────────────────── */
@@ -1449,7 +1450,7 @@ onMounted(async () => {
 	background: #e5e7eb;
 }
 .btn-save {
-	background: #4f46e5;
+	background: #921337;
 	color: #fff;
 	border: none;
 	border-radius: 8px;
@@ -1465,7 +1466,7 @@ onMounted(async () => {
 	cursor: not-allowed;
 }
 .btn-save:hover:not(:disabled) {
-	background: #4338ca;
+	background: #cc1d4d;
 }
 .btn-delete {
 	background: #dc2626;

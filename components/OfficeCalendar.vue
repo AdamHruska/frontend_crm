@@ -176,7 +176,8 @@ const activityStats = computed(() => {
 	).length;
 
 	const discarded = currentMonthActivities.filter(
-		(a) => a.activity_status === "discarded",
+		(a) =>
+			a.activity_status === "discarded" || a.activity_status === "rejected",
 	).length;
 
 	const questionmark = currentMonthActivities.filter(
@@ -244,7 +245,7 @@ const defaultOptions = {
 	// Event class names based on status
 	eventClassNames: (arg) => {
 		const status = arg.event.extendedProps.activity_status;
-		if (status === "discarded") {
+		if (status === "discarded" || status === "rejected") {
 			return ["discarded-event"];
 		}
 		if (status === "check" || status === "accepted") {

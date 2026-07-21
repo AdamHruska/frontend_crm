@@ -92,11 +92,12 @@ onMounted(() => {
 
 <template>
 	<loadigcomponent v-if="loading" />
-	<div class="flex items-center justify-center min-h-screen bg-blue-800">
+	<div class="flex items-center justify-center min-h-screen bg-[#921337]">
 		<div class="w-full max-w-md p-8 space-y-8 rounded-lg shadow-md bg-white">
-			<h1 class="mx-auto text-center text-3xl font-bold pb-4 text-black">
-				Partners Group SK
-			</h1>
+			<div class="w-full flex justify-center items-center py-4">
+				<img src="/public/pgsk-logo-small.png" alt="" />
+			</div>
+
 			<!-- ... previous header content ... -->
 			<form class="mt-8 space-y-6">
 				<div class="rounded-md shadow-sm">
@@ -111,7 +112,7 @@ onMounted(() => {
 							type="email"
 							autocomplete="email"
 							required
-							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-red-800 focus:border-red-800 sm:text-sm"
 						/>
 					</div>
 					<div class="mb-4">
@@ -125,7 +126,7 @@ onMounted(() => {
 							type="password"
 							autocomplete="current-password"
 							required
-							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+							class="text-black appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 bg-white rounded-md focus:outline-none focus:ring-red-800 focus:border-red-800 sm:text-sm"
 						/>
 					</div>
 				</div>
@@ -143,7 +144,7 @@ onMounted(() => {
 						>
 					</div>
 					<div class="text-sm">
-						<a href="#" class="font-medium text-blue-600 hover:text-blue-500"
+						<a href="#" class="font-medium text-[#921337] hover:text-[#cc1d4d]"
 							>Zabudnuté heslo?</a
 						>
 					</div>
@@ -151,7 +152,7 @@ onMounted(() => {
 				<div>
 					<button
 						@click="login(email, password, rememberMe)"
-						class="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-8"
+						class="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#921337] hover:bg-[#cc1d4d] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-8"
 					>
 						<span v-if="lockoutSeconds > 0"
 							>Počkajte {{ lockoutSeconds }}s...</span
@@ -159,7 +160,7 @@ onMounted(() => {
 						<span v-else>Prihlásiť</span>
 					</button>
 					<nuxt-link
-						class="font-small font-semibold text-blue-600 hover:text-blue-500 float-right mt-1"
+						class="font-small font-semibold text-[#921337] hover:text-[#cc1d4d] float-right mt-1"
 						to="/register"
 					>
 						Registrovať

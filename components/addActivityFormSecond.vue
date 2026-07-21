@@ -149,7 +149,6 @@ onBeforeMount(async () => {
 	officeStore.fetchOffices();
 	officeStore.fetchOfficesSharedWithMe();
 	userStore.fetchUser();
-
 	officeStore.getallOfficeActivites();
 
 	const response = await findPerson(props.contact_id);
@@ -160,7 +159,7 @@ onBeforeMount(async () => {
 	const now = new Date();
 	datum_cas.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
-	const startPlusHour = add(datum_cas.value, { hours: 1 });
+	const startPlusHour = add(parseISO(datum_cas.value), { hours: 1 }); // parseISO added
 	koniec.value = format(startPlusHour, "yyyy-MM-dd'T'HH:mm");
 
 	const response2 = await axios.get(`${config.public.apiUrl}all-contacts`, {
@@ -191,6 +190,7 @@ const cancelActivity = () => {
 const emailCount = ref(0);
 const emails = ref([""]);
 
+/*
 const addActivity = async () => {
 	event.preventDefault();
 
@@ -291,6 +291,7 @@ const addActivity = async () => {
 
 			const newActivity = {
 				aktivita: aktivita.value,
+				importance: importance.value,
 				datum_cas: toLocalString(datum_cas.value),
 				koniec: toLocalString(koniec.value),
 				poznamka: poznamka.value,
@@ -314,6 +315,138 @@ const addActivity = async () => {
 		setTimeout(() => {
 			emit("cancelAddActivity");
 		}, 400);
+	} catch (error) {
+		console.error("Error adding activity:", error);
+		toast.error("Chyba pri pridávaní aktivity");
+	}
+};
+*/
+
+const addActivity = async () => {
+	event.preventDefault();
+
+	if (onlineMeeting.value) {
+		const hasEmail =
+			emailBool.value || (email.value && email.value.trim() !== "");
+		if (!hasEmail) {
+			toast.error("Pre online stretnutie je potrebné zadať email");
+			return;
+		}
+	}
+
+	if (aktivita.value === "ine") {
+		aktivita.value = ina_aktivita.value;
+	}
+
+	if (onlineMeeting.value) {
+		miesto_stretnutia.value =
+			"Online Meeting " + (email.value || contact.value[0].email);
+	}
+
+	if (
+		aktivita.value === "Telefonát klient" ||
+		aktivita.value === "Telefonát nábor"
+	) {
+		volane.value = true;
+	}
+
+	// Set miesto_stretnutia BEFORE the POST so the main activity
+	// and the office activity end up with the same value
+	if (selectedOffice.value.name !== "Kancelárie") {
+		miesto_stretnutia.value = selectedOffice.value.name;
+	}
+
+	try {
+		const response = await axios.post(
+			`${config.public.apiUrl}add-activity`,
+			{
+				contact_id: props.contact_id,
+				aktivita: aktivita.value,
+				datumCas: datum_cas.value,
+				koniec: koniec.value,
+				poznamka: poznamka.value,
+				volane: volane.value,
+				dovolane: dovolane.value,
+				dohodnute: dohodnute.value,
+				online_meeting: onlineMeeting.value,
+				miesto_stretnutia: miesto_stretnutia.value,
+				send_notification_15: active.value?.includes(15) || false,
+				send_notification_30: active.value?.includes(30) || false,
+				send_notification_60: active.value?.includes(60) || false,
+			},
+			{ headers: { Authorization: `Bearer ${authStore.token}` } },
+		);
+
+		if (!emailBool.value && onlineMeeting.value && email.value) {
+			await axios.patch(
+				`${config.public.apiUrl}contact/${props.contact_id}/email`,
+				{ email: email.value },
+				{ headers: { Authorization: `Bearer ${authStore.token}` } },
+			);
+		}
+
+		if (onlineMeeting.value) {
+			try {
+				const teamsResponse = await axios.post(
+					`${config.public.apiUrl}create-teams-meeting`,
+					{
+						activityId: response.data.activity.id,
+						user_id: userStore.user.id,
+						importance: importance.value,
+					},
+					{ headers: { Authorization: `Bearer ${authStore.token}` } },
+				);
+
+				if (teamsResponse.data.joinUrl) {
+					const officePart =
+						selectedOffice.value.name !== "Kancelárie"
+							? `${selectedOffice.value.name} - `
+							: "";
+					response.data.activity.miesto_stretnutia = `${officePart}${teamsResponse.data.joinUrl}`;
+					miesto_stretnutia.value = response.data.activity.miesto_stretnutia;
+				}
+			} catch (error) {
+				console.error("Error creating Teams meeting:", error);
+				toast.error("Chyba pri vytváraní online stretnutia");
+			}
+		}
+
+		if (selectedOffice.value.name !== "Kancelárie") {
+			const toLocalString = (localStr) => localStr.replace("T", " ") + ":00";
+
+			const newActivity = {
+				aktivita: aktivita.value,
+				importance: importance.value,
+				datum_cas: toLocalString(datum_cas.value),
+				koniec: toLocalString(koniec.value),
+				poznamka: poznamka.value,
+				office_id: officeStore.setOfficeID,
+				owner_number: userStore.user.vizitka_phone_num,
+			};
+
+			await officeStore.storeActivity(newActivity);
+		}
+
+		calendarStore.activities.push(response.data.activity);
+
+		const successMsg = onlineMeeting.value
+			? "Online stretnutie bolo úspešne pridané"
+			: "Aktivita bola úspešne pridaná";
+
+		toast.success(successMsg);
+
+		emit("activityAdded", response.data.activity);
+
+		setTimeout(() => {
+			emit("cancelAddActivity");
+		}, 400);
+
+		// Reload last, only after everything else has completed —
+		// this used to fire right after the POST and killed the
+		// office-activity creation, Teams meeting, and email patch below it.
+		if (response.data.activity.aktivita === "Pohovor") {
+			location.reload();
+		}
 	} catch (error) {
 		console.error("Error adding activity:", error);
 		toast.error("Chyba pri pridávaní aktivity");
@@ -828,7 +961,7 @@ const findAndDeleteOfficeActivity = async () => {
 							:key="n"
 							@click="setActive(n)"
 							class="bg-slate-200 px-3 py-1.5 rounded-lg border-2 cursor-pointer transition"
-							:class="active.includes(n) ? 'border-blue-500 bg-blue-100' : ''"
+							:class="active.includes(n) ? 'border-[#921337] bg-[#cc1d4d]' : ''"
 							>{{ n }}</span
 						>
 					</div>
@@ -838,7 +971,7 @@ const findAndDeleteOfficeActivity = async () => {
 				<div class="flex justify-center items-center span-2 mt-2">
 					<button
 						@click="addActivity()"
-						class="text-white bg-blue-500 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center"
+						class="text-white bg-[#921337] hover:bg-[#cc1d4d] focus:ring-4 focus:outline-none focus:ring-[#921337] font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center"
 					>
 						Pridať
 					</button>

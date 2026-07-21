@@ -2,7 +2,7 @@
 	<div :class="['flex', !isAuthenticated ? 'bg-slate-900' : '']">
 		<!-- Sidebar -->
 		<div
-			class="flex flex-col h-screen w-16 overflow-hidden text-gray-400 bg-blue-800 fixed top-0 left-0 nav-shadow"
+			class="flex flex-col h-screen w-16 overflow-hidden text-gray-400 bg-[#921337] fixed top-0 left-0 nav-shadow"
 			v-if="isAuthenticated"
 		>
 			<!-- Logo or Top Icon -->
@@ -31,8 +31,8 @@
 				>
 					<NuxtLink
 						to="/"
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded hover:scale-[105%] transition-transform"
-						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'home' }"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-[#cc1d4d] hover:text-gray-300 hover:rounded hover:scale-[105%] transition-transform"
+						:class="{ 'bg-[#cc1d4d] text-gray-200': activeTab === 'home' }"
 						@click="setActiveTab('home')"
 					>
 						<Icon icon="streamline:bullet-list" style="font-size: 22px" />
@@ -46,8 +46,8 @@
 				>
 					<NuxtLink
 						to="/calendar"
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
-						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'calendar' }"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-[#cc1d4d] hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
+						:class="{ 'bg-[#cc1d4d] text-gray-200': activeTab === 'calendar' }"
 						@click="setActiveTab('calendar')"
 					>
 						<Icon icon="streamline:blank-calendar" style="font-size: 22px" />
@@ -60,8 +60,8 @@
 					class=""
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded border-t border-black hover:scale-[105%] transition-transform"
-						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'calls' }"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-[#cc1d4d] hover:text-gray-300 hover:rounded border-t border-black hover:scale-[105%] transition-transform"
+						:class="{ 'bg-[#cc1d4d] text-gray-200': activeTab === 'calls' }"
 						to="/callsSecond"
 						@click="setActiveTab('calls')"
 					>
@@ -81,8 +81,8 @@
 				>
 					<NuxtLink
 						v-if="contactsStore.lastShowenDetails"
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded border-t border- border-black hover:scale-[105%] transition-transform"
-						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'detail' }"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-[#cc1d4d] hover:text-gray-300 hover:rounded border-t border- border-black hover:scale-[105%] transition-transform"
+						:class="{ 'bg-[#cc1d4d] text-gray-200': activeTab === 'detail' }"
 						:to="`/contact/${contactsStore.lastShowenDetails}`"
 						@click="setActiveTab('detail')"
 					>
@@ -100,8 +100,8 @@
 					class="mt-auto"
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
-						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'todo' }"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-[#cc1d4d] hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
+						:class="{ 'bg-[#cc1d4d] text-gray-200': activeTab === 'todo' }"
 						to="/todoSecond"
 						@click="setActiveTab('todo')"
 					>
@@ -119,9 +119,9 @@
 					class=""
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-[#cc1d4d] hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
 						:class="{
-							'bg-blue-700 text-gray-200': activeTab === 'kancelarie',
+							'bg-[#cc1d4d] text-gray-200': activeTab === 'kancelarie',
 						}"
 						to="/office"
 						@click="setActiveTab('kancelarie')"
@@ -140,9 +140,9 @@
 					class=""
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-[#cc1d4d] hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
 						:class="{
-							'bg-blue-700 text-gray-200': activeTab === 'delegovane_kontakty',
+							'bg-[#cc1d4d] text-gray-200': activeTab === 'delegovane_kontakty',
 						}"
 						to="/delegovane-kontakty"
 						@click="setActiveTab('delegovane_kontakty')"
@@ -161,9 +161,9 @@
 					class=""
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-[#cc1d4d] hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
 						:class="{
-							'bg-blue-700 text-gray-200': activeTab === 'shared-contacts',
+							'bg-[#cc1d4d] text-gray-200': activeTab === 'shared-contacts',
 						}"
 						to="/shared-contacts"
 						@click="setActiveTab('shared-contacts')"
@@ -182,9 +182,9 @@
 					class=""
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-[#cc1d4d] hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
 						:class="{
-							'bg-blue-700 text-gray-200': activeTab === 'ohrievac',
+							'bg-[#cc1d4d] text-gray-200': activeTab === 'ohrievac',
 						}"
 						to="/ohrievac"
 						@click="setActiveTab('ohrievac')"
@@ -203,9 +203,9 @@
 					class=""
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-[#cc1d4d] hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
 						:class="{
-							'bg-blue-700 text-gray-200': activeTab === 'kategorie',
+							'bg-[#cc1d4d] text-gray-200': activeTab === 'kategorie',
 						}"
 						to="/categoryThird"
 						@click="setActiveTab('kategorie')"
@@ -224,9 +224,9 @@
 					class=""
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-[#cc1d4d] hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
 						:class="{
-							'bg-blue-700 text-gray-200': activeTab === 'declined-events',
+							'bg-[#cc1d4d] text-gray-200': activeTab === 'declined-events',
 						}"
 						to="/declined-events"
 						@click="setActiveTab('declined-events')"
@@ -245,8 +245,8 @@
 					class=""
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded border-t border-black hover:scale-[105%] transition-transform"
-						:class="{ 'bg-blue-700 text-gray-200': activeTab === 'stats' }"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-[#cc1d4d] hover:text-gray-300 hover:rounded border-t border-black hover:scale-[105%] transition-transform"
+						:class="{ 'bg-[#cc1d4d] text-gray-200': activeTab === 'stats' }"
 						to="/statistics"
 						@click="setActiveTab('stats')"
 					>
@@ -270,9 +270,9 @@
 					class=""
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded hover:scale-[105%] transition-transform"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-[#cc1d4d] hover:text-gray-300 hover:rounded hover:scale-[105%] transition-transform"
 						:class="{
-							'bg-blue-700 text-gray-200': activeTab === 'employees',
+							'bg-[#cc1d4d] text-gray-200': activeTab === 'employees',
 						}"
 						to="/users"
 						@click="setActiveTab('employees')"
@@ -291,9 +291,9 @@
 					class=""
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-[#cc1d4d] hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
 						:class="{
-							'bg-blue-700 text-gray-200': activeTab === 'contacts-all',
+							'bg-[#cc1d4d] text-gray-200': activeTab === 'contacts-all',
 						}"
 						to="/contacts-all"
 						@click="setActiveTab('contacts-all')"
@@ -312,9 +312,9 @@
 					class=""
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-[#cc1d4d] hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
 						:class="{
-							'bg-blue-700 text-gray-200': activeTab === 'kancelarie',
+							'bg-[#cc1d4d] text-gray-200': activeTab === 'kancelarie',
 						}"
 						to="/offices-all"
 						@click="setActiveTab('kancelarie')"
@@ -333,9 +333,9 @@
 					class=""
 				>
 					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-blue-600 hover:text-gray-300 hover:rounded hover:scale-[105%] transition-transform"
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-[#cc1d4d] hover:text-gray-300 hover:rounded hover:scale-[105%] transition-transform"
 						:class="{
-							'bg-blue-700 text-gray-200': activeTab === 'logs',
+							'bg-[#cc1d4d] text-gray-200': activeTab === 'logs',
 						}"
 						to="/logs"
 						@click="setActiveTab('logs')"
@@ -356,7 +356,7 @@
 				class=""
 			>
 				<NuxtLink
-					class="flex items-center justify-center w-16 h-16 mt-auto hover:bg-blue-700 mb-2 cursor-pointer hover:scale-[105%] transition-transform"
+					class="flex items-center justify-center w-16 h-16 mt-auto hover:bg-[#cc1d4d] mb-2 cursor-pointer hover:scale-[105%] transition-transform"
 					to="/calendar-sharing"
 					@click="setActiveTab('test')"
 				>
@@ -374,7 +374,7 @@
 				class=""
 			>
 				<div
-					class="flex items-center justify-center w-16 h-16 mt-auto hover:bg-blue-600 hover:text-gray-300 mb-2 cursor-pointer hover:scale-[105%] transition-transform border-t border-black"
+					class="flex items-center justify-center w-16 h-16 mt-auto hover:bg-[#cc1d4d] hover:text-gray-300 mb-2 cursor-pointer hover:scale-[105%] transition-transform border-t border-black"
 					@click="showSignOutForm()"
 				>
 					<Icon

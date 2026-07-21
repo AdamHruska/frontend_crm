@@ -29,8 +29,37 @@ export const useCalendarstore = defineStore("calendar", {
 	actions: {
 		setIcsCache(events, calendarNames = []) {
 			this.icsEventCache = events;
-			this.icsCacheTimestamp = Date.now();
-			this.icsCalendarNames = calendarNames; // ulož názvy
+			this.icsLastFetched = Date.now();
+			this.icsCalendarNames = calendarNames;
+
+			try {
+				sessionStorage.setItem("icsEventCache", JSON.stringify(events));
+				sessionStorage.setItem(
+					"icsCalendarNames",
+					JSON.stringify(calendarNames),
+				);
+				sessionStorage.setItem("icsLastFetched", String(this.icsLastFetched));
+			} catch (e) {
+				console.error("Failed to persist ICS cache:", e);
+			}
+		},
+
+		hydrateIcsCacheFromSession() {
+			if (this.icsEventCache) return; // already have it in memory, skip
+
+			try {
+				const cached = sessionStorage.getItem("icsEventCache");
+				const names = sessionStorage.getItem("icsCalendarNames");
+				const lastFetched = sessionStorage.getItem("icsLastFetched");
+
+				if (cached) {
+					this.icsEventCache = JSON.parse(cached);
+					this.icsCalendarNames = names ? JSON.parse(names) : [];
+					this.icsLastFetched = lastFetched ? Number(lastFetched) : null;
+				}
+			} catch (e) {
+				console.error("Failed to hydrate ICS cache from session:", e);
+			}
 		},
 
 		setIcsRefreshInterval(intervalId) {
@@ -155,10 +184,10 @@ export const useCalendarstore = defineStore("calendar", {
 			);
 		},
 
-		setIcsCache(events) {
-			this.icsEventCache = events;
-			this.icsLastFetched = Date.now();
-		},
+		// setIcsCache(events) {
+		// 	this.icsEventCache = events;
+		// 	this.icsLastFetched = Date.now();
+		// },
 
 		clearIcsCache() {
 			this.icsEventCache = null;

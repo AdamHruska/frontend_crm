@@ -1041,7 +1041,7 @@ const handleCloseConfirmEvent = async () => {
 					<button
 						type="button"
 						@click="updateActivity()"
-						class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center"
+						class="text-white bg-[#921337] hover:bg-[#cc1d4d] focus:ring-4 focus:outline-none focus:ring-[#921337] font-medium rounded-lg text-sm w-full sm:w-auto px-8 py-2.5 text-center"
 					>
 						Upraviť
 					</button>

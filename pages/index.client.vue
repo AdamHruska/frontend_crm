@@ -607,50 +607,211 @@ const closeMenuOnOutsideClick = (e) => {
 </script>
 
 <template>
-	<div class="">
-		<SelectedContactsComponent
-			v-if="showSelectedContactsBool"
-			@showSelectedContacts="showSelectedContacts"
-		/>
+	<div class="bg-white">
+		<div class="">
+			<SelectedContactsComponent
+				v-if="showSelectedContactsBool"
+				@showSelectedContacts="showSelectedContacts"
+			/>
 
-		<loadigcomponent v-if="contactsStore.loadingState" />
-		<div class="flex justify-between">
-			<div class="w-[650px] ml-8 mt-8 mb-2 flex gap-2 items-center">
-				<searchBar @updateResults="handleSearchResults" class="w-[70%]" />
-				<!-- <ContactImportComponent /> -->
-			</div>
-
-			<div class="flex items-center mb-2">
-				<Icon
-					v-if="activeFilter !== null"
-					@click="selectFilter('none')"
-					icon="material-symbols:close"
-					style="font-size: 36px"
-					class="text-red mt-7 mr-4 cursor-pointer hover:scale-110"
-				/>
-
-				<div class="font-semibold text-md mt-7 mr-4">
-					{{ currentFilter }}
+			<loadigcomponent v-if="contactsStore.loadingState" />
+			<div class="flex justify-between bg-white">
+				<div class="w-[650px] ml-8 mt-8 mb-2 flex gap-2 items-center">
+					<searchBar @updateResults="handleSearchResults" class="w-[70%]" />
+					<!-- <ContactImportComponent /> -->
 				</div>
 
-				<div class="relative menu-dropdown-wrapper">
-					<UTooltip
-						text="Možnosti"
-						class="cursor-pointer flex items-center justify-center w-11 h-11 rounded-lg shadow-xl mr-4 mt-8 bg-gray-300 hover:bg-gray-400"
-					>
-						<Icon
-							@click="showMenuModal = !showMenuModal"
-							icon="material-symbols:more-vert"
-							style="font-size: 36px"
-							class="text-white"
-						/>
-					</UTooltip>
+				<div class="flex items-center mb-2">
+					<Icon
+						v-if="activeFilter !== null"
+						@click="selectFilter('none')"
+						icon="material-symbols:close"
+						style="font-size: 36px"
+						class="text-red mt-7 mr-4 cursor-pointer hover:scale-110"
+					/>
 
-					<div
+					<div class="font-semibold text-md mt-7 mr-4">
+						{{ currentFilter }}
+					</div>
+
+					<div class="relative menu-dropdown-wrapper">
+						<UTooltip
+							text="Možnosti"
+							class="cursor-pointer flex items-center justify-center w-11 h-11 rounded-lg shadow-xl mr-4 mt-8 bg-gray-300 hover:bg-gray-400"
+						>
+							<Icon
+								@click="showMenuModal = !showMenuModal"
+								icon="material-symbols:more-vert"
+								style="font-size: 36px"
+								class="text-white"
+							/>
+						</UTooltip>
+
+						<div
+							v-if="showMenuModal"
+							class="absolute right-0 mt-2 w-60 bg-white rounded-xl border border-zinc-100 shadow-lg p-2 z-50 flex flex-col gap-1"
+						>
+							<!-- Save to phone -->
+							<div
+								@click="
+									syncAllToGoogle();
+									showMenuModal = false;
+								"
+								class="flex items-center gap-2.5 text-sm px-3 py-2.5 rounded-lg cursor-pointer font-medium text-zinc-600 bg-zinc-50 border border-zinc-200 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 transition-all"
+							>
+								Uložiť kontakty do telefónu
+							</div>
+
+							<hr class="border-zinc-100" />
+
+							<!-- Delete -->
+							<div
+								@click="
+									deleteAllFromGoogle();
+									showMenuModal = false;
+								"
+								class="flex items-center gap-2.5 text-sm px-3 py-2.5 rounded-lg cursor-pointer font-medium text-red-500 bg-red-50 border border-red-100 hover:bg-red-100 hover:border-red-200 hover:text-red-600 transition-all"
+							>
+								🗑️ Vymazať kontakty z telefónu
+							</div>
+
+							<hr class="border-zinc-100" />
+
+							<!-- Import -->
+							<ContactImportComponent />
+
+							<hr class="border-zinc-100" />
+
+							<!-- Show selected -->
+							<div
+								@click="
+									showSelectedContacts();
+									showMenuModal = false;
+								"
+								class="flex items-center gap-2.5 text-sm px-3 py-2.5 rounded-lg cursor-pointer font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 hover:text-emerald-800 transition-all"
+							>
+								Zobraziť zakliknuté kontakty
+							</div>
+
+							<hr class="border-zinc-100" />
+
+							<!-- Filtre — toggles nested submenu -->
+							<div
+								@click="showFilterModal = !showFilterModal"
+								class="flex items-center justify-between gap-2.5 text-sm px-3 py-2.5 rounded-lg cursor-pointer font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300 transition-all"
+							>
+								<span>🔍 Filtre</span>
+								<span class="text-xs">{{ showFilterModal ? "▲" : "▼" }}</span>
+							</div>
+
+							<!-- Nested filter submenu -->
+							<div v-if="showFilterModal" class="flex flex-col gap-0.5 pl-2">
+								<div
+									@click="
+										selectFilter('never_called_clients');
+										showMenuModal = false;
+									"
+									:class="[
+										'text-sm py-1.5 px-2 cursor-pointer rounded-md',
+										activeFilter === 'never_called_clients'
+											? 'bg-slate-200'
+											: 'hover:bg-slate-100',
+									]"
+								>
+									Nikdy nevolané – klienti
+								</div>
+								<div
+									@click="
+										selectFilter('never_called_coworkers');
+										showMenuModal = false;
+									"
+									:class="[
+										'text-sm py-1.5 px-2 cursor-pointer rounded-md',
+										activeFilter === 'never_called_coworkers'
+											? 'bg-slate-200'
+											: 'hover:bg-slate-100',
+									]"
+								>
+									Nikdy nevolané – spolupracovníci
+								</div>
+								<div
+									@click="
+										selectFilter('never_answered_clients');
+										showMenuModal = false;
+									"
+									:class="[
+										'text-sm py-1.5 px-2 cursor-pointer rounded-md',
+										activeFilter === 'never_answered_clients'
+											? 'bg-slate-200'
+											: 'hover:bg-slate-100',
+									]"
+								>
+									Nikdy nezdvihli – klienti
+								</div>
+								<div
+									@click="
+										selectFilter('never_answered_coworkers');
+										showMenuModal = false;
+									"
+									:class="[
+										'text-sm py-1.5 px-2 cursor-pointer rounded-md',
+										activeFilter === 'never_answered_coworkers'
+											? 'bg-slate-200'
+											: 'hover:bg-slate-100',
+									]"
+								>
+									Nikdy nezdvihli – spolupracovníci
+								</div>
+								<div
+									@click="
+										selectFilter('wrong_number');
+										showMenuModal = false;
+									"
+									:class="[
+										'text-sm py-1.5 px-2 cursor-pointer rounded-md',
+										activeFilter === 'wrong_number'
+											? 'bg-slate-200'
+											: 'hover:bg-slate-100',
+									]"
+								>
+									Zlé telefónne číslo
+								</div>
+								<div
+									@click="
+										selectFilter('clients');
+										showMenuModal = false;
+									"
+									:class="[
+										'text-sm py-1.5 px-2 cursor-pointer rounded-md',
+										activeFilter === 'clients'
+											? 'bg-slate-200'
+											: 'hover:bg-slate-100',
+									]"
+								>
+									Všetky kontakty – klienti
+								</div>
+								<div
+									@click="
+										selectFilter('Kolegovia');
+										showMenuModal = false;
+									"
+									:class="[
+										'text-sm py-1.5 px-2 cursor-pointer rounded-md',
+										activeFilter === 'Kolegovia'
+											? 'bg-slate-200'
+											: 'hover:bg-slate-100',
+									]"
+								>
+									Všetky kontakty – spolupracovníci
+								</div>
+							</div>
+						</div>
+
+						<!-- <div
 						v-if="showMenuModal"
 						class="absolute right-0 mt-2 w-60 bg-white rounded-xl border border-zinc-100 shadow-lg p-2 z-50 flex flex-col gap-1"
 					>
-						<!-- Save to phone -->
+					
 						<div
 							@click="
 								syncAllToGoogle();
@@ -663,7 +824,7 @@ const closeMenuOnOutsideClick = (e) => {
 
 						<hr class="border-zinc-100" />
 
-						<!-- Delete -->
+						
 						<div
 							@click="
 								deleteAllFromGoogle();
@@ -676,12 +837,11 @@ const closeMenuOnOutsideClick = (e) => {
 
 						<hr class="border-zinc-100" />
 
-						<!-- Import -->
 						<ContactImportComponent />
 
 						<hr class="border-zinc-100" />
 
-						<!-- Show selected -->
+					
 						<div
 							@click="
 								showSelectedContacts();
@@ -691,10 +851,10 @@ const closeMenuOnOutsideClick = (e) => {
 						>
 							Zobraziť zakliknuté kontakty
 						</div>
+					</div> -->
 					</div>
-				</div>
 
-				<div class="relative">
+					<!-- <div class="relative">
 					<UTooltip
 						text="Filtrovanie"
 						class="cursor-pointer flex items-center justify-center w-11 h-11 rounded-lg shadow-xl mr-4 mt-8 bg-gray-300 hover:bg-gray-400"
@@ -797,267 +957,268 @@ const closeMenuOnOutsideClick = (e) => {
 							Zobraziť všetky kontakty na spolupracovníkov
 						</div>
 					</div>
-				</div>
+				</div> -->
 
-				<UTooltip
-					text="Pridať kontakt"
-					:ui="{ background: '!bg-white', color: '' }"
-					class=""
-				>
-					<button
-						@click="addPerson()"
-						class="bg-blue-700 rounded-lg hover:bg-blue-500 hover:text-black h-11 w-11 flex justify-center pt-[7px] mr-4 mt-8 shadow-xl"
+					<UTooltip
+						text="Pridať kontakt"
+						:ui="{ background: '!bg-white', color: '' }"
+						class=""
 					>
-						<Icon icon="fa6-solid:plus" style="font-size: 30px" class="" />
-					</button>
-				</UTooltip>
+						<button
+							@click="addPerson()"
+							class="bg-[#921337] rounded-lg hover:bg-[#cc1d4d] hover:text-black h-11 w-11 flex justify-center pt-[7px] mr-4 mt-8 shadow-xl"
+						>
+							<Icon icon="fa6-solid:plus" style="font-size: 30px" class="" />
+						</button>
+					</UTooltip>
 
-				<!-- <button
+					<!-- <button
 					@click="showSelectedContacts"
 					class="bg-green-400 hover:bg-green-500 rounded-lg h-11 mt-8 mr-8 shadow-md px-2 w-auto"
 				>
 					Zobraziť zaklinuté kontakty
 				</button> -->
-			</div>
-		</div>
-
-		<div class="relative float-end mr-10 mt-2">
-			<Icon
-				icon="material-symbols:chat-info-outline"
-				class="scale-[2] hover:scale-[2.5] cursor-pointer transition-transform"
-				@mouseenter="showDisclaimer = true"
-				@mouseleave="showDisclaimer = false"
-			/>
-			<div
-				class="bg-white rounded-md shadow-md w-[300px] absolute right-8 top-[-10px] z-[50] py-3 px-4"
-				id="disclaimer"
-				v-if="showDisclaimer"
-			>
-				<div class="flex items-center space-x-2 mb-2">
-					<div class="w-[32px] h-[32px] bg-green-200"></div>
-					<div>- Kontakt nemá žiadne aktivity</div>
-				</div>
-				<div class="flex items-center space-x-2 mb-2">
-					<div class="w-[32px] h-[32px] bg-blue-200"></div>
-					<div>- Len volané a nedovolané</div>
-				</div>
-				<div class="flex items-center space-x-2 mb-2">
-					<div class="w-[32px] h-[32px] bg-orange-300"></div>
-					<div>- Zlé tel. čislo</div>
 				</div>
 			</div>
-		</div>
 
-		<div class="flex justify-end mr-20 h-11">
-			<button
-				v-if="contactsStore.selectedContacts.length > 0"
-				@click="uncheckAll"
-				class="px-3 py-1 bg-red-500 hover:bg-red-700 rounded-lg text-white shadow-xl"
-			>
-				Zrušiť výber {{ contactsStore.selectedContacts.length }}
-			</button>
-			<button
-				v-if="contactsStore.selectedContacts.length > 0"
-				@click="toggleCallList"
-				class="px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded-lg text-white ml-4 shadow-xl"
-			>
-				Vytvoriť Call List
-			</button>
-
-			<button
-				v-if="contactsStore.selectedContacts.length > 0"
-				@click="showDelegateForm = !showDelegateForm"
-				class="px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded-lg text-white ml-4 shadow-xl"
-			>
-				Odovzdať kontakty
-			</button>
-
-			<button
-				v-if="contactsStore.selectedContacts.length > 0"
-				@click="showShareContacts = !showShareContacts"
-				class="px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded-lg text-white ml-4 shadow-xl"
-			>
-				Zdielať kontakty
-			</button>
-		</div>
-	</div>
-
-	<UTable
-		:rows="people"
-		:columns="columns"
-		class="mx-6 table-container shadow-md rounded-md table-fixed"
-		:row-class="(row) => row.class"
-		:ui="{
-			td: {
-				base: 'align-top whitespace-normal overflow-hidden !text-black',
-			},
-		}"
-	>
-		<template #actions-data="{ row }">
-			<div class="flex justify-between">
-				<div class="flex space-x-4">
-					<UButton
-						@click.left="detailView(row.id)"
-						@auxclick.prevent="onAuxClick($event, row.id)"
-						@mousedown="handleMouseDown"
-						class="bg-blue-500 text-white shadow-xl hover:scale-110 transition-transform"
-						label="Zobraziť detail"
-					/>
-					<UTooltip
-						text="Upraviť kontakt"
-						:ui="{ background: '!bg-white', color: '' }"
-						class=""
-					>
-						<UButton
-							@click="findPerson(row.id)"
-							icon="i-heroicons-pencil-square-20-solid"
-							variant="ghost"
-							class="shadow-xl hover:bg-gray-300 hover:scale-110 transition-transform"
-						/>
-					</UTooltip>
-
-					<UTooltip
-						text="Vymazať kontakt"
-						:ui="{ background: '!bg-white', color: '' }"
-						class=""
-					>
-						<UButton
-							@click="confirmDeletePerson(row.id)"
-							icon="i-heroicons-trash-20-solid"
-							color="ffffff"
-							class="shadow-xl text-red-500 hover:bg-gray-300 hover:scale-110 transition-transform"
-						/>
-					</UTooltip>
-				</div>
-				<input
-					type="checkbox"
-					@change="toggleCheckbox(row.id)"
-					:checked="isSelected(row.id)"
+			<div class="relative float-end mr-10 mt-2">
+				<Icon
+					icon="material-symbols:chat-info-outline"
+					class="scale-[2] hover:scale-[2.5] cursor-pointer transition-transform"
+					@mouseenter="showDisclaimer = true"
+					@mouseleave="showDisclaimer = false"
 				/>
-			</div>
-		</template>
-
-		<template #poznamka-data="{ row }">
-			<div v-if="row.poznamka" class="group relative">
-				<div class="truncate max-w-[380px]">
-					{{ row.poznamka }}
-				</div>
-
 				<div
-					class="absolute hidden group-hover:block z-10 w-[500px] p-3 bg-white border border-gray-200 rounded shadow-lg"
+					class="bg-white rounded-md shadow-md w-[300px] absolute right-8 top-[-10px] z-[50] py-3 px-4"
+					id="disclaimer"
+					v-if="showDisclaimer"
 				>
-					<div class="text-sm text-gray-700 whitespace-normal">
-						{{ row.poznamka }}
+					<div class="flex items-center space-x-2 mb-2">
+						<div class="w-[32px] h-[32px] bg-green-200"></div>
+						<div>- Kontakt nemá žiadne aktivity</div>
+					</div>
+					<div class="flex items-center space-x-2 mb-2">
+						<div class="w-[32px] h-[32px] bg-blue-200"></div>
+						<div>- Len volané a nedovolané</div>
+					</div>
+					<div class="flex items-center space-x-2 mb-2">
+						<div class="w-[32px] h-[32px] bg-orange-300"></div>
+						<div>- Zlé tel. čislo</div>
 					</div>
 				</div>
 			</div>
-		</template>
-	</UTable>
 
-	<!-- Load More button (only when a filter is active and there are more results) -->
-	<div
-		v-if="activeFilter !== null && hasMoreResults"
-		class="flex justify-center mt-6 mb-4"
-	>
-		<button
-			@click="loadMore"
-			:disabled="contactsStore.loadingState"
-			class="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg shadow-md"
-		>
-			<span v-if="contactsStore.loadingState">Načítavam...</span>
-			<span v-else>Načítať viac</span>
-		</button>
-	</div>
+			<div class="flex justify-end mr-20 h-11">
+				<button
+					v-if="contactsStore.selectedContacts.length > 0"
+					@click="uncheckAll"
+					class="px-3 py-1 bg-red-500 hover:bg-red-700 rounded-lg text-white shadow-xl"
+				>
+					Zrušiť výber {{ contactsStore.selectedContacts.length }}
+				</button>
+				<button
+					v-if="contactsStore.selectedContacts.length > 0"
+					@click="toggleCallList"
+					class="px-3 py-1 bg-[#921337] hover:bg-[#cc1d4d] rounded-lg text-white ml-4 shadow-xl"
+				>
+					Vytvoriť Call List
+				</button>
 
-	<!-- No more results message (filter active, all shown) -->
-	<div
-		v-if="activeFilter !== null && !hasMoreResults && people.length > 0"
-		class="flex justify-center mt-4 mb-4 text-sm text-gray-400"
-	>
-		Všetky výsledky sú zobrazené
-	</div>
+				<button
+					v-if="contactsStore.selectedContacts.length > 0"
+					@click="showDelegateForm = !showDelegateForm"
+					class="px-3 py-1 bg-[#921337] hover:bg-[#cc1d4d] rounded-lg text-white ml-4 shadow-xl"
+				>
+					Odovzdať kontakty
+				</button>
 
-	<!-- Normal pagination (only when no filter is active) -->
-	<div
-		class="flex justify-center items-center gap-2 mt-[30px] mb-[50px]"
-		v-if="!contactsStore.searchQuery && activeFilter === null"
-	>
-		<div
-			class="cursor-pointer"
-			@click="prevPage()"
-			:class="{ 'opacity-50': contactsStore.page <= 1 }"
-		>
-			<Icon
-				class="hover:size-[38px]"
-				icon="fa6-solid:circle-arrow-left"
-				style="font-size: 35px; color: #0074b7"
-			/>
+				<button
+					v-if="contactsStore.selectedContacts.length > 0"
+					@click="showShareContacts = !showShareContacts"
+					class="px-3 py-1 bg-[#921337] hover:bg-[#cc1d4d] rounded-lg text-white ml-4 shadow-xl"
+				>
+					Zdielať kontakty
+				</button>
+			</div>
 		</div>
 
-		<div class="flex gap-2">
-			<template v-for="pageNum in pageNumbers" :key="pageNum">
-				<div v-if="pageNum === '...'" class="px-3 py-1 text-gray-500">
-					{{ pageNum }}
-				</div>
-				<div
-					v-else
-					@click="goToPage(pageNum)"
-					class="px-3 py-1 rounded-md cursor-pointer"
-					:class="[
-						contactsStore.page === pageNum
-							? 'bg-blue-600 text-white'
-							: 'bg-gray-200 hover:bg-gray-300',
-					]"
-				>
-					{{ pageNum }}
+		<UTable
+			:rows="people"
+			:columns="columns"
+			class="mx-6 table-container shadow-md rounded-md table-fixed bg-white"
+			:row-class="(row) => row.class"
+			:ui="{
+				td: {
+					base: 'align-top whitespace-normal overflow-hidden !text-black',
+				},
+			}"
+		>
+			<template #actions-data="{ row }">
+				<div class="flex justify-between">
+					<div class="flex space-x-4">
+						<UButton
+							@click.left="detailView(row.id)"
+							@auxclick.prevent="onAuxClick($event, row.id)"
+							@mousedown="handleMouseDown"
+							class="bg-[#921337] text-white shadow-xl hover:scale-110 transition-transform"
+							label="Zobraziť detail"
+						/>
+						<UTooltip
+							text="Upraviť kontakt"
+							:ui="{ background: '!bg-white', color: '' }"
+							class=""
+						>
+							<UButton
+								@click="findPerson(row.id)"
+								icon="i-heroicons-pencil-square-20-solid"
+								variant="ghost"
+								class="shadow-xl hover:bg-gray-300 hover:scale-110 transition-transform"
+							/>
+						</UTooltip>
+
+						<UTooltip
+							text="Vymazať kontakt"
+							:ui="{ background: '!bg-white', color: '' }"
+							class=""
+						>
+							<UButton
+								@click="confirmDeletePerson(row.id)"
+								icon="i-heroicons-trash-20-solid"
+								color="ffffff"
+								class="shadow-xl text-red-500 hover:bg-gray-300 hover:scale-110 transition-transform"
+							/>
+						</UTooltip>
+					</div>
+					<input
+						type="checkbox"
+						@change="toggleCheckbox(row.id)"
+						:checked="isSelected(row.id)"
+					/>
 				</div>
 			</template>
-		</div>
 
+			<template #poznamka-data="{ row }">
+				<div v-if="row.poznamka" class="group relative">
+					<div class="truncate max-w-[380px]">
+						{{ row.poznamka }}
+					</div>
+
+					<div
+						class="absolute hidden group-hover:block z-10 w-[500px] p-3 bg-white border border-gray-200 rounded shadow-lg"
+					>
+						<div class="text-sm text-gray-700 whitespace-normal">
+							{{ row.poznamka }}
+						</div>
+					</div>
+				</div>
+			</template>
+		</UTable>
+
+		<!-- Load More button (only when a filter is active and there are more results) -->
 		<div
-			class="cursor-pointer"
-			@click="nextPage()"
-			:class="{ 'opacity-50': contactsStore.page >= totalPages }"
+			v-if="activeFilter !== null && hasMoreResults"
+			class="flex justify-center mt-6 mb-4"
 		>
-			<Icon
-				class="hover:size-[38px]"
-				icon="fa6-solid:circle-arrow-right"
-				style="font-size: 35px; color: #0074b7"
-			/>
+			<button
+				@click="loadMore"
+				:disabled="contactsStore.loadingState"
+				class="px-6 py-2 bg-[#cc1d4d] hover:bg-[#921337] disabled:opacity-50 text-white rounded-lg shadow-md"
+			>
+				<span v-if="contactsStore.loadingState">Načítavam...</span>
+				<span v-else>Načítať viac</span>
+			</button>
 		</div>
+
+		<!-- No more results message (filter active, all shown) -->
+		<div
+			v-if="activeFilter !== null && !hasMoreResults && people.length > 0"
+			class="flex justify-center mt-4 mb-4 text-sm text-gray-400"
+		>
+			Všetky výsledky sú zobrazené
+		</div>
+
+		<!-- Normal pagination (only when no filter is active) -->
+		<div
+			class="flex justify-center items-center gap-2 mt-[30px] mb-[50px] bg-white"
+			v-if="!contactsStore.searchQuery && activeFilter === null"
+		>
+			<div
+				class="cursor-pointer"
+				@click="prevPage()"
+				:class="{ 'opacity-50': contactsStore.page <= 1 }"
+			>
+				<Icon
+					class="hover:size-[38px]"
+					icon="fa6-solid:circle-arrow-left"
+					style="font-size: 35px; color: #0074b7"
+				/>
+			</div>
+
+			<div class="flex gap-2 bg-white">
+				<template v-for="pageNum in pageNumbers" :key="pageNum">
+					<div v-if="pageNum === '...'" class="px-3 py-1 text-gray-500">
+						{{ pageNum }}
+					</div>
+					<div
+						v-else
+						@click="goToPage(pageNum)"
+						class="px-3 py-1 rounded-md cursor-pointer"
+						:class="[
+							contactsStore.page === pageNum
+								? 'bg-[#cc1d4d] text-white'
+								: 'bg-gray-200 hover:bg-gray-300',
+						]"
+					>
+						{{ pageNum }}
+					</div>
+				</template>
+			</div>
+
+			<div
+				class="cursor-pointer bg-white"
+				@click="nextPage()"
+				:class="{ 'opacity-50': contactsStore.page >= totalPages }"
+			>
+				<Icon
+					class="hover:size-[38px]"
+					icon="fa6-solid:circle-arrow-right"
+					style="font-size: 35px; color: #0074b7"
+				/>
+			</div>
+		</div>
+
+		<AddPersonForm
+			v-if="showAddPersonForm"
+			@cancelAdd="addPerson()"
+			@addPeople="addPerson"
+		/>
+		<AlterPersonForm
+			v-if="showAlterPesonForm"
+			@cancelAlter="alterPerson()"
+			@alterPerson="updatePerson"
+			:single_contact="single_contact"
+		/>
+		<CallListAdd
+			v-if="showCallListForm"
+			:callListNames="callListNames"
+			:selected="selected"
+			:user_id="user_id"
+			@cancleCallListForm="cancleCallListForm"
+			@uncheckAll="uncheckAll"
+			@refreshCallLists="fetchCallLists"
+		/>
+		<DelegateContacts
+			v-if="showDelegateForm"
+			@cancelDelegateForm="showDelegateForm = false"
+			:selected="selected"
+		/>
+
+		<ShareContactsForm
+			v-if="showShareContacts"
+			@cancelShareContacts="showShareContacts = false"
+			:selected="selected"
+		/>
 	</div>
-
-	<AddPersonForm
-		v-if="showAddPersonForm"
-		@cancelAdd="addPerson()"
-		@addPeople="addPerson"
-	/>
-	<AlterPersonForm
-		v-if="showAlterPesonForm"
-		@cancelAlter="alterPerson()"
-		@alterPerson="updatePerson"
-		:single_contact="single_contact"
-	/>
-	<CallListAdd
-		v-if="showCallListForm"
-		:callListNames="callListNames"
-		:selected="selected"
-		:user_id="user_id"
-		@cancleCallListForm="cancleCallListForm"
-		@uncheckAll="uncheckAll"
-		@refreshCallLists="fetchCallLists"
-	/>
-	<DelegateContacts
-		v-if="showDelegateForm"
-		@cancelDelegateForm="showDelegateForm = false"
-		:selected="selected"
-	/>
-
-	<ShareContactsForm
-		v-if="showShareContacts"
-		@cancelShareContacts="showShareContacts = false"
-		:selected="selected"
-	/>
 </template>
 
 <style scoped>
