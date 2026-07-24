@@ -12,13 +12,17 @@
 		</div>
 
 		<div>
-			<label for="officeSelect" class="block mb-2 text-slate-500 mt-2"
-				>Vyberte kanceláriu:</label
-			>
 			<select
 				v-model="selectedOfficeId"
-				class="mb-4 w-full bg-white border rounded-md border-slate-200 p-2"
+				class="mb-4 w-full bg-white border rounded-md p-2 transition-shadow duration-200"
+				:class="
+					officeError
+						? 'border-red-500 ring-2 ring-red-400 animate-pulse'
+						: 'border-slate-200'
+				"
+				@change="officeError = false"
 			>
+				<option :value="null" disabled>-- Vyberte kanceláriu --</option>
 				<option
 					v-for="office in allOffices"
 					:value="office.id"
@@ -78,6 +82,7 @@ const allOffices = ref([]);
 
 const selectedOfficeId = ref(null);
 const selectedUserId = ref(null);
+const officeError = ref(false);
 
 const selectUser = (userId) => {
 	selectedUserId.value = userId;
@@ -103,9 +108,18 @@ const filteredUsers = computed(() => {
 });
 
 const addUserToShare = () => {
+	if (!selectedOfficeId.value) {
+		officeError.value = true;
+		toast.error("Prosím vyberte kanceláriu");
+		return;
+	}
+
+	if (!selectedUserId.value) {
+		toast.error("Prosím vyberte používateľa");
+		return;
+	}
+
 	try {
-		console.log("office id", selectedOfficeId.value);
-		console.log("user id", selectedUserId.value);
 		officeStore.addUserToOfficeShare(
 			selectedUserId.value,
 			selectedOfficeId.value,

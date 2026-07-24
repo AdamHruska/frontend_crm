@@ -288,457 +288,461 @@ onMounted(async () => {
 </script>
 
 <template>
-	<div class="settings-page">
-		<!-- Page header -->
-		<div class="page-header">
-			<h1 class="page-title">Nastavenia & zdieľanie</h1>
-		</div>
-
-		<!-- Calendar sharing tables -->
-		<section class="page-section">
-			<div class="two-col">
-				<div>
-					<div class="section-label">Koho kalendár vidím</div>
-					<MyCalendarShareTable1 :user="userStore.user" />
-				</div>
-				<div>
-					<div class="section-label">Kto vidí môj kalendár</div>
-					<SharingTable6 />
-				</div>
+	<div class="bg-white">
+		<div class="settings-page">
+			<!-- Page header -->
+			<div class="page-header">
+				<h1 class="page-title">Nastavenia & zdieľanie</h1>
 			</div>
-		</section>
 
-		<!-- Share section -->
-		<section class="page-section">
-			<div class="section-label">Zdieľať kalendár</div>
-			<div class="card">
-				<div class="card-body">
-					<SearchBarSharing class="w-full" />
+			<!-- Calendar sharing tables -->
+			<section class="page-section">
+				<div class="two-col">
+					<div>
+						<div class="section-label">Koho kalendár vidím</div>
+						<MyCalendarShareTable1 :user="userStore.user" />
+					</div>
+					<div>
+						<div class="section-label">Kto vidí môj kalendár</div>
+						<SharingTable6 />
+					</div>
 				</div>
-			</div>
-		</section>
+			</section>
 
-		<!-- Request history -->
-		<section class="page-section">
-			<div class="card">
-				<div class="card-body">
-					<button
-						class="history-toggle"
-						:class="{ open: showHistory }"
-						@click="showHistory = !showHistory"
-					>
+			<!-- Share section -->
+			<section class="page-section">
+				<div class="section-label">Zdieľať kalendár</div>
+				<div class="card">
+					<div class="card-body">
+						<SearchBarSharing class="w-full" />
+					</div>
+				</div>
+			</section>
+
+			<!-- Request history -->
+			<section class="page-section">
+				<div class="card">
+					<div class="card-body">
+						<button
+							class="history-toggle"
+							:class="{ open: showHistory }"
+							@click="showHistory = !showHistory"
+						>
+							<svg
+								class="chevron-icon"
+								viewBox="0 0 20 20"
+								fill="none"
+								xmlns="http://www.w3.org/2000/svg"
+							>
+								<path
+									d="M7 10l3 3 3-3"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+							</svg>
+							História žiadostí
+						</button>
+						<div v-if="showHistory" class="history-body">
+							<RequestsHistoryTable />
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- Vizitka -->
+			<section class="page-section">
+				<div class="section-label">Vizitka</div>
+				<div class="card">
+					<div class="card-header">
 						<svg
-							class="chevron-icon"
+							class="card-icon"
 							viewBox="0 0 20 20"
 							fill="none"
 							xmlns="http://www.w3.org/2000/svg"
 						>
+							<rect
+								x="2"
+								y="5"
+								width="16"
+								height="10"
+								rx="2"
+								stroke="currentColor"
+								stroke-width="1.5"
+							/>
 							<path
-								d="M7 10l3 3 3-3"
+								d="M6 10h4M6 13h2"
 								stroke="currentColor"
 								stroke-width="1.5"
 								stroke-linecap="round"
-								stroke-linejoin="round"
+							/>
+							<circle
+								cx="14"
+								cy="10"
+								r="2"
+								stroke="currentColor"
+								stroke-width="1.5"
 							/>
 						</svg>
-						História žiadostí
-					</button>
-					<div v-if="showHistory" class="history-body">
-						<RequestsHistoryTable />
+						<h2 class="card-title">Kontaktné údaje</h2>
 					</div>
-				</div>
-			</div>
-		</section>
-
-		<!-- Vizitka -->
-		<section class="page-section">
-			<div class="section-label">Vizitka</div>
-			<div class="card">
-				<div class="card-header">
-					<svg
-						class="card-icon"
-						viewBox="0 0 20 20"
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
-					>
-						<rect
-							x="2"
-							y="5"
-							width="16"
-							height="10"
-							rx="2"
-							stroke="currentColor"
-							stroke-width="1.5"
-						/>
-						<path
-							d="M6 10h4M6 13h2"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-						/>
-						<circle
-							cx="14"
-							cy="10"
-							r="2"
-							stroke="currentColor"
-							stroke-width="1.5"
-						/>
-					</svg>
-					<h2 class="card-title">Kontaktné údaje</h2>
-				</div>
-				<div class="card-body">
-					<div class="form-field">
-						<label class="field-label">Text / popis</label>
-						<textarea
-							v-model="textRef"
-							class="field-input"
-							rows="3"
-							placeholder="Krátky text o vás..."
-						></textarea>
-					</div>
-					<div class="form-row">
+					<div class="card-body">
 						<div class="form-field">
-							<label class="field-label">Meno</label>
-							<input
-								v-model="menoRef"
-								type="text"
+							<label class="field-label">Text / popis</label>
+							<textarea
+								v-model="textRef"
 								class="field-input"
-								placeholder="Vaše meno"
-							/>
+								rows="3"
+								placeholder="Krátky text o vás..."
+							></textarea>
 						</div>
-						<div class="form-field">
-							<label class="field-label">Pozícia</label>
-							<input
-								v-model="poziciaRef"
-								type="text"
-								class="field-input"
-								placeholder="Váš titul alebo rola"
-							/>
-						</div>
-					</div>
-					<div class="form-row">
-						<div class="form-field">
-							<label class="field-label">Email</label>
-							<input
-								v-model="emailRef"
-								type="email"
-								class="field-input"
-								placeholder="email@firma.sk"
-							/>
-						</div>
-						<div class="form-field">
-							<label class="field-label">Tel. č.</label>
-							<input
-								v-model="telRef"
-								type="text"
-								class="field-input"
-								placeholder="+421 900 000 000"
-							/>
-						</div>
-					</div>
-					<div class="flex-end">
-						<button class="btn-primary" @click="updateVizitka">
-							Uložiť vizitku
-						</button>
-					</div>
-				</div>
-			</div>
-		</section>
-
-		<!-- Settings toggles -->
-		<section class="page-section">
-			<div class="section-label">Predvoľby</div>
-			<div class="card">
-				<div class="card-body">
-					<!-- Auto Outlook event -->
-					<div class="toggle-row">
-						<div class="toggle-info">
-							<div class="toggle-label">Automaticky vytvárať Outlook event</div>
-							<div class="toggle-desc">
-								Pri schválení žiadosti sa vytvorí udalosť v Outlooku
-							</div>
-						</div>
-						<label class="toggle-switch">
-							<input
-								type="checkbox"
-								v-model="autoCreateOutlookEvent"
-								@change="toggleAutoCreateOutlookEvent"
-							/>
-							<span class="toggle-track"></span>
-						</label>
-					</div>
-
-					<!-- Mail sender -->
-					<div class="toggle-row last">
-						<div class="toggle-info">
-							<div class="toggle-label">
-								Odosielateľ pozvánok na online udalosti
-							</div>
-							<div class="toggle-desc">
-								Zvoľte, odkiaľ sa budú odosielať pozvánky
-							</div>
-						</div>
-						<div class="radio-group">
-							<label
-								class="radio-opt"
-								:class="{ active: mailSender === 'asistent' }"
-							>
+						<div class="form-row">
+							<div class="form-field">
+								<label class="field-label">Meno</label>
 								<input
-									type="radio"
-									name="mailSender"
-									value="asistent"
-									v-model="mailSender"
-									@change="updateMailSender"
+									v-model="menoRef"
+									type="text"
+									class="field-input"
+									placeholder="Vaše meno"
 								/>
-								<span class="radio-dot"></span>
-								Asistent
-							</label>
-							<label
-								class="radio-opt"
-								:class="{ active: mailSender === 'microsoft' }"
-							>
+							</div>
+							<div class="form-field">
+								<label class="field-label">Pozícia</label>
 								<input
-									type="radio"
-									name="mailSender"
-									value="microsoft"
-									v-model="mailSender"
-									@change="updateMailSender"
+									v-model="poziciaRef"
+									type="text"
+									class="field-input"
+									placeholder="Váš titul alebo rola"
 								/>
-								<span class="radio-dot"></span>
-								Môj Microsoft
+							</div>
+						</div>
+						<div class="form-row">
+							<div class="form-field">
+								<label class="field-label">Email</label>
+								<input
+									v-model="emailRef"
+									type="email"
+									class="field-input"
+									placeholder="email@firma.sk"
+								/>
+							</div>
+							<div class="form-field">
+								<label class="field-label">Tel. č.</label>
+								<input
+									v-model="telRef"
+									type="text"
+									class="field-input"
+									placeholder="+421 900 000 000"
+								/>
+							</div>
+						</div>
+						<div class="flex-end">
+							<button class="btn-primary" @click="updateVizitka">
+								Uložiť vizitku
+							</button>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- Settings toggles -->
+			<section class="page-section">
+				<div class="section-label">Predvoľby</div>
+				<div class="card">
+					<div class="card-body">
+						<!-- Auto Outlook event -->
+						<div class="toggle-row">
+							<div class="toggle-info">
+								<div class="toggle-label">
+									Automaticky vytvárať Outlook event
+								</div>
+								<div class="toggle-desc">
+									Pri schválení žiadosti sa vytvorí udalosť v Outlooku
+								</div>
+							</div>
+							<label class="toggle-switch">
+								<input
+									type="checkbox"
+									v-model="autoCreateOutlookEvent"
+									@change="toggleAutoCreateOutlookEvent"
+								/>
+								<span class="toggle-track"></span>
 							</label>
 						</div>
-					</div>
-				</div>
-			</div>
-		</section>
 
-		<!-- ICS Calendars -->
-		<section class="page-section">
-			<div class="section-label">ICS Kalendáre</div>
-			<div class="card">
-				<div class="card-header">
-					<svg
-						class="card-icon"
-						viewBox="0 0 20 20"
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
-					>
-						<rect
-							x="2"
-							y="4"
-							width="16"
-							height="14"
-							rx="2"
-							stroke="currentColor"
-							stroke-width="1.5"
-						/>
-						<path
-							d="M2 8h16M7 2v4M13 2v4M10 12v2m-1-1h2"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-						/>
-					</svg>
-					<h2 class="card-title">Outlook ICS kalendáre</h2>
-				</div>
-				<div class="card-body">
-					<div class="ics-add-row">
-						<div class="form-field mb-0">
-							<label class="field-label">Názov</label>
-							<input
-								v-model="newCalendarName"
-								type="text"
-								class="field-input"
-								placeholder="Napr. Firemný kalendár"
-							/>
-						</div>
-						<div class="form-field mb-0 ics-link-field">
-							<label class="field-label">ICS link</label>
-							<input
-								v-model="newIcsLink"
-								type="text"
-								class="field-input"
-								placeholder="https://outlook.office365.com/.../calendar.ics"
-							/>
-						</div>
-						<button class="btn-primary ics-add-btn" @click="addIcsCalendar">
-							Pridať
-						</button>
-					</div>
-
-					<div v-if="icsCalendars.length > 0" class="ics-table-wrap">
-						<table class="data-table">
-							<thead>
-								<tr>
-									<th>Názov</th>
-									<th>ICS link</th>
-									<th></th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr v-for="calendar in icsCalendars" :key="calendar.id">
-									<td class="font-medium">{{ calendar.calendar_name }}</td>
-									<td class="text-muted text-truncate">
-										{{ calendar.ics_link }}
-									</td>
-									<td class="text-right">
-										<button
-											class="btn-danger-sm"
-											@click="deleteIcsCalendar(calendar.id)"
-										>
-											Odstrániť
-										</button>
-									</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-					<div v-else class="empty-state">
-						Zatiaľ nemáte pridané žiadne ICS kalendáre.
-					</div>
-				</div>
-			</div>
-		</section>
-
-		<!-- Devices -->
-		<section class="page-section">
-			<div class="section-label">Zariadenia</div>
-			<div class="card">
-				<div class="card-header">
-					<svg
-						class="card-icon"
-						viewBox="0 0 20 20"
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
-					>
-						<rect
-							x="2"
-							y="6"
-							width="11"
-							height="8"
-							rx="1.5"
-							stroke="currentColor"
-							stroke-width="1.5"
-						/>
-						<path
-							d="M13 9h3a2 2 0 012 2v1a2 2 0 01-2 2h-3"
-							stroke="currentColor"
-							stroke-width="1.5"
-						/>
-						<path
-							d="M7 14v2M5 16h4"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-						/>
-					</svg>
-					<h2 class="card-title">Notifikácie zariadení</h2>
-				</div>
-				<div class="card-body">
-					<div
-						v-if="
-							userStore.user &&
-							userStore.user.oneSignal_ID &&
-							userStore.user.oneSignal_ID.length
-						"
-					>
-						<div
-							v-for="ClientID in userStore.user.oneSignal_ID"
-							:key="ClientID.player_id"
-							class="device-row"
-						>
-							<div class="device-icon">
-								<svg
-									viewBox="0 0 20 20"
-									fill="none"
-									xmlns="http://www.w3.org/2000/svg"
+						<!-- Mail sender -->
+						<div class="toggle-row last">
+							<div class="toggle-info">
+								<div class="toggle-label">
+									Odosielateľ pozvánok na online udalosti
+								</div>
+								<div class="toggle-desc">
+									Zvoľte, odkiaľ sa budú odosielať pozvánky
+								</div>
+							</div>
+							<div class="radio-group">
+								<label
+									class="radio-opt"
+									:class="{ active: mailSender === 'asistent' }"
 								>
-									<rect
-										x="6"
-										y="1"
-										width="8"
-										height="14"
-										rx="2"
-										stroke="currentColor"
-										stroke-width="1.5"
+									<input
+										type="radio"
+										name="mailSender"
+										value="asistent"
+										v-model="mailSender"
+										@change="updateMailSender"
 									/>
-									<circle cx="10" cy="13" r="1" fill="currentColor" />
-								</svg>
+									<span class="radio-dot"></span>
+									Asistent
+								</label>
+								<label
+									class="radio-opt"
+									:class="{ active: mailSender === 'microsoft' }"
+								>
+									<input
+										type="radio"
+										name="mailSender"
+										value="microsoft"
+										v-model="mailSender"
+										@change="updateMailSender"
+									/>
+									<span class="radio-dot"></span>
+									Môj Microsoft
+								</label>
 							</div>
-							<div class="device-info">
-								<div class="device-name">{{ ClientID.device_name }}</div>
-								<div class="device-date">{{ ClientID.added_at }}</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ICS Calendars -->
+			<section class="page-section">
+				<div class="section-label">ICS Kalendáre</div>
+				<div class="card">
+					<div class="card-header">
+						<svg
+							class="card-icon"
+							viewBox="0 0 20 20"
+							fill="none"
+							xmlns="http://www.w3.org/2000/svg"
+						>
+							<rect
+								x="2"
+								y="4"
+								width="16"
+								height="14"
+								rx="2"
+								stroke="currentColor"
+								stroke-width="1.5"
+							/>
+							<path
+								d="M2 8h16M7 2v4M13 2v4M10 12v2m-1-1h2"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+							/>
+						</svg>
+						<h2 class="card-title">Outlook ICS kalendáre</h2>
+					</div>
+					<div class="card-body">
+						<div class="ics-add-row">
+							<div class="form-field mb-0">
+								<label class="field-label">Názov</label>
+								<input
+									v-model="newCalendarName"
+									type="text"
+									class="field-input"
+									placeholder="Napr. Firemný kalendár"
+								/>
 							</div>
-							<button
-								class="btn-danger-sm"
-								@click="deleteNotification(ClientID.player_id)"
+							<div class="form-field mb-0 ics-link-field">
+								<label class="field-label">ICS link</label>
+								<input
+									v-model="newIcsLink"
+									type="text"
+									class="field-input"
+									placeholder="https://outlook.office365.com/.../calendar.ics"
+								/>
+							</div>
+							<button class="btn-primary ics-add-btn" @click="addIcsCalendar">
+								Pridať
+							</button>
+						</div>
+
+						<div v-if="icsCalendars.length > 0" class="ics-table-wrap">
+							<table class="data-table">
+								<thead>
+									<tr>
+										<th>Názov</th>
+										<th>ICS link</th>
+										<th></th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="calendar in icsCalendars" :key="calendar.id">
+										<td class="font-medium">{{ calendar.calendar_name }}</td>
+										<td class="text-muted text-truncate">
+											{{ calendar.ics_link }}
+										</td>
+										<td class="text-right">
+											<button
+												class="btn-danger-sm"
+												@click="deleteIcsCalendar(calendar.id)"
+											>
+												Odstrániť
+											</button>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+						<div v-else class="empty-state">
+							Zatiaľ nemáte pridané žiadne ICS kalendáre.
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- Devices -->
+			<section class="page-section">
+				<div class="section-label">Zariadenia</div>
+				<div class="card">
+					<div class="card-header">
+						<svg
+							class="card-icon"
+							viewBox="0 0 20 20"
+							fill="none"
+							xmlns="http://www.w3.org/2000/svg"
+						>
+							<rect
+								x="2"
+								y="6"
+								width="11"
+								height="8"
+								rx="1.5"
+								stroke="currentColor"
+								stroke-width="1.5"
+							/>
+							<path
+								d="M13 9h3a2 2 0 012 2v1a2 2 0 01-2 2h-3"
+								stroke="currentColor"
+								stroke-width="1.5"
+							/>
+							<path
+								d="M7 14v2M5 16h4"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+							/>
+						</svg>
+						<h2 class="card-title">Notifikácie zariadení</h2>
+					</div>
+					<div class="card-body">
+						<div
+							v-if="
+								userStore.user &&
+								userStore.user.oneSignal_ID &&
+								userStore.user.oneSignal_ID.length
+							"
+						>
+							<div
+								v-for="ClientID in userStore.user.oneSignal_ID"
+								:key="ClientID.player_id"
+								class="device-row"
 							>
-								Odstrániť
-							</button>
-						</div>
-					</div>
-					<div v-else class="empty-state">
-						Žiadne zariadenia s notifikáciami.
-					</div>
-				</div>
-			</div>
-		</section>
-
-		<!-- Linked accounts -->
-		<section class="page-section">
-			<div class="section-label">Prepojené účty</div>
-			<div class="card">
-				<div class="card-body">
-					<!-- Google -->
-					<div class="provider-row">
-						<div class="provider-info">
-							<div class="provider-logo">
-								<img src="/public/google_icon.png" alt="Google" />
-							</div>
-							<div>
-								<div class="provider-name">Google</div>
-								<div class="provider-status">
-									Spravujte prístup ku Google kalendáru
+								<div class="device-icon">
+									<svg
+										viewBox="0 0 20 20"
+										fill="none"
+										xmlns="http://www.w3.org/2000/svg"
+									>
+										<rect
+											x="6"
+											y="1"
+											width="8"
+											height="14"
+											rx="2"
+											stroke="currentColor"
+											stroke-width="1.5"
+										/>
+										<circle cx="10" cy="13" r="1" fill="currentColor" />
+									</svg>
 								</div>
-							</div>
-						</div>
-						<div class="provider-actions">
-							<button class="btn-outline" @click="loginWithGoogle">
-								Prihlásiť sa
-							</button>
-							<button class="btn-danger-outline" @click="logoutWithGoogle">
-								Odhlásiť
-							</button>
-						</div>
-					</div>
-					<!-- Microsoft -->
-					<div class="provider-row last">
-						<div class="provider-info">
-							<div class="provider-logo">
-								<img src="/public/icons8-microsoft-48.png" alt="Microsoft" />
-							</div>
-							<div>
-								<div class="provider-name">Microsoft</div>
-								<div class="provider-status">
-									Spravujte prístup ku Outlook kalendáru
+								<div class="device-info">
+									<div class="device-name">{{ ClientID.device_name }}</div>
+									<div class="device-date">{{ ClientID.added_at }}</div>
 								</div>
+								<button
+									class="btn-danger-sm"
+									@click="deleteNotification(ClientID.player_id)"
+								>
+									Odstrániť
+								</button>
 							</div>
 						</div>
-						<div class="provider-actions">
-							<button class="btn-outline" @click="loginWithMicrosoft">
-								Prihlásiť sa
-							</button>
-							<button class="btn-danger-outline" @click="logoutWithMicrosoft">
-								Odhlásiť
-							</button>
+						<div v-else class="empty-state">
+							Žiadne zariadenia s notifikáciami.
 						</div>
 					</div>
 				</div>
-			</div>
-		</section>
+			</section>
 
-		<div class="page-footer">9.2.2026 aktuálna verzia</div>
+			<!-- Linked accounts -->
+			<section class="page-section">
+				<div class="section-label">Prepojené účty</div>
+				<div class="card">
+					<div class="card-body">
+						<!-- Google -->
+						<div class="provider-row">
+							<div class="provider-info">
+								<div class="provider-logo">
+									<img src="/public/google_icon.png" alt="Google" />
+								</div>
+								<div>
+									<div class="provider-name">Google</div>
+									<div class="provider-status">
+										Spravujte prístup ku Google kalendáru
+									</div>
+								</div>
+							</div>
+							<div class="provider-actions">
+								<button class="btn-outline" @click="loginWithGoogle">
+									Prihlásiť sa
+								</button>
+								<button class="btn-danger-outline" @click="logoutWithGoogle">
+									Odhlásiť
+								</button>
+							</div>
+						</div>
+						<!-- Microsoft -->
+						<div class="provider-row last">
+							<div class="provider-info">
+								<div class="provider-logo">
+									<img src="/public/icons8-microsoft-48.png" alt="Microsoft" />
+								</div>
+								<div>
+									<div class="provider-name">Microsoft</div>
+									<div class="provider-status">
+										Spravujte prístup ku Outlook kalendáru
+									</div>
+								</div>
+							</div>
+							<div class="provider-actions">
+								<button class="btn-outline" @click="loginWithMicrosoft">
+									Prihlásiť sa
+								</button>
+								<button class="btn-danger-outline" @click="logoutWithMicrosoft">
+									Odhlásiť
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<div class="page-footer">9.2.2026 aktuálna verzia</div>
+		</div>
 	</div>
 </template>
 
@@ -749,6 +753,7 @@ onMounted(async () => {
 	margin: 0 auto;
 	padding: 2rem 1.5rem 3rem;
 	font-family: "Inter", system-ui, sans-serif;
+	background: #fff;
 }
 
 /* ── Page header ── */

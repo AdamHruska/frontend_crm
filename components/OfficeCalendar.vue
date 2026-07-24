@@ -172,12 +172,14 @@ const activityStats = computed(() => {
 	const total = currentMonthActivities.length;
 
 	const check = currentMonthActivities.filter(
-		(a) => a.activity_status === "check" || a.activity_status === "accepted",
+		(a) =>
+			a.activity_status === "check" ||
+			a.activity_status === "accepted" ||
+			a.activity_status === "rejected",
 	).length;
 
 	const discarded = currentMonthActivities.filter(
-		(a) =>
-			a.activity_status === "discarded" || a.activity_status === "rejected",
+		(a) => a.activity_status === "discarded",
 	).length;
 
 	const questionmark = currentMonthActivities.filter(

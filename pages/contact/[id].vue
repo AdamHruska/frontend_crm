@@ -33,6 +33,8 @@ const user_id = ref(null);
 
 const showWrongNumberButton = ref(true);
 
+const callActivities = ["Telefonát", "Telefonát nábor", "Telefonát klient"];
+
 const changeAddActivityBool = () => {
 	AddActivityBool.value = !AddActivityBool.value;
 };
@@ -286,9 +288,9 @@ const columns_activity = ref([
 	{ key: "datumCas", label: "Začiatok" },
 	{ key: "koniec", label: "Koniec" },
 	{ key: "poznamka", label: "Poznámka" },
-	{ key: "volane", label: "Volané" },
-	{ key: "dovolane", label: "Dovolané" },
-	{ key: "dohodnute", label: "Dohodnuté" },
+	{ key: "volane", label: "V" },
+	{ key: "dovolane", label: "D" },
+	{ key: "dohodnute", label: "D" },
 	{ key: "letters", label: "Vyhodnotenie" },
 	{ key: "bj_count", label: "BJ" },
 	{ key: "created_at", label: "Vytvorené" },
@@ -402,7 +404,7 @@ const changeToDoBool = () => {
 };
 
 const onTodoAdded = async () => {
-	todoBool.value = false;
+	//todoBool.value = false;
 	await todoStore.fetchTodosHistory();
 };
 
@@ -860,6 +862,16 @@ const setTodoStatus = async (row, completed) => {
 		});
 	}
 };
+
+const showDelegateForm = ref(false);
+
+const openDelegateForm = () => {
+	showDelegateForm.value = true;
+};
+
+const closeDelegateForm = () => {
+	showDelegateForm.value = false;
+};
 </script>
 
 <template>
@@ -870,6 +882,12 @@ const setTodoStatus = async (row, completed) => {
 		:activityName="bjModalActivityName"
 		@close="closeBjModal"
 		@submitted="onBjSubmitted"
+	/>
+
+	<DelegateContacts
+		v-if="showDelegateForm"
+		:selected="people"
+		@cancelDelegateForm="showDelegateForm = false"
 	/>
 
 	<Teleport to="body">
@@ -955,7 +973,7 @@ const setTodoStatus = async (row, completed) => {
 	<CallListAdd
 		v-if="callListBool"
 		:callListNames="callListNames"
-		:user_id="id"
+		:user_id="user_id"
 		:selected="id"
 		@cancleCallListForm="changeCallListBool"
 	/>
@@ -1084,6 +1102,28 @@ const setTodoStatus = async (row, completed) => {
 					</button>
 
 					<div v-if="actionsMenuOpen" class="actions-dropdown">
+						<!-- Edit contact -->
+						<button
+							class="dropdown-item"
+							@click="
+								showAlterPersonForm();
+								actionsMenuOpen = false;
+							"
+						>
+							✏️ Upraviť kontakt
+						</button>
+
+						<!-- Delete contact -->
+						<button
+							class="dropdown-item dropdown-item-danger"
+							@click="
+								deleteContact(people[0]?.id).then(() => navigateTo('/'));
+								actionsMenuOpen = false;
+							"
+						>
+							🗑️ Zmazať kontakt
+						</button>
+
 						<!-- Duplicate check -->
 						<button
 							class="dropdown-item"
@@ -1141,6 +1181,17 @@ const setTodoStatus = async (row, completed) => {
 							📋 Pridať do call listu
 						</button>
 
+						<!-- Delegate -->
+						<button
+							class="dropdown-item dropdown-item-green"
+							@click="
+								openDelegateForm();
+								actionsMenuOpen = false;
+							"
+						>
+							📤 Odovzdať kontakt
+						</button>
+
 						<!-- Sharing -->
 						<button
 							class="dropdown-item dropdown-item-green !pl-6"
@@ -1149,7 +1200,7 @@ const setTodoStatus = async (row, completed) => {
 								actionsMenuOpen = false;
 							"
 						>
-							Zdielanie kontaktu
+							🤝 Zdielanie kontaktu
 						</button>
 					</div>
 				</div>
@@ -1179,22 +1230,6 @@ const setTodoStatus = async (row, completed) => {
 						}}</template>
 						<template v-else>{{ people[0]?.[col.key] || "—" }}</template>
 					</span>
-				</div>
-				<!-- Edit/Delete actions -->
-				<div class="info-card info-card-actions">
-					<span class="info-label">Akcie</span>
-					<div class="flex gap-2 mt-1">
-						<button class="action-btn" @click="showAlterPersonForm()">
-							<Icon name="i-heroicons-pencil-square-20-solid" size="15" />
-							Upraviť
-						</button>
-						<button
-							class="action-btn action-btn-danger"
-							@click="deleteContact(people[0]?.id).then(navigateTo('/'))"
-						>
-							<Icon name="i-heroicons-trash-20-solid" size="15" /> Zmazať
-						</button>
-					</div>
 				</div>
 			</div>
 		</section>
@@ -1348,40 +1383,58 @@ const setTodoStatus = async (row, completed) => {
 							v-for="row in activities"
 							:key="row.id"
 							class="data-row"
+							:class="{ 'row-shared': row.created_id != user_id }"
 							@click="handleActivityRowClick(row)"
 						>
 							<td>
 								<span class="activity-pill">{{ row.aktivita }}</span>
 							</td>
-							<td class="td-mono">{{ formatDateTime(row.datumCas) }}</td>
+							<td class="td-mono">
+								{{ formatDateTime(row.datumCas) }}
+								<span
+									v-if="row.creator_name && row.created_id != user_id"
+									class="creator-tag"
+								>
+									({{ row.creator_name }})
+								</span>
+							</td>
 							<td class="td-mono">{{ formatDateTime(row.koniec) }}</td>
 							<td class="td-note td-wide" :title="row.poznamka">
 								{{ row.poznamka }}
 							</td>
 
 							<td class="td-center td-narrow">
-								<span v-if="row.volane === null"></span>
-								<span v-else :class="row.volane ? 'check-icon' : 'cross-icon'">
-									{{ row.volane ? "✔" : "✖" }}
-								</span>
+								<template v-if="callActivities.includes(row.aktivita)">
+									<span v-if="row.volane === null"></span>
+									<span
+										v-else
+										:class="row.volane ? 'check-icon' : 'cross-icon'"
+									>
+										{{ row.volane ? "✔" : "✖" }}
+									</span>
+								</template>
 							</td>
 							<td class="td-center td-narrow">
-								<span v-if="row.dovolane === null"></span>
-								<span
-									v-else
-									:class="row.dovolane ? 'check-icon' : 'cross-icon'"
-								>
-									{{ row.dovolane ? "✔" : "✖" }}
-								</span>
+								<template v-if="callActivities.includes(row.aktivita)">
+									<span v-if="row.dovolane === null"></span>
+									<span
+										v-else
+										:class="row.dovolane ? 'check-icon' : 'cross-icon'"
+									>
+										{{ row.dovolane ? "✔" : "✖" }}
+									</span>
+								</template>
 							</td>
 							<td class="td-center td-narrow">
-								<span v-if="row.dohodnute === null"></span>
-								<span
-									v-else
-									:class="row.dohodnute ? 'check-icon' : 'cross-icon'"
-								>
-									{{ row.dohodnute ? "✔" : "✖" }}
-								</span>
+								<template v-if="callActivities.includes(row.aktivita)">
+									<span v-if="row.dohodnute === null"></span>
+									<span
+										v-else
+										:class="row.dohodnute ? 'check-icon' : 'cross-icon'"
+									>
+										{{ row.dohodnute ? "✔" : "✖" }}
+									</span>
+								</template>
 							</td>
 
 							<!-- Status icons -->
@@ -2377,5 +2430,28 @@ const setTodoStatus = async (row, completed) => {
 .todo-status-option-done.active {
 	color: #15803d;
 	background: #dcfce7;
+}
+
+.row-mine {
+	background-color: #faf9ff;
+}
+.row-mine:hover {
+	background-color: #f5f3ff;
+}
+
+.creator-tag {
+	display: block;
+	font-size: 11px;
+	color: #6d28d9;
+	font-weight: 500;
+	white-space: nowrap;
+	margin-top: 1px;
+}
+
+.row-shared {
+	background-color: #f5f3ff;
+}
+.row-shared:hover {
+	background-color: #e5e7eb;
 }
 </style>

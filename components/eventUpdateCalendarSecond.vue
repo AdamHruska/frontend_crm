@@ -265,11 +265,17 @@ onMounted(async () => {
 	} else {
 		doesOfficeActivityExist.value = false;
 	}
+
+	await nextTick();
+	suppressKoniecWatch.value = false;
 });
 
 import { add, parseISO, format } from "date-fns";
 
+const suppressKoniecWatch = ref(true); // ← nová premenná
+
 watch([aktivita, datum_cas], ([newAktivita, newDatumCas]) => {
+	if (suppressKoniecWatch.value) return; // ← guard
 	if (!newAktivita || !newDatumCas) return;
 
 	const val = newAktivita.toLowerCase().trim();

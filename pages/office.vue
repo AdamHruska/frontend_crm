@@ -139,11 +139,19 @@
 									Odstrániť
 								</button>
 
-								<input
-									type="checkbox"
-									:checked="officeStore.defaultOfficeId === office.id"
+								<button
+									v-if="officeStore.defaultOfficeId !== office.id"
 									@click="handleOfficeCheckbox(office.id)"
-								/>
+									class="bg-slate-600 text-white py-1 px-2 rounded-md hover:bg-slate-700 text-sm"
+								>
+									Nastaviť ako hlavnú
+								</button>
+								<span
+									v-else
+									class="text-green-600 font-semibold text-sm px-2 py-1"
+								>
+									✓ Hlavná
+								</span>
 							</td>
 						</tr>
 					</tbody>

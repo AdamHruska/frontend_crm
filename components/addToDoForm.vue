@@ -3,7 +3,7 @@ import { Icon } from "@iconify/vue";
 import { useTodosStore } from "../stores/todoStore";
 const todosStore = useTodosStore();
 
-const emit = defineEmits(["cancelToDoActivity"]);
+const emit = defineEmits(["cancelToDoActivity", "todoAdded"]);
 
 const cancelActivity = () => {
 	emit("cancelToDoActivity");
@@ -45,7 +45,6 @@ onMounted(async () => {
 const addActivity = async () => {
 	event.preventDefault();
 
-	// Validate inputs
 	if (!aktivita.value.trim()) {
 		alert("Prosím zadajte aktivitu");
 		return;
@@ -57,15 +56,14 @@ const addActivity = async () => {
 	}
 
 	try {
-		// Send datetime-local as is (without converting to UTC)
-		// This preserves the user's intended local time
 		await todosStore.createTodo({
 			activity_name: aktivita.value,
-			due_date: datum_cas.value, // Send as YYYY-MM-DDTHH:MM format
+			due_date: datum_cas.value,
 			contact_id: props.contact_id,
 			contact_name: props.contact[0].meno + " " + props.contact[0].priezvisko,
 		});
 
+		emit("todoAdded"); // ← PRIDAŤ
 		emit("cancelToDoActivity");
 	} catch (error) {
 		console.error("Error creating todo:", error);
