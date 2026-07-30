@@ -398,6 +398,36 @@ const todo_items = (row) => [
 	],
 ];
 
+const unsharingContact = ref(false);
+
+const unshareContact = async () => {
+	if (!confirm("Naozaj chcete zrušiť zdieľanie tohto kontaktu?")) return;
+
+	unsharingContact.value = true;
+	try {
+		await axios.put(
+			`${config.public.apiUrl}contacts/${id}/unshare`,
+			{},
+			{
+				headers: {
+					Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+				},
+			},
+		);
+		people.value[0].shared_author = null;
+		toast.success("Zdieľanie bolo zrušené", {
+			position: "top-right",
+			timeout: 4000,
+		});
+	} catch (error) {
+		const msg = error.response?.data?.error ?? "Chyba pri rušení zdieľania";
+		toast.error(msg, { position: "top-right", timeout: 5000 });
+		console.error("Error unsharing contact:", error);
+	} finally {
+		unsharingContact.value = false;
+	}
+};
+
 const todoBool = ref(false);
 const changeToDoBool = () => {
 	todoBool.value = !todoBool.value;
@@ -872,6 +902,31 @@ const openDelegateForm = () => {
 const closeDelegateForm = () => {
 	showDelegateForm.value = false;
 };
+
+const dropdownUi = {
+	background: "bg-white dark:bg-white",
+	ring: "ring-1 ring-gray-200 dark:ring-gray-200",
+	item: {
+		base: "group flex items-center gap-2",
+		disabled: "cursor-not-allowed opacity-50",
+		active: "bg-gray-100 text-gray-900 dark:bg-gray-100 dark:text-gray-900",
+		inactive: "text-gray-700 dark:text-gray-700",
+	},
+};
+
+const contactTypeLabel = computed(() => {
+	const p = people.value[0];
+	if (!p) return "—";
+	if (p.isCoWorker == 1) return "Kontakt na nábor";
+	if (p.isContact == 1) return "Kontakt";
+	return "—";
+});
+
+const contactTypeBadgeClass = computed(() => {
+	const p = people.value[0];
+	if (!p) return "badge-blue";
+	return p.isCoWorker == 1 ? "badge-violet" : "badge-blue";
+});
 </script>
 
 <template>
@@ -1058,6 +1113,20 @@ const closeDelegateForm = () => {
 					Zdielaný s<strong>{{ sharedAuthorName }}</strong>
 				</span>
 
+				<button
+					v-if="
+						userStore.user &&
+						people[0]?.shared_author !== null &&
+						people[0]?.shared_author !== userStore.user?.id
+					"
+					class="btn-unshare"
+					:disabled="unsharingContact"
+					@click="unshareContact"
+				>
+					<span v-if="unsharingContact">⏳</span>
+					<span v-else>✕ Zrušiť zdieľanie</span>
+				</button>
+
 				<span
 					v-if="
 						userStore.user &&
@@ -1215,6 +1284,21 @@ const closeDelegateForm = () => {
 					<span class="info-label">{{ col.label }}</span>
 					<span class="info-value">{{ people[0]?.[col.key] || "—" }}</span>
 				</div>
+
+				<div class="info-card">
+					<span class="info-label">Typ kontaktu</span>
+					<span class="info-value">
+						<span
+							class="activity-pill"
+							:class="
+								contactTypeBadgeClass === 'badge-violet' ? 'pill-violet' : ''
+							"
+						>
+							{{ contactTypeLabel }}
+						</span>
+					</span>
+				</div>
+
 				<div
 					class="info-card"
 					v-for="col in columns_second_row.filter((c) => c.key !== 'actions')"
@@ -1336,7 +1420,7 @@ const closeDelegateForm = () => {
 								<span v-else class="text-muted">—</span>
 							</td>
 							<td>
-								<UDropdown :items="todo_items(row)" theme="light">
+								<UDropdown :items="todo_items(row)" :ui="dropdownUi">
 									<button class="icon-btn">
 										<Icon
 											name="i-heroicons-ellipsis-horizontal-20-solid"
@@ -1550,7 +1634,7 @@ const closeDelegateForm = () => {
 									author_id == user_id || people[0]?.shared_author == user_id
 								"
 							>
-								<UDropdown :items="activity_items(row)" theme="light">
+								<UDropdown :items="activity_items(row)" :ui="dropdownUi">
 									<button class="icon-btn">
 										<Icon
 											name="i-heroicons-ellipsis-horizontal-20-solid"
@@ -2453,5 +2537,27 @@ const closeDelegateForm = () => {
 }
 .row-shared:hover {
 	background-color: #e5e7eb;
+}
+
+.btn-unshare {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 5px 10px;
+	border-radius: 20px;
+	font-size: 12px;
+	font-weight: 600;
+	color: #b91c1c;
+	background: #fee2e2;
+	border: 1px solid #fca5a5;
+	cursor: pointer;
+	transition: all 0.15s;
+}
+.btn-unshare:hover {
+	background: #fecaca;
+}
+.btn-unshare:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
 }
 </style>

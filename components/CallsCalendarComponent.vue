@@ -20,6 +20,7 @@ const config = useRuntimeConfig();
 const rawData = ref([]);
 const events = ref([]);
 const microsoftEvents = ref([]);
+const icsEvents = ref([]); // ← nové
 const addActivity = ref(false);
 const updateActivity = ref(false);
 const activityID = ref("");
@@ -37,6 +38,20 @@ const props = defineProps({
 		default: null,
 	},
 });
+
+const fetchIcsEventsForComponent = async () => {
+	try {
+		const icsData = await calendarStore.fetchAndCacheIcsEvents(
+			config.public.apiUrl,
+			authStore.token,
+			userStore.user?.id,
+		);
+		icsEvents.value = icsData;
+		updateCalendarEvents();
+	} catch (error) {
+		console.error("Error fetching ICS events:", error);
+	}
+};
 
 watch(
 	() => props.date,
@@ -175,7 +190,11 @@ const transformData = (data) => {
 };
 
 const updateCalendarEvents = () => {
-	const allEvents = [...events.value, ...microsoftEvents.value];
+	const allEvents = [
+		...events.value,
+		...microsoftEvents.value,
+		...icsEvents.value,
+	];
 	calendarOptions.value = {
 		...calendarOptions.value,
 		events: allEvents,
@@ -192,7 +211,6 @@ onMounted(async () => {
 	rawData.value = calendarStore.activities;
 	events.value = transformData(rawData.value);
 
-	// Also add shared activities
 	const flatShared = Object.values(calendarStore.shared_activities).flat();
 	if (flatShared.length > 0) {
 		events.value = [...events.value, ...transformData(flatShared)];
@@ -204,9 +222,10 @@ onMounted(async () => {
 		selectedDate.getFullYear(),
 	);
 
+	await fetchIcsEventsForComponent(); // ← nové
+
 	updateCalendarEvents();
 });
-
 function handleDateSelect(selectInfo) {
 	end_date.value = selectInfo.startStr;
 	const datePart = selectInfo.startStr.substring(0, 10);
@@ -224,7 +243,6 @@ function handleEventClick(clickInfo) {
 const addNewEvent = (newEvent) => {
 	rawData.value.push(newEvent);
 
-	// Also update the store so other pages stay in sync
 	if (!calendarStore.activities.find((a) => a.id === newEvent.id)) {
 		calendarStore.activities.push(newEvent);
 	}
@@ -243,7 +261,6 @@ const addNewEvent = (newEvent) => {
 	};
 	events.value = [...events.value, transformed];
 	updateCalendarEvents();
-	emit("activityAdded", newEvent);
 };
 
 function handleTimeClick(info) {

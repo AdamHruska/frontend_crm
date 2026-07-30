@@ -30,9 +30,13 @@ const props = defineProps({
 });
 
 onMounted(async () => {
-	console.log("Selected contacts for Sharign:", props.selected);
-
-	//await userStore.fetchUsers();
+	console.log("Selected contacts for delegation:", props.selected);
+	loadingState.value = true;
+	try {
+		await userStore.fetchUsers();
+	} finally {
+		loadingState.value = false;
+	}
 });
 
 // const alterPerson = async (id) => {

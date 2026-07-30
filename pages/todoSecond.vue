@@ -42,6 +42,31 @@ const newTodo = ref({
 	updated_at: "",
 });
 
+const handleCloseConfirmEvent = async () => {
+	try {
+		if (pendingFirstMeetingRow.value) {
+			pendingFirstMeetingRow.value.activity_status = "check";
+			await axios.patch(
+				`${config.public.apiUrl}activities/${pendingFirstMeetingRow.value.id}/status`,
+				{ activity_status: "check" },
+				{ headers: { Authorization: `Bearer ${authStore.token}` } },
+			);
+			allUncompletedActivities.value = allUncompletedActivities.value.filter(
+				(activity) => activity.id !== pendingFirstMeetingRow.value.id,
+			);
+			yesterDayUncompletedActivities.value =
+				yesterDayUncompletedActivities.value.filter(
+					(activity) => activity.id !== pendingFirstMeetingRow.value.id,
+				);
+		}
+	} catch (error) {
+		console.error("Error handling confirmation:", error);
+	} finally {
+		changeConfirmEventModal();
+		pendingFirstMeetingRow.value = null;
+	}
+};
+
 const showAllUncompletedActivities = async () => {
 	activeGroup.value = "allUncompleted";
 	showingAllUncompletedActivities.value = true;
@@ -118,7 +143,7 @@ const showAllTodos = async () => {
 	showingTodosWithoutContact.value = false;
 	showingAllUncompletedActivities.value = false;
 	await todoStore.fetchTodos();
-	todoItems.value = todoStore.todos.map((todo, index) => ({
+	todoItems.value = todoStore.todosByDate.map((todo, index) => ({
 		id: todo.id || index,
 		activity: todo.activity_name,
 		dueDate: todo.due_date,
@@ -126,6 +151,9 @@ const showAllTodos = async () => {
 		contact_name: todo.contact_name,
 		completed: todo.is_completed,
 		updated_at: todo.is_completed ? todo.updated_at : null,
+		author_id: todo.author_id ?? null,
+		creator_name: todo.creator_name ?? null,
+		status_changed_by_name: todo.status_changed_by_name ?? null,
 	}));
 };
 
@@ -137,15 +165,27 @@ const showTodosWithoutContact = async () => {
 	const response = await axios.get(`${config.public.apiUrl}contact1`, {
 		headers: { Authorization: `Bearer ${authStore.token}` },
 	});
-	todoItems.value = response.data.data.map((todo) => ({
-		id: todo.id,
+	todoItems.value = todoStore.todosByDate.map((todo, index) => ({
+		id: todo.id || index,
 		activity: todo.activity_name,
 		dueDate: todo.due_date,
 		assignedTo: todo.contact_id,
 		contact_name: todo.contact_name,
 		completed: todo.is_completed,
 		updated_at: todo.is_completed ? todo.updated_at : null,
+		author_id: todo.author_id ?? null,
+		creator_name: todo.creator_name ?? null,
+		status_changed_by_name: todo.status_changed_by_name ?? null,
 	}));
+};
+
+const user_id = ref(null);
+
+const getUser = async () => {
+	const response = await axios.get(`${config.public.apiUrl}get-user`, {
+		headers: { Authorization: `Bearer ${authStore.token}` },
+	});
+	return response.data.user;
 };
 
 const loadTodosForCurrentDate = async () => {
@@ -164,6 +204,9 @@ const loadTodosForCurrentDate = async () => {
 		contact_name: todo.contact_name,
 		completed: todo.is_completed,
 		updated_at: todo.is_completed ? todo.updated_at : null,
+		author_id: todo.author_id ?? null,
+		creator_name: todo.creator_name ?? null,
+		status_changed_by_name: todo.status_changed_by_name ?? null,
 	}));
 };
 
@@ -175,13 +218,17 @@ const isToday = computed(() => {
 watch(
 	() => todoStore.todos,
 	(newTodos) => {
-		todoItems.value = newTodos.map((todo, index) => ({
+		todoItems.value = todoStore.todosByDate.map((todo, index) => ({
 			id: todo.id || index,
 			activity: todo.activity_name,
 			dueDate: todo.due_date,
+			assignedTo: todo.contact_id,
+			contact_name: todo.contact_name,
 			completed: todo.is_completed,
 			updated_at: todo.is_completed ? todo.updated_at : null,
-			contact_name: todo.contact_name,
+			author_id: todo.author_id ?? null,
+			creator_name: todo.creator_name ?? null,
+			status_changed_by_name: todo.status_changed_by_name ?? null,
 		}));
 	},
 	{ deep: true, immediate: true },
@@ -189,6 +236,10 @@ watch(
 
 onMounted(async () => {
 	newTodo.value.dueDate = getNowForDatetimeLocal();
+
+	const user = await getUser();
+	user_id.value = user.id;
+
 	if (contactsStore.contacts.length === 0) {
 		await contactsStore.fetchContacts();
 	}
@@ -231,6 +282,8 @@ const columns = [
 	{ key: "assignedTo", label: "Priradené k" },
 	{ key: "completed", label: "Dokončené" },
 	{ key: "updated_at", label: "Dokonané dňa" },
+	{ key: "status_changed_by_name", label: "Zmenil status" },
+	{ key: "creator_name", label: "Vytvoril" },
 	{ key: "actions", label: "Akcie" },
 ];
 
@@ -350,13 +403,17 @@ const resetDate = async () => {
 	showingTodosWithoutContact.value = false;
 	showingAllUncompletedActivities.value = false;
 	await todoStore.fetchTodos();
-	todoItems.value = todoStore.todos.map((todo, index) => ({
+	todoItems.value = todoStore.todosByDate.map((todo, index) => ({
 		id: todo.id || index,
 		activity: todo.activity_name,
 		dueDate: todo.due_date,
-		completed: todo.is_completed,
 		assignedTo: todo.contact_id,
-		updated_at: todo.updated_at,
+		contact_name: todo.contact_name,
+		completed: todo.is_completed,
+		updated_at: todo.is_completed ? todo.updated_at : null,
+		author_id: todo.author_id ?? null,
+		creator_name: todo.creator_name ?? null,
+		status_changed_by_name: todo.status_changed_by_name ?? null,
 	}));
 };
 
@@ -589,6 +646,9 @@ const showPastUncompletedTodos = async () => {
 		contact_name: todo.contact_name,
 		completed: todo.is_completed,
 		updated_at: todo.is_completed ? todo.updated_at : null,
+		author_id: todo.author_id ?? null,
+		creator_name: todo.creator_name ?? null,
+		status_changed_by_name: todo.status_changed_by_name ?? null,
 	}));
 };
 
@@ -606,6 +666,9 @@ const showFutureUncompletedTodos = async () => {
 		contact_name: todo.contact_name,
 		completed: todo.is_completed,
 		updated_at: todo.is_completed ? todo.updated_at : null,
+		author_id: todo.author_id ?? null,
+		creator_name: todo.creator_name ?? null,
+		status_changed_by_name: todo.status_changed_by_name ?? null,
 	}));
 };
 
@@ -644,6 +707,7 @@ const topSectionLabel = computed(() => {
 		v-if="showConfirmEvent"
 		@close="changeConfirmEventModal"
 		@confirm="handleConfirmEvent"
+		@closeConfirm="handleCloseConfirmEvent"
 	/>
 
 	<loadigcomponent v-if="todoStore.loadingState" />
@@ -1207,6 +1271,30 @@ const topSectionLabel = computed(() => {
 									</td>
 									<td class="text-muted text-sm">
 										{{ formatDateTime(item.updated_at) || "—" }}
+									</td>
+									<td>
+										<span
+											v-if="item.status_changed_by_name"
+											class="creator-badge creator-badge-blue"
+										>
+											{{ item.status_changed_by_name }}
+										</span>
+										<span v-else class="text-muted">—</span>
+									</td>
+									<td>
+										<span
+											v-if="item.author_id == user_id"
+											class="creator-badge creator-badge-violet"
+										>
+											Vytvorené mnou
+										</span>
+										<span
+											v-else-if="item.creator_name"
+											class="creator-badge creator-badge-blue"
+										>
+											{{ item.creator_name }}
+										</span>
+										<span v-else class="text-muted">—</span>
 									</td>
 									<td>
 										<div class="row-actions">

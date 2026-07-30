@@ -106,10 +106,8 @@ const toggleWrongNumberFilter = async () => {
 	contactsStore.loadingState = false;
 };
 
-const applyLocalFilter = (filterFn) => {
-	allFilteredResults.value = contactsStore.contacts.data
-		.filter(filterFn)
-		.map(mapWithClass);
+const applyLocalFilter = (filterFn, sourceData) => {
+	allFilteredResults.value = sourceData.filter(filterFn).map(mapWithClass);
 	displayedCount.value = CHUNK;
 	people.value = allFilteredResults.value.slice(0, CHUNK);
 	hasMoreResults.value = allFilteredResults.value.length > CHUNK;
@@ -118,9 +116,7 @@ const applyLocalFilter = (filterFn) => {
 const filterNeverAnswered = ref(false);
 
 const fetchNeverAnsweredContacts = async (filterType = null) => {
-	await contactsStore.fetchContacts({
-		filter: "never_answered",
-	});
+	const allContacts = await contactsStore.fetchAllContactsForFilter();
 
 	applyLocalFilter((person) => {
 		if (person.only_called_never_answered !== 1) return false;
@@ -129,23 +125,27 @@ const fetchNeverAnsweredContacts = async (filterType = null) => {
 		if (filterType === "coworkers")
 			return person.isCoWorker == 1 && person.isContact == 0;
 		return true;
-	});
+	}, allContacts);
 };
 
-const filterContacts = () => {
+const filterContacts = async () => {
+	const allContacts = await contactsStore.fetchAllContactsForFilter();
 	applyLocalFilter(
 		(person) => person.isContact === 1 && person.isCoWorker === 0,
+		allContacts,
 	);
 };
 
-const filterCoworkers = () => {
+const filterCoworkers = async () => {
+	const allContacts = await contactsStore.fetchAllContactsForFilter();
 	applyLocalFilter(
 		(person) => person.isCoWorker === 1 && person.isContact === 0,
+		allContacts,
 	);
 };
 
 const fetchNeverCalledContacts = async (filterType = null) => {
-	await contactsStore.fetchContacts();
+	const allContacts = await contactsStore.fetchAllContactsForFilter();
 
 	applyLocalFilter((person) => {
 		if (person.first_event !== 0) return false;
@@ -154,7 +154,7 @@ const fetchNeverCalledContacts = async (filterType = null) => {
 		if (filterType === "coworkers")
 			return person.isCoWorker == 1 && person.isContact == 0;
 		return true;
-	});
+	}, allContacts);
 };
 
 // Load more handler — called by the "Load more" button

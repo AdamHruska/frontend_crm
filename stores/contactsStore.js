@@ -482,6 +482,39 @@ export const useContactsStore = defineStore("contacts", {
 			}
 		},
 
+		// contactsStore.js
+		async fetchAllContactsForFilter() {
+			this.loadingState = true;
+			const authStore = useAuthStore();
+			const token = authStore.token;
+
+			if (!token) {
+				console.error("Token not found. Please log in.");
+				this.loadingState = false;
+				return [];
+			}
+
+			try {
+				const response = await axios.get(
+					`${config.public.apiUrl}contacts-without-pagination`,
+					{
+						headers: {
+							Authorization: `Bearer ${authStore.token}`,
+						},
+					},
+				);
+				this.loadingState = false;
+				return response.data.contacts;
+			} catch (error) {
+				console.error(
+					"Error fetching all contacts for filter:",
+					error.response || error,
+				);
+				this.loadingState = false;
+				return [];
+			}
+		},
+
 		async restoreContactAdmin(id) {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();

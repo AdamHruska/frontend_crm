@@ -53,7 +53,6 @@
 					<option value="2">Zrušené aktivity</option>
 					<option value="3">AOF bez dohodnutého poradenstva</option>
 					<option value="4">Servisná analýza bez poradenstva</option>
-					<option value="4">Servisná analýza bez poradenstva</option>
 					<option value="5">Poradenstvo nové bez odporúčení</option>
 					<option value="7">Servisné poradenstvo bez odporúčení</option>
 					<option value="6">Prvé stretnutie bez analýzy</option>
@@ -255,6 +254,198 @@
 								{{ formatDate(activity.datumCas) }}
 							</td>
 
+							<td class="px-6 py-3 text-gray-600">
+								{{ formatDate(activity.koniec) }}
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<!-- NEW block for filter 5 -->
+		<div
+			v-if="poradenstvoNoveActivities.length > 0"
+			class="px-8 pb-10 overflow-x-auto"
+		>
+			<h3>Poradenstvo nové bez odporúčení</h3>
+			<div class="bg-white shadow-lg rounded-xl overflow-hidden relative">
+				<Icon
+					@click="((poradenstvoNoveActivities = []), (selectedSelect = ''))"
+					:icon="'material-symbols:close-rounded'"
+					class="w-6 h-6 absolute top-2 right-2 cursor-pointer text-gray-500 hover:scale-110 transition-transform z-10"
+				/>
+				<table class="min-w-full divide-y divide-gray-200">
+					<thead class="bg-gray-50">
+						<tr>
+							<th
+								class="px-6 py-3 text-left text-sm font-semibold text-gray-600"
+							>
+								Meno
+							</th>
+							<th
+								class="px-6 py-3 text-left text-sm font-semibold text-gray-600"
+							>
+								Priezvisko
+							</th>
+							<th
+								class="px-6 py-3 text-left text-sm font-semibold text-gray-600"
+							>
+								Aktivita
+							</th>
+							<th
+								class="px-6 py-3 text-left text-sm font-semibold text-gray-600"
+							>
+								Dátum a čas
+							</th>
+							<th
+								class="px-6 py-3 text-left text-sm font-semibold text-gray-600"
+							>
+								Koniec
+							</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-gray-100">
+						<tr
+							v-for="activity in poradenstvoNoveActivities"
+							:key="activity.id"
+							class="hover:bg-gray-50 transition cursor-pointer"
+							@click="goToContact(activity.contact_id)"
+						>
+							<td class="px-6 py-3 font-medium">{{ activity.contact.meno }}</td>
+							<td class="px-6 py-3">{{ activity.contact.priezvisko }}</td>
+							<td class="px-6 py-3">{{ activity.aktivita }}</td>
+							<td class="px-6 py-3 text-gray-600">
+								{{ formatDate(activity.datumCas) }}
+							</td>
+							<td class="px-6 py-3 text-gray-600">
+								{{ formatDate(activity.koniec) }}
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<!-- NEW block for filter 6 -->
+		<div
+			v-if="prveStretnutieActivities.length > 0"
+			class="px-8 pb-10 overflow-x-auto"
+		>
+			<h3>Prvé stretnutie bez analýzy</h3>
+			<div class="bg-white shadow-lg rounded-xl overflow-hidden relative">
+				<Icon
+					@click="((prveStretnutieActivities = []), (selectedSelect = ''))"
+					:icon="'material-symbols:close-rounded'"
+					class="w-6 h-6 absolute top-2 right-2 cursor-pointer text-gray-500 hover:scale-110 transition-transform z-10"
+				/>
+				<table class="min-w-full divide-y divide-gray-200">
+					<thead class="bg-gray-50">
+						<tr>
+							<th
+								class="px-6 py-3 text-left text-sm font-semibold text-gray-600"
+							>
+								Meno
+							</th>
+							<th
+								class="px-6 py-3 text-left text-sm font-semibold text-gray-600"
+							>
+								Priezvisko
+							</th>
+							<th
+								class="px-6 py-3 text-left text-sm font-semibold text-gray-600"
+							>
+								Aktivita
+							</th>
+							<th
+								class="px-6 py-3 text-left text-sm font-semibold text-gray-600"
+							>
+								Dátum a čas
+							</th>
+							<th
+								class="px-6 py-3 text-left text-sm font-semibold text-gray-600"
+							>
+								Koniec
+							</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-gray-100">
+						<tr
+							v-for="activity in prveStretnutieActivities"
+							:key="activity.id"
+							class="hover:bg-gray-50 transition cursor-pointer"
+							@click="goToContact(activity.contact_id)"
+						>
+							<td class="px-6 py-3 font-medium">{{ activity.contact.meno }}</td>
+							<td class="px-6 py-3">{{ activity.contact.priezvisko }}</td>
+							<td class="px-6 py-3">{{ activity.aktivita }}</td>
+							<td class="px-6 py-3 text-gray-600">
+								{{ formatDate(activity.datumCas) }}
+							</td>
+							<td class="px-6 py-3 text-gray-600">
+								{{ formatDate(activity.koniec) }}
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<!-- NEW block for filter 7 -->
+		<div
+			v-if="poradenstvoServisneActivities.length > 0"
+			class="px-8 pb-10 overflow-x-auto"
+		>
+			<h3>Servisné poradenstvo bez odporúčení</h3>
+			<div class="bg-white shadow-lg rounded-xl overflow-hidden relative">
+				<Icon
+					@click="((poradenstvoServisneActivities = []), (selectedSelect = ''))"
+					:icon="'material-symbols:close-rounded'"
+					class="w-6 h-6 absolute top-2 right-2 cursor-pointer text-gray-500 hover:scale-110 transition-transform z-10"
+				/>
+				<table class="min-w-full divide-y divide-gray-200">
+					<thead class="bg-gray-50">
+						<tr>
+							<th
+								class="px-6 py-3 text-left text-sm font-semibold text-gray-600"
+							>
+								Meno
+							</th>
+							<th
+								class="px-6 py-3 text-left text-sm font-semibold text-gray-600"
+							>
+								Priezvisko
+							</th>
+							<th
+								class="px-6 py-3 text-left text-sm font-semibold text-gray-600"
+							>
+								Aktivita
+							</th>
+							<th
+								class="px-6 py-3 text-left text-sm font-semibold text-gray-600"
+							>
+								Dátum a čas
+							</th>
+							<th
+								class="px-6 py-3 text-left text-sm font-semibold text-gray-600"
+							>
+								Koniec
+							</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-gray-100">
+						<tr
+							v-for="activity in poradenstvoServisneActivities"
+							:key="activity.id"
+							class="hover:bg-gray-50 transition cursor-pointer"
+							@click="goToContact(activity.contact_id)"
+						>
+							<td class="px-6 py-3 font-medium">{{ activity.contact.meno }}</td>
+							<td class="px-6 py-3">{{ activity.contact.priezvisko }}</td>
+							<td class="px-6 py-3">{{ activity.aktivita }}</td>
+							<td class="px-6 py-3 text-gray-600">
+								{{ formatDate(activity.datumCas) }}
+							</td>
 							<td class="px-6 py-3 text-gray-600">
 								{{ formatDate(activity.koniec) }}
 							</td>
@@ -643,6 +834,9 @@ const invalidPhoneContacts = ref([]);
 const peopleWithoutAdvice = ref([]);
 const activitiesWithoutAdvice = ref([]);
 const serviceAnalysisActivities = ref([]);
+const poradenstvoNoveActivities = ref([]); // NEW — filter 5
+const prveStretnutieActivities = ref([]); // NEW — filter 6
+const poradenstvoServisneActivities = ref([]); // NEW — filter 7
 const selectedActivityID = ref(null);
 
 function goToContact(contactId) {
@@ -787,8 +981,22 @@ const fetchData = async () => {
 	}
 };
 
+const clearAllFilterResults = () => {
+	invalidPhoneContacts.value = [];
+	peopleWithoutAdvice.value = [];
+	activitiesWithoutAdvice.value = [];
+	serviceAnalysisActivities.value = [];
+	poradenstvoNoveActivities.value = [];
+	prveStretnutieActivities.value = [];
+	poradenstvoServisneActivities.value = [];
+	dbActivities.value = [];
+	declinedEvents.value = [];
+};
+
 const fetchSelect = async () => {
 	console.log("from", dateFrom, dateTo);
+	clearAllFilterResults();
+
 	try {
 		loading.value = true;
 
@@ -898,7 +1106,7 @@ const fetchSelect = async () => {
 				},
 			);
 			console.log("skuska", response);
-			serviceAnalysisActivities.value = response.data.activities;
+			poradenstvoNoveActivities.value = response.data.activities;
 
 			toast.success("Poradenstvo nové bez odporúčení bolo získané uspešne", {
 				position: "top-right",
@@ -920,9 +1128,9 @@ const fetchSelect = async () => {
 				},
 			);
 			console.log("skuska", response);
-			serviceAnalysisActivities.value = response.data.activities;
+			prveStretnutieActivities.value = response.data.activities;
 
-			toast.success("Servisná analýza bez poradenstva boli získané uspešne", {
+			toast.success("Prvé stretnutie bez analýzy bolo získané uspešne", {
 				position: "top-right",
 				timeout: 5000,
 			});
@@ -942,7 +1150,7 @@ const fetchSelect = async () => {
 				},
 			);
 			console.log("skuska", response);
-			serviceAnalysisActivities.value = response.data.activities;
+			poradenstvoServisneActivities.value = response.data.activities;
 
 			toast.success(
 				"Servisné poradenstvo bez odporúčení bolo získané uspešne",
@@ -962,6 +1170,182 @@ const fetchSelect = async () => {
 		loading.value = false;
 	}
 };
+
+// const fetchSelect = async () => {
+// 	console.log("from", dateFrom, dateTo);
+// 	try {
+// 		loading.value = true;
+
+// 		if (selectedSelect.value === "1") {
+// 			const responseInvalidPhoneNum = await axios.get(
+// 				`${config.public.apiUrl}contacts-invalid-phone`,
+// 				{
+// 					headers: { Authorization: `Bearer ${authStore.token}` },
+// 				},
+// 			);
+
+// 			invalidPhoneContacts.value = responseInvalidPhoneNum.data.contacts.map(
+// 				(c) => ({
+// 					...c,
+// 					corrected_phone: "",
+// 				}),
+// 			);
+
+// 			toast.success("kontakty boli získané uspešne", {
+// 				position: "top-right",
+// 				timeout: 5000,
+// 			});
+// 		}
+
+// 		if (selectedSelect.value === "2") {
+// 			const responseMyActivities = await axios.get(
+// 				`${config.public.apiUrl}get-uncompleted-activities`,
+// 				{
+// 					headers: { Authorization: `Bearer ${authStore.token}` },
+// 					params: {
+// 						dateFrom: dateFrom.value,
+// 						dateTo: dateTo.value,
+// 					},
+// 				},
+// 			);
+// 			dbActivities.value = responseMyActivities.data.activities;
+// 			const response = await axios.post(
+// 				`${config.public.apiUrl}microsoft/declined-events/${userStore.user.id}`,
+// 				{
+// 					user_id: userStore.user.id,
+// 					dateFrom: dateFrom.value,
+// 					dateTo: dateTo.value,
+// 				},
+// 				{ headers: { Authorization: `Bearer ${authStore.token}` } },
+// 			);
+// 			declinedEvents.value = response.data.value;
+// 		}
+
+// 		if (selectedSelect.value === "3") {
+// 			const response = await axios.get(
+// 				`${config.public.apiUrl}analyza-bez-poradenstva`,
+// 				{
+// 					headers: {
+// 						Authorization: `Bearer ${authStore.token}`,
+// 					},
+// 					params: {
+// 						dateFrom: dateFrom.value,
+// 						dateTo: dateTo.value,
+// 					},
+// 				},
+// 			);
+// 			console.log("skuska", response);
+// 			activitiesWithoutAdvice.value = response.data.activities;
+
+// 			toast.success(
+// 				"Kontakty bez dohodnutého poradenstva boli získané uspešne",
+// 				{
+// 					position: "top-right",
+// 					timeout: 5000,
+// 				},
+// 			);
+// 		}
+
+// 		if (selectedSelect.value === "4") {
+// 			const response = await axios.get(
+// 				`${config.public.apiUrl}servisna-analyza-bez-poradenstva`,
+// 				{
+// 					headers: {
+// 						Authorization: `Bearer ${authStore.token}`,
+// 					},
+// 					params: {
+// 						dateFrom: dateFrom.value,
+// 						dateTo: dateTo.value,
+// 					},
+// 				},
+// 			);
+// 			console.log("skuska", response);
+// 			serviceAnalysisActivities.value = response.data.activities;
+
+// 			toast.success("Servisná analýza bez poradenstva boli získané uspešne", {
+// 				position: "top-right",
+// 				timeout: 5000,
+// 			});
+// 		}
+
+// 		if (selectedSelect.value === "5") {
+// 			const response = await axios.get(
+// 				`${config.public.apiUrl}poradenstvo-nove-without-recommendations`,
+// 				{
+// 					headers: {
+// 						Authorization: `Bearer ${authStore.token}`,
+// 					},
+// 					params: {
+// 						dateFrom: dateFrom.value,
+// 						dateTo: dateTo.value,
+// 					},
+// 				},
+// 			);
+// 			console.log("skuska", response);
+// 			serviceAnalysisActivities.value = response.data.activities;
+
+// 			toast.success("Poradenstvo nové bez odporúčení bolo získané uspešne", {
+// 				position: "top-right",
+// 				timeout: 5000,
+// 			});
+// 		}
+
+// 		if (selectedSelect.value === "6") {
+// 			const response = await axios.get(
+// 				`${config.public.apiUrl}prve-stretnutie-bez-analyzy`,
+// 				{
+// 					headers: {
+// 						Authorization: `Bearer ${authStore.token}`,
+// 					},
+// 					params: {
+// 						dateFrom: dateFrom.value,
+// 						dateTo: dateTo.value,
+// 					},
+// 				},
+// 			);
+// 			console.log("skuska", response);
+// 			serviceAnalysisActivities.value = response.data.activities;
+
+// 			toast.success("Servisná analýza bez poradenstva boli získané uspešne", {
+// 				position: "top-right",
+// 				timeout: 5000,
+// 			});
+// 		}
+
+// 		if (selectedSelect.value === "7") {
+// 			const response = await axios.get(
+// 				`${config.public.apiUrl}poradenstvo-servisne-without-recommendations`,
+// 				{
+// 					headers: {
+// 						Authorization: `Bearer ${authStore.token}`,
+// 					},
+// 					params: {
+// 						dateFrom: dateFrom.value,
+// 						dateTo: dateTo.value,
+// 					},
+// 				},
+// 			);
+// 			console.log("skuska", response);
+// 			serviceAnalysisActivities.value = response.data.activities;
+
+// 			toast.success(
+// 				"Servisné poradenstvo bez odporúčení bolo získané uspešne",
+// 				{
+// 					position: "top-right",
+// 					timeout: 5000,
+// 				},
+// 			);
+// 		}
+// 	} catch (error) {
+// 		toast.error("Error pri zobrazovaní kontaktov", {
+// 			position: "top-right",
+// 			timeout: 5000,
+// 		});
+// 		console.error(error);
+// 	} finally {
+// 		loading.value = false;
+// 	}
+// };
 
 const saveCorrectedPhone = async (contact) => {
 	if (!contact.corrected_phone) {

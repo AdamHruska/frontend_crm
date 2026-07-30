@@ -1011,6 +1011,14 @@ const addSharedEventsId = async (userId, isTransitive = false) => {
 		);
 
 		if (response?.data) {
+			// One consistent color per shared user, reused across activities/MS/Google/ICS
+			if (!calendarStore.userColors[userId]) {
+				const userIds = Object.keys(calendarStore.userColors).length;
+				calendarStore.userColors[userId] =
+					pastelColors[userIds % pastelColors.length];
+			}
+			const sharedUserColor = calendarStore.userColors[userId];
+
 			if (response.data.activities?.length) {
 				const sharedEvents = transformData(response.data.activities);
 
@@ -1029,38 +1037,69 @@ const addSharedEventsId = async (userId, isTransitive = false) => {
 
 			if (response.data.microsoft_events?.length) {
 				const sharedMicrosoftEvents = response.data.microsoft_events.map(
-					(event) => {
-						if (!calendarStore.userColors[event.created_id]) {
-							const userIds = Object.keys(calendarStore.userColors).length;
-							calendarStore.userColors[event.created_id] =
-								pastelColors[userIds % pastelColors.length];
-						}
-						const color = calendarStore.userColors[event.created_id];
-
-						return {
-							id: event.microsoft_id,
-							title: event.subject || "Bez názvu",
-							start: event.start,
-							end: event.end,
-							allDay: event.isAllDay ?? false,
-							backgroundColor: color,
-							borderColor: color,
-							user_id: event.created_id,
-							extendedProps: {
-								source: "microsoft",
-								location: event.location,
-								link: event.joinUrl,
-								note: event.note,
-								organizer: event.organizer,
-								attendees: event.attendees,
-								calendar: event.calendar,
-								importance: "normal",
-							},
-						};
-					},
+					(event) => ({
+						id: event.microsoft_id,
+						title: event.subject || "Bez názvu",
+						start: event.start,
+						end: event.end,
+						allDay: event.isAllDay ?? false,
+						backgroundColor: sharedUserColor,
+						borderColor: sharedUserColor,
+						user_id: event.created_id,
+						extendedProps: {
+							source: "microsoft",
+							location: event.location,
+							link: event.joinUrl,
+							note: event.note,
+							organizer: event.organizer,
+							attendees: event.attendees,
+							calendar: event.calendar,
+							importance: "normal",
+						},
+					}),
 				);
 
 				events.value = [...events.value, ...sharedMicrosoftEvents];
+			}
+
+			if (response.data.google_events?.length) {
+				const sharedGoogleEvents = response.data.google_events.map((event) => ({
+					id: event.id,
+					title: event.summary?.trim() || "Bez názvu",
+					start: event.start,
+					end: event.end,
+					backgroundColor: sharedUserColor,
+					borderColor: sharedUserColor,
+					user_id: event.created_id,
+					extendedProps: {
+						source: "google",
+						description: event.description ?? null,
+						calendar: event.calendar ?? null,
+						organizer: event.organizer ?? null,
+						attendees: event.attendees ?? [],
+						location: event.location ?? null,
+					},
+				}));
+
+				events.value = [...events.value, ...sharedGoogleEvents];
+			}
+
+			if (response.data.ics_events?.length) {
+				const sharedIcsEvents = [];
+
+				response.data.ics_events.forEach((calendar) => {
+					const parsed = parseIcsToEvents(
+						calendar.ics_data,
+						userId,
+						sharedUserColor,
+					);
+					parsed.forEach((event) => {
+						event.extendedProps.calendar = calendar.calendar_name;
+					});
+					sharedIcsEvents.push(...parsed);
+				});
+
+				events.value = [...events.value, ...sharedIcsEvents];
 			}
 
 			calendarOptions.value = {
@@ -1081,6 +1120,104 @@ const addSharedEventsId = async (userId, isTransitive = false) => {
 		loadingSharedUser.value = false;
 	}
 };
+
+// const addSharedEventsId = async (userId, isTransitive = false) => {
+// 	loadingSharedUser.value = true;
+// 	const userIdString = String(userId);
+
+// 	if (loadedSharedUserIds.value.has(userIdString)) {
+// 		loadingSharedUser.value = false;
+// 		return;
+// 	}
+// 	loadedSharedUserIds.value.add(userIdString);
+
+// 	try {
+// 		const response = await axios.get(
+// 			`${config.public.apiUrl}get-activities-by-creator/${userId}/with-microsoft`,
+// 			{
+// 				params: {
+// 					month: currentLoadedMonth.value ?? new Date().getMonth() + 1,
+// 					year: currentLoadedYear.value ?? new Date().getFullYear(),
+// 					transitive: isTransitive,
+// 				},
+// 				headers: {
+// 					Authorization: `Bearer ${authStore.token}`,
+// 					"Content-Type": "application/json",
+// 				},
+// 			},
+// 		);
+
+// 		if (response?.data) {
+// 			if (response.data.activities?.length) {
+// 				const sharedEvents = transformData(response.data.activities);
+
+// 				const rawActivities = toRaw(calendarStore.shared_activities);
+// 				const currentActivities = Array.isArray(rawActivities)
+// 					? rawActivities
+// 					: Object.values(rawActivities)[0] || [];
+
+// 				calendarStore.shared_activities = [
+// 					...currentActivities,
+// 					...response.data.activities,
+// 				];
+
+// 				events.value = [...events.value, ...sharedEvents];
+// 			}
+
+// 			if (response.data.microsoft_events?.length) {
+// 				const sharedMicrosoftEvents = response.data.microsoft_events.map(
+// 					(event) => {
+// 						if (!calendarStore.userColors[event.created_id]) {
+// 							const userIds = Object.keys(calendarStore.userColors).length;
+// 							calendarStore.userColors[event.created_id] =
+// 								pastelColors[userIds % pastelColors.length];
+// 						}
+// 						const color = calendarStore.userColors[event.created_id];
+
+// 						return {
+// 							id: event.microsoft_id,
+// 							title: event.subject || "Bez názvu",
+// 							start: event.start,
+// 							end: event.end,
+// 							allDay: event.isAllDay ?? false,
+// 							backgroundColor: color,
+// 							borderColor: color,
+// 							user_id: event.created_id,
+// 							extendedProps: {
+// 								source: "microsoft",
+// 								location: event.location,
+// 								link: event.joinUrl,
+// 								note: event.note,
+// 								organizer: event.organizer,
+// 								attendees: event.attendees,
+// 								calendar: event.calendar,
+// 								importance: "normal",
+// 							},
+// 						};
+// 					},
+// 				);
+
+// 				events.value = [...events.value, ...sharedMicrosoftEvents];
+// 			}
+
+// 			calendarOptions.value = {
+// 				...calendarOptions.value,
+// 				events: [...events.value],
+// 			};
+
+// 			if (response.data.confirmed_share_user_id?.length) {
+// 				await userStore.fetchTransitiveSharedUsers(
+// 					response.data.confirmed_share_user_id,
+// 					userId,
+// 				);
+// 			}
+// 		}
+// 	} catch (error) {
+// 		console.error("Error loading shared user events:", error);
+// 	} finally {
+// 		loadingSharedUser.value = false;
+// 	}
+// };
 
 const recentEvents = computed(() => {
 	const now = new Date();

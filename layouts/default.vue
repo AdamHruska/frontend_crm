@@ -22,7 +22,7 @@
 			<!-- Main Navigation Items -->
 			<div
 				v-if="!isAdmin"
-				class="flex flex-col items-center mt-3 border-t border-black border-t-1 flex-grow"
+				class="flex flex-col items-center mt-3 border-t border-black border-t-1 flex-grow overflow-y-auto min-h-0 nav-scroll"
 			>
 				<UTooltip
 					text="kontakty"
@@ -476,5 +476,27 @@ const isAdmin = computed(() => {
 
 .nav-shadow {
 	box-shadow: 4px 0 10px rgba(0, 0, 0, 0.4);
+}
+
+.nav-shadow {
+	box-shadow: 4px 0 10px rgba(0, 0, 0, 0.4);
+}
+
+/* Sidebar scrollbar */
+.nav-scroll::-webkit-scrollbar {
+	width: 4px;
+}
+
+.nav-scroll::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.nav-scroll::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.35);
+	border-radius: 10px;
+}
+
+.nav-scroll::-webkit-scrollbar-thumb:hover {
+	background: rgba(255, 255, 255, 0.6);
 }
 </style>

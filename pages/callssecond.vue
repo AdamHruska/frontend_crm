@@ -295,7 +295,6 @@ const confirmNoteAndAdvance = async () => {
 
 	await logVDDActivity(type, panel, pendingNote.value);
 
-	// Create todo if requested
 	if (todoFromNote.value && pendingNote.value) {
 		await saveTodoFromNote();
 	}
@@ -305,10 +304,7 @@ const confirmNoteAndAdvance = async () => {
 	pendingVDD.value = null;
 	todoFromNote.value = false;
 
-	// Only advance on dovolane/dohodnute, not plain volane
-	if (type !== "volane") {
-		await goToNextContact();
-	}
+	await goToNextContact();
 };
 
 const cancelNote = () => {
@@ -831,12 +827,12 @@ const contactInitials = computed(() => {
 									<h2 class="detail-name">
 										{{ contactDetail.meno }} {{ contactDetail.priezvisko }}
 									</h2>
-									<a
+									<!-- <a
 										:href="`/contact/${contactDetail.id}`"
 										target="_blank"
 										class="detail-link"
 										>Otvoriť plný detail →</a
-									>
+									> -->
 								</div>
 							</div>
 
@@ -999,7 +995,6 @@ const contactInitials = computed(() => {
 							:contactId="currentContact?.id"
 							@updateDate="onCalendarDateUpdate"
 							@timeClicked="onCalendarTimeClicked"
-							@activityAdded="onActivityAdded"
 							@slotClicked="onCalendarSlotClicked"
 						/>
 					</div>
@@ -1022,7 +1017,6 @@ const contactInitials = computed(() => {
 				pendingActivityType = '';
 			"
 			@activityAdded="onActivityAdded"
-			@addNewEvent="onActivityAdded"
 		/>
 
 		<!-- ── Note modal for Volané ── -->
