@@ -216,6 +216,7 @@ const loadContactDetail = async (contactId) => {
 			}),
 		]);
 		contactDetail.value = contactRes.data.contact;
+		showWrongNumberButton.value = contactDetail.value.wrong_number == 0;
 		contactActivities.value = activitiesRes.data.activities ?? [];
 	} catch (err) {
 		console.error("Error loading contact detail:", err);
@@ -384,6 +385,25 @@ const saveTodo = async () => {
 	} catch (err) {
 		console.error("Error creating todo:", err);
 		toast.error("Chyba pri vytváraní ToDo");
+	}
+};
+
+// Wrong number toggle
+const showWrongNumberButton = ref(true);
+
+const setWrongNumber = async () => {
+	if (!currentContact.value) return;
+	try {
+		await axios.patch(
+			`${config.public.apiUrl}contacts/${currentContact.value.id}/toggle-wrong-number`,
+			{},
+			{ headers: { Authorization: `Bearer ${authStore.token}` } },
+		);
+		showWrongNumberButton.value = !showWrongNumberButton.value;
+		toast.success("Stav čísla bol zmenený");
+	} catch (error) {
+		console.error("Error toggling wrong number:", error);
+		toast.error("Chyba pri zmene stavu tel. čísla");
 	}
 };
 
@@ -962,6 +982,23 @@ const contactInitials = computed(() => {
 										📝 Vytvoriť ToDo
 									</button>
 								</div>
+							</div>
+
+							<div class="wrong-number-row">
+								<button
+									v-if="showWrongNumberButton"
+									class="vdd-btn vdd-btn--wrong"
+									@click="setWrongNumber"
+								>
+									❌ Zlé tel. číslo
+								</button>
+								<button
+									v-else
+									class="vdd-btn vdd-btn--wrong-fixed"
+									@click="setWrongNumber"
+								>
+									✅ Číslo bolo opravené
+								</button>
 							</div>
 
 							<!-- Recent activities -->
@@ -1870,7 +1907,10 @@ tr.row-red:hover td {
 	cursor: pointer;
 	font-family: "DM Sans", sans-serif;
 	transition: all 0.15s;
-	text-align: left;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 16px;
 }
 .vdd-btn--volane {
 	background: #fef9c3;
@@ -2218,5 +2258,24 @@ tr.row-red:hover td {
 	height: 16px;
 	cursor: pointer;
 	accent-color: #16a34a;
+}
+
+.vdd-btn--wrong {
+	background: #dc2626;
+	color: #ffffff;
+	border: 1px solid #dc2626;
+}
+.vdd-btn--wrong:hover {
+	background: #b91c1c;
+	border-color: #b91c1c;
+}
+.vdd-btn--wrong-fixed {
+	background: #16a34a;
+	color: #ffffff;
+	border: 1px solid #16a34a;
+}
+.vdd-btn--wrong-fixed:hover {
+	background: #15803d;
+	border-color: #15803d;
 }
 </style>

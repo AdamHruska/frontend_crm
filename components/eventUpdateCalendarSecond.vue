@@ -698,7 +698,7 @@ const handleCloseConfirmEvent = async () => {
 
 			<!-- Contact bar -->
 			<div
-				class="flex gap-3 my-4 cursor-pointer hover:bg-gray-200 p-2 border-b-2 border-black"
+				class="flex gap-3 my-4 cursor-pointer hover:bg-gray-200 p-2 border-b-2 border-black flex-wrap min-w-0"
 				v-if="contact.meno || contact.priezvisko"
 				@click="redirectToContact"
 			>
