@@ -374,6 +374,8 @@ const saveTodo = async () => {
 				activity_name: todoActivityName.value,
 				due_date: todoDueDate.value,
 				contact_id: currentContact.value.id,
+				contact_name:
+					`${currentContact.value.meno ?? ""} ${currentContact.value.priezvisko ?? ""}`.trim(),
 			},
 			{ headers: { Authorization: `Bearer ${authStore.token}` } },
 		);
@@ -394,6 +396,8 @@ const saveTodoFromNote = async () => {
 				activity_name: pendingNote.value,
 				due_date: todoDueDate.value,
 				contact_id: currentContact.value.id,
+				contact_name:
+					`${currentContact.value.meno ?? ""} ${currentContact.value.priezvisko ?? ""}`.trim(),
 			},
 			{ headers: { Authorization: `Bearer ${authStore.token}` } },
 		);
@@ -972,15 +976,51 @@ const contactInitials = computed(() => {
 										:key="act.id"
 										class="activity-item"
 									>
-										<span class="activity-pill-sm">{{ act.aktivita }}</span>
-										<span class="activity-date">{{
-											formatDateTime(act.datumCas)
-										}}</span>
-										<span
-											class="activity-status"
-											:class="`status--${act.activity_status}`"
-											>{{ act.activity_status || "—" }}</span
-										>
+										<div class="activity-item-top">
+											<span class="activity-pill-sm">{{ act.aktivita }}</span>
+											<span class="activity-date">{{
+												formatDateTime(act.datumCas)
+											}}</span>
+											<span
+												class="activity-status"
+												:class="`status--${act.activity_status}`"
+												>{{ act.activity_status || "—" }}</span
+											>
+										</div>
+
+										<div class="activity-item-flags">
+											<span
+												class="flag-badge"
+												:class="
+													act.volane
+														? 'flag-badge--volane-on'
+														: 'flag-badge--off'
+												"
+												>📵 Volané</span
+											>
+											<span
+												class="flag-badge"
+												:class="
+													act.dovolane
+														? 'flag-badge--dovolane-on'
+														: 'flag-badge--off'
+												"
+												>📞 Dovolané</span
+											>
+											<span
+												class="flag-badge"
+												:class="
+													act.dohodnute
+														? 'flag-badge--dohodnute-on'
+														: 'flag-badge--off'
+												"
+												>✅ Dohodnuté</span
+											>
+										</div>
+
+										<p v-if="act.poznamka" class="activity-note">
+											{{ act.poznamka }}
+										</p>
 									</div>
 								</div>
 							</div>
@@ -1884,6 +1924,7 @@ tr.row-red:hover td {
 	flex-direction: column;
 	gap: 6px;
 }
+/*
 .activity-item {
 	display: flex;
 	align-items: center;
@@ -1893,6 +1934,74 @@ tr.row-red:hover td {
 	border: 1px solid var(--border);
 	border-radius: 8px;
 	font-size: 0.8rem;
+}
+	*/
+.activity-item {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 10px 12px;
+	background: #f8fafc;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	font-size: 0.8rem;
+}
+
+.activity-item-top {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.activity-item-flags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.flag-badge {
+	font-size: 0.7rem;
+	font-weight: 600;
+	padding: 2px 8px;
+	border-radius: 10px;
+	white-space: nowrap;
+	border: 1px solid transparent;
+}
+
+.flag-badge--off {
+	background: #f1f5f9;
+	color: var(--text-muted);
+	border-color: var(--border);
+}
+
+.flag-badge--volane-on {
+	background: #fef9c3;
+	color: #854d0e;
+	border-color: #fde047;
+}
+
+.flag-badge--dovolane-on {
+	background: #dbeafe;
+	color: #1e40af;
+	border-color: #93c5fd;
+}
+
+.flag-badge--dohodnute-on {
+	background: #dcfce7;
+	color: #166534;
+	border-color: #86efac;
+}
+
+.activity-note {
+	margin: 0;
+	font-size: 0.78rem;
+	color: var(--text-secondary);
+	line-height: 1.5;
+	white-space: pre-wrap;
+	background: white;
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	padding: 6px 8px;
 }
 .activity-pill-sm {
 	background: #eff6ff;

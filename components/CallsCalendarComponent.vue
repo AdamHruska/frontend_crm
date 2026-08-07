@@ -15,6 +15,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 const calendarStore = useCalendarstore();
 const userStore = useUserStore();
 const authStore = useAuthStore();
+authStore.loadToken();
 const config = useRuntimeConfig();
 
 const rawData = ref([]);

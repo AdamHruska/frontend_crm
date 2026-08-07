@@ -641,7 +641,7 @@ const findAndDeleteOfficeActivity = async () => {
 				</div>
 
 				<!-- col 2: Importance + Online Meeting + extra emails -->
-				<div class="relative z-0 w-full group">
+				<div class="relative z-50 w-full group">
 					<div v-if="onlineMeeting" class="mb-3">
 						<label class="text-sm text-gray-500">Dôležitosť</label>
 						<select
@@ -702,7 +702,7 @@ const findAndDeleteOfficeActivity = async () => {
 							@focus="activeDropdown = index + 1"
 						/>
 						<div
-							class="w-full bg-gray-200 rounded-lg !text-black flex flex-col p-2 mt-1 max-h-[200px] overflow-y-auto absolute z-50"
+							class="w-full bg-gray-200 rounded-lg !text-black flex flex-col p-2 mt-1 max-h-[200px] overflow-y-auto absolute !z-[100] shadow-lg"
 							v-if="activeDropdown === index + 1"
 						>
 							<div

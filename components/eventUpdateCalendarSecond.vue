@@ -685,15 +685,15 @@ const handleCloseConfirmEvent = async () => {
 	/>
 
 	<div
-		class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-40"
+		class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-40 modal-outer"
 	>
 		<div class="absolute inset-0 bg-gray bg-opacity-50 backdrop-blur-sm"></div>
 		<loadigcomponent v-if="loading" />
 		<form
-			class="relative bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full z-10 max-h-[100vh] overflow-y-auto"
+			class="relative bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full z-10 max-h-[100dvh] overflow-y-auto"
 		>
-			<div class="cursor-pointer" @click="cancelActivity()">
-				<Icon icon="fa6-solid:xmark" class="absolute top-4 right-6" />
+			<div class="close-btn-sticky" @click="cancelActivity()">
+				<Icon icon="fa6-solid:xmark" width="20" height="20" />
 			</div>
 
 			<!-- Contact bar -->
@@ -1224,5 +1224,31 @@ const handleCloseConfirmEvent = async () => {
 }
 .free-office-btn:hover {
 	background-color: #b3b0b0;
+}
+
+/* Close button always visible, even mid-scroll */
+.close-btn-sticky {
+	position: sticky;
+	top: 0;
+	float: right;
+	margin-left: auto;
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #fff;
+	border-radius: 999px;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+	cursor: pointer;
+	z-index: 20;
+}
+
+/* On small screens, don't center-clip the modal off the top of the viewport */
+@media (max-width: 768px) {
+	.modal-outer {
+		align-items: flex-start !important;
+		padding-top: env(safe-area-inset-top, 12px);
+	}
 }
 </style>

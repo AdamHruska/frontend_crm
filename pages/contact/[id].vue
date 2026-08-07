@@ -918,7 +918,7 @@ const contactTypeLabel = computed(() => {
 	const p = people.value[0];
 	if (!p) return "—";
 	if (p.isCoWorker == 1) return "Kontakt na nábor";
-	if (p.isContact == 1) return "Kontakt";
+	if (p.isContact == 1) return "Klient";
 	return "—";
 });
 

@@ -678,7 +678,7 @@ const findAndDeleteOfficeActivity = async () => {
 				</div>
 
 				<!-- col 2: Importance + Online Meeting -->
-				<div class="relative z-0 w-full group">
+				<div class="relative z-50 w-full group">
 					<div v-if="onlineMeeting" class="mb-3">
 						<label class="text-sm text-gray-500">Dôležitosť</label>
 						<select
