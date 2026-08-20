@@ -285,6 +285,17 @@ onMounted(async () => {
 
 	await fetchIcsCalendars();
 });
+
+const telegramBotLink = ref("");
+
+const loginWithTelegram = async () => {
+	const res = await axios.post(
+		`${config.public.apiUrl}telegram/generate-link-code`,
+		{},
+		{ headers: { Authorization: `Bearer ${authStore.token}` } },
+	);
+	telegramBotLink.value = res.data.code;
+};
 </script>
 
 <template>
@@ -733,6 +744,42 @@ onMounted(async () => {
 									Prihlásiť sa
 								</button>
 								<button class="btn-danger-outline" @click="logoutWithMicrosoft">
+									Odhlásiť
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- Telegram bot link -->
+			<section class="page-section">
+				<div class="section-label">AI asistent</div>
+				<div class="card">
+					<div class="card-body">
+						<!-- Microsoft -->
+						<div class="provider-row last">
+							<div class="provider-info">
+								<div class="provider-logo">
+									<img src="/public/Telegram_logo.svg.webp" alt="Telegram" />
+								</div>
+								<div>
+									<div class="provider-name">Telegram</div>
+									<div class="provider-status">
+										Spravujte prístup k asistentovi cez Telegram bota. Kliknite
+										na tlačidlo "Pripojiť" a postupujte podľa inštrukcií.
+									</div>
+									<div v-if="telegramBotLink" class="provider-status">
+										Tento kód pošlite Telegram botovi:
+										<span class="provider-name">{{ telegramBotLink }}</span>
+									</div>
+								</div>
+							</div>
+							<div class="provider-actions">
+								<button class="btn-outline" @click="loginWithTelegram">
+									Pripojiť
+								</button>
+								<button class="btn-danger-outline" @click="logoutWithTelegram">
 									Odhlásiť
 								</button>
 							</div>

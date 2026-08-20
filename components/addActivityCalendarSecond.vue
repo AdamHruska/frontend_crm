@@ -105,19 +105,30 @@ watch(
 const emailBool = ref(false);
 const email = ref("");
 
+const PHONE_ACTIVITIES = ["Telefonát klient", "Telefonát nábor", "Telefonát"];
+
+const recalcKoniec = () => {
+	if (!datum_cas.value) return;
+	const isPhoneCall = PHONE_ACTIVITIES.includes(aktivita.value);
+	const newEndTime = isPhoneCall
+		? add(parseISO(datum_cas.value), { minutes: 5 })
+		: add(parseISO(datum_cas.value), { hours: 1 });
+	koniec.value = format(newEndTime, "yyyy-MM-dd'T'HH:mm");
+};
+
 watch(aktivita, (newValue) => {
 	ineBool.value = newValue === "ine";
 
-	if (
+	showVDD.value =
 		(newValue === "Telefonát klient" || newValue === "Telefonát nábor") &&
-		datum_cas.value
-	) {
-		showVDD.value = true;
-		const newEndTime = add(parseISO(datum_cas.value), { minutes: 5 });
-		koniec.value = format(newEndTime, "yyyy-MM-dd'T'HH:mm");
-	} else {
-		showVDD.value = false;
-	}
+		!!datum_cas.value;
+
+	recalcKoniec();
+});
+
+watch(datum_cas, (newValue) => {
+	if (!newValue) return;
+	recalcKoniec();
 });
 
 const formatDateToISO = (dateString) => {
