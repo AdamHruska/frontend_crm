@@ -2295,15 +2295,224 @@ const contactTypeBadgeClass = computed(() => {
 /* ── Responsive ── */
 @media (max-width: 768px) {
 	.page-header {
-		padding: 16px 20px;
+		padding: 16px 16px;
 		flex-direction: column;
 		align-items: flex-start;
+		gap: 12px;
 	}
+
+	.header-left {
+		gap: 12px;
+	}
+
+	.avatar-circle {
+		width: 42px;
+		height: 42px;
+		font-size: 15px;
+	}
+
+	.page-title {
+		font-size: 18px;
+	}
+
+	.header-badges {
+		width: 100%;
+	}
+
+	.header-actions {
+		width: 100%;
+	}
+
+	.header-actions .relative {
+		width: 100%;
+	}
+
+	.header-actions .btn-actions {
+		width: 100%;
+		justify-content: center;
+	}
+
+	.actions-dropdown {
+		width: 100%;
+		left: 0;
+		right: 0;
+	}
+
 	.section {
-		margin: 20px 16px 0;
+		margin: 20px 12px 0;
 	}
+
 	.info-grid {
 		grid-template-columns: 1fr 1fr;
+		gap: 8px;
+	}
+
+	.info-card {
+		padding: 10px 12px;
+	}
+
+	.info-label {
+		font-size: 10px;
+	}
+
+	.info-value {
+		font-size: 13px;
+	}
+
+	.meta-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.meta-block {
+		padding: 12px 14px;
+	}
+
+	.table-wrapper {
+		border-radius: 8px;
+	}
+
+	.data-table {
+		font-size: 12px;
+	}
+
+	.data-table th,
+	.data-table td {
+		padding: 8px 8px;
+	}
+
+	/* Hide less important columns on mobile */
+	.data-table th:nth-child(n+5),
+	.data-table td:nth-child(n+5) {
+		display: none;
+	}
+
+	/* Show back the actions column (last one) */
+	.data-table th:last-child,
+	.data-table td:last-child {
+		display: table-cell;
+	}
+
+	/* Scroll hint for tables */
+	.table-wrapper {
+		position: relative;
+	}
+
+	.table-wrapper::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		width: 30px;
+		background: linear-gradient(to right, transparent, rgba(255,255,255,0.8));
+		pointer-events: none;
+		z-index: 2;
+	}
+
+	/* Activities table: hide more columns */
+	.section:last-child .data-table th:nth-child(n+4),
+	.section:last-child .data-table td:nth-child(n+4) {
+		display: none;
+	}
+
+	.section:last-child .data-table th:nth-child(7),
+	.section:last-child .data-table td:nth-child(7) {
+		display: table-cell;
+	}
+
+	.section:last-child .data-table th:last-child,
+	.section:last-child .data-table td:last-child {
+		display: table-cell;
+	}
+
+	.td-note {
+		max-width: 100px;
+	}
+
+	.status-icons {
+		gap: 2px;
+	}
+
+	.status-btn {
+		width: 26px;
+		height: 26px;
+	}
+
+	.section-header-row {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 10px;
+	}
+
+	.btn-sm {
+		padding: 8px 12px;
+		font-size: 12px;
+	}
+
+	/* Duplicate modal */
+	.dup-modal {
+		max-width: 95vw;
+		border-radius: 10px;
+	}
+
+	.dup-modal-header {
+		padding: 16px 16px 14px;
+	}
+
+	.dup-table-wrap {
+		padding: 12px 16px;
+	}
+
+	.dup-modal-footer {
+		padding: 12px 16px;
+	}
+}
+
+/* ── Very small screens (< 480px) ── */
+@media (max-width: 480px) {
+	.page-header {
+		padding: 12px 12px;
+	}
+
+	.info-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.badge {
+		padding: 4px 8px;
+		font-size: 11px;
+	}
+
+	.page-title {
+		font-size: 16px;
+	}
+
+	.page-subtitle {
+		font-size: 12px;
+	}
+
+	.btn {
+		padding: 8px 14px;
+		font-size: 13px;
+	}
+
+	.btn-sm {
+		padding: 7px 10px;
+		font-size: 11px;
+	}
+
+	.section-title {
+		font-size: 15px;
+	}
+
+	.data-table th:nth-child(4),
+	.data-table td:nth-child(4) {
+		display: table-cell;
+	}
+
+	.data-table th:nth-child(3),
+	.data-table td:nth-child(3) {
+		display: none;
 	}
 }
 /* ── Duplicate modal ── */
@@ -2537,6 +2746,24 @@ const contactTypeBadgeClass = computed(() => {
 }
 .row-shared:hover {
 	background-color: #e5e7eb;
+}
+
+/* ── Touch-friendly targets ── */
+@media (hover: none) and (pointer: coarse) {
+	.status-btn {
+		min-width: 36px;
+		min-height: 36px;
+	}
+
+	.icon-btn {
+		min-width: 36px;
+		min-height: 36px;
+	}
+
+	.todo-status-option {
+		padding: 8px 14px;
+		font-size: 13px;
+	}
 }
 
 .btn-unshare {
