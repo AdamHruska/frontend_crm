@@ -92,8 +92,9 @@ const showEventTooltip = (info) => {
 	} else {
 		let { meno, priezvisko, cislo } = ep;
 		// Fallback: look up contact from map if missing
-		if ((!meno || meno === "") && ep.contact_id && contactMap.value.has(ep.contact_id)) {
-			const c = contactMap.value.get(ep.contact_id);
+		const lookupId = Number(ep.contact_id);
+		if ((!meno || meno === "") && lookupId && contactMap.value.has(lookupId)) {
+			const c = contactMap.value.get(lookupId);
 			meno = c.meno || "";
 			priezvisko = c.priezvisko || "";
 			cislo = cislo || c.cislo || "";
@@ -214,7 +215,7 @@ const fetchMicrosoftEvents = async (month, year) => {
 
 const enrichContact = (item) => {
 	// If activity already has contact info, use it; otherwise look up from contactMap
-	const cid = item.contact_id || item.id_contact;
+	const cid = Number(item.contact_id || item.id_contact);
 	if ((!item.meno || item.meno === "") && cid && contactMap.value.has(cid)) {
 		const c = contactMap.value.get(cid);
 		return {
@@ -274,10 +275,27 @@ const updateCalendarEvents = () => {
 const loadContactsMap = async () => {
 	try {
 		await contactsStore.fetchAllContacts();
-		const list = contactsStore.allContacts || [];
+		const ownContacts = contactsStore.allContacts || [];
+
+		// Also fetch shared contacts (same approach as eventUpdateCalendarSecond.vue)
+		let allContacts = [...ownContacts];
+		const ownIds = new Set(ownContacts.map((c) => Number(c.id)));
+		try {
+			const sharedRes = await axios.get(
+				`${config.public.apiUrl}contacts-without-pagination`,
+				{ headers: { Authorization: `Bearer ${authStore.token}` } },
+			);
+			const sharedContacts = sharedRes.data.contacts || [];
+			for (const c of sharedContacts) {
+				if (!ownIds.has(Number(c.id))) allContacts.push(c);
+			}
+		} catch {
+			// Shared contacts not available, continue with own contacts only
+		}
+
 		const map = new Map();
-		list.forEach((c) => {
-			map.set(c.id, c);
+		allContacts.forEach((c) => {
+			map.set(Number(c.id), c);
 		});
 		contactMap.value = map;
 	} catch (e) {
