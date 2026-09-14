@@ -65,12 +65,25 @@ const props = defineProps({
 	},
 });
 
-onMounted(() => {
-	const filteredUsers = userStore.allUsersAdminALL;
-});
+// onMounted(() => {
+// 	const filteredUsers = userStore.allUsersAdminALL;
+// });
+
+// const filteredUsers = computed(() => {
+// 	return userStore.allUsersAdminALL.filter((user) => {
+// 		const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
+// 		return (
+// 			fullName.includes(searchQuery.value.toLowerCase()) ||
+// 			user.email.toLowerCase().includes(searchQuery.value.toLowerCase())
+// 		);
+// 	});
+// });
 
 const filteredUsers = computed(() => {
 	return userStore.allUsersAdminALL.filter((user) => {
+		if (user.id == props.oldUserID) return false; // can't delegate to self
+		if (user.hidden === 1) return false; // don't offer already-deleted users as a target
+
 		const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
 		return (
 			fullName.includes(searchQuery.value.toLowerCase()) ||
@@ -79,9 +92,25 @@ const filteredUsers = computed(() => {
 	});
 });
 
+// const selectUser = (user) => {
+// 	const newUserId = user.id;
+// 	const oldUserId = props.oldUserID;
+// 	userStore.delegateUserContactsAdmin(oldUserId, newUserId);
+// 	emit("close-delete-modal");
+// };
+
 const selectUser = (user) => {
 	const newUserId = user.id;
 	const oldUserId = props.oldUserID;
+
+	if (
+		!confirm(
+			`Naozaj chcete presunúť všetky kontakty a kancelárie na používateľa ${user.first_name} ${user.last_name}? Pôvodný používateľ bude following skrytý.`,
+		)
+	) {
+		return;
+	}
+
 	userStore.delegateUserContactsAdmin(oldUserId, newUserId);
 	emit("close-delete-modal");
 };

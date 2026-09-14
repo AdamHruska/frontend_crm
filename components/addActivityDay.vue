@@ -320,7 +320,7 @@ function handleTimeClick(info) {
 	<div
 		class="relative bg-white rounded-lg shadow-lg max-w-md w-full z-10 ml-4 rounded-lg"
 	>
-		<div class="h-[1280px] rounded-lg">
+		<div class="rounded-lg">
 			<loadigcomponent v-if="calendarStore.loadingState" />
 			<!-- <AddActivityCalendar
 				v-if="addActivity"

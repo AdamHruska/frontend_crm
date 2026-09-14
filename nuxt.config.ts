@@ -3,6 +3,11 @@ export default defineNuxtConfig({
 	compatibilityDate: "2024-04-03",
 	devtools: { enabled: true },
 	ssr: false,
+	colorMode: {
+		preference: 'light',
+		fallback: 'light',
+		classSuffix: '',
+	},
 	css: [
 		"~/assets/css/main.css",
 		"@toast-ui/calendar/dist/toastui-calendar.min.css",
@@ -27,8 +32,8 @@ export default defineNuxtConfig({
 	runtimeConfig: {
 		public: {
 			//apiUrl: "https://crm-be-main.vercel.app/",
-			//apiUrl: "http://localhost:8000/",
-			apiUrl: "https://backend.partners-crm.sk/",
+			apiUrl: "http://localhost:8000/",
+			//apiUrl: "https://backend.partners-crm.sk/",
 			AZURE_CLIENT_ID: process.env.NUXT_PUBLIC_AZURE_CLIENT_ID,
 			AZURE_REDIRECT_URI: process.env.NUXT_PUBLIC_AZURE_REDIRECT_URI,
 			AZURE_SCOPE: process.env.NUXT_PUBLIC_AZURE_SCOPE,

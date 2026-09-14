@@ -517,16 +517,17 @@ const goToContact = (id) => {
 const markAsDone = async (id) => {
 	const todo = todoItems.value.find((item) => item.id === id);
 	if (!todo) return;
-
 	const newCompletionStatus = !todo.completed;
+
+	if (newCompletionStatus && bjActivities.includes(todo.activity)) {
+		openBjModalForTodo(todo.id, todo.activity);
+	}
 
 	await todoStore.updateTodo(id, {
 		activity_name: todo.activity,
 		due_date: todo.dueDate,
 		is_completed: newCompletionStatus,
 	});
-
-	// Reload **the same group** instead of defaulting
 	switch (activeGroup.value) {
 		case "all":
 			await showAllTodos();
@@ -869,6 +870,29 @@ const getNowForDatetimeLocal = () => {
 
 	return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
+
+const bjActivities = [
+	"poradenstvo nové",
+	"servisné poradenstvo",
+	"realizácia nová",
+	"realizácia servisná",
+];
+
+const showBjModal = ref(false);
+const bjModalTodoId = ref(null);
+const bjModalActivityName = ref("");
+
+const openBjModalForTodo = (todoId, activityName) => {
+	bjModalTodoId.value = todoId;
+	bjModalActivityName.value = activityName;
+	showBjModal.value = true;
+};
+
+const closeBjModal = () => {
+	showBjModal.value = false;
+	bjModalTodoId.value = null;
+	bjModalActivityName.value = "";
+};
 </script>
 
 <template>
@@ -891,6 +915,14 @@ const getNowForDatetimeLocal = () => {
 		@confirm="handleConfirmEvent"
 	/>
 
+	<BJCountModal
+		v-if="showBjModal"
+		:todoId="bjModalTodoId"
+		:activityName="bjModalActivityName"
+		@close="closeBjModal"
+		@submitted="closeBjModal"
+	/>
+
 	<loadigcomponent v-if="todoStore.loadingState" />
 	<div>
 		<UpdateToDoForm
@@ -898,6 +930,7 @@ const getNowForDatetimeLocal = () => {
 			@cancelToDoActivity="toggleUpdateForm"
 			:item="selectedItem"
 		/>
+
 		<h1 class="heading">ToDo Zoznam</h1>
 
 		<!-- Day Navigation -->

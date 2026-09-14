@@ -286,6 +286,8 @@ onMounted(async () => {
 	await fetchIcsCalendars();
 });
 
+const showBatchForm = ref(false);
+
 const telegramBotLink = ref("");
 
 const loginWithTelegram = async () => {
@@ -305,6 +307,18 @@ const loginWithTelegram = async () => {
 			<div class="page-header">
 				<h1 class="page-title">Nastavenia & zdieľanie</h1>
 			</div>
+
+			<!-- Batch activity form -->
+			<section class="page-section">
+				<div class="card">
+					<div class="card-body" style="padding: 0.75rem 1.25rem;">
+						<button class="btn-primary" @click="showBatchForm = !showBatchForm">
+							{{ showBatchForm ? 'Skryť formulár' : '📅 Pridať aktivity' }}
+						</button>
+					</div>
+				</div>
+				<BatchActivityForm v-if="showBatchForm" @close="showBatchForm = false" />
+			</section>
 
 			<!-- Calendar sharing tables -->
 			<section class="page-section">

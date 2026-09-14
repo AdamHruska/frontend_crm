@@ -205,7 +205,25 @@ onMounted(async () => {
 	const response2 = await axios.get(`${config.public.apiUrl}all-contacts`, {
 		headers: { Authorization: `Bearer ${authStore.token}` },
 	});
-	contacts.value = await response2.data.contacts;
+	const ownContacts = response2.data.contacts || [];
+
+	try {
+		const sharedRes = await axios.get(
+			`${config.public.apiUrl}contacts-without-pagination`,
+			{
+				headers: { Authorization: `Bearer ${authStore.token}` },
+			},
+		);
+		const sharedContacts = sharedRes.data.contacts || [];
+		const merged = [...ownContacts];
+		const ownIds = new Set(ownContacts.map((c) => c.id));
+		for (const c of sharedContacts) {
+			if (!ownIds.has(c.id)) merged.push(c);
+		}
+		contacts.value = merged;
+	} catch {
+		contacts.value = ownContacts;
+	}
 
 	emails.value = [""];
 	const response = await axios.get(
@@ -496,6 +514,31 @@ const updateActivity = async () => {
 	await runUpdateActivity();
 };
 
+const bjActivities = [
+	"poradenstvo nové",
+	"servisné poradenstvo",
+	"realizácia nová",
+	"realizácia servisná",
+];
+
+const showBjModal = ref(false);
+
+const setActivityStatus = (status) => {
+	activity_status.value = status;
+
+	if (status === "check" && bjActivities.includes(aktivita.value)) {
+		showBjModal.value = true;
+	}
+};
+
+const closeBjModal = () => {
+	showBjModal.value = false;
+};
+
+const onBjSubmitted = () => {
+	// BJ count je už uložený cez BJCountModal, tu už nič netreba robiť
+};
+
 const deleteActivity = async () => {
 	event.preventDefault();
 	await officeStore.deleteActivity(officeActivityId.value);
@@ -684,6 +727,14 @@ const handleCloseConfirmEvent = async () => {
 		:activityId="props.activityID"
 	/>
 
+	<BJCountModal
+		v-if="showBjModal"
+		:activityId="Number(props.activityID)"
+		:activityName="aktivita === 'ine' ? ina_aktivita : aktivita"
+		@close="closeBjModal"
+		@submitted="onBjSubmitted"
+	/>
+
 	<div
 		class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-40 modal-outer"
 	>
@@ -789,7 +840,7 @@ const handleCloseConfirmEvent = async () => {
 									activity_status === 'check' || activity_status === 'accepted',
 							}"
 							title="Dokončené"
-							@click.prevent="activity_status = 'check'"
+							@click.prevent="setActivityStatus('check')"
 						>
 							<Icon icon="fa6-solid:check" width="14" />
 						</button>

@@ -57,7 +57,7 @@ export const useCallListStore = defineStore("callList", {
 						headers: {
 							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 
 				// Remove the deleted call list from the state
@@ -71,7 +71,7 @@ export const useCallListStore = defineStore("callList", {
 				// Handle errors
 				console.error(
 					"Error deleting call list:",
-					error.response?.data || error.message
+					error.response?.data || error.message,
 				);
 				toast.error("Failed to delete call list");
 			}
@@ -79,58 +79,40 @@ export const useCallListStore = defineStore("callList", {
 		},
 
 		// delete contact from call list
+		// delete contact from call list
 		async deletePersonStore(id, callListId) {
-			console.log("deletePersonStore called", id, callListId);
+			const authStore = useAuthStore();
 			try {
-				// Find the call list to update
-				const callList = this.callLists.find((list) => list.id === callListId);
-				if (!callList) {
-					throw new Error("Call list not found");
-				}
-
-				// Parse contact_ids if it's a string
-				let contactIds = callList.contact_ids;
-				if (typeof contactIds === "string") {
-					contactIds = JSON.parse(contactIds);
-				}
-
-				// Filter out the contact to remove
-				const updatedContactIds = contactIds.filter(
-					(contactId) => contactId !== id
-				);
-
-				// Update the backend
-				console.log("updatedContactIds", updatedContactIds);
-				const response = await axios.put(
-					`${config.public.apiUrl}call-lists/${callListId}`,
-					{
-						// name: callList.name,
-						contact_ids: updatedContactIds,
-					},
+				const response = await axios.delete(
+					`${config.public.apiUrl}call-lists/${callListId}/contacts/${id}`,
 					{
 						headers: {
-							Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-							"Content-Type": "application/json",
+							Authorization: `Bearer ${authStore.token}`,
 						},
-					}
+					},
 				);
 
-				// Update the store state
+				// Update the local callLists cache so contact_ids stays in sync
+				const callList = this.callLists.find((list) => list.id === callListId);
+				if (callList) {
+					callList.contact_ids = response.data.contact_ids;
+				}
+				if (this.singleCallList?.id === callListId) {
+					this.singleCallList.contact_ids = response.data.contact_ids;
+				}
+
+				// Update the reactive people list shown in the UI
 				this.selectedCallListPeople = this.selectedCallListPeople.filter(
-					(person) => person.id !== id
+					(person) => person.id !== id,
 				);
 
-				alert("Contact successfully removed from call list");
 				return response;
 			} catch (error) {
 				console.error("Error removing contact from call list:", error);
-
 				if (error.response) {
 					console.error("Validation errors:", error.response.data);
 				}
-
-				alert("Failed to remove contact from call list.");
-				throw error; // Re-throw to allow further error handling
+				throw error; // Let the caller (e.g. a toast) handle user-facing errors
 			}
 		},
 

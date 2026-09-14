@@ -165,7 +165,25 @@ onBeforeMount(async () => {
 	const response2 = await axios.get(`${config.public.apiUrl}all-contacts`, {
 		headers: { Authorization: `Bearer ${authStore.token}` },
 	});
-	contacts.value = await response2.data.contacts;
+	const ownContacts = response2.data.contacts || [];
+
+	try {
+		const sharedRes = await axios.get(
+			`${config.public.apiUrl}contacts-without-pagination`,
+			{
+				headers: { Authorization: `Bearer ${authStore.token}` },
+			},
+		);
+		const sharedContacts = sharedRes.data.contacts || [];
+		const merged = [...ownContacts];
+		const ownIds = new Set(ownContacts.map((c) => c.id));
+		for (const c of sharedContacts) {
+			if (!ownIds.has(c.id)) merged.push(c);
+		}
+		contacts.value = merged;
+	} catch {
+		contacts.value = ownContacts;
+	}
 });
 
 const findPerson = async (id) => {
@@ -322,6 +340,137 @@ const addActivity = async () => {
 };
 */
 
+// const addActivity = async () => {
+// 	event.preventDefault();
+
+// 	if (onlineMeeting.value) {
+// 		const hasEmail =
+// 			emailBool.value || (email.value && email.value.trim() !== "");
+// 		if (!hasEmail) {
+// 			toast.error("Pre online stretnutie je potrebné zadať email");
+// 			return;
+// 		}
+// 	}
+
+// 	if (aktivita.value === "ine") {
+// 		aktivita.value = ina_aktivita.value;
+// 	}
+
+// 	if (onlineMeeting.value) {
+// 		miesto_stretnutia.value =
+// 			"Online Meeting " + (email.value || contact.value[0].email);
+// 	}
+
+// 	if (
+// 		aktivita.value === "Telefonát klient" ||
+// 		aktivita.value === "Telefonát nábor"
+// 	) {
+// 		volane.value = true;
+// 	}
+
+// 	// Set miesto_stretnutia BEFORE the POST so the main activity
+// 	// and the office activity end up with the same value
+// 	if (selectedOffice.value.name !== "Kancelárie") {
+// 		miesto_stretnutia.value = selectedOffice.value.name;
+// 	}
+
+// 	try {
+// 		const response = await axios.post(
+// 			`${config.public.apiUrl}add-activity`,
+// 			{
+// 				contact_id: props.contact_id,
+// 				aktivita: aktivita.value,
+// 				datumCas: datum_cas.value,
+// 				koniec: koniec.value,
+// 				poznamka: poznamka.value,
+// 				volane: volane.value,
+// 				dovolane: dovolane.value,
+// 				dohodnute: dohodnute.value,
+// 				online_meeting: onlineMeeting.value,
+// 				miesto_stretnutia: miesto_stretnutia.value,
+// 				send_notification_15: active.value?.includes(15) || false,
+// 				send_notification_30: active.value?.includes(30) || false,
+// 				send_notification_60: active.value?.includes(60) || false,
+// 			},
+// 			{ headers: { Authorization: `Bearer ${authStore.token}` } },
+// 		);
+
+// 		if (!emailBool.value && onlineMeeting.value && email.value) {
+// 			await axios.patch(
+// 				`${config.public.apiUrl}contact/${props.contact_id}/email`,
+// 				{ email: email.value },
+// 				{ headers: { Authorization: `Bearer ${authStore.token}` } },
+// 			);
+// 		}
+
+// 		if (onlineMeeting.value) {
+// 			try {
+// 				const teamsResponse = await axios.post(
+// 					`${config.public.apiUrl}create-teams-meeting`,
+// 					{
+// 						activityId: response.data.activity.id,
+// 						user_id: userStore.user.id,
+// 						importance: importance.value,
+// 					},
+// 					{ headers: { Authorization: `Bearer ${authStore.token}` } },
+// 				);
+
+// 				if (teamsResponse.data.joinUrl) {
+// 					const officePart =
+// 						selectedOffice.value.name !== "Kancelárie"
+// 							? `${selectedOffice.value.name} - `
+// 							: "";
+// 					response.data.activity.miesto_stretnutia = `${officePart}${teamsResponse.data.joinUrl}`;
+// 					miesto_stretnutia.value = response.data.activity.miesto_stretnutia;
+// 				}
+// 			} catch (error) {
+// 				console.error("Error creating Teams meeting:", error);
+// 				toast.error("Chyba pri vytváraní online stretnutia");
+// 			}
+// 		}
+
+// 		if (selectedOffice.value.name !== "Kancelárie") {
+// 			const toLocalString = (localStr) => localStr.replace("T", " ") + ":00";
+
+// 			const newActivity = {
+// 				aktivita: aktivita.value,
+// 				importance: importance.value,
+// 				datum_cas: toLocalString(datum_cas.value),
+// 				koniec: toLocalString(koniec.value),
+// 				poznamka: poznamka.value,
+// 				office_id: officeStore.setOfficeID,
+// 				owner_number: userStore.user.vizitka_phone_num,
+// 			};
+
+// 			await officeStore.storeActivity(newActivity);
+// 		}
+
+// 		calendarStore.activities.push(response.data.activity);
+
+// 		const successMsg = onlineMeeting.value
+// 			? "Online stretnutie bolo úspešne pridané"
+// 			: "Aktivita bola úspešne pridaná";
+
+// 		toast.success(successMsg);
+
+// 		emit("activityAdded", response.data.activity);
+
+// 		setTimeout(() => {
+// 			emit("cancelAddActivity");
+// 		}, 400);
+
+// 		// Reload last, only after everything else has completed —
+// 		// this used to fire right after the POST and killed the
+// 		// office-activity creation, Teams meeting, and email patch below it.
+// 		if (response.data.activity.aktivita === "Pohovor") {
+// 			location.reload();
+// 		}
+// 	} catch (error) {
+// 		console.error("Error adding activity:", error);
+// 		toast.error("Chyba pri pridávaní aktivity");
+// 	}
+// };
+
 const addActivity = async () => {
 	event.preventDefault();
 
@@ -338,11 +487,6 @@ const addActivity = async () => {
 		aktivita.value = ina_aktivita.value;
 	}
 
-	if (onlineMeeting.value) {
-		miesto_stretnutia.value =
-			"Online Meeting " + (email.value || contact.value[0].email);
-	}
-
 	if (
 		aktivita.value === "Telefonát klient" ||
 		aktivita.value === "Telefonát nábor"
@@ -350,10 +494,14 @@ const addActivity = async () => {
 		volane.value = true;
 	}
 
-	// Set miesto_stretnutia BEFORE the POST so the main activity
-	// and the office activity end up with the same value
+	// Don't guess "Online Meeting <email>" here — we don't have a join
+	// URL yet, and if the Teams call fails below, that guess would've
+	// already been saved to the DB from the initial POST. Only send a
+	// real office name (or nothing) at creation time.
 	if (selectedOffice.value.name !== "Kancelárie") {
 		miesto_stretnutia.value = selectedOffice.value.name;
+	} else if (onlineMeeting.value) {
+		miesto_stretnutia.value = "";
 	}
 
 	try {
@@ -402,12 +550,62 @@ const addActivity = async () => {
 						selectedOffice.value.name !== "Kancelárie"
 							? `${selectedOffice.value.name} - `
 							: "";
-					response.data.activity.miesto_stretnutia = `${officePart}${teamsResponse.data.joinUrl}`;
-					miesto_stretnutia.value = response.data.activity.miesto_stretnutia;
+					const finalMiesto = `${officePart}${teamsResponse.data.joinUrl}`;
+
+					response.data.activity.miesto_stretnutia = finalMiesto;
+					miesto_stretnutia.value = finalMiesto;
+
+					// Persist the real join link now that we actually have it.
+					// NOTE: assumes PATCH /activities/{id} exists — if it
+					// doesn't, this call will fail silently (logged below)
+					// and the DB will keep whatever add-activity saved
+					// (office name or empty, never a fake placeholder).
+					try {
+						await axios.patch(
+							`${config.public.apiUrl}activities/${response.data.activity.id}`,
+							{ miesto_stretnutia: finalMiesto },
+							{ headers: { Authorization: `Bearer ${authStore.token}` } },
+						);
+					} catch (patchError) {
+						console.error(
+							"Failed to save Teams join link on activity:",
+							patchError,
+						);
+					}
+				} else {
+					// No joinUrl came back — treat it like a failure, don't
+					// leave online_meeting true with no actual meeting.
+					throw new Error("Teams meeting response had no joinUrl");
 				}
 			} catch (error) {
 				console.error("Error creating Teams meeting:", error);
 				toast.error("Chyba pri vytváraní online stretnutia");
+
+				onlineMeeting.value = false;
+				const fallbackMiesto =
+					selectedOffice.value.name !== "Kancelárie"
+						? selectedOffice.value.name
+						: null;
+
+				miesto_stretnutia.value = fallbackMiesto || "";
+				response.data.activity.miesto_stretnutia = fallbackMiesto;
+				response.data.activity.online_meeting = false;
+
+				try {
+					await axios.patch(
+						`${config.public.apiUrl}activities/${response.data.activity.id}`,
+						{
+							online_meeting: false,
+							miesto_stretnutia: fallbackMiesto,
+						},
+						{ headers: { Authorization: `Bearer ${authStore.token}` } },
+					);
+				} catch (patchError) {
+					console.error(
+						"Failed to revert activity after Teams meeting error:",
+						patchError,
+					);
+				}
 			}
 		}
 
@@ -441,9 +639,6 @@ const addActivity = async () => {
 			emit("cancelAddActivity");
 		}, 400);
 
-		// Reload last, only after everything else has completed —
-		// this used to fire right after the POST and killed the
-		// office-activity creation, Teams meeting, and email patch below it.
 		if (response.data.activity.aktivita === "Pohovor") {
 			location.reload();
 		}

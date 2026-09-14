@@ -215,13 +215,8 @@ const savePlayerIdToBackend = async (playerId) => {
 </template>
 
 <style>
-/* :root {
-	--background-color: #ffffff;
-	--text-color: #000000;
+body, html {
+	background-color: white;
+	color: black;
 }
-
-body {
-	background-color: var(--background-color);
-	color: var(--text-color);
-} */
 </style>

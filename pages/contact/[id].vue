@@ -35,6 +35,13 @@ const showWrongNumberButton = ref(true);
 
 const callActivities = ["Telefonát", "Telefonát nábor", "Telefonát klient"];
 
+const bjActivities = [
+	"poradenstvo nové",
+	"servisné poradenstvo",
+	"realizácia nová",
+	"realizácia servisná",
+];
+
 const changeAddActivityBool = () => {
 	AddActivityBool.value = !AddActivityBool.value;
 };
@@ -51,10 +58,19 @@ const closeShareContactsForm = () => {
 
 const showBjModal = ref(false);
 const bjModalActivityId = ref(null);
+const bjModalTodoId = ref(null);
 const bjModalActivityName = ref("");
 
 const openBjModal = (activityId, activityName) => {
 	bjModalActivityId.value = activityId;
+	bjModalTodoId.value = null;
+	bjModalActivityName.value = activityName;
+	showBjModal.value = true;
+};
+
+const openBjModalForTodo = (todoId, activityName) => {
+	bjModalActivityId.value = null;
+	bjModalTodoId.value = todoId;
 	bjModalActivityName.value = activityName;
 	showBjModal.value = true;
 };
@@ -62,6 +78,7 @@ const openBjModal = (activityId, activityName) => {
 const closeBjModal = () => {
 	showBjModal.value = false;
 	bjModalActivityId.value = null;
+	bjModalTodoId.value = null;
 	bjModalActivityName.value = "";
 };
 
@@ -498,12 +515,16 @@ const changeActivityStatus = async (row, status) => {
 		}
 
 		// ── BJ modal for poradenstvo + realizacia ──
-		const bjActivities = [
-			"poradenstvo nové",
-			"servisné poradenstvo",
-			"realizácia nová",
-			"realizácia servisná",
-		];
+		// const bjActivities = [
+		// 	"poradenstvo nové",
+		// 	"servisné poradenstvo",
+		// 	"realizácia nová",
+		// 	"realizácia servisná",
+		// ];
+		// if (bjActivities.includes(row.aktivita) && status === "check") {
+		// 	openBjModal(row.id, row.aktivita);
+		// }
+
 		if (bjActivities.includes(row.aktivita) && status === "check") {
 			openBjModal(row.id, row.aktivita);
 		}
@@ -877,6 +898,10 @@ const setTodoStatus = async (row, completed) => {
 	const rawTodo = todoStore.todosHistory.find((t) => t.id === row.id);
 	if (!rawTodo) return;
 
+	if (completed && bjActivities.includes(row.activity)) {
+		openBjModalForTodo(row.id, row.activity);
+	}
+
 	try {
 		await todoStore.updateTodo(row.id, {
 			activity_name: rawTodo.activity_name,
@@ -934,6 +959,7 @@ const contactTypeBadgeClass = computed(() => {
 	<BJCountModal
 		v-if="showBjModal"
 		:activityId="bjModalActivityId"
+		:todoId="bjModalTodoId"
 		:activityName="bjModalActivityName"
 		@close="closeBjModal"
 		@submitted="onBjSubmitted"
@@ -2381,8 +2407,8 @@ const contactTypeBadgeClass = computed(() => {
 	}
 
 	/* Hide less important columns on mobile */
-	.data-table th:nth-child(n+5),
-	.data-table td:nth-child(n+5) {
+	.data-table th:nth-child(n + 5),
+	.data-table td:nth-child(n + 5) {
 		display: none;
 	}
 
@@ -2398,20 +2424,24 @@ const contactTypeBadgeClass = computed(() => {
 	}
 
 	.table-wrapper::after {
-		content: '';
+		content: "";
 		position: absolute;
 		top: 0;
 		right: 0;
 		bottom: 0;
 		width: 30px;
-		background: linear-gradient(to right, transparent, rgba(255,255,255,0.8));
+		background: linear-gradient(
+			to right,
+			transparent,
+			rgba(255, 255, 255, 0.8)
+		);
 		pointer-events: none;
 		z-index: 2;
 	}
 
 	/* Activities table: hide more columns */
-	.section:last-child .data-table th:nth-child(n+4),
-	.section:last-child .data-table td:nth-child(n+4) {
+	.section:last-child .data-table th:nth-child(n + 4),
+	.section:last-child .data-table td:nth-child(n + 4) {
 		display: none;
 	}
 

@@ -3,6 +3,7 @@ import { Icon } from "@iconify/vue";
 import { ref, onMounted, computed, watch } from "vue";
 import { useCalendarstore } from "#imports";
 import { useUserStore } from "#imports";
+import { useContactsStore } from "#imports";
 import { useAuthStore } from "@/stores/authStore";
 import { format } from "date-fns";
 import axios from "axios";
@@ -14,6 +15,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 
 const calendarStore = useCalendarstore();
 const userStore = useUserStore();
+const contactsStore = useContactsStore();
 const authStore = useAuthStore();
 authStore.loadToken();
 const config = useRuntimeConfig();
@@ -22,6 +24,7 @@ const rawData = ref([]);
 const events = ref([]);
 const microsoftEvents = ref([]);
 const icsEvents = ref([]); // ← nové
+const contactMap = ref(new Map()); // contact_id -> contact
 const addActivity = ref(false);
 const updateActivity = ref(false);
 const activityID = ref("");
@@ -70,10 +73,47 @@ const emit = defineEmits([
 	"timeClicked",
 	"activityAdded",
 	"slotClicked",
+	"eventClicked",
 ]);
 
 const calendarRef = ref(null);
 const calendarApi = computed(() => calendarRef.value?.getApi?.() ?? null);
+
+// ── Tooltip state ─────────────────────────────────────────────────────────
+const tooltipVisible = ref(false);
+const tooltipX = ref(0);
+const tooltipY = ref(0);
+const tooltipData = ref({});
+
+const showEventTooltip = (info) => {
+	const ep = info.event.extendedProps;
+	if (ep.source === "microsoft" || ep.source === "ics") {
+		tooltipData.value = { title: info.event.title, miesto: ep.miesto || "", location: ep.location || "" };
+	} else {
+		let { meno, priezvisko, cislo } = ep;
+		// Fallback: look up contact from map if missing
+		if ((!meno || meno === "") && ep.contact_id && contactMap.value.has(ep.contact_id)) {
+			const c = contactMap.value.get(ep.contact_id);
+			meno = c.meno || "";
+			priezvisko = c.priezvisko || "";
+			cislo = cislo || c.cislo || "";
+		}
+		tooltipData.value = {
+			title: info.event.title,
+			meno: meno || "",
+			priezvisko: priezvisko || "",
+			miesto: ep.miesto || "",
+			cislo: cislo || "",
+		};
+	}
+	tooltipX.value = info.jsEvent.clientX;
+	tooltipY.value = info.jsEvent.clientY - 10;
+	tooltipVisible.value = true;
+};
+
+const hideEventTooltip = () => {
+	tooltipVisible.value = false;
+};
 
 const calendarOptions = ref({
 	plugins: [timeGridPlugin, dayGridPlugin, interactionPlugin],
@@ -96,6 +136,8 @@ const calendarOptions = ref({
 	select: handleDateSelect,
 	eventClick: handleEventClick,
 	dateClick: handleTimeClick,
+	eventMouseEnter: showEventTooltip,
+	eventMouseLeave: hideEventTooltip,
 	slotDuration: "00:30:00",
 	allDaySlot: true,
 	allDayText: "Celý deň",
@@ -170,10 +212,31 @@ const fetchMicrosoftEvents = async (month, year) => {
 	}
 };
 
+const enrichContact = (item) => {
+	// If activity already has contact info, use it; otherwise look up from contactMap
+	const cid = item.contact_id || item.id_contact;
+	if ((!item.meno || item.meno === "") && cid && contactMap.value.has(cid)) {
+		const c = contactMap.value.get(cid);
+		return {
+			meno: c.meno || "",
+			priezvisko: c.priezvisko || "",
+			cislo: c.cislo || "",
+			kontakt: `${c.meno || ""} ${c.priezvisko || ""}`.trim(),
+		};
+	}
+	return {
+		meno: item.meno || "",
+		priezvisko: item.priezvisko || "",
+		cislo: item.cislo || "",
+		kontakt: item.kontakt || "",
+	};
+};
+
 const transformData = (data) => {
 	return data.map((item) => {
 		const farba =
 			item.created_id == userStore.user?.id ? "rgb(37 99 235)" : "#e879f9";
+		const contact = enrichContact(item);
 		return {
 			id: item.id,
 			title: item.aktivita,
@@ -185,6 +248,12 @@ const transformData = (data) => {
 			extendedProps: {
 				isMicrosoftEvent: false,
 				source: "local",
+				miesto: item.miesto_stretnutia || "",
+				meno: contact.meno,
+				priezvisko: contact.priezvisko,
+				kontakt: contact.kontakt,
+				cislo: contact.cislo,
+				contact_id: item.contact_id || item.id_contact || null,
 			},
 		};
 	});
@@ -202,8 +271,22 @@ const updateCalendarEvents = () => {
 	};
 };
 
+const loadContactsMap = async () => {
+	try {
+		await contactsStore.fetchAllContacts();
+		const list = contactsStore.allContacts || [];
+		const map = new Map();
+		list.forEach((c) => {
+			map.set(c.id, c);
+		});
+		contactMap.value = map;
+	} catch (e) {
+		console.error("Error loading contacts map:", e);
+	}
+};
+
 onMounted(async () => {
-	await userStore.fetchUser();
+	await Promise.all([userStore.fetchUser(), loadContactsMap()]);
 
 	if (calendarStore.activities.length === 0) {
 		await calendarStore.fetchActivities();
@@ -238,7 +321,11 @@ function handleDateSelect(selectInfo) {
 }
 
 function handleEventClick(clickInfo) {
-	// Just emit for parent to handle if needed
+	const ep = clickInfo.event.extendedProps;
+	emit('eventClicked', {
+		id: clickInfo.event.id,
+		source: ep.source || 'local',
+	});
 }
 
 const addNewEvent = (newEvent) => {
@@ -248,6 +335,7 @@ const addNewEvent = (newEvent) => {
 		calendarStore.activities.push(newEvent);
 	}
 
+	const contact = enrichContact(newEvent);
 	const transformed = {
 		id: newEvent.id,
 		title: newEvent.aktivita,
@@ -258,7 +346,14 @@ const addNewEvent = (newEvent) => {
 		borderColor:
 			newEvent.created_id === userStore.user?.id ? "rgb(37 99 235)" : "#e879f9",
 		user_id: newEvent.created_id,
-		extendedProps: { source: "local" },
+		extendedProps: {
+			source: "local",
+			meno: contact.meno,
+			priezvisko: contact.priezvisko,
+			cislo: contact.cislo,
+			kontakt: contact.kontakt,
+			contact_id: newEvent.contact_id || null,
+		},
 	};
 	events.value = [...events.value, transformed];
 	updateCalendarEvents();
@@ -294,6 +389,20 @@ defineExpose({ addNewEvent });
 			class="calls-fc"
 			:options="calendarOptions"
 		/>
+		<!-- Hover tooltip -->
+		<div
+			v-if="tooltipVisible"
+			class="cal-tooltip"
+			:style="{ left: tooltipX + 'px', top: tooltipY + 'px' }"
+			>
+			<div v-if="tooltipData.meno" class="cal-tooltip-contact">
+				<strong>{{ tooltipData.meno }} {{ tooltipData.priezvisko }}</strong>
+			</div>
+			<div v-if="tooltipData.title" class="cal-tooltip-title">{{ tooltipData.title }}</div>
+			<div v-if="tooltipData.miesto" class="cal-tooltip-miesto">📍 {{ tooltipData.miesto }}</div>
+			<div v-if="tooltipData.cislo" class="cal-tooltip-cislo">📞 {{ tooltipData.cislo }}</div>
+			<div v-if="tooltipData.location && !tooltipData.miesto" class="cal-tooltip-miesto">📍 {{ tooltipData.location }}</div>
+		</div>
 	</div>
 </template>
 
@@ -418,5 +527,38 @@ defineExpose({ addNewEvent });
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+}
+
+/* ── Hover tooltip ── */
+.cal-tooltip {
+	position: fixed;
+	z-index: 9999;
+	background: white;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+	padding: 10px 14px;
+	box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+	pointer-events: none;
+	max-width: 260px;
+	font-size: 0.8rem;
+	line-height: 1.4;
+	transform: translate(-50%, -100%);
+}
+.cal-tooltip-contact {
+	font-size: 0.85rem;
+	margin-bottom: 4px;
+}
+.cal-tooltip-title {
+	color: #6366f1;
+	font-weight: 600;
+	margin-bottom: 2px;
+}
+.cal-tooltip-miesto {
+	color: #059669;
+	font-size: 0.78rem;
+}
+.cal-tooltip-cislo {
+	color: #64748b;
+	font-size: 0.78rem;
 }
 </style>

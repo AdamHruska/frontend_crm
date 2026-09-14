@@ -163,7 +163,27 @@ onMounted(async () => {
 	const response2 = await axios.get(`${config.public.apiUrl}all-contacts`, {
 		headers: { Authorization: `Bearer ${authStore.token}` },
 	});
-	contacts.value = response2.data.contacts;
+	const ownContacts = response2.data.contacts || [];
+
+	// Also fetch shared contacts
+	try {
+		const sharedRes = await axios.get(
+			`${config.public.apiUrl}contacts-without-pagination`,
+			{
+				headers: { Authorization: `Bearer ${authStore.token}` },
+			},
+		);
+		const sharedContacts = sharedRes.data.contacts || [];
+		// Merge, dedup by id
+		const merged = [...ownContacts];
+		const ownIds = new Set(ownContacts.map((c) => c.id));
+		for (const c of sharedContacts) {
+			if (!ownIds.has(c.id)) merged.push(c);
+		}
+		contacts.value = merged;
+	} catch {
+		contacts.value = ownContacts;
+	}
 
 	// Pre-fill activity type
 	if (props.presetAktivita) {
@@ -214,120 +234,6 @@ function getIdFromString(str) {
 	const words = str.split(" ");
 	return words[words.length - 1];
 }
-
-const addActivity = async () => {
-	loadingState.value = true;
-	event.preventDefault();
-
-	const validEmails = emails.value.filter(
-		(email) => email && email.trim() !== "",
-	);
-
-	if (onlineMeeting.value && validEmails.length === 0) {
-		toast.error("Pre online stretnutie je potrebné zadať aspoň jeden email", {
-			position: "top-right",
-			timeout: 5000,
-		});
-		loadingState.value = false;
-		return;
-	}
-
-	try {
-		const activityResponse = await axios.post(
-			`${config.public.apiUrl}add-activity`,
-			{
-				contact_id: getIdFromString(kontakt.value),
-				aktivita:
-					aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
-				datumCas: datum_cas.value,
-				koniec: koniec.value,
-				poznamka: poznamka.value,
-				volane: volane.value,
-				dovolane: dovolane.value,
-				dohodnute: dohodnute.value,
-				miesto_stretnutia: miesto_stretnutia.value,
-				online_meeting: onlineMeeting.value,
-				send_notification_15: active.value?.includes(15) || false,
-				send_notification_30: active.value?.includes(30) || false,
-				send_notification_60: active.value?.includes(60) || false,
-			},
-			{ headers: { Authorization: `Bearer ${authStore.token}` } },
-		);
-
-		if (onlineMeeting.value && !emailBool.value && emails.value[0]) {
-			await axios.patch(
-				`${config.public.apiUrl}contact/${id.value}/email`,
-				{ email: emails.value[0] },
-				{ headers: { Authorization: `Bearer ${authStore.token}` } },
-			);
-		}
-
-		if (onlineMeeting.value) {
-			try {
-				const teamsResponse = await axios.post(
-					`${config.public.apiUrl}create-teams-meeting`,
-					{
-						activityId: activityResponse.data.activity.id,
-						user_id: userStore.user.id,
-						additionalEmails: validEmails.slice(1),
-						importance: importance.value,
-					},
-					{ headers: { Authorization: `Bearer ${authStore.token}` } },
-				);
-				if (teamsResponse.data.joinUrl) {
-					const officePart =
-						selectedOffice.value.name !== "Kancelárie"
-							? `${selectedOffice.value.name} - `
-							: "";
-					activityResponse.data.activity.miesto_stretnutia = `${officePart}${teamsResponse.data.joinUrl}`;
-					miesto_stretnutia.value =
-						activityResponse.data.activity.miesto_stretnutia;
-				}
-			} catch (error) {
-				console.error(
-					"Error creating Teams meeting:",
-					error.response?.data || error.message,
-				);
-				toast.error("Je potrebné prihlásiť sa do Microsoft účtu");
-			}
-		}
-
-		if (selectedOffice.value.name !== "Kancelárie") {
-			const toLocalString = (localStr) => localStr.replace("T", " ") + ":00";
-			await officeStore.storeActivity({
-				aktivita:
-					aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
-				importance: importance.value,
-				datum_cas: toLocalString(datum_cas.value),
-				koniec: toLocalString(koniec.value),
-				poznamka: poznamka.value,
-				office_id: officeStore.setOfficeID,
-				owner_number: userStore.user.vizitka_phone_num,
-			});
-		}
-
-		calendarStore.activities.push(activityResponse.data.activity);
-
-		toast.success(
-			onlineMeeting.value
-				? "Online stretnutie bolo úspešne pridané"
-				: "Aktivita bola úspešne pridaná",
-			{ position: "top-right", timeout: 5000 },
-		);
-
-		loadingState.value = false;
-		emit("activityAdded", activityResponse.data.activity);
-		emit("addNewEvent", activityResponse.data.activity);
-		emit("cancelAddActivity");
-	} catch (error) {
-		console.error("Error adding activity:", error);
-		loadingState.value = false;
-		alert(
-			"Nastala chyba pri pridaní aktivity: " +
-				(error.response?.data?.error || error.message),
-		);
-	}
-};
 
 // const addActivity = async () => {
 // 	loadingState.value = true;
@@ -408,7 +314,7 @@ const addActivity = async () => {
 
 // 		if (selectedOffice.value.name !== "Kancelárie") {
 // 			const toLocalString = (localStr) => localStr.replace("T", " ") + ":00";
-// 			const newActivity = {
+// 			await officeStore.storeActivity({
 // 				aktivita:
 // 					aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
 // 				importance: importance.value,
@@ -417,8 +323,7 @@ const addActivity = async () => {
 // 				poznamka: poznamka.value,
 // 				office_id: officeStore.setOfficeID,
 // 				owner_number: userStore.user.vizitka_phone_num,
-// 			};
-// 			await officeStore.storeActivity(newActivity);
+// 			});
 // 		}
 
 // 		calendarStore.activities.push(activityResponse.data.activity);
@@ -430,19 +335,179 @@ const addActivity = async () => {
 // 			{ position: "top-right", timeout: 5000 },
 // 		);
 
+// 		loadingState.value = false;
 // 		emit("activityAdded", activityResponse.data.activity);
 // 		emit("addNewEvent", activityResponse.data.activity);
 // 		emit("cancelAddActivity");
 // 	} catch (error) {
 // 		console.error("Error adding activity:", error);
+// 		loadingState.value = false;
 // 		alert(
 // 			"Nastala chyba pri pridaní aktivity: " +
 // 				(error.response?.data?.error || error.message),
 // 		);
 // 	}
-
-// 	changeLoadingState();
 // };
+
+const addActivity = async () => {
+	loadingState.value = true;
+	event.preventDefault();
+
+	const validEmails = emails.value.filter(
+		(email) => email && email.trim() !== "",
+	);
+
+	if (onlineMeeting.value && validEmails.length === 0) {
+		toast.error("Pre online stretnutie je potrebné zadať aspoň jeden email", {
+			position: "top-right",
+			timeout: 5000,
+		});
+		loadingState.value = false;
+		return;
+	}
+
+	try {
+		const activityResponse = await axios.post(
+			`${config.public.apiUrl}add-activity`,
+			{
+				contact_id: getIdFromString(kontakt.value),
+				aktivita:
+					aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
+				datumCas: datum_cas.value,
+				koniec: koniec.value,
+				poznamka: poznamka.value,
+				volane: volane.value,
+				dovolane: dovolane.value,
+				dohodnute: dohodnute.value,
+				miesto_stretnutia: miesto_stretnutia.value,
+				online_meeting: onlineMeeting.value,
+				send_notification_15: active.value?.includes(15) || false,
+				send_notification_30: active.value?.includes(30) || false,
+				send_notification_60: active.value?.includes(60) || false,
+			},
+			{ headers: { Authorization: `Bearer ${authStore.token}` } },
+		);
+
+		if (onlineMeeting.value && !emailBool.value && emails.value[0]) {
+			await axios.patch(
+				`${config.public.apiUrl}contact/${id.value}/email`,
+				{ email: emails.value[0] },
+				{ headers: { Authorization: `Bearer ${authStore.token}` } },
+			);
+		}
+
+		if (onlineMeeting.value) {
+			try {
+				const teamsResponse = await axios.post(
+					`${config.public.apiUrl}create-teams-meeting`,
+					{
+						activityId: activityResponse.data.activity.id,
+						user_id: userStore.user.id,
+						additionalEmails: validEmails.slice(1),
+						importance: importance.value,
+					},
+					{ headers: { Authorization: `Bearer ${authStore.token}` } },
+				);
+				if (teamsResponse.data.joinUrl) {
+					const officePart =
+						selectedOffice.value.name !== "Kancelárie"
+							? `${selectedOffice.value.name} - `
+							: "";
+					const finalMiesto = `${officePart}${teamsResponse.data.joinUrl}`;
+
+					activityResponse.data.activity.miesto_stretnutia = finalMiesto;
+					miesto_stretnutia.value = finalMiesto;
+
+					// Persist the real join link now that we actually have it.
+					try {
+						await axios.patch(
+							`${config.public.apiUrl}activities/${activityResponse.data.activity.id}`,
+							{ miesto_stretnutia: finalMiesto },
+							{ headers: { Authorization: `Bearer ${authStore.token}` } },
+						);
+					} catch (patchError) {
+						console.error(
+							"Failed to save Teams join link on activity:",
+							patchError,
+						);
+					}
+				} else {
+					// No joinUrl came back — treat it like a failure.
+					throw new Error("Teams meeting response had no joinUrl");
+				}
+			} catch (error) {
+				console.error(
+					"Error creating Teams meeting:",
+					error.response?.data || error.message,
+				);
+				toast.error("Je potrebné prihlásiť sa do Microsoft účtu");
+
+				// Teams meeting creation failed → don't leave online_meeting
+				// true with no actual meeting behind it.
+				onlineMeeting.value = false;
+				const fallbackMiesto =
+					selectedOffice.value.name !== "Kancelárie"
+						? selectedOffice.value.name
+						: null;
+
+				miesto_stretnutia.value = fallbackMiesto || "";
+				activityResponse.data.activity.miesto_stretnutia = fallbackMiesto;
+				activityResponse.data.activity.online_meeting = false;
+
+				try {
+					await axios.patch(
+						`${config.public.apiUrl}activities/${activityResponse.data.activity.id}`,
+						{
+							online_meeting: false,
+							miesto_stretnutia: fallbackMiesto,
+						},
+						{ headers: { Authorization: `Bearer ${authStore.token}` } },
+					);
+				} catch (patchError) {
+					console.error(
+						"Failed to revert activity after Teams meeting error:",
+						patchError,
+					);
+				}
+			}
+		}
+
+		if (selectedOffice.value.name !== "Kancelárie") {
+			const toLocalString = (localStr) => localStr.replace("T", " ") + ":00";
+			await officeStore.storeActivity({
+				aktivita:
+					aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
+				importance: importance.value,
+				datum_cas: toLocalString(datum_cas.value),
+				koniec: toLocalString(koniec.value),
+				poznamka: poznamka.value,
+				office_id: officeStore.setOfficeID,
+				owner_number: userStore.user.vizitka_phone_num,
+			});
+		}
+
+		calendarStore.activities.push(activityResponse.data.activity);
+
+		toast.success(
+			onlineMeeting.value
+				? "Online stretnutie bolo úspešne pridané"
+				: "Aktivita bola úspešne pridaná",
+			{ position: "top-right", timeout: 5000 },
+		);
+
+		loadingState.value = false;
+		emit("activityAdded", activityResponse.data.activity);
+		emit("addNewEvent", activityResponse.data.activity);
+		emit("cancelAddActivity");
+	} catch (error) {
+		console.error("Error adding activity:", error);
+		loadingState.value = false;
+		alert(
+			"Nastala chyba pri pridaní aktivity: " +
+				(error.response?.data?.error || error.message),
+		);
+	}
+};
 
 const handleSelectedContact = (contact) => {
 	kontakt.value = `${contact.meno} ${contact.priezvisko} ${contact.id}`;
@@ -567,9 +632,9 @@ const findAndDeleteOfficeActivity = async () => {
 
 <template>
 	<div
-		class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
+		class="fixed inset-0 bg-black bg-opacity-25 flex justify-center items-center z-50"
 	>
-		<div class="absolute inset-0 bg-gray bg-opacity-50 backdrop-blur-sm"></div>
+		<div class="absolute inset-0 bg-gray"></div>
 		<loadigcomponent v-if="loadingState" />
 		<form
 			class="relative bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full z-10 max-h-[100vh] overflow-y-auto"

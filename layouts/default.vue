@@ -1,5 +1,5 @@
 <template>
-	<div :class="['flex', !isAuthenticated ? 'bg-slate-900' : '']">
+	<div :class="['flex', !isAuthenticated ? 'bg-slate-900' : 'bg-white']">
 		<!-- Sidebar -->
 		<div
 			class="flex flex-col h-screen w-16 overflow-hidden text-gray-400 bg-[#921337] fixed top-0 left-0 nav-shadow"
@@ -135,6 +135,46 @@
 				</UTooltip>
 
 				<UTooltip
+					text="Zrušené udalosti"
+					:ui="{ background: '!bg-white', color: '' }"
+					class=""
+				>
+					<NuxtLink
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-[#cc1d4d] hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
+						:class="{
+							'bg-[#cc1d4d] text-gray-200': activeTab === 'declined-events',
+						}"
+						to="/declined-events"
+						@click="setActiveTab('declined-events')"
+					>
+						<Icon
+							icon="material-symbols:filter-alt"
+							style="font-size: 36px"
+							class="text-white"
+						/>
+					</NuxtLink>
+				</UTooltip>
+
+				<UTooltip
+					text="Štatistika"
+					:ui="{ background: '!bg-white', color: '' }"
+					class=""
+				>
+					<NuxtLink
+						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-[#cc1d4d] hover:text-gray-300 hover:rounded border-t border-black hover:scale-[105%] transition-transform"
+						:class="{ 'bg-[#cc1d4d] text-gray-200': activeTab === 'stats' }"
+						to="/statistics"
+						@click="setActiveTab('stats')"
+					>
+						<Icon
+							icon="simple-icons:soundcharts"
+							style="font-size: 22px"
+							class="text-white"
+						/>
+					</NuxtLink>
+				</UTooltip>
+
+				<UTooltip
 					text="Odovzdané kontaky"
 					:ui="{ background: '!bg-white', color: '' }"
 					class=""
@@ -213,46 +253,6 @@
 						<Icon
 							icon="fluent:task-list-square-ltr-16-regular"
 							style="font-size: 36px"
-							class="text-white"
-						/>
-					</NuxtLink>
-				</UTooltip>
-
-				<UTooltip
-					text="Zrušené udalosti"
-					:ui="{ background: '!bg-white', color: '' }"
-					class=""
-				>
-					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-[#cc1d4d] hover:text-gray-300 border-t border-black hover:rounded hover:scale-[105%] transition-transform"
-						:class="{
-							'bg-[#cc1d4d] text-gray-200': activeTab === 'declined-events',
-						}"
-						to="/declined-events"
-						@click="setActiveTab('declined-events')"
-					>
-						<Icon
-							icon="material-symbols:filter-alt"
-							style="font-size: 36px"
-							class="text-white"
-						/>
-					</NuxtLink>
-				</UTooltip>
-
-				<UTooltip
-					text="Štatistika"
-					:ui="{ background: '!bg-white', color: '' }"
-					class=""
-				>
-					<NuxtLink
-						class="flex items-center justify-center w-12 h-12 mt-2 hover:bg-[#cc1d4d] hover:text-gray-300 hover:rounded border-t border-black hover:scale-[105%] transition-transform"
-						:class="{ 'bg-[#cc1d4d] text-gray-200': activeTab === 'stats' }"
-						to="/statistics"
-						@click="setActiveTab('stats')"
-					>
-						<Icon
-							icon="simple-icons:soundcharts"
-							style="font-size: 22px"
 							class="text-white"
 						/>
 					</NuxtLink>
@@ -387,7 +387,7 @@
 		</div>
 
 		<!-- Main Content -->
-		<div class="flex-1 ml-16">
+		<div class="flex-1 ml-16 bg-white min-h-screen">
 			<div class="relative z-0">
 				<slot />
 			</div>
@@ -463,6 +463,20 @@ const isAdmin = computed(() => {
 	color: white !important;
 }
 
+/* Force gray text to black — preserves explicitly colored text */
+.text-gray-50,
+.text-gray-100,
+.text-gray-200,
+.text-gray-300,
+.text-gray-400,
+.text-gray-500,
+.text-gray-600,
+.text-gray-700,
+.text-gray-800,
+.text-gray-900 {
+	color: black !important;
+}
+
 /* Add these new styles */
 :deep(.table-container) {
 	position: relative;
@@ -498,5 +512,164 @@ const isAdmin = computed(() => {
 
 .nav-scroll::-webkit-scrollbar-thumb:hover {
 	background: rgba(255, 255, 255, 0.6);
+}
+
+/* ══════════════════════════════════════════════════════════
+   FULLCALENDAR — mobile responsive (global unscoped)
+══════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+	/* Toolbar */
+	.fc-toolbar {
+		flex-wrap: wrap !important;
+		gap: 6px !important;
+		padding: 6px !important;
+	}
+
+	.fc-toolbar-title {
+		font-size: 14px !important;
+	}
+
+	.fc-button {
+		padding: 4px 8px !important;
+		font-size: 12px !important;
+	}
+
+	/* Time grid */
+	.fc-timegrid-axis {
+		width: 42px !important;
+	}
+
+	.fc-timegrid-slot-label-cushion {
+		font-size: 10px;
+	}
+
+	.fc-timegrid-slot {
+		height: 36px;
+	}
+
+	/* Events */
+	.fc-timegrid-event .fc-event-main {
+		padding: 1px 3px;
+		font-size: 11px;
+		line-height: 1.25;
+	}
+
+	.fc-timegrid-event {
+		border-radius: 3px;
+	}
+
+	/* Day grid */
+	.fc-daygrid-day {
+		padding: 2px;
+	}
+
+	.fc-daygrid-day-number {
+		font-size: 12px;
+		padding: 4px 6px;
+	}
+
+	.fc-daygrid-more-link {
+		font-size: 11px;
+		padding: 2px 6px;
+	}
+
+	.fc-event-title {
+		font-size: 11px;
+	}
+
+	.fc-event-time {
+		font-size: 10px;
+	}
+
+	/* Headers */
+	.fc-col-header-cell {
+		padding: 6px 0;
+	}
+
+	.fc-col-header-cell-cushion {
+		font-size: 11px;
+		padding: 2px 4px;
+	}
+
+	/* Scrollable time grid */
+	.fc-timegrid {
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	/* Touch targets */
+	.fc-event {
+		min-height: 22px;
+	}
+
+	.fc-view-harness {
+		min-height: 400px;
+	}
+}
+
+@media (max-width: 480px) {
+	.fc-toolbar {
+		flex-direction: column !important;
+		align-items: flex-start !important;
+		gap: 4px !important;
+	}
+
+	.fc-toolbar-chunk {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 3px;
+	}
+
+	.fc-toolbar-title {
+		font-size: 13px !important;
+	}
+
+	.fc-button {
+		padding: 3px 6px !important;
+		font-size: 11px !important;
+	}
+
+	.fc-timegrid-axis {
+		width: 34px !important;
+	}
+
+	.fc-timegrid-slot-label-cushion {
+		font-size: 9px;
+	}
+
+	.fc-timegrid-slot {
+		height: 30px;
+	}
+
+	.fc-timegrid-event .fc-event-main {
+		font-size: 10px;
+		padding: 0 2px;
+	}
+
+	.fc-daygrid-day-number {
+		font-size: 11px;
+		padding: 3px 4px;
+	}
+
+	.fc-col-header-cell-cushion {
+		font-size: 10px;
+	}
+
+	.fc-event-title {
+		font-size: 10px;
+	}
+
+	.fc-event-time {
+		font-size: 9px;
+	}
+
+	.fc-daygrid-day-frame {
+		min-height: 24px;
+	}
+
+	.fc-timegrid {
+		overflow-x: scroll;
+	}
 }
 </style>

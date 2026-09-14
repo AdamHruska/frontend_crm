@@ -78,6 +78,36 @@ export const useUserStore = defineStore("user", {
 			}
 		},
 
+		async delegateUserContactsAdmin(oldUserId, newUserId) {
+			this.loadingState = true;
+			const authStore = useAuthStore();
+			const toast = useToast();
+
+			try {
+				const response = await axios.post(
+					`${config.public.apiUrl}delegate-contacts/${oldUserId}/${newUserId}`,
+					{},
+					{ headers: { Authorization: `Bearer ${authStore.token}` } },
+				);
+
+				toast.success(
+					`Kontakty (${response.data.contacts_transferred}) a kancelárie (${response.data.offices_transferred}) boli úspešne presunuté`,
+				);
+
+				// Refresh the admin user list so the delegated (now hidden) user disappears
+				await this.fetchAllUsersAdmin();
+			} catch (error) {
+				console.error(
+					"Error delegating user contacts:",
+					error.response || error,
+				);
+				toast.error(
+					error.response?.data?.message ?? "Chyba pri presúvaní kontaktov",
+				);
+			}
+			this.loadingState = false;
+		},
+
 		addSharedUser(user) {
 			// Check if user already exists in sharedUsers
 			const exists = this.sharedUsers.some((u) => u.id === user.id);

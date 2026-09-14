@@ -25,32 +25,43 @@ const debounceSearch = (func, delay) => {
 };
 
 // Handle search function
-const handleSearch = async () => {
-	error.value = ""; // Reset error before making the request
-	try {
-		const response = await axios.get(`${config.public.apiUrl}search-contacts`, {
-			params: {
-				query: searchInput.value,
-			},
-			headers: {
-				Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-			},
-		});
+// const handleSearch = async () => {
+// 	error.value = ""; // Reset error before making the request
+// 	try {
+// 		const response = await axios.get(`${config.public.apiUrl}search-contacts`, {
+// 			params: {
+// 				query: searchInput.value,
+// 			},
+// 			headers: {
+// 				Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+// 			},
+// 		});
 
-		// Check if response.data contains contacts
-		if (response.data && response.data.contacts) {
-			searchResults.value = response.data.contacts;
-			contactsStore.searchQuery = searchInput.value;
-			emit("updateResults", searchResults.value);
-		} else {
-			console.error("Unexpected response structure:", response.data);
-			error.value = "Unexpected response structure";
-		}
+// 		// Check if response.data contains contacts
+// 		if (response.data && response.data.contacts) {
+// 			searchResults.value = response.data.contacts;
+// 			contactsStore.searchQuery = searchInput.value;
+// 			emit("updateResults", searchResults.value);
+// 		} else {
+// 			console.error("Unexpected response structure:", response.data);
+// 			error.value = "Unexpected response structure";
+// 		}
+// 	} catch (err) {
+// 		console.error("Error fetching search results:", err);
+// 		error.value = "Error fetching search results";
+// 	}
+// 	console.log(searchResults.value);
+// };
+
+const handleSearch = async () => {
+	error.value = "";
+	try {
+		await contactsStore.searchContacts(searchInput.value, 1);
+		emit("updateResults", contactsStore.contacts);
 	} catch (err) {
 		console.error("Error fetching search results:", err);
 		error.value = "Error fetching search results";
 	}
-	console.log(searchResults.value);
 };
 
 // Watch for changes in the searchInput and trigger a debounced search

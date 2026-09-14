@@ -1140,7 +1140,7 @@ const closeMenuOnOutsideClick = (e) => {
 		<!-- Normal pagination (only when no filter is active) -->
 		<div
 			class="flex justify-center items-center gap-2 mt-[30px] mb-[50px] bg-white"
-			v-if="!contactsStore.searchQuery && activeFilter === null"
+			v-if="activeFilter === null"
 		>
 			<div
 				class="cursor-pointer"

@@ -548,6 +548,73 @@ export const useContactsStore = defineStore("contacts", {
 			}
 		},
 
+		// New action — add alongside the others
+		async searchContacts(query, page = 1) {
+			this.loadingState = true;
+			const authStore = useAuthStore();
+			const token = authStore.token;
+
+			if (!token) {
+				console.error("Token not found. Please log in.");
+				this.loadingState = false;
+				return;
+			}
+
+			try {
+				const response = await axios.get(
+					`${config.public.apiUrl}search-contacts`,
+					{
+						params: { query, page },
+						headers: { Authorization: `Bearer ${authStore.token}` },
+					},
+				);
+				this.searchQuery = query;
+				this.prev_page_url = response.data.contacts.prev_page_url;
+				this.next_page_url = response.data.contacts.next_page_url;
+				this.page = response.data.contacts.current_page;
+				this.contacts = response.data.contacts;
+			} catch (error) {
+				console.error("Error searching contacts:", error.response || error);
+			}
+			this.loadingState = false;
+		},
+
+		async goToPage(pageNumber) {
+			if (this.searchQuery) {
+				await this.searchContacts(this.searchQuery, pageNumber);
+				return;
+			}
+
+			this.loadingState = true;
+			const authStore = useAuthStore();
+			const token = authStore.token;
+
+			if (!token) {
+				console.error("Token not found. Please log in.");
+				return;
+			}
+
+			try {
+				const response = await axios.get(
+					`${config.public.apiUrl}contacts?page=${pageNumber}`,
+					{
+						headers: {
+							Authorization: `Bearer ${authStore.token}`,
+						},
+					},
+				);
+				this.prev_page_url = response.data.contacts.prev_page_url;
+				this.next_page_url = response.data.contacts.next_page_url;
+				this.page = response.data.contacts.current_page;
+				this.contacts = response.data.contacts;
+			} catch (error) {
+				console.error("Error fetching contacts page:", error.response || error);
+				const toast = useToast();
+				toast.error("Nepodarilo sa načítať kontakty");
+			}
+			this.loadingState = false;
+		},
+
 		// Clear contacts from the store
 		clearContacts() {
 			this.contacts = [];

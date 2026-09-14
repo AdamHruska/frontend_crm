@@ -16,6 +16,10 @@ const props = defineProps({
 		type: Number,
 		default: null,
 	},
+	todoId: {
+		type: Number,
+		default: null,
+	},
 	activityName: {
 		type: String,
 		default: "",
@@ -24,18 +28,36 @@ const props = defineProps({
 
 const emit = defineEmits(["close", "submitted"]);
 
+// Rôzny text otázky podľa typu aktivity
+const question = computed(() => {
+	const name = (props.activityName || "").toLowerCase();
+
+	if (name.includes("poradenstvo")) {
+		return "Koľko BJ bolo v servisnom FP?";
+	}
+
+	if (name.includes("realizácia") || name.includes("realizacia")) {
+		return "Koľko BJ bolo podpísaných?";
+	}
+
+	return "Koľko BJ bolo podpísaných?";
+});
+
 const saveCount = async () => {
 	try {
-		await axios.post(
-			`${config.public.apiUrl}bj-count`,
-			{
-				bj_count: Number(bjCount.value),
-				activity_id: props.activityId,
-			},
-			{
-				headers: { Authorization: `Bearer ${authStore.token}` },
-			},
-		);
+		const payload = {
+			bj_count: Number(bjCount.value),
+		};
+
+		if (props.todoId) {
+			payload.todo_id = props.todoId;
+		} else {
+			payload.activity_id = props.activityId;
+		}
+
+		await axios.post(`${config.public.apiUrl}bj-count`, payload, {
+			headers: { Authorization: `Bearer ${authStore.token}` },
+		});
 
 		toast.success("Počet BJ bol uložený");
 		emit("submitted", Number(bjCount.value));
@@ -62,7 +84,7 @@ const saveCount = async () => {
 			/>
 		</div>
 		<h1 class="text-xl font-medium text-center mb-2 mt-5">
-			Koľko BJ bolo podpísaných?
+			{{ question }}
 		</h1>
 		<p class="text-sm text-gray-500 mb-5 text-center">
 			{{ activityName }}

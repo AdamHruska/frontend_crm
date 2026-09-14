@@ -1,6 +1,13 @@
 <script setup>
 const config = useRuntimeConfig();
-import { ref, computed, onMounted, watch, nextTick } from "vue";
+import {
+	ref,
+	computed,
+	onMounted,
+	onBeforeUnmount,
+	watch,
+	nextTick,
+} from "vue";
 import { Icon } from "@iconify/vue";
 import axios from "axios";
 import { useRouter } from "vue-router";
@@ -33,6 +40,43 @@ const contactDetail = ref(null);
 const contactActivities = ref([]);
 const loadingDetail = ref(false);
 
+// ── Resizable split panel ───────────────────────────────────────────────
+const calendarWidth = ref(700); // default, updated to 60% of screen on mount
+const isDragging = ref(false);
+const dragStartX = ref(0);
+const dragStartWidth = ref(0);
+
+const startDrag = (e) => {
+	isDragging.value = true;
+	dragStartX.value = e.clientX;
+	dragStartWidth.value = calendarWidth.value;
+	e.preventDefault();
+};
+
+const onDrag = (e) => {
+	if (!isDragging.value) return;
+	const delta = dragStartX.value - e.clientX;
+	calendarWidth.value = Math.max(
+		300,
+		Math.min(dragStartWidth.value + delta, window.innerWidth * 0.7),
+	);
+};
+
+const stopDrag = () => {
+	isDragging.value = false;
+};
+
+onMounted(() => {
+	calendarWidth.value = Math.round(window.innerWidth * 0.6);
+	window.addEventListener("mousemove", onDrag);
+	window.addEventListener("mouseup", stopDrag);
+});
+
+onBeforeUnmount(() => {
+	window.removeEventListener("mousemove", onDrag);
+	window.removeEventListener("mouseup", stopDrag);
+});
+
 // VDD note modal
 const showNoteModal = ref(false);
 const pendingNote = ref("");
@@ -44,6 +88,17 @@ const calendarTime = ref("");
 
 // Add activity form
 const showAddActivity = ref(false);
+
+// Event update form
+const showUpdateActivity = ref(false);
+const updateActivityId = ref(null);
+const updateActivityType = ref("local");
+
+const onCalendarEventClicked = (eventData) => {
+	updateActivityId.value = eventData.id;
+	updateActivityType.value = eventData.source || "local";
+	showUpdateActivity.value = true;
+};
 
 // Restore position from localStorage
 const STORAGE_KEY = "callListPosition";
@@ -255,7 +310,7 @@ const pendingActivityDateTime = ref(null);
 
 const openAddActivity = (type) => {
 	if (!currentContact.value) return;
-	pendingActivityType.value = type === "klient" ? "Prvé stretnutie" : "Pohovor";
+	pendingActivityType.value = "Prvé stretnutie";
 	pendingActivityDateTime.value = null;
 	showAddActivity.value = true;
 };
@@ -283,12 +338,14 @@ const handleDovolane = (type) => {
 	showNoteModal.value = true;
 };
 
+/*
 const handleDohodnuteStretnutie = (type) => {
 	if (!currentContact.value) return;
 	pendingActivityType.value = type === "klient" ? "Prvé stretnutie" : "Pohovor";
 	pendingActivityDateTime.value = null;
 	showAddActivity.value = true;
 };
+*/
 
 const confirmNoteAndAdvance = async () => {
 	const type = pendingVDD.value;
@@ -839,7 +896,10 @@ const contactInitials = computed(() => {
 				</div>
 
 				<!-- Split panels -->
-				<div class="split-panels">
+				<div
+					class="split-panels"
+					:style="{ '--calendar-width': calendarWidth + 'px' }"
+				>
 					<!-- LEFT: Contact detail -->
 					<div class="split-left">
 						<div v-if="loadingDetail" class="detail-loading">Načítavam...</div>
@@ -926,12 +986,12 @@ const contactInitials = computed(() => {
 										>
 											📞 Dovolané
 										</button>
-										<button
+										<!-- <button
 											class="vdd-btn vdd-btn--dohodnute"
 											@click="handleDohodnuteStretnutie('klient')"
 										>
 											✅ Dohodnuté stretnutie
-										</button>
+										</button> -->
 									</div>
 									<button
 										class="vdd-btn vdd-btn--activity mt-3"
@@ -962,12 +1022,12 @@ const contactInitials = computed(() => {
 										>
 											📞 Dovolané
 										</button>
-										<button
+										<!-- <button
 											class="vdd-btn vdd-btn--dohodnute"
 											@click="handleDohodnuteStretnutie('nabor')"
 										>
 											✅ Dohodnuté stretnutie
-										</button>
+										</button> -->
 									</div>
 									<button
 										class="vdd-btn vdd-btn--activity mt-3"
@@ -1064,6 +1124,9 @@ const contactInitials = computed(() => {
 						</template>
 					</div>
 
+					<!-- Drag handle -->
+					<div class="split-drag-handle" @mousedown="startDrag"></div>
+
 					<!-- RIGHT: Mini calendar -->
 					<div class="split-right">
 						<CallsCalendarComponent
@@ -1073,6 +1136,7 @@ const contactInitials = computed(() => {
 							@updateDate="onCalendarDateUpdate"
 							@timeClicked="onCalendarTimeClicked"
 							@slotClicked="onCalendarSlotClicked"
+							@eventClicked="onCalendarEventClicked"
 						/>
 					</div>
 				</div>
@@ -1093,6 +1157,16 @@ const contactInitials = computed(() => {
 				pendingActivityDateTime = null;
 				pendingActivityType = '';
 			"
+			@activityAdded="onActivityAdded"
+		/>
+
+		<!-- ── Update activity form (overlay) ── -->
+		<EventUpdateCalendarSecond
+			v-if="showUpdateActivity"
+			:activityID="String(updateActivityId)"
+			:user="currentContact"
+			:eventType="updateActivityType"
+			@cancelAddActivity="showUpdateActivity = false"
 			@activityAdded="onActivityAdded"
 		/>
 
@@ -1775,12 +1849,23 @@ tr.row-red:hover td {
 
 .split-panels {
 	display: grid;
-	grid-template-columns: 1fr 880px;
+	grid-template-columns: 1fr 8px var(--calendar-width, 550px);
 	gap: 0;
 	flex: 1;
 	min-height: 0;
 	height: calc(100vh - 57px);
 	overflow: hidden;
+}
+.split-drag-handle {
+	width: 8px;
+	cursor: col-resize;
+	background: #e2e8f0;
+	transition: background 0.15s;
+	flex-shrink: 0;
+}
+.split-drag-handle:hover,
+.split-drag-handle:active {
+	background: #6366f1;
 }
 /* LEFT panel */
 .split-left {
@@ -2182,7 +2267,8 @@ tr.row-red:hover td {
 	.split-panels {
 		grid-template-columns: 1fr;
 	}
-	.split-right {
+	.split-right,
+	.split-drag-handle {
 		display: none;
 	}
 }
