@@ -439,6 +439,47 @@ const changeNewNamesModal = (contactId = null) => {
 	}
 };
 
+// ── BJ modal for poradenstvo + realizácia ──
+const bjActivities = [
+	"poradenstvo nové",
+	"servisné poradenstvo",
+	"realizácia nová",
+	"realizácia servisná",
+];
+
+const showBjModal = ref(false);
+const bjModalActivityId = ref(null);
+const bjModalTodoId = ref(null);
+const bjModalActivityName = ref("");
+
+const openBjModal = (activityId, activityName) => {
+	bjModalActivityId.value = activityId;
+	bjModalTodoId.value = null;
+	bjModalActivityName.value = activityName;
+	showBjModal.value = true;
+};
+
+const openBjModalForTodo = (todoId, activityName) => {
+	bjModalActivityId.value = null;
+	bjModalTodoId.value = todoId;
+	bjModalActivityName.value = activityName;
+	showBjModal.value = true;
+};
+
+const closeBjModal = () => {
+	showBjModal.value = false;
+	bjModalActivityId.value = null;
+	bjModalTodoId.value = null;
+	bjModalActivityName.value = "";
+};
+
+const onBjSubmitted = (count) => {
+	const activity = allUncompletedActivities.value.find(
+		(a) => a.id === bjModalActivityId.value,
+	);
+	if (activity) activity.bj_count = count;
+};
+
 const changeActivityStatus = async (
 	item,
 	status,
@@ -497,6 +538,11 @@ const changeActivityStatus = async (
 	if (item.aktivita === "Analýza osobných financí" && status === "check") {
 		selectedActivtyId.value = item.id;
 		changeNewNamesModal(item.contact_id);
+	}
+
+	// ── BJ modal for poradenstvo + realizácia ──
+	if (bjActivities.includes(item.aktivita) && status === "check") {
+		openBjModal(item.id, item.aktivita);
 	}
 
 	if (status === "discarded") {
@@ -708,6 +754,14 @@ const topSectionLabel = computed(() => {
 		@close="changeConfirmEventModal"
 		@confirm="handleConfirmEvent"
 		@closeConfirm="handleCloseConfirmEvent"
+	/>
+	<BJCountModal
+		v-if="showBjModal"
+		:activityId="bjModalActivityId"
+		:todoId="bjModalTodoId"
+		:activityName="bjModalActivityName"
+		@close="closeBjModal"
+		@submitted="onBjSubmitted"
 	/>
 
 	<loadigcomponent v-if="todoStore.loadingState" />
