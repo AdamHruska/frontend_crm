@@ -380,7 +380,7 @@ const addActivity = async () => {
 				dovolane: dovolane.value,
 				dohodnute: dohodnute.value,
 				miesto_stretnutia: miesto_stretnutia.value,
-				online_meeting: onlineMeeting.value,
+				online_meeting: false,
 				send_notification_15: active.value?.includes(15) || false,
 				send_notification_30: active.value?.includes(30) || false,
 				send_notification_60: active.value?.includes(60) || false,
@@ -416,13 +416,14 @@ const addActivity = async () => {
 					const finalMiesto = `${officePart}${teamsResponse.data.joinUrl}`;
 
 					activityResponse.data.activity.miesto_stretnutia = finalMiesto;
+					activityResponse.data.activity.online_meeting = true;
 					miesto_stretnutia.value = finalMiesto;
 
-					// Persist the real join link now that we actually have it.
+					// Teams meeting succeeded — now mark activity as online meeting
 					try {
 						await axios.patch(
 							`${config.public.apiUrl}activities/${activityResponse.data.activity.id}`,
-							{ miesto_stretnutia: finalMiesto },
+							{ miesto_stretnutia: finalMiesto, online_meeting: true },
 							{ headers: { Authorization: `Bearer ${authStore.token}` } },
 						);
 					} catch (patchError) {
@@ -432,7 +433,6 @@ const addActivity = async () => {
 						);
 					}
 				} else {
-					// No joinUrl came back — treat it like a failure.
 					throw new Error("Teams meeting response had no joinUrl");
 				}
 			} catch (error) {
@@ -442,8 +442,6 @@ const addActivity = async () => {
 				);
 				toast.error("Je potrebné prihlásiť sa do Microsoft účtu");
 
-				// Teams meeting creation failed → don't leave online_meeting
-				// true with no actual meeting behind it.
 				onlineMeeting.value = false;
 				const fallbackMiesto =
 					selectedOffice.value.name !== "Kancelárie"
@@ -453,22 +451,6 @@ const addActivity = async () => {
 				miesto_stretnutia.value = fallbackMiesto || "";
 				activityResponse.data.activity.miesto_stretnutia = fallbackMiesto;
 				activityResponse.data.activity.online_meeting = false;
-
-				try {
-					await axios.patch(
-						`${config.public.apiUrl}activities/${activityResponse.data.activity.id}`,
-						{
-							online_meeting: false,
-							miesto_stretnutia: fallbackMiesto,
-						},
-						{ headers: { Authorization: `Bearer ${authStore.token}` } },
-					);
-				} catch (patchError) {
-					console.error(
-						"Failed to revert activity after Teams meeting error:",
-						patchError,
-					);
-				}
 			}
 		}
 

@@ -12,6 +12,7 @@ const contactsStore = useContactsStore();
 const searchInput = ref("");
 const searchResults = ref([]);
 const error = ref("");
+const restoringFromStore = ref(false);
 
 const emit = defineEmits(["updateResults"]);
 
@@ -65,12 +66,19 @@ const handleSearch = async () => {
 };
 
 // Watch for changes in the searchInput and trigger a debounced search
-watch(searchInput, debounceSearch(handleSearch, 200));
+watch(searchInput, (newVal) => {
+	// Skip the watcher when restoring from store on mount (preserves current page)
+	if (restoringFromStore.value) return;
+	debounceSearch(handleSearch, 200)(newVal);
+});
 
 onMounted(() => {
 	if (contactsStore.searchQuery) {
+		restoringFromStore.value = true;
 		searchInput.value = contactsStore.searchQuery;
-		//handleSearch();
+		nextTick(() => {
+			restoringFromStore.value = false;
+		});
 	}
 });
 </script>

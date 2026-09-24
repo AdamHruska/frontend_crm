@@ -310,7 +310,7 @@ const pendingActivityDateTime = ref(null);
 
 const openAddActivity = (type) => {
 	if (!currentContact.value) return;
-	pendingActivityType.value = "Prvé stretnutie";
+	pendingActivityType.value = type === "nabor" ? "Pohovor" : "Prvé stretnutie";
 	pendingActivityDateTime.value = null;
 	showAddActivity.value = true;
 };
@@ -1174,7 +1174,7 @@ const contactInitials = computed(() => {
 		<Teleport to="body">
 			<div v-if="showNoteModal" class="modal-overlay" @click.self="cancelNote">
 				<div class="note-modal">
-					<h3 class="note-modal-title">📵 Volané – pridať poznámku</h3>
+					<h3 class="note-modal-title">📵 {{ pendingVDD === 'dovolane' ? (pendingType === 'nabor' ? 'Dovolané – nábor' : 'Dovolané – klient') : (pendingType === 'nabor' ? 'Volané – nábor' : 'Volané – klient') }} – pridať poznámku</h3>
 					<p class="note-modal-sub">
 						Kontakt:
 						<strong
@@ -1185,7 +1185,7 @@ const contactInitials = computed(() => {
 					<textarea
 						v-model="pendingNote"
 						class="note-textarea"
-						placeholder="Dôvod nedovolania, poznámka... (voliteľné)"
+						placeholder="Poznámka... (voliteľné)"
 						rows="4"
 						autofocus
 					></textarea>

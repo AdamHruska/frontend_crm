@@ -290,6 +290,39 @@ async function fetchAndMergeAllEvents(month, year) {
 	};
 }
 
+// ── Hover tooltip ──────────────────────────────────────────────────────
+const tooltipVisible = ref(false);
+const tooltipX = ref(0);
+const tooltipY = ref(0);
+const tooltipData = ref({});
+
+const showEventTooltip = (info) => {
+	const ep = info.event.extendedProps;
+	if (ep.source === "microsoft" || ep.source === "ics") {
+		tooltipData.value = {
+			title: info.event.title,
+			miesto: ep.miesto || ep.location || "",
+			location: ep.location || "",
+		};
+	} else {
+		tooltipData.value = {
+			title: info.event.title,
+			meno: ep.firstName || "",
+			priezvisko: ep.lastName || "",
+			miesto: ep.miesto || ep.location || "",
+			cislo: ep.cislo || "",
+			contact_id: ep.contact_id || null,
+		};
+	}
+	tooltipX.value = info.jsEvent.clientX;
+	tooltipY.value = info.jsEvent.clientY - 10;
+	tooltipVisible.value = true;
+};
+
+const hideEventTooltip = () => {
+	tooltipVisible.value = false;
+};
+
 const calendarOptions = ref({
 	plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
 	headerToolbar: {
@@ -343,6 +376,8 @@ const calendarOptions = ref({
 			currentLoadedYear.value = year;
 		}
 	},
+	eventMouseEnter: showEventTooltip,
+	eventMouseLeave: hideEventTooltip,
 	eventDidMount: (info) => {
 		if (info.event.allDay) {
 			info.el.style.fontWeight = "bold";
@@ -879,6 +914,8 @@ const transformData = (data) => {
 				contact_id: item.contact_id || null,
 				firstName: contact?.meno || "",
 				lastName: contact?.priezvisko || "",
+				cislo: contact?.cislo || "",
+				miesto: item.miesto_stretnutia || "",
 				isDiscarded: item.activity_status === "discarded",
 			},
 		};
@@ -2175,6 +2212,20 @@ const onIcsColorChange = (e) => {
 						</div>
 					</template>
 				</FullCalendar>
+				<!-- Hover tooltip -->
+				<div
+					v-if="tooltipVisible"
+					class="cal-tooltip"
+					:style="{ left: tooltipX + 'px', top: tooltipY + 'px' }"
+				>
+					<div v-if="tooltipData.meno" class="cal-tooltip-contact">
+						<strong>{{ tooltipData.meno }} {{ tooltipData.priezvisko }}</strong>
+					</div>
+					<div v-if="tooltipData.title" class="cal-tooltip-title">{{ tooltipData.title }}</div>
+					<div v-if="tooltipData.miesto" class="cal-tooltip-miesto">📍 {{ tooltipData.miesto }}</div>
+					<div v-if="tooltipData.cislo" class="cal-tooltip-cislo">📞 {{ tooltipData.cislo }}</div>
+					<div v-if="tooltipData.location && !tooltipData.miesto" class="cal-tooltip-miesto">📍 {{ tooltipData.location }}</div>
+				</div>
 			</div>
 		</div>
 
@@ -2606,5 +2657,38 @@ b {
 		line-height: 1;
 		font-weight: 700;
 	}
+}
+
+/* ── Hover tooltip ── */
+.cal-tooltip {
+	position: fixed;
+	z-index: 9999;
+	background: white;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+	padding: 10px 14px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+	pointer-events: none;
+	max-width: 260px;
+	font-size: 0.8rem;
+	line-height: 1.4;
+	transform: translate(-50%, -100%);
+}
+.cal-tooltip-contact {
+	font-size: 0.85rem;
+	margin-bottom: 4px;
+}
+.cal-tooltip-title {
+	color: #6366f1;
+	font-weight: 600;
+	margin-bottom: 2px;
+}
+.cal-tooltip-miesto {
+	color: #059669;
+	font-size: 0.78rem;
+}
+.cal-tooltip-cislo {
+	color: #64748b;
+	font-size: 0.78rem;
 }
 </style>

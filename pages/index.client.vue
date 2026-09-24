@@ -263,11 +263,15 @@ onUnmounted(() => {
 onMounted(async () => {
 	document.addEventListener("click", closeMenuOnOutsideClick);
 	try {
-		if (contactsStore.contacts.length === 0) {
+		// If store already has data, restore it (preserves page state on back navigation)
+		if (contactsStore.contacts && contactsStore.contacts.data && contactsStore.contacts.data.length > 0) {
+			page.value = contactsStore.contacts.current_page || 1;
+			people.value = contactsStore.contacts.data.map(mapWithClass);
+		} else {
 			await contactsStore.fetchContacts();
+			page.value = contactsStore.contacts.current_page || 1;
+			people.value = contactsStore.contacts.data.map(mapWithClass);
 		}
-
-		people.value = contactsStore.contacts.data.map(mapWithClass);
 	} catch (error) {
 		console.error("Error:", error);
 	}
@@ -370,6 +374,13 @@ const items = (row) => [
 		},
 	],
 ];
+
+const prevPage = async () => {
+	if (contactsStore.page <= 1) return;
+	await contactsStore.prevPage();
+	page.value = contactsStore.contacts.current_page;
+	people.value = contactsStore.contacts.data.map(mapWithClass);
+};
 
 const nextPage = async () => {
 	await contactsStore.nextPage();

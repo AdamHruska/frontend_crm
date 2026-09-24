@@ -516,7 +516,7 @@ const addActivity = async () => {
 				volane: volane.value,
 				dovolane: dovolane.value,
 				dohodnute: dohodnute.value,
-				online_meeting: onlineMeeting.value,
+				online_meeting: false,
 				miesto_stretnutia: miesto_stretnutia.value,
 				send_notification_15: active.value?.includes(15) || false,
 				send_notification_30: active.value?.includes(30) || false,
@@ -553,17 +553,14 @@ const addActivity = async () => {
 					const finalMiesto = `${officePart}${teamsResponse.data.joinUrl}`;
 
 					response.data.activity.miesto_stretnutia = finalMiesto;
+					response.data.activity.online_meeting = true;
 					miesto_stretnutia.value = finalMiesto;
 
-					// Persist the real join link now that we actually have it.
-					// NOTE: assumes PATCH /activities/{id} exists — if it
-					// doesn't, this call will fail silently (logged below)
-					// and the DB will keep whatever add-activity saved
-					// (office name or empty, never a fake placeholder).
+					// Teams meeting succeeded — now mark activity as online meeting
 					try {
 						await axios.patch(
 							`${config.public.apiUrl}activities/${response.data.activity.id}`,
-							{ miesto_stretnutia: finalMiesto },
+							{ miesto_stretnutia: finalMiesto, online_meeting: true },
 							{ headers: { Authorization: `Bearer ${authStore.token}` } },
 						);
 					} catch (patchError) {
@@ -573,8 +570,6 @@ const addActivity = async () => {
 						);
 					}
 				} else {
-					// No joinUrl came back — treat it like a failure, don't
-					// leave online_meeting true with no actual meeting.
 					throw new Error("Teams meeting response had no joinUrl");
 				}
 			} catch (error) {
@@ -590,22 +585,6 @@ const addActivity = async () => {
 				miesto_stretnutia.value = fallbackMiesto || "";
 				response.data.activity.miesto_stretnutia = fallbackMiesto;
 				response.data.activity.online_meeting = false;
-
-				try {
-					await axios.patch(
-						`${config.public.apiUrl}activities/${response.data.activity.id}`,
-						{
-							online_meeting: false,
-							miesto_stretnutia: fallbackMiesto,
-						},
-						{ headers: { Authorization: `Bearer ${authStore.token}` } },
-					);
-				} catch (patchError) {
-					console.error(
-						"Failed to revert activity after Teams meeting error:",
-						patchError,
-					);
-				}
 			}
 		}
 

@@ -83,10 +83,10 @@ const closeModal = () => {
 	>
 		<div class="absolute inset-0 bg-gray bg-opacity-50 backdrop-blur-sm"></div>
 		<div
-			class="relative bg-white p-6 rounded-lg shadow-lg max-w-lg w-full z-10 max-h-[100vh] overflow-y-auto"
+			class="relative bg-white rounded-lg shadow-lg max-w-lg w-full z-10 flex flex-col max-h-[90vh]"
 		>
-			<!-- Close button -->
-			<div class="flex justify-between items-center mb-4">
+			<!-- Close button (sticky) -->
+			<div class="flex justify-between items-center mb-4 px-6 pt-6 pb-2 sticky top-0 bg-white z-10">
 				<button
 					@click="closeModal"
 					class="absolute top-4 right-6 cursor-pointer hover:scale-110 transition-transform"
@@ -94,7 +94,7 @@ const closeModal = () => {
 					<Icon icon="fa6-solid:xmark" class="h-6 w-6" />
 				</button>
 
-				<h2 class="text-xl font-bold mb-4 pr-4">
+				<h2 class="text-xl font-bold mb-2 pr-4">
 					{{ props.event.title || "Untitled Event" }}
 				</h2>
 				<div
@@ -105,7 +105,7 @@ const closeModal = () => {
 				</div>
 			</div>
 
-			<div class="space-y-4">
+			<div class="space-y-4 px-6 pb-6 overflow-y-auto flex-1">
 				<div class="border-b pb-2">
 					<p class="text-gray-600 font-semibold">Začiatok</p>
 					<p class="font-medium">

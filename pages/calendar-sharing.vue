@@ -413,14 +413,18 @@ const loginWithTelegram = async () => {
 						<h2 class="card-title">Kontaktné údaje</h2>
 					</div>
 					<div class="card-body">
-						<div class="form-field">
-							<label class="field-label">Text / popis</label>
-							<textarea
-								v-model="textRef"
-								class="field-input"
-								rows="3"
-								placeholder="Krátky text o vás..."
-							></textarea>
+						<div class="form-field">								<label class="field-label">Text / popis <span style="font-weight:400;color:#94a3b8;font-size:0.7rem">(Enter = nový riadok)</span></label>
+								<textarea
+									v-model="textRef"
+									class="field-input"
+									rows="5"
+									placeholder="Krátky text o vás..."
+									style="white-space: pre-line"
+								></textarea>
+								<div v-if="textRef" class="vizitka-preview">
+									<div class="preview-label">Náhľad:</div>
+									<div class="preview-text" style="white-space: pre-line">{{ textRef }}</div>
+								</div>
 						</div>
 						<div class="form-row">
 							<div class="form-field">
@@ -1310,5 +1314,28 @@ const loginWithTelegram = async () => {
 	font-size: 0.75rem;
 	color: #94a3b8;
 	padding-top: 1rem;
+}
+
+/* ── Vizitka preview ── */
+.vizitka-preview {
+	margin-top: 0.5rem;
+	padding: 0.625rem 0.75rem;
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+}
+.preview-label {
+	font-size: 0.7rem;
+	font-weight: 600;
+	color: #94a3b8;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	margin-bottom: 0.25rem;
+}
+.preview-text {
+	font-size: 0.85rem;
+	color: #1e293b;
+	line-height: 1.5;
+	white-space: pre-line;
 }
 </style>

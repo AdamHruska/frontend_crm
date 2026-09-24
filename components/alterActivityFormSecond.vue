@@ -29,6 +29,7 @@ import { useToast } from "vue-toastification";
 const toast = useToast();
 
 const contact = ref([]);
+const activityContactId = ref(null);
 
 const kontakt = ref("");
 const aktivita = ref("");
@@ -210,13 +211,24 @@ onMounted(async () => {
 	onlineMeeting.value = response.data.activity.online_meeting == 1;
 	originalOnlineMeetingValue.value = response.data.activity.online_meeting == 1;
 
-	const responseContact = await axios.get(
-		`${config.public.apiUrl}contact/${response.data.activity.contact_id}`,
-		{ headers: { Authorization: `Bearer ${authStore.token}` } },
-	);
-	contact.value = responseContact.data.contact;
+	activityContactId.value = response.data.activity.contact_id;
 
-	if (contact.value.email === null) {
+	if (activityContactId.value) {
+		try {
+			const responseContact = await axios.get(
+				`${config.public.apiUrl}contact/${activityContactId.value}`,
+				{ headers: { Authorization: `Bearer ${authStore.token}` } },
+			);
+			contact.value = responseContact.data.contact || null;
+		} catch (error) {
+			console.warn("Contact could not be loaded:", error.message);
+			contact.value = null;
+		}
+	} else {
+		contact.value = null;
+	}
+
+	if (contact.value?.email == null) {
 		emailBool.value = false;
 	} else {
 		email.value = contact.value.email;
@@ -278,7 +290,7 @@ const runUpdateActivity = async () => {
 		const response = await axios.put(
 			`${config.public.apiUrl}update-activities/${props.activityID}`,
 			{
-				contact_id: contact.value.id,
+				contact_id: contact.value?.id ?? activityContactId.value,
 				aktivita:
 					aktivita.value === "ine" ? ina_aktivita.value : aktivita.value,
 				datumCas: datum_cas.value,
@@ -312,7 +324,12 @@ const runUpdateActivity = async () => {
 			console.warn("Could not sync office activity status:", syncError.message);
 		}
 
-		if (onlineMeeting.value && !emailBool.value && email.value) {
+		if (
+			onlineMeeting.value &&
+			!emailBool.value &&
+			email.value &&
+			contact.value?.id
+		) {
 			await axios.patch(
 				`${config.public.apiUrl}contact/${contact.value.id}/email`,
 				{ email: email.value },
@@ -472,6 +489,7 @@ function extractMicrosoftEventId(teamsLink) {
 }
 
 const redirectToContact = () => {
+	if (!contact.value?.id) return;
 	router.push(`/contact/${contact.value.id}`);
 };
 
@@ -599,7 +617,7 @@ const handleConfirmEvent = async () => {
 		await axios.post(
 			`${config.public.apiUrl}add-activity`,
 			{
-				contact_id: contact.value.id,
+				contact_id: contact.value?.id ?? activityContactId.value,
 				aktivita: "Analýza osobných financí",
 				datumCas: datum_cas.value,
 				koniec: dateTimeEnd,
@@ -654,18 +672,24 @@ const handleCloseConfirmEvent = async () => {
 			<!-- Contact bar -->
 			<div
 				class="flex gap-3 my-4 cursor-pointer hover:bg-gray-200 p-2 border-b-2 border-black"
-				v-if="contact.meno || contact.priezvisko"
+				v-if="contact?.meno || contact?.priezvisko"
 				@click="redirectToContact"
 			>
 				<div>Kontakt:</div>
-				<div>{{ contact.meno }}</div>
-				<div>{{ contact.priezvisko }}</div>
+				<div>{{ contact?.meno }}</div>
+				<div>{{ contact?.priezvisko }}</div>
 			</div>
 
 			<!-- Email for online meeting -->
 			<div v-if="onlineMeeting" class="mb-4">
 				<label class="text-sm text-gray-500">
-					{{ emailBool ? "Email kontaktu:" : "Pridať email ku kontaktu:" }}
+					{{
+						emailBool
+							? "Email kontaktu:"
+							: contact?.id
+								? "Pridať email ku kontaktu:"
+								: "Email na online stretnutie:"
+					}}
 				</label>
 				<input
 					v-model="email"
