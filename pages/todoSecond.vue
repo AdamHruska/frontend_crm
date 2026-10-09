@@ -1189,10 +1189,8 @@ const topSectionLabel = computed(() => {
 														'icon-question-active':
 															item.activity_status === 'questionmark',
 													}"
-													title="Otáznik"
-													@click.stop="
-														changeActivityStatus(item, 'questionmark', false)
-													"
+													title="Otáznik nie je možné nastaviť pri vyhodnocovaní"
+													disabled
 												>
 													?
 												</button>
@@ -1818,6 +1816,15 @@ const topSectionLabel = computed(() => {
 	background: #f59e0b;
 	color: #fff;
 	border-color: #f59e0b;
+}
+.icon-btn:disabled {
+	cursor: not-allowed;
+	opacity: 0.45;
+}
+.icon-question:disabled:hover {
+	background: #fffbeb;
+	color: #d97706;
+	border-color: #fed7aa;
 }
 .icon-question-active {
 	background: #ef4444 !important;

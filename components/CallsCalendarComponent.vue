@@ -85,7 +85,36 @@ const tooltipX = ref(0);
 const tooltipY = ref(0);
 const tooltipData = ref({});
 
+let tooltipHideTimer = null;
+
+const cancelTooltipHide = () => {
+	if (tooltipHideTimer) {
+		clearTimeout(tooltipHideTimer);
+		tooltipHideTimer = null;
+	}
+};
+
+const isLocationUrl = (val) => /^https?:\/\//i.test(val || "");
+
+const locationHref = (val) => {
+	if (!val) return "#";
+	if (isLocationUrl(val)) return val;
+	return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(val)}`;
+};
+
+const locationLabel = (val) => {
+	if (!isLocationUrl(val)) return val;
+	try {
+		const u = new URL(val);
+		const path = u.pathname.replace(/\/$/, "");
+		return `${u.hostname.replace(/^www\./, "")}${path}`;
+	} catch {
+		return val;
+	}
+};
+
 const showEventTooltip = (info) => {
+	cancelTooltipHide();
 	const ep = info.event.extendedProps;
 	if (ep.source === "microsoft" || ep.source === "ics") {
 		tooltipData.value = { title: info.event.title, miesto: ep.miesto || "", location: ep.location || "" };
@@ -113,7 +142,12 @@ const showEventTooltip = (info) => {
 };
 
 const hideEventTooltip = () => {
-	tooltipVisible.value = false;
+	cancelTooltipHide();
+	// Small grace period so the location link inside the tooltip stays clickable
+	tooltipHideTimer = setTimeout(() => {
+		tooltipVisible.value = false;
+		tooltipHideTimer = null;
+	}, 350);
 };
 
 const calendarOptions = ref({
@@ -417,9 +451,33 @@ defineExpose({ addNewEvent });
 				<strong>{{ tooltipData.meno }} {{ tooltipData.priezvisko }}</strong>
 			</div>
 			<div v-if="tooltipData.title" class="cal-tooltip-title">{{ tooltipData.title }}</div>
-			<div v-if="tooltipData.miesto" class="cal-tooltip-miesto">📍 {{ tooltipData.miesto }}</div>
+			<a
+				v-if="tooltipData.miesto"
+				class="cal-tooltip-miesto"
+				:class="{ 'is-url': isLocationUrl(tooltipData.miesto) }"
+				:href="locationHref(tooltipData.miesto)"
+				target="_blank"
+				rel="noopener"
+				:title="tooltipData.miesto"
+				@mouseenter="cancelTooltipHide"
+				@mouseleave="hideEventTooltip"
+			>
+				📍 {{ locationLabel(tooltipData.miesto) }}
+			</a>
 			<div v-if="tooltipData.cislo" class="cal-tooltip-cislo">📞 {{ tooltipData.cislo }}</div>
-			<div v-if="tooltipData.location && !tooltipData.miesto" class="cal-tooltip-miesto">📍 {{ tooltipData.location }}</div>
+			<a
+				v-if="tooltipData.location && !tooltipData.miesto"
+				class="cal-tooltip-miesto"
+				:class="{ 'is-url': isLocationUrl(tooltipData.location) }"
+				:href="locationHref(tooltipData.location)"
+				target="_blank"
+				rel="noopener"
+				:title="tooltipData.location"
+				@mouseenter="cancelTooltipHide"
+				@mouseleave="hideEventTooltip"
+			>
+				📍 {{ locationLabel(tooltipData.location) }}
+			</a>
 		</div>
 	</div>
 </template>
@@ -574,6 +632,17 @@ defineExpose({ addNewEvent });
 .cal-tooltip-miesto {
 	color: #059669;
 	font-size: 0.78rem;
+	display: block;
+	max-width: 100%;
+	word-break: break-word;
+	pointer-events: auto;
+	text-decoration: underline;
+	cursor: pointer;
+}
+.cal-tooltip-miesto.is-url {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 .cal-tooltip-cislo {
 	color: #64748b;

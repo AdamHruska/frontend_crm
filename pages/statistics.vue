@@ -32,27 +32,44 @@
 				>
 					Zrealizované
 				</p>
-				<div
+				<!-- Real links so middle-click / Ctrl+click opens the contact in a new tab -->
+				<template
 					v-for="person in dataInFollower.filter(
 						(p) => p.activity_status === 'check',
 					)"
 					:key="person.contact_id"
-					class="py-1 cursor-pointer hover:bg-gray-100 px-2 rounded"
-					@click="goToContact(person.contact_id)"
 				>
-					{{ person.meno }} {{ person.priezvisko }}
-				</div>
+					<a
+						v-if="person.contact_id"
+						:href="`/contact/${person.contact_id}`"
+						class="block py-1 cursor-pointer hover:bg-gray-100 px-2 rounded"
+						@click="openContact($event, person.contact_id)"
+					>
+						{{ person.meno }} {{ person.priezvisko }}
+					</a>
+					<div v-else class="py-1 px-2">
+						{{ person.meno }} {{ person.priezvisko }}
+					</div>
+				</template>
 				<p class="font-semibold">Ostatné</p>
-				<div
+				<template
 					v-for="person in dataInFollower.filter(
 						(p) => p.activity_status !== 'check',
 					)"
 					:key="person.contact_id"
-					class="py-1 cursor-pointer hover:bg-gray-100 px-2 rounded"
-					@click="goToContact(person.contact_id)"
 				>
-					{{ person.meno }} {{ person.priezvisko }}
-				</div>
+					<a
+						v-if="person.contact_id"
+						:href="`/contact/${person.contact_id}`"
+						class="block py-1 cursor-pointer hover:bg-gray-100 px-2 rounded"
+						@click="openContact($event, person.contact_id)"
+					>
+						{{ person.meno }} {{ person.priezvisko }}
+					</a>
+					<div v-else class="py-1 px-2">
+						{{ person.meno }} {{ person.priezvisko }}
+					</div>
+				</template>
 			</div>
 		</div>
 
@@ -447,24 +464,56 @@
 						<span class="w-1.5 h-6 bg-indigo-500 rounded-full inline-block"></span>
 						Zoznam zaujatých ľudí po pohovore
 					</h2>
-					<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden max-w-[700px]">
-						<div class="max-h-[400px] overflow-y-auto">
+					<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden max-w-[1100px]">
+						<div class="max-h-[500px] overflow-y-auto">
 							<table class="w-full">
 								<thead class="bg-gray-50 sticky top-0">
 									<tr>
 										<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Meno a Priezvisko</th>
+										<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Dátum pohovoru</th>
+										<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Ďalšie udalosti po pohovore</th>
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-gray-100">
 									<tr
 										v-for="kanditat in zaujatiKandidati"
-										class="cursor-pointer hover:bg-indigo-50 transition-colors"
-										@click="goToContact(kanditat.contact_id)"
+										:key="kanditat.activity_id"
+										class="hover:bg-indigo-50 transition-colors align-top"
 									>
-										<td class="px-5 py-3 text-sm">{{ kanditat.meno }} {{ kanditat.priezvisko }}</td>
+										<td class="px-5 py-3 text-sm whitespace-nowrap">
+											<a
+												:href="`/contact/${kanditat.contact_id}`"
+												class="font-medium text-indigo-600 hover:underline"
+												@click="openContact($event, kanditat.contact_id)"
+											>
+												{{ kanditat.meno }} {{ kanditat.priezvisko }}
+											</a>
+										</td>
+										<td class="px-5 py-3 text-sm text-gray-600 whitespace-nowrap">
+											{{ formatDateTime(kanditat.datumCas) }}
+										</td>
+										<td class="px-5 py-3 text-sm">
+											<div
+												v-if="kanditat.events_after?.length"
+												class="flex flex-wrap gap-1.5"
+											>
+												<span
+													v-for="ev in kanditat.events_after"
+													:key="ev.id"
+													class="event-pill"
+													:class="statusClass(ev.activity_status)"
+													:title="statusLabel(ev.activity_status)"
+												>
+													{{ statusIcon(ev.activity_status) }}
+													{{ ev.aktivita }}
+													<span class="opacity-70">· {{ formatDateTime(ev.datumCas) }}</span>
+												</span>
+											</div>
+											<span v-else class="text-gray-400">Žiadne ďalšie udalosti</span>
+										</td>
 									</tr>
 									<tr v-if="zaujatiKandidati.length === 0">
-										<td class="px-5 py-6 text-center text-sm text-gray-400">Žiadni kandidáti v tomto období</td>
+										<td colspan="3" class="px-5 py-6 text-center text-sm text-gray-400">Žiadni kandidáti v tomto období</td>
 									</tr>
 								</tbody>
 							</table>
@@ -610,6 +659,39 @@ const hideFollower = () => {
 const goToContact = (id) => {
 	router.push(`/contact/${id}`);
 };
+
+// Plain left-click navigates in-app; Ctrl/Cmd/Shift-click and middle-click
+// fall through to the browser so the contact opens in a new tab/window
+const openContact = (event, id) => {
+	if (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0)
+		return;
+	event.preventDefault();
+	goToContact(id);
+};
+
+const formatDateTime = (value) => {
+	if (!value) return "—";
+	const date = new Date(String(value).replace(" ", "T"));
+	if (isNaN(date)) return value;
+	return date.toLocaleString("sk-SK", {
+		day: "2-digit",
+		month: "2-digit",
+		year: "numeric",
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+};
+
+const STATUS_META = {
+	check: { icon: "✓", label: "Dokončené", cls: "pill-check" },
+	accepted: { icon: "👍", label: "Prijaté", cls: "pill-check" },
+	discarded: { icon: "✕", label: "Zamietnuté", cls: "pill-discarded" },
+	rejected: { icon: "👎", label: "Odmietnuté", cls: "pill-discarded" },
+	questionmark: { icon: "?", label: "Otáznik", cls: "pill-question" },
+};
+const statusIcon = (s) => STATUS_META[s]?.icon ?? "•";
+const statusLabel = (s) => STATUS_META[s]?.label ?? "Naplánované";
+const statusClass = (s) => STATUS_META[s]?.cls ?? "pill-planned";
 
 const showPohovoryFollower = (key, event) => {
 	if (hideTimeout) clearTimeout(hideTimeout);
@@ -954,6 +1036,22 @@ onBeforeUnmount(() => {
 	font-size: 13px;
 	color: #64748b !important;
 }
+
+/* ── Events after interview ── */
+.event-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 9px;
+	border-radius: 999px;
+	font-size: 12px;
+	border: 1px solid;
+	white-space: nowrap;
+}
+.pill-planned { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+.pill-check { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
+.pill-discarded { background: #f9fafb; border-color: #e5e7eb; color: #6b7280; text-decoration: line-through; }
+.pill-question { background: #fffbeb; border-color: #fde68a; color: #b45309; }
 
 .activity-stat-value {
 	font-size: 18px;

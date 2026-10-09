@@ -81,6 +81,17 @@ const deleteSeesMine = async (id) => {
 
 				<div class="user-info">
 					<div class="user-name">{{ row.username }}</div>
+					<span
+						class="scope-badge"
+						:class="row.share_scope === 'own' ? 'scope-own' : 'scope-all'"
+						:title="
+							row.share_scope === 'own'
+								? 'Vidí len môj kalendár'
+								: 'Vidí môj kalendár aj kalendáre zdieľané mne'
+						"
+					>
+						{{ row.share_scope === "own" ? "Len môj" : "Všetky" }}
+					</span>
 				</div>
 
 				<div class="user-actions">
@@ -169,6 +180,25 @@ const deleteSeesMine = async (id) => {
 .user-info {
 	flex: 1;
 	min-width: 0;
+}
+.scope-badge {
+	display: inline-block;
+	margin-top: 2px;
+	padding: 1px 8px;
+	border-radius: 999px;
+	font-size: 0.7rem;
+	font-weight: 600;
+	border: 1px solid;
+}
+.scope-all {
+	background: #eff6ff;
+	color: #1d4ed8;
+	border-color: #bfdbfe;
+}
+.scope-own {
+	background: #f8fafc;
+	color: #475569;
+	border-color: #cbd5e1;
 }
 .user-name {
 	font-size: 0.875rem;

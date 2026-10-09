@@ -9,6 +9,7 @@ const authStore = useAuthStore();
 const { useUserStore } = await import("@/stores/userStore");
 const userStore = useUserStore();
 import { useCalendarstore } from "#imports";
+import { broadcastLogout } from "~/utils/authChannel";
 
 function cancelSignOut() {
 	emit("cancelSignOut");
@@ -17,6 +18,8 @@ function cancelSignOut() {
 async function confirmSignOut() {
 	try {
 		await logout();
+		// Log out the other open tabs too, so they can't hand the old token to new tabs
+		broadcastLogout();
 		emit("confirmSignOut"); // This should be emitted before navigation
 		emit("cancelSignOut"); // This will close the modal
 		await router.push("/login");

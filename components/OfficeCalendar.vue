@@ -100,7 +100,8 @@ const userActivityStats = computed(() => {
 		}
 	});
 
-	return Object.values(stats);
+	// Hide users with no activities this month
+	return Object.values(stats).filter((stat) => stat.count > 0);
 });
 
 // form states

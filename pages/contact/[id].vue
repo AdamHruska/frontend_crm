@@ -892,6 +892,39 @@ const contactInitials = computed(() => {
 	return `${(p.meno || "")[0] || ""}${(p.priezvisko || "")[0] || ""}`.toUpperCase();
 });
 
+// ── Find the person on social media ────────────────────────────
+const contactFullName = computed(() => {
+	const p = people.value[0];
+	if (!p) return "";
+	return `${p.meno || ""} ${p.priezvisko || ""}`.trim();
+});
+
+const findPersonOnFacebook = () => {
+	if (!contactFullName.value) return;
+	// Same as typing the name into the Facebook search box:
+	// facebook.com/search/top/?q=Meno%20Priezvisko
+	window.open(
+		`https://www.facebook.com/search/top/?q=${encodeURIComponent(
+			contactFullName.value,
+		)}`,
+		"_blank",
+		"noopener",
+	);
+};
+
+const findPersonOnLinkedIn = () => {
+	if (!contactFullName.value) return;
+	// Opens LinkedIn people search with the name prefilled:
+	// linkedin.com/search/results/people/?keywords=Meno%20Priezvisko
+	window.open(
+		`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(
+			contactFullName.value,
+		)}`,
+		"_blank",
+		"noopener",
+	);
+};
+
 const setTodoStatus = async (row, completed) => {
 	if (row.completed === completed) return;
 
@@ -1340,6 +1373,29 @@ const contactTypeBadgeClass = computed(() => {
 						}}</template>
 						<template v-else>{{ people[0]?.[col.key] || "—" }}</template>
 					</span>
+				</div>
+
+				<!-- ── Find person on social media ── -->
+				<div class="info-card">
+					<span class="info-label">Sociálne siete</span>
+					<div class="header-find">
+						<button
+							class="btn btn-sm btn-social btn-fb"
+							title="Nájsť tohto človeka na Facebooku"
+							:disabled="!contactFullName"
+							@click="findPersonOnFacebook"
+						>
+							🔎 Nájsť na FB
+						</button>
+						<button
+							class="btn btn-sm btn-social btn-li"
+							title="Nájsť tohto človeka na LinkedIne"
+							:disabled="!contactFullName"
+							@click="findPersonOnLinkedIn"
+						>
+							💼 Nájsť na LinkedIn
+						</button>
+					</div>
 				</div>
 			</div>
 		</section>
@@ -1845,6 +1901,33 @@ const contactTypeBadgeClass = computed(() => {
 }
 .btn-actions:hover {
 	background: #15803d;
+}
+
+.header-find {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+.btn-social {
+	background: #f1f5f9;
+	color: #334155;
+	border: 1px solid #cbd5e1;
+}
+.btn-social:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+.btn-fb:hover:not(:disabled) {
+	background: #dbeafe;
+	border-color: #93c5fd;
+	color: #1d4ed8;
+}
+.btn-li:hover:not(:disabled) {
+	background: #e0f2fe;
+	border-color: #7dd3fc;
+	color: #0a66c2;
 }
 
 .btn-danger {
@@ -2355,6 +2438,15 @@ const contactTypeBadgeClass = computed(() => {
 
 	.header-actions .btn-actions {
 		width: 100%;
+		justify-content: center;
+	}
+
+	.header-find {
+		width: 100%;
+	}
+
+	.header-find .btn {
+		flex: 1;
 		justify-content: center;
 	}
 

@@ -100,8 +100,14 @@ const getAvatarBg = (id) => avatarBgs[id % avatarBgs.length];
 const getAvatarTextColor = (id) =>
 	avatarTextColors[id % avatarTextColors.length];
 
-const createRequestSeeMyCal = async (userId, first_name, last_name) => {
-	await requestStore.requestToShowMyCalendar(userId, first_name, last_name);
+// scope: "all" = my calendar + calendars shared with me, "own" = only my calendar
+const createRequestSeeMyCal = async (userId, first_name, last_name, scope) => {
+	await requestStore.requestToShowMyCalendar(
+		userId,
+		first_name,
+		last_name,
+		scope,
+	);
 	dropdownVisible.value = false;
 	searchInput.value = "";
 };
@@ -180,9 +186,29 @@ const createRequestSeeMyCal = async (userId, first_name, last_name) => {
 							>{{ user.first_name }} {{ user.last_name }}</span
 						>
 						<button
-							class="share-btn"
+							class="share-btn share-btn-own"
+							title="Uvidí len môj kalendár"
 							@click="
-								createRequestSeeMyCal(user.id, user.first_name, user.last_name)
+								createRequestSeeMyCal(
+									user.id,
+									user.first_name,
+									user.last_name,
+									'own',
+								)
+							"
+						>
+							Zdieľať len môj
+						</button>
+						<button
+							class="share-btn"
+							title="Uvidí môj kalendár aj všetky kalendáre, ktoré sú zdieľané mne"
+							@click="
+								createRequestSeeMyCal(
+									user.id,
+									user.first_name,
+									user.last_name,
+									'all',
+								)
 							"
 						>
 							<svg
@@ -202,7 +228,7 @@ const createRequestSeeMyCal = async (userId, first_name, last_name) => {
 									stroke-linecap="round"
 								/>
 							</svg>
-							Zdieľať môj kalendár
+							Zdieľať všetky
 						</button>
 					</div>
 
@@ -402,6 +428,15 @@ const createRequestSeeMyCal = async (userId, first_name, last_name) => {
 .share-btn:hover {
 	background: #dbeafe;
 	border-color: #93c5fd;
+}
+.share-btn-own {
+	background: #fff;
+	color: #475569;
+	border-color: #cbd5e1;
+}
+.share-btn-own:hover {
+	background: #f1f5f9;
+	border-color: #94a3b8;
 }
 
 .dropdown-empty {

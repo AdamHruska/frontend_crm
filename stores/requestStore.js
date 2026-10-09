@@ -426,7 +426,8 @@ export const useRequestStore = defineStore("request", {
 			}
 		},
 
-		async requestToShowMyCalendar(userId, first_name, last_name) {
+		// scope: "all" = my calendar + calendars shared with me, "own" = only my calendar
+		async requestToShowMyCalendar(userId, first_name, last_name, scope = "all") {
 			const config = useRuntimeConfig();
 			const authStore = useAuthStore();
 			const token = authStore.token;
@@ -439,6 +440,7 @@ export const useRequestStore = defineStore("request", {
 				target_user_id: userId,
 				type: "let_them_view_mine",
 				status: "pending",
+				scope,
 			};
 
 			(userId, first_name, last_name);
@@ -463,7 +465,15 @@ export const useRequestStore = defineStore("request", {
 				// if (response.status == 201) {
 				// 	alert("Požiadavka bola úspešne odoslaná");
 				// }
-				toast.success("Požiadavka bola úspešne odoslaná.");
+				const scopeLabel =
+					scope === "own" ? "len môj kalendár" : "môj + zdieľané kalendáre";
+				toast.success(
+					response.data?.updated
+						? `Zdieľanie zmenené na: ${scopeLabel}.`
+						: `Kalendár zdieľaný (${scopeLabel}).`,
+				);
+				// Refresh "Kto vidí môj kalendár" so the new person / scope shows up
+				await this.WhoSeesMyCal().catch(() => {});
 			} catch (error) {
 				console.error("Error deleting request:", error);
 				this.error = error.message;

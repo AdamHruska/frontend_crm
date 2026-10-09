@@ -47,7 +47,14 @@ const showActivityTitle = ref(
 	localStorage.getItem("showActivityTitle") !== "false",
 );
 
+const showActivityPlace = ref(
+	localStorage.getItem("showActivityPlace") === "true",
+);
+
 watch(showContactNames, (val) => localStorage.setItem("showContactNames", val));
+watch(showActivityPlace, (val) =>
+	localStorage.setItem("showActivityPlace", val),
+);
 watch(showActivityTitle, (val) =>
 	localStorage.setItem("showActivityTitle", val),
 );
@@ -296,7 +303,36 @@ const tooltipX = ref(0);
 const tooltipY = ref(0);
 const tooltipData = ref({});
 
+let tooltipHideTimer = null;
+
+const cancelTooltipHide = () => {
+	if (tooltipHideTimer) {
+		clearTimeout(tooltipHideTimer);
+		tooltipHideTimer = null;
+	}
+};
+
+const isLocationUrl = (val) => /^https?:\/\//i.test(val || "");
+
+const locationHref = (val) => {
+	if (!val) return "#";
+	if (isLocationUrl(val)) return val;
+	return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(val)}`;
+};
+
+const locationLabel = (val) => {
+	if (!isLocationUrl(val)) return val;
+	try {
+		const u = new URL(val);
+		const path = u.pathname.replace(/\/$/, "");
+		return `${u.hostname.replace(/^www\./, "")}${path}`;
+	} catch {
+		return val;
+	}
+};
+
 const showEventTooltip = (info) => {
+	cancelTooltipHide();
 	const ep = info.event.extendedProps;
 	if (ep.source === "microsoft" || ep.source === "ics") {
 		tooltipData.value = {
@@ -320,7 +356,12 @@ const showEventTooltip = (info) => {
 };
 
 const hideEventTooltip = () => {
-	tooltipVisible.value = false;
+	cancelTooltipHide();
+	// Small grace period so the location link inside the tooltip stays clickable
+	tooltipHideTimer = setTimeout(() => {
+		tooltipVisible.value = false;
+		tooltipHideTimer = null;
+	}, 350);
 };
 
 const calendarOptions = ref({
@@ -773,12 +814,8 @@ onMounted(async () => {
 		calendarListLoading.value = false;
 	}
 
-	// Fetch contacts only (shared activities now loaded per-user below)
-	await Promise.all([
-		contactsStore.contacts.data.length === 0
-			? contactsStore.fetchContacts()
-			: Promise.resolve(),
-	]);
+	// Load all contacts (own + shared) so every activity can show its contact name
+	await loadContactsMap();
 
 	const now = new Date();
 	await fetchAndMergeAllEvents(now.getMonth() + 1, now.getFullYear());
@@ -877,6 +914,39 @@ const toDisabledColor = (color, factor = 0.5) => {
 	return color;
 };
 
+// contact_id -> contact, used to show the contact name on each activity
+const contactMap = ref(new Map());
+
+const loadContactsMap = async () => {
+	try {
+		await contactsStore.fetchAllContacts();
+		const ownContacts = contactsStore.allContacts || [];
+
+		let allContacts = [...ownContacts];
+		const ownIds = new Set(ownContacts.map((c) => Number(c.id)));
+		try {
+			const sharedRes = await axios.get(
+				`${config.public.apiUrl}contacts-without-pagination`,
+				{ headers: { Authorization: `Bearer ${authStore.token}` } },
+			);
+			const sharedContacts = sharedRes.data.contacts || [];
+			for (const c of sharedContacts) {
+				if (!ownIds.has(Number(c.id))) allContacts.push(c);
+			}
+		} catch {
+			// Shared contacts not available, continue with own contacts only
+		}
+
+		const map = new Map();
+		allContacts.forEach((c) => {
+			map.set(Number(c.id), c);
+		});
+		contactMap.value = map;
+	} catch (e) {
+		console.error("Error loading contacts map:", e);
+	}
+};
+
 const transformData = (data) => {
 	return data.map((item) => {
 		let farba;
@@ -899,7 +969,11 @@ const transformData = (data) => {
 		const formattedStart = item.datumCas.replace(" ", "T");
 
 		const contact = item.contact_id
-			? contactsStore.contacts.data?.find((c) => c.id === item.contact_id)
+			? contactMap.value.get(Number(item.contact_id)) ||
+				contactsStore.contacts.data?.find(
+					(c) => Number(c.id) === Number(item.contact_id),
+				) ||
+				(item.meno || item.priezvisko ? item : null)
 			: null;
 
 		return {
@@ -1303,26 +1377,11 @@ const alterEvents = (updatedEvent) => {
 			event.id === updatedEvent.id ? updatedEvent : event,
 		);
 
-		events.value = events.value.map((event) => {
-			if (event.id === updatedEvent.id) {
-				return {
-					id: updatedEvent.id,
-					title: updatedEvent.aktivita,
-					start: updatedEvent.datumCas.replace(" ", "T"),
-					end: updatedEvent.koniec,
-					backgroundColor:
-						updatedEvent.created_id === userStore.user.id
-							? "rgb(37 99 235)"
-							: "red",
-					borderColor:
-						updatedEvent.created_id === userStore.user.id
-							? "rgb(37 99 235)"
-							: "red",
-					user_id: updatedEvent.created_id,
-				};
-			}
-			return event;
-		});
+		// Rebuild via transformData so contact name / extendedProps are kept
+		const [transformedEvent] = transformData([updatedEvent]);
+		events.value = events.value.map((event) =>
+			event.id === updatedEvent.id ? transformedEvent : event,
+		);
 
 		calendarOptions.value = {
 			...calendarOptions.value,
@@ -1873,6 +1932,16 @@ const onIcsColorChange = (e) => {
 							/>
 							<span>Zobraziť meno kontaktu</span>
 						</label>
+						<label
+							class="flex items-center gap-2 text-sm mt-2 cursor-pointer select-none"
+						>
+							<input
+								type="checkbox"
+								v-model="showActivityPlace"
+								class="accent-blue-600"
+							/>
+							<span>Zobraziť miesto aktivity</span>
+						</label>
 					</div>
 				</div>
 				<div class="shadow pb-4 rounded-b-lg">
@@ -2209,6 +2278,22 @@ const onIcsColorChange = (e) => {
 								{{ arg.event.extendedProps.firstName }}
 								{{ arg.event.extendedProps.lastName }}
 							</div>
+							<div
+								v-if="
+									showActivityPlace &&
+									(arg.event.extendedProps.miesto ||
+										arg.event.extendedProps.location)
+								"
+								class="event-place"
+							>
+								📍
+								{{
+									locationLabel(
+										arg.event.extendedProps.miesto ||
+											arg.event.extendedProps.location,
+									)
+								}}
+							</div>
 						</div>
 					</template>
 				</FullCalendar>
@@ -2218,13 +2303,40 @@ const onIcsColorChange = (e) => {
 					class="cal-tooltip"
 					:style="{ left: tooltipX + 'px', top: tooltipY + 'px' }"
 				>
-					<div v-if="tooltipData.meno" class="cal-tooltip-contact">
+					<div
+						v-if="tooltipData.meno || tooltipData.priezvisko"
+						class="cal-tooltip-contact"
+					>
 						<strong>{{ tooltipData.meno }} {{ tooltipData.priezvisko }}</strong>
 					</div>
 					<div v-if="tooltipData.title" class="cal-tooltip-title">{{ tooltipData.title }}</div>
-					<div v-if="tooltipData.miesto" class="cal-tooltip-miesto">📍 {{ tooltipData.miesto }}</div>
+					<a
+						v-if="tooltipData.miesto"
+						class="cal-tooltip-miesto"
+						:class="{ 'is-url': isLocationUrl(tooltipData.miesto) }"
+						:href="locationHref(tooltipData.miesto)"
+						target="_blank"
+						rel="noopener"
+						:title="tooltipData.miesto"
+						@mouseenter="cancelTooltipHide"
+						@mouseleave="hideEventTooltip"
+					>
+						📍 {{ locationLabel(tooltipData.miesto) }}
+					</a>
 					<div v-if="tooltipData.cislo" class="cal-tooltip-cislo">📞 {{ tooltipData.cislo }}</div>
-					<div v-if="tooltipData.location && !tooltipData.miesto" class="cal-tooltip-miesto">📍 {{ tooltipData.location }}</div>
+					<a
+						v-if="tooltipData.location && !tooltipData.miesto"
+						class="cal-tooltip-miesto"
+						:class="{ 'is-url': isLocationUrl(tooltipData.location) }"
+						:href="locationHref(tooltipData.location)"
+						target="_blank"
+						rel="noopener"
+						:title="tooltipData.location"
+						@mouseenter="cancelTooltipHide"
+						@mouseleave="hideEventTooltip"
+					>
+						📍 {{ locationLabel(tooltipData.location) }}
+					</a>
 				</div>
 			</div>
 		</div>
@@ -2255,6 +2367,15 @@ const onIcsColorChange = (e) => {
 ═══════════════════════════════════════════════════════════ */
 .event-contact {
 	font-size: 0.75em;
+	opacity: 0.85;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	margin-top: 1px;
+}
+
+.event-place {
+	font-size: 0.72em;
 	opacity: 0.85;
 	white-space: nowrap;
 	overflow: hidden;
@@ -2686,6 +2807,17 @@ b {
 .cal-tooltip-miesto {
 	color: #059669;
 	font-size: 0.78rem;
+	display: block;
+	max-width: 100%;
+	word-break: break-word;
+	pointer-events: auto;
+	text-decoration: underline;
+	cursor: pointer;
+}
+.cal-tooltip-miesto.is-url {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 .cal-tooltip-cislo {
 	color: #64748b;

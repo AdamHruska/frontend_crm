@@ -56,7 +56,105 @@
 					<option value="5">Poradenstvo nové bez odporúčení</option>
 					<option value="7">Servisné poradenstvo bez odporúčení</option>
 					<option value="6">Prvé stretnutie bez analýzy</option>
+					<option value="8">Dohodnuté, ale nezrealizované stretnutia</option>
 				</select>
+
+			</div>
+		</div>
+
+		<!-- Filter 8: scheduled but unrealized meetings -->
+		<div v-if="selectedSelect === '8'" class="px-8 pb-10 overflow-x-auto">
+			<h3>
+				Dohodnuté, ale nezrealizované stretnutia
+				<span class="text-sm text-gray-500 font-normal">
+					(po termíne stretnutia, bez ďalšej aktivity okrem telefonátu)
+				</span>
+			</h3>
+
+			<!-- Klient / Nábor switch -->
+			<div class="inline-flex rounded-lg border border-gray-300 overflow-hidden my-3">
+				<button
+					v-for="opt in [
+						{ value: 'klient', label: 'Klient' },
+						{ value: 'nabor', label: 'Nábor (pohovor)' },
+					]"
+					:key="opt.value"
+					type="button"
+					class="px-5 py-2 text-sm font-semibold transition-colors"
+					:class="
+						unrealizedType === opt.value
+							? opt.value === 'nabor'
+								? 'bg-violet-600 text-white'
+								: 'bg-blue-600 text-white'
+							: 'bg-white text-gray-600 hover:bg-gray-50'
+					"
+					@click="setUnrealizedType(opt.value)"
+				>
+					{{ opt.label }}
+				</button>
+			</div>
+			<div class="bg-white shadow-lg rounded-xl overflow-hidden relative">
+				<Icon
+					@click="((unrealizedMeetings = []), (selectedSelect = ''))"
+					:icon="'material-symbols:close-rounded'"
+					class="w-6 h-6 absolute top-2 right-2 cursor-pointer text-gray-500 hover:scale-110 transition-transform z-10"
+				/>
+				<table class="min-w-full divide-y divide-gray-200">
+					<thead class="bg-gray-50">
+						<tr>
+							<th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">Meno a priezvisko</th>
+							<th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">Tel. číslo</th>
+							<th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">Typ</th>
+							<th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">Aktivita</th>
+							<th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">Dátum a čas</th>
+							<th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">Status</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-gray-100">
+						<tr v-if="!loading && unrealizedMeetings.length === 0">
+							<td colspan="6" class="px-6 py-6 text-center text-gray-400">
+								Žiadne nezrealizované stretnutia v tomto období
+							</td>
+						</tr>
+						<tr
+							v-for="activity in unrealizedMeetings"
+							:key="activity.id"
+							class="hover:bg-gray-50 transition"
+						>
+							<td class="px-6 py-3 font-medium">
+								<a
+									:href="`/contact/${activity.contact_id}`"
+									class="text-blue-600 hover:underline"
+									@click="openContact($event, activity.contact_id)"
+								>
+									{{ activity.contact?.meno }} {{ activity.contact?.priezvisko }}
+								</a>
+							</td>
+							<td class="px-6 py-3 text-gray-600">
+								{{ activity.contact?.cislo || "—" }}
+							</td>
+							<td class="px-6 py-3">
+								<span
+									class="px-2 py-0.5 rounded-full text-xs font-semibold"
+									:class="
+										activity.meeting_type === 'nabor'
+											? 'bg-violet-100 text-violet-700'
+											: 'bg-blue-100 text-blue-700'
+									"
+								>
+									{{ activity.meeting_type === "nabor" ? "Nábor" : "Klient" }}
+								</span>
+							</td>
+							<td class="px-6 py-3">{{ activity.aktivita }}</td>
+							<td class="px-6 py-3 text-gray-600">
+								{{ formatDate(activity.datumCas) }}
+							</td>
+							<td class="px-6 py-3 text-gray-600">
+								{{ unrealizedStatusLabel(activity.activity_status) }}
+							</td>
+						</tr>
+					</tbody>
+				</table>
 			</div>
 		</div>
 
@@ -837,11 +935,34 @@ const serviceAnalysisActivities = ref([]);
 const poradenstvoNoveActivities = ref([]); // NEW — filter 5
 const prveStretnutieActivities = ref([]); // NEW — filter 6
 const poradenstvoServisneActivities = ref([]); // NEW — filter 7
+const unrealizedMeetings = ref([]); // filter 8
+const unrealizedType = ref("klient"); // klient | nabor
+
+const setUnrealizedType = async (type) => {
+	if (unrealizedType.value === type) return;
+	unrealizedType.value = type;
+	await fetchSelect();
+};
 const selectedActivityID = ref(null);
 
 function goToContact(contactId) {
 	router.push("/contact/" + contactId);
 }
+
+// Plain left-click navigates in-app; Ctrl/Cmd/Shift-click and middle-click
+// fall through to the browser so the contact opens in a new tab/window
+const openContact = (event, id) => {
+	if (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0)
+		return;
+	event.preventDefault();
+	goToContact(id);
+};
+
+const unrealizedStatusLabel = (status) => {
+	if (status === "discarded") return "Zrušené";
+	if (status === "questionmark") return "Otáznik";
+	return "Nevyhodnotené";
+};
 
 const changeshowActivityForm = (activityID) => {
 	console.log("Activity ID to edit:", activityID);
@@ -989,6 +1110,7 @@ const clearAllFilterResults = () => {
 	poradenstvoNoveActivities.value = [];
 	prveStretnutieActivities.value = [];
 	poradenstvoServisneActivities.value = [];
+	unrealizedMeetings.value = [];
 	dbActivities.value = [];
 	declinedEvents.value = [];
 };
@@ -1159,6 +1281,28 @@ const fetchSelect = async () => {
 					timeout: 5000,
 				},
 			);
+		}
+
+		if (selectedSelect.value === "8") {
+			const response = await axios.get(
+				`${config.public.apiUrl}nezrealizovane-stretnutia`,
+				{
+					headers: {
+						Authorization: `Bearer ${authStore.token}`,
+					},
+					params: {
+						dateFrom: dateFrom.value,
+						dateTo: dateTo.value,
+						type: unrealizedType.value,
+					},
+				},
+			);
+			unrealizedMeetings.value = response.data.activities;
+
+			toast.success("Nezrealizované stretnutia boli získané uspešne", {
+				position: "top-right",
+				timeout: 5000,
+			});
 		}
 	} catch (error) {
 		toast.error("Error pri zobrazovaní kontaktov", {
