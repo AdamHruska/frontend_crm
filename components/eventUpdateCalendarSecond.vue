@@ -279,20 +279,24 @@ onMounted(async () => {
 		emailBool.value = true;
 	}
 
-	officeActivityId.value = await officeStore.findActivityId({
-		datum_cas: datum_cas.value,
-		koniec: koniec.value,
-		owner_id: userStore.user.id,
-	});
-	officeActivity.value = officeActivityId.value?.activity;
+	// Office event linked to this activity (not matched by time any more)
+	const officeResult = await officeStore.findOfficeActivityByActivity(
+		props.activityID,
+	);
 
-	if (officeActivityId.value) {
+	if (officeResult?.activity) {
+		officeActivityId.value = officeResult;
+		officeActivity.value = officeResult.activity;
 		doesOfficeActivityExist.value = true;
-		selectedOffice.value = {
-			id: officeActivityId.value.office.id,
-			name: officeActivityId.value.office.name,
-		};
+		if (officeResult.office) {
+			selectedOffice.value = {
+				id: officeResult.office.id,
+				name: officeResult.office.name,
+			};
+		}
 	} else {
+		officeActivityId.value = null;
+		officeActivity.value = null;
 		doesOfficeActivityExist.value = false;
 	}
 
@@ -466,6 +470,7 @@ const runUpdateActivity = async () => {
 						poznamka: poznamka.value,
 						office_id: selectedOffice.value.id,
 						owner_number: userStore.user.vizitka_phone_num,
+						activity_id: props.activityID,
 					},
 					{ headers: { Authorization: `Bearer ${authStore.token}` } },
 				);
@@ -558,7 +563,7 @@ const onBjSubmitted = () => {
 
 const deleteActivity = async () => {
 	event.preventDefault();
-	await officeStore.deleteActivity(officeActivityId.value);
+	// The linked office event is deleted by the backend together with the activity
 	await calendarStore.deleteActivity(props.activityID);
 	toast.success("Aktivita bola úspešne zmazaná");
 	emit("cancelAddActivity");

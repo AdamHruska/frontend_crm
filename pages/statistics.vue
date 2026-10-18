@@ -196,6 +196,36 @@
 							</div>
 						</div>
 					</div>
+
+					<!-- Refresh -->
+					<div class="ml-auto flex items-center gap-3">
+						<span v-if="loadedAtLabel" class="text-xs text-gray-400">
+							Načítané o {{ loadedAtLabel }}
+						</span>
+						<button
+							type="button"
+							class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+							:disabled="loadingStateCalendar"
+							title="Znova načítať štatistiky"
+							@click="fetchData"
+						>
+							<svg
+								class="w-4 h-4"
+								:class="{ 'animate-spin': loadingStateCalendar }"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+								/>
+							</svg>
+							Obnoviť
+						</button>
+					</div>
 				</div>
 
 				<!-- ── Telefonát klient Section ── -->
@@ -488,6 +518,13 @@
 											>
 												{{ kanditat.meno }} {{ kanditat.priezvisko }}
 											</a>
+											<span
+												v-if="kanditat.is_shared"
+												class="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-100 text-violet-700"
+												title="Kontakt vám bol zdieľaný iným používateľom"
+											>
+												zdieľaný
+											</span>
 										</td>
 										<td class="px-5 py-3 text-sm text-gray-600 whitespace-nowrap">
 											{{ formatDateTime(kanditat.datumCas) }}
@@ -539,11 +576,29 @@ const userStore = useUserStore();
 import { useRouter } from "vue-router";
 const router = useRouter();
 
+// Filters + loaded data live in Pinia, so they survive navigating to other pages
+import { storeToRefs } from "pinia";
+import { useStatisticsStore } from "~/stores/statisticsStore";
+const statsStore = useStatisticsStore();
+const {
+	dateRange,
+	selectedPeriod,
+	selectedUserIds,
+	includeMyStats,
+	statistics,
+	responseData,
+	dataPohovory,
+	otherActivies,
+	otherActiviesNames,
+	seminarActivitesStatistics,
+	seminarActivitesNames,
+	zaujatiKandidati,
+	loadedAt,
+} = storeToRefs(statsStore);
+
 // ─── Multi-select dropdown state ───────────────────────────────────────────
 const dropdownOpen = ref(false);
 const dropdownRef = ref(null);
-const selectedUserIds = ref([]);
-const includeMyStats = ref(true);
 
 const dropdownLabel = computed(() => {
 	const names = [];
@@ -598,8 +653,6 @@ const handleClickOutside = (e) => {
 const isHoveringFollower = ref(false);
 let hideTimeout = null;
 
-const responseData = ref({});
-
 const sharedUsers = computed(() => {
 	const directUsers = (userStore.sharedUsers || []).map((u) => ({
 		id: u.id,
@@ -616,23 +669,22 @@ const sharedUsers = computed(() => {
 	return [...directUsers, ...transitiveUsers];
 });
 
-const zaujatiKandidati = ref([]);
-const dateRange = ref({ from: "", to: "" });
-const selectedPeriod = ref("month");
 const selectedActivityType = ref("Telefonát klient");
-const statistics = ref({ called: 0, reached: 0, scheduled: 0 });
 const loadingStateCalendar = ref(false);
-const dataPohovory = ref(null);
 
 const mouseX = ref(0);
 const mouseY = ref(0);
 const showFollower = ref(false);
 const dataInFollower = ref([]);
 
-const otherActivies = ref({});
-const otherActiviesNames = ref([]);
-const seminarActivitesStatistics = ref({});
-const seminarActivitesNames = ref([]);
+const loadedAtLabel = computed(() =>
+	loadedAt.value
+		? new Date(loadedAt.value).toLocaleTimeString("sk-SK", {
+				hour: "2-digit",
+				minute: "2-digit",
+			})
+		: "",
+);
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const showVolaneFollower = (data, event) => {
@@ -709,7 +761,12 @@ const showPohovoryFollower = (key, event) => {
 };
 
 // ─── Fetch ──────────────────────────────────────────────────────────────────
+// Only the newest request may write its result (filters can change while loading)
+let fetchSeq = 0;
+
 const fetchData = async () => {
+	const seq = ++fetchSeq;
+	const requestKey = statsStore.filtersKey;
 	loadingStateCalendar.value = true;
 	const fromDate = new Date(dateRange.value.from);
 	const toDate = new Date(dateRange.value.to);
@@ -725,7 +782,7 @@ const fetchData = async () => {
 	];
 
 	if (userIdList.length === 0) {
-		loadingStateCalendar.value = false;
+		if (seq === fetchSeq) loadingStateCalendar.value = false;
 		return;
 	}
 
@@ -781,6 +838,9 @@ const fetchData = async () => {
 				]),
 			),
 		);
+
+		// A newer request was started meanwhile -> drop this outdated result
+		if (seq !== fetchSeq) return;
 
 		// 1. telefonat-klient statistics
 		const sumStats = { called: 0, reached: 0, scheduled: 0 };
@@ -907,20 +967,31 @@ const fetchData = async () => {
 		seminarActivitesStatistics.value = sumSeminar;
 		seminarActivitesNames.value = mergedSeminarNames;
 
-		// 5. interview candidates
-		const merged = [];
+		// 5. interview candidates — deduplicated by interview, because a shared
+		// contact can come back both for me and for the colleague who owns it
+		const mergedCandidates = new Map();
 		allResults.forEach(([, , , , r]) => {
-			if (r.data.candidates) merged.push(...r.data.candidates);
+			(r.data.candidates || []).forEach((c) => {
+				const existing = mergedCandidates.get(c.activity_id);
+				// Prefer the owner's copy (is_shared = false) if both came back
+				if (!existing || (existing.is_shared && !c.is_shared)) {
+					mergedCandidates.set(c.activity_id, c);
+				}
+			});
 		});
-		zaujatiKandidati.value = merged;
+		zaujatiKandidati.value = [...mergedCandidates.values()];
+
+		// Remember which filters this data belongs to
+		statsStore.loadedKey = requestKey;
+		statsStore.loadedAt = Date.now();
 	} catch (error) {
 		console.error(
 			"Error fetching statistics:",
 			error.response?.data || error.message,
 		);
+	} finally {
+		if (seq === fetchSeq) loadingStateCalendar.value = false;
 	}
-
-	loadingStateCalendar.value = false;
 };
 
 const updateDateRange = () => {
@@ -951,10 +1022,32 @@ const updateDateRange = () => {
 };
 
 onMounted(async () => {
-	updateDateRange();
-	await userStore.fetchSharedUsersTree();
 	document.addEventListener("click", handleClickOutside);
-	console.log("Mounted and data fetched", userStore.allSharedUsers);
+
+	if (!dateRange.value.from || !dateRange.value.to) {
+		// First visit: set dates from the selected period and load
+		updateDateRange();
+	} else if (!statsStore.isLoadedForFilters) {
+		// Filters kept from the last visit, but data not loaded for them yet
+		fetchData();
+	}
+	// Otherwise the stored data is shown as is; "Obnoviť" reloads it
+
+	await userStore.fetchSharedUsersTree();
+
+	// Drop kept selections of users whose calendar is no longer shared with me
+	// (skipped if the list came back empty, e.g. the request failed)
+	const availableIds = new Set(sharedUsers.value.map((u) => u.id));
+	const stillShared = selectedUserIds.value.filter((id) =>
+		availableIds.has(id),
+	);
+	if (
+		availableIds.size > 0 &&
+		stillShared.length !== selectedUserIds.value.length
+	) {
+		selectedUserIds.value = stillShared;
+		fetchData();
+	}
 });
 
 onBeforeUnmount(() => {

@@ -306,6 +306,23 @@ export const useOfficeStore = defineStore("office", {
 			}
 		},
 
+		// Office event (+ office) linked to a CRM activity.
+		// Returns { found, activity, office }, or null on a request error.
+		async findOfficeActivityByActivity(activityId) {
+			const config = useRuntimeConfig();
+			const authStore = useAuthStore();
+			try {
+				const response = await axios.get(
+					`${config.public.apiUrl}office-activity-by-activity/${activityId}`,
+					{ headers: { Authorization: `Bearer ${authStore.token}` } },
+				);
+				return response.data;
+			} catch (error) {
+				console.error("Error finding office activity:", error);
+				return null;
+			}
+		},
+
 		// inside actions of useOfficeStore
 		async findActivityId({ datum_cas, koniec, owner_id }) {
 			const config = useRuntimeConfig();

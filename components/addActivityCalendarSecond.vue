@@ -465,6 +465,7 @@ const addActivity = async () => {
 				poznamka: poznamka.value,
 				office_id: officeStore.setOfficeID,
 				owner_number: userStore.user.vizitka_phone_num,
+				activity_id: activityResponse.data.activity.id,
 			});
 		}
 

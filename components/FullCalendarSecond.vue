@@ -248,9 +248,21 @@ const toggleAddActivity = () => {
 };
 
 const openAddActivityMobile = () => {
-	// No date was selected via the calendar grid, so default to "now"
-	const now = new Date();
-	end_date.value = format(now, "yyyy-MM-dd'T'HH:mm:ss");
+	// No date was selected via the calendar grid, so default to "now"...
+	const start = new Date();
+
+	// ...but in the day view use the day that is shown (keeping the current time)
+	const calendarApi = calendarRef.value?.getApi();
+	if (calendarApi && calendarApi.view.type.endsWith("Day")) {
+		const shownDay = calendarApi.getDate();
+		start.setFullYear(
+			shownDay.getFullYear(),
+			shownDay.getMonth(),
+			shownDay.getDate(),
+		);
+	}
+
+	end_date.value = format(start, "yyyy-MM-dd'T'HH:mm:ss");
 	toggleAddActivity();
 };
 
@@ -434,7 +446,6 @@ async function handleEventDrop(dropInfo) {
 		return;
 	}
 
-	const officeStore = useOfficeStore();
 	const eventId = dropInfo.event.id;
 	const newStart = dropInfo.event.start;
 	const newEnd = dropInfo.event.end ?? newStart;
@@ -455,6 +466,13 @@ async function handleEventDrop(dropInfo) {
 		return;
 	}
 
+	// Google / ICS events are read-only copies, they cannot be changed from the CRM
+	if (["google", "ics"].includes(dropInfo.event.extendedProps.source)) {
+		toast.info("Túto udalosť nie je možné upraviť v CRM.");
+		dropInfo.revert();
+		return;
+	}
+
 	const event = rawData.value.find((event) => event.id == eventId);
 	if (event && event.created_id !== userStore.user.id) {
 		alert("You don't have permission to edit this event.");
@@ -462,35 +480,7 @@ async function handleEventDrop(dropInfo) {
 		return;
 	}
 
-	if (event) {
-		try {
-			// Use FullCalendar's own pre-drag start/end — exact, no guessed offset
-			const oldStart = dropInfo.oldEvent.start;
-			const oldEnd = dropInfo.oldEvent.end ?? oldStart;
-
-			const officeActivityResult = await officeStore.findActivityId({
-				datum_cas: formatDateForBackend(oldStart),
-				koniec: formatDateForBackend(oldEnd),
-				owner_number: userStore.user.vizitka_phone_num,
-			});
-
-			if (officeActivityResult && officeActivityResult.activity) {
-				const officeActivity = officeActivityResult.activity;
-				const updatePayload = {
-					id: officeActivity.id,
-					aktivita: dropInfo.event.title,
-					datum_cas: formatDateForBackend(newStart),
-					koniec: formatDateForBackend(newEnd),
-					poznamka: officeActivity.poznamka || "",
-					office_id: officeActivity.office_id,
-					owner_number: userStore.user.vizitka_phone_num,
-				};
-				await officeStore.updateActivity(updatePayload);
-			}
-		} catch (err) {
-			console.error("Failed to update office activity:", err);
-		}
-	}
+	// The linked office event is moved by the backend together with the activity
 
 	const formattedStart = formatDateForBackend(newStart);
 	const formattedEnd = formatDateForBackend(newEnd);
@@ -611,11 +601,25 @@ async function updateEventInBackend(eventId, formattedStart, formattedEnd) {
 		if (response.data.status !== 200) {
 			toast.error("Failed to update event: ");
 		} else {
-			toast.success("Event updated successfully");
+			toast.success("Udalosť bola presunutá.");
 			const updatedEvent = response.data.activity;
 			rawData.value = rawData.value.map((event) =>
 				event.id == eventId ? updatedEvent : event,
 			);
+			calendarStore.activities = calendarStore.activities.map((event) =>
+				event.id == eventId ? updatedEvent : event,
+			);
+
+			// Keep the events list in sync, otherwise the next re-render of the
+			// calendar would draw the event at its old time again
+			const [transformedEvent] = transformData([updatedEvent]);
+			events.value = events.value.map((event) =>
+				event.id == eventId ? transformedEvent : event,
+			);
+			calendarOptions.value = {
+				...calendarOptions.value,
+				events: [...events.value],
+			};
 		}
 		return response.data;
 	} catch (error) {
@@ -638,6 +642,13 @@ function handleEventResize(resizeInfo) {
 		return;
 	}
 
+	// Google / ICS events are read-only copies, they cannot be changed from the CRM
+	if (["google", "ics"].includes(resizeInfo.event.extendedProps.source)) {
+		toast.info("Túto udalosť nie je možné upraviť v CRM.");
+		resizeInfo.revert();
+		return;
+	}
+
 	const event = rawData.value.find((event) => event.id == eventId);
 	if (event && event.created_id !== userStore.user.id) {
 		alert("You don't have permission to edit this event.");
@@ -646,14 +657,15 @@ function handleEventResize(resizeInfo) {
 	}
 
 	const formattedEnd = formatDateForBackend(newEnd);
-	updateEventEndInBackend(eventId, formattedEnd);
+	updateEventEndInBackend(eventId, formattedEnd, resizeInfo.revert);
 }
 
 function formatDateForBackend(date) {
 	return format(date, "yyyy-MM-dd HH:mm:ss");
 }
 
-async function updateEventEndInBackend(eventId, newEnd) {
+// revert: FullCalendar's resizeInfo.revert, undoes just this resize on failure
+async function updateEventEndInBackend(eventId, newEnd, revert = null) {
 	loadingStateCalendar.value = true;
 
 	try {
@@ -670,7 +682,8 @@ async function updateEventEndInBackend(eventId, newEnd) {
 			},
 		);
 
-		if (response.data.status === "success") {
+		// Backend answers { success: true, activity }
+		if (response.data.success || response.data.status === "success") {
 			const updatedEvent = response.data.activity;
 
 			rawData.value = rawData.value.map((event) =>
@@ -681,17 +694,28 @@ async function updateEventEndInBackend(eventId, newEnd) {
 				event.id == eventId ? updatedEvent : event,
 			);
 
-			toast.success("Event end time updated successfully");
+			// Keep the events list in sync, otherwise the next re-render of the
+			// calendar would draw the event with its old end time again
+			const [transformedEvent] = transformData([updatedEvent]);
+			events.value = events.value.map((event) =>
+				event.id == eventId ? transformedEvent : event,
+			);
+			calendarOptions.value = {
+				...calendarOptions.value,
+				events: [...events.value],
+			};
+
+			toast.success("Koniec udalosti bol upravený.");
 		} else {
-			toast.error("Failed to update event: " + response.data.message);
-			calendarOptions.value.events = [...events.value];
+			toast.error(
+				"Nepodarilo sa upraviť koniec udalosti: " + (response.data.message ?? ""),
+			);
+			revert?.();
 		}
 	} catch (error) {
 		console.error("Error updating event:", error);
-		toast.error(
-			"An error occurred while updating the event. Please try again.",
-		);
-		calendarOptions.value.events = [...events.value];
+		toast.error("Nepodarilo sa upraviť koniec udalosti. Skúste to znova.");
+		revert?.();
 	} finally {
 		loadingStateCalendar.value = false;
 	}
@@ -742,6 +766,8 @@ const calendarListLoading = ref(false);
 
 onMounted(async () => {
 	await userStore.fetchUser();
+
+	fetchPhoneSyncStatus(); // not awaited, the calendar does not depend on it
 
 	const savedColor = localStorage.getItem("icsGlobalColor");
 	if (savedColor) {
@@ -1756,6 +1782,127 @@ const isMounted = ref(false);
 const onIcsColorChange = (e) => {
 	icsGlobalColor.value = e.target.value;
 };
+
+// ── Sync to phone: CRM + Outlook + ICS -> Google "CRM" calendar ──────────
+const phoneSync = ref({
+	google_connected: false,
+	auto: false,
+	last_sync_at: null,
+	last_result: null,
+});
+const phoneSyncRunning = ref(false);
+
+const phoneSyncHeaders = () => ({
+	headers: { Authorization: `Bearer ${authStore.token}` },
+});
+
+const phoneSyncLastLabel = computed(() =>
+	phoneSync.value.last_sync_at
+		? format(new Date(phoneSync.value.last_sync_at), "dd.MM. HH:mm")
+		: null,
+);
+
+const phoneSyncTotal = computed(() => {
+	const sources = phoneSync.value.last_result?.sources;
+	return sources
+		? (sources.crm || 0) + (sources.outlook || 0) + (sources.ics || 0)
+		: null;
+});
+
+const fetchPhoneSyncStatus = async () => {
+	try {
+		const response = await axios.get(
+			`${config.public.apiUrl}google/calendar-sync/status`,
+			phoneSyncHeaders(),
+		);
+		phoneSync.value = response.data;
+	} catch (error) {
+		console.error("Error loading phone sync status:", error);
+	}
+};
+
+const runPhoneSync = async () => {
+	phoneSyncRunning.value = true;
+	try {
+		const response = await axios.post(
+			`${config.public.apiUrl}google/calendar-sync/run`,
+			{},
+			phoneSyncHeaders(),
+		);
+		phoneSync.value = response.data.status;
+
+		const result = response.data.result;
+		toast.success(
+			`Synchronizované do telefónu: ${result.created} nových, ${result.updated} zmenených, ${result.deleted} odstránených.`,
+		);
+		if (result.errors?.length) {
+			toast.warning(
+				`Niečo sa nepodarilo načítať: ${result.errors.join(", ")}`,
+				{ timeout: 10000 },
+			);
+		}
+	} catch (error) {
+		toast.error(error.response?.data?.error ?? "Synchronizácia zlyhala.");
+	} finally {
+		phoneSyncRunning.value = false;
+	}
+};
+
+const phoneUnsyncRunning = ref(false);
+
+// Stop syncing and remove the "CRM" calendar (all synced events) from Google
+const unsyncPhone = async () => {
+	if (
+		!confirm(
+			"Zrušiť synchronizáciu do telefónu?\n\nKalendár „CRM“ sa celý vymaže z vášho Google účtu (aj so všetkými synchronizovanými udalosťami) a automatická synchronizácia sa vypne. Udalosti v CRM, Outlooku a ICS kalendároch zostanú.",
+		)
+	) {
+		return;
+	}
+
+	phoneUnsyncRunning.value = true;
+	try {
+		const response = await axios.post(
+			`${config.public.apiUrl}google/calendar-sync/unsync`,
+			{},
+			phoneSyncHeaders(),
+		);
+		phoneSync.value = response.data.status;
+		toast.success(
+			"Synchronizácia zrušená, udalosti boli odstránené z Google kalendára.",
+		);
+	} catch (error) {
+		toast.error(
+			error.response?.data?.error ?? "Nepodarilo sa zrušiť synchronizáciu.",
+		);
+	} finally {
+		phoneUnsyncRunning.value = false;
+	}
+};
+
+const togglePhoneSyncAuto = async (event) => {
+	const auto = event.target.checked;
+	try {
+		const response = await axios.post(
+			`${config.public.apiUrl}google/calendar-sync/settings`,
+			{ auto },
+			phoneSyncHeaders(),
+		);
+		phoneSync.value = response.data;
+		toast.success(
+			auto
+				? "Automatická synchronizácia zapnutá (každých 30 minút)."
+				: "Automatická synchronizácia vypnutá.",
+		);
+		// First time on: sync right away instead of waiting up to 30 minutes
+		if (auto && !phoneSync.value.last_sync_at) {
+			await runPhoneSync();
+		}
+	} catch (error) {
+		event.target.checked = !auto;
+		toast.error("Nepodarilo sa uložiť nastavenie synchronizácie.");
+	}
+};
 </script>
 
 <template>
@@ -1943,6 +2090,77 @@ const onIcsColorChange = (e) => {
 							<span>Zobraziť miesto aktivity</span>
 						</label>
 					</div>
+				</div>
+
+				<!-- Sync to phone (Google "CRM" calendar) -->
+				<div
+					class="demo-app-sidebar-section text-black border-t border-gray-200 pt-3 flex flex-col justify-center items-center mb-6"
+				>
+					<h3
+						class="font-semibold text-sm mb-2 text-gray-600 uppercase tracking-wide"
+					>
+						Synchronizácia do telefónu
+					</h3>
+
+					<template v-if="phoneSync.google_connected">
+						<button
+							class="bg-[#921337] px-4 py-2 rounded-md shadow hover:bg-[#cc1d4d] font-semibold text-white w-[240px] disabled:opacity-60 disabled:cursor-not-allowed"
+							:disabled="phoneSyncRunning"
+							@click="runPhoneSync"
+						>
+							{{
+								phoneSyncRunning
+									? "Synchronizujem…"
+									: "📱 Synchronizovať do telefónu"
+							}}
+						</button>
+						<label
+							class="flex items-center gap-2 text-sm mt-2 cursor-pointer select-none"
+						>
+							<input
+								type="checkbox"
+								:checked="phoneSync.auto"
+								class="accent-blue-600"
+								@change="togglePhoneSyncAuto"
+							/>
+							<span>Automaticky každých 30 min</span>
+						</label>
+						<p v-if="phoneSyncLastLabel" class="text-xs text-gray-500 mt-1">
+							Naposledy: {{ phoneSyncLastLabel }}
+							<span v-if="phoneSyncTotal !== null">
+								({{ phoneSyncTotal }} udalostí)
+							</span>
+						</p>
+						<p class="text-xs text-gray-400 mt-1 max-w-[240px] text-center">
+							CRM, Outlook a ICS udalosti 
+							sa zapíšu do kalendára „CRM“ vo vašom Google účte.
+						</p>
+						<button
+							v-if="phoneSync.calendar_created || phoneSync.auto"
+							class="mt-2 px-4 py-1.5 rounded-md border border-red-300 text-red-600 bg-white hover:bg-red-50 text-sm font-semibold w-[240px] disabled:opacity-60 disabled:cursor-not-allowed"
+							:disabled="phoneUnsyncRunning || phoneSyncRunning"
+							@click="unsyncPhone"
+						>
+							{{
+								phoneUnsyncRunning
+									? "Odstraňujem…"
+									: "Zrušiť synchronizáciu a odstrániť z Google"
+							}}
+						</button>
+					</template>
+
+					<template v-else>
+						<p class="text-xs text-gray-500 mb-2 max-w-[240px] text-center">
+							Najprv prepojte Google účet, do ktorého sa majú udalosti zapisovať.
+						</p>
+						<button
+							class="bg-[#D1D5DB] px-4 py-1 rounded-md shadow hover:bg-slate-200 flex items-center gap-2 w-[240px]"
+							@click="loginWithGoogle"
+						>
+							<span>Prihlásiť sa cez Google</span>
+							<img src="/public/google_icon.png" alt="logo" />
+						</button>
+					</template>
 				</div>
 				<div class="shadow pb-4 rounded-b-lg">
 					<CalendarSharing

@@ -121,6 +121,10 @@ const officeActivityId = ref(null);
 
 const showVDD = ref(false);
 
+// While the form loads the activity, the watchers below must not recalculate
+// the end time - otherwise the stored end is overwritten by start + 1 h / 5 min
+const suppressKoniecWatch = ref(true);
+
 watch(aktivita, (newValue) => {
 	ineBool.value = newValue === "ine";
 
@@ -128,6 +132,10 @@ watch(aktivita, (newValue) => {
 		(newValue === "Telefonát klient" || newValue === "Telefonát nábor") &&
 		datum_cas.value
 	) {
+		if (suppressKoniecWatch.value) {
+			showVDD.value = true;
+			return;
+		}
 		showVDD.value = true;
 		const newEndTime = add(parseISO(datum_cas.value), { minutes: 5 });
 		koniec.value = format(newEndTime, "yyyy-MM-dd'T'HH:mm");
@@ -137,6 +145,7 @@ watch(aktivita, (newValue) => {
 });
 
 watch([aktivita, datum_cas], ([newAktivita, newDatumCas]) => {
+	if (suppressKoniecWatch.value) return;
 	if (!newAktivita || !newDatumCas) return;
 
 	const val = newAktivita.toLowerCase().trim();
@@ -235,25 +244,27 @@ onMounted(async () => {
 		emailBool.value = true;
 	}
 
-	const result = await officeStore.findActivityId({
-		datum_cas: datum_cas.value,
-		koniec: koniec.value,
-		owner_id: userStore.user.id,
-	});
+	// Office event linked to this activity (not matched by time any more)
+	const result = await officeStore.findOfficeActivityByActivity(
+		props.activityID,
+	);
 
-	if (!result || !result.activity) {
+	if (result?.activity) {
+		officeActivityId.value = result;
+		officeActivity.value = result.activity;
+
+		if (result.office?.name) {
+			miesto_stretnutia.value = result.office.name;
+			selectedOffice.value = result.office;
+		}
+	} else {
 		officeActivityId.value = null;
 		officeActivity.value = null;
-		return;
 	}
 
-	officeActivityId.value = result;
-	officeActivity.value = result.activity;
-
-	if (officeActivityId.value.office?.name) {
-		miesto_stretnutia.value = officeActivityId.value.office.name;
-		selectedOffice.value = officeActivityId.value.office;
-	}
+	// Loading done: from now on, changing start/type recalculates the end
+	await nextTick();
+	suppressKoniecWatch.value = false;
 });
 
 const emit = defineEmits(["cancelAddActivity", "activityAdded", "alterEvents"]);
@@ -403,6 +414,7 @@ const runUpdateActivity = async () => {
 						poznamka: poznamka.value,
 						office_id: selectedOffice.value.id,
 						owner_number: userStore.user.vizitka_phone_num,
+						activity_id: props.activityID,
 					},
 					{ headers: { Authorization: `Bearer ${authStore.token}` } },
 				);
@@ -470,7 +482,7 @@ const updateActivity = async () => {
 
 const deleteActivity = async () => {
 	event.preventDefault();
-	await officeStore.deleteActivity(officeActivityId.value);
+	// The linked office event is deleted by the backend together with the activity
 	await calendarStore.deleteActivity(props.activityID);
 	toast.success("Aktivita bola úspěšne smazaná");
 	emit("cancelAddActivity");
