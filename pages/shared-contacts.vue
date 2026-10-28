@@ -26,7 +26,9 @@ const showAlterPesonForm = ref(false);
 const people = ref([]);
 
 const isChecked = ref(false);
-const selected = ref([]);
+// The selection lives only in the store, so it survives going to a contact's
+// detail and back. Call list / handover / share dialogs get exactly this list.
+const selected = computed(() => contactsStore.selectedContacts);
 
 const sharedPeople = ref([]);
 
@@ -53,21 +55,12 @@ const toggleCheckbox = (id) => {
 
 	if (!person) return; // safety check
 
-	const index = selected.value.findIndex((p) => p.id === id);
+	const index = contactsStore.selectedContacts.findIndex((p) => p.id === id);
 	if (index === -1) {
-		// Add to selection
-		selected.value.push(person);
 		contactsStore.selectedContacts.push(person);
 	} else {
-		// Remove from selection
-		selected.value.splice(index, 1);
-		contactsStore.selectedContacts.splice(
-			contactsStore.selectedContacts.findIndex((p) => p.id === id),
-			1,
-		);
+		contactsStore.selectedContacts.splice(index, 1);
 	}
-
-	console.log("Selected:", selected.value);
 };
 
 const isSelected = (id) => {
@@ -170,7 +163,6 @@ const deletePerson = async (id) => {
 		);
 
 		// Also clean selection if selected
-		selected.value = selected.value.filter((p) => p.id !== id);
 		contactsStore.selectedContacts = contactsStore.selectedContacts.filter(
 			(p) => p.id !== id,
 		);
@@ -594,9 +586,6 @@ const updatePerson = async (updatedContact) => {
 };
 
 const uncheckAll = () => {
-	// Clear the selected array
-	selected.value = [];
-
 	// Find all checkboxes and uncheck them
 	const checkboxes = document.querySelectorAll('input[type="checkbox"]');
 	checkboxes.forEach((checkbox) => {

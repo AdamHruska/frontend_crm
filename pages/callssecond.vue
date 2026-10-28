@@ -10,7 +10,7 @@ import {
 } from "vue";
 import { Icon } from "@iconify/vue";
 import axios from "axios";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/authStore";
 import { useCallListStore } from "~/stores/callListStore";
 import { format } from "date-fns";
@@ -21,6 +21,7 @@ const authStore = useAuthStore();
 authStore.loadToken();
 const toast = useToast();
 const router = useRouter();
+const route = useRoute();
 
 // ── State ──────────────────────────────────────────────────────────────────
 const loadingState = ref(false);
@@ -134,6 +135,28 @@ onMounted(async () => {
 		await callListStore.fetchCallLists();
 	}
 	call_lists.value = callListStore.callLists;
+
+	// Opened from a contact's detail: /callsSecond?list=<id> opens that list
+	const requestedListId = Number(route.query.list);
+	if (requestedListId) {
+		const isLoaded = () =>
+			callListStore.callLists.some((list) => list.id === requestedListId);
+
+		// A list created recently may not be in the cached lists yet
+		if (!isLoaded()) {
+			await callListStore.fetchCallLists();
+			call_lists.value = callListStore.callLists;
+		}
+
+		// Drop the query so a page reload does not jump to the list again
+		router.replace({ query: {} });
+
+		if (isLoaded()) {
+			await getCallList(requestedListId);
+			return;
+		}
+		toast.error("Call list sa nenašiel.");
+	}
 
 	if (callListStore.selectedCallListPeople.length > 0) {
 		people.value = decoratePeople(callListStore.selectedCallListPeople);

@@ -195,6 +195,7 @@ const sharedFromName = computed(() => {
 onBeforeMount(async () => {
 	await userStore.fetchAllUsersAdmin();
 	contactsStore.lastShowenDetails = id;
+	fetchContactCallLists(); // not awaited, the rest of the page does not need it
 	const person = await findPerson(id);
 	console.log("Person details:", person);
 	await findActivities(id);
@@ -474,6 +475,25 @@ function isValidUrl(string) {
 const callListBool = ref(false);
 const changeCallListBool = () => {
 	callListBool.value = !callListBool.value;
+};
+
+// ── Call lists this contact is on (my lists only) ──
+const contactCallLists = ref([]);
+const contactCallListsLoading = ref(false);
+
+const fetchContactCallLists = async () => {
+	contactCallListsLoading.value = true;
+	try {
+		const response = await axios.get(
+			`${config.public.apiUrl}contacts/${id}/call-lists`,
+			{ headers: { Authorization: `Bearer ${authStore.token}` } },
+		);
+		contactCallLists.value = response.data.call_lists ?? [];
+	} catch (error) {
+		console.error("Error loading call lists of contact:", error);
+	} finally {
+		contactCallListsLoading.value = false;
+	}
 };
 
 const pendingFirstMeetingRow = ref(null);
@@ -1090,6 +1110,7 @@ const contactTypeBadgeClass = computed(() => {
 		:user_id="user_id"
 		:selected="id"
 		@cancleCallListForm="changeCallListBool"
+		@refreshCallLists="fetchContactCallLists"
 	/>
 	<UpdateToDoForm
 		:item="todoToUpdate"
@@ -1421,6 +1442,37 @@ const contactTypeBadgeClass = computed(() => {
 					Poznámka
 				</div>
 				<div class="meta-value">{{ people[0].poznamka }}</div>
+			</div>
+		</section>
+
+		<!-- ── Call lists this contact is on ── -->
+		<section class="section">
+			<div class="section-header-row">
+				<h2 class="section-title">
+					Call listy
+					<span v-if="contactCallLists.length" class="call-list-count">
+						{{ contactCallLists.length }}
+					</span>
+				</h2>
+			</div>
+
+			<div v-if="contactCallListsLoading" class="text-muted text-sm">
+				Načítavam…
+			</div>
+			<div v-else-if="contactCallLists.length" class="call-list-chips">
+				<NuxtLink
+					v-for="list in contactCallLists"
+					:key="list.id"
+					:to="`/callsSecond?list=${list.id}`"
+					class="call-list-chip"
+					:title="`Vytvorený ${formatDate(list.created_at)} · ${list.contacts_count} kontaktov`"
+				>
+					📋 {{ list.name }}
+					<span class="call-list-chip-meta">{{ list.contacts_count }}</span>
+				</NuxtLink>
+			</div>
+			<div v-else class="text-muted text-sm">
+				Kontakt nie je v žiadnom vašom call liste.
 			</div>
 		</section>
 
@@ -2055,6 +2107,52 @@ const contactTypeBadgeClass = computed(() => {
 	margin: 0;
 	border: none;
 	padding: 0;
+}
+
+/* ── Call lists of the contact ── */
+.call-list-count {
+	display: inline-block;
+	margin-left: 6px;
+	padding: 1px 8px;
+	border-radius: 999px;
+	background: #f3e8ec;
+	color: #921337;
+	font-size: 12px;
+	font-weight: 700;
+	vertical-align: middle;
+}
+
+.call-list-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.call-list-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 12px;
+	border-radius: 999px;
+	border: 1px solid #e9c6d1;
+	background: #fff;
+	color: #921337;
+	font-size: 13px;
+	font-weight: 600;
+	text-decoration: none;
+	transition: background 0.15s;
+}
+
+.call-list-chip:hover {
+	background: #fdf2f5;
+}
+
+.call-list-chip-meta {
+	padding: 0 6px;
+	border-radius: 999px;
+	background: #f3e8ec;
+	font-size: 11px;
+	font-weight: 700;
 }
 
 /* ── Info Grid ── */
